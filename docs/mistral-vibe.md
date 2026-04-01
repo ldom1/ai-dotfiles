@@ -27,6 +27,20 @@ Typical requirements:
 1. Working directory = repository root (or equivalent).
 2. Folder marked **trusted** in Vibe (see [Configuration](https://docs.mistral.ai/mistral-vibe/introduction/configuration), trusted folders).
 
+## Brain-sync / brain-load at session start (not automatic)
+
+Vibe has **no** Cursor-style hook that runs shell when a session opens. The **`skill`** tool only **loads text** into the thread when the model calls it; it does not execute `sync.sh` or `load.sh` by itself.
+
+To make startup explicit for this repo, use root **`AGENTS.md`**: Vibe merges `AGENTS.md` files from the current working directory up to the [trusted-folder](https://docs.mistral.ai/mistral-vibe/introduction/configuration) root into the system prompt (when project context is enabled). That file instructs the agent to run `brain-sync` / `brain-load` **before the first substantive action**.
+
+If nothing runs on a new session, check:
+
+- **CWD** — start Vibe from the repo you care about (`cd …/ai-dotfiles` then `vibe`, or equivalent).
+- **Trust** — the folder must be trusted; otherwise project `AGENTS.md` may not load.
+- **Model behavior** — the model must still **invoke bash**; instructions are not executed by the runtime automatically.
+
+You can also paste “run brain-sync start and brain-load” as your first message.
+
 ## Pitfall: project `config.toml`
 
 If you create **`.vibe/config.toml`** at the project root, Vibe may use it **in place of** `~/.vibe/config.toml` when the project is trusted, which removes global providers/models. To extend skills only, use `.vibe/skills/` (as here) or add absolute paths under **`skill_paths`** in **`~/.vibe/config.toml`**.

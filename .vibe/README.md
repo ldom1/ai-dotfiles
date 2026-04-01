@@ -12,6 +12,8 @@ Behavior (aligned with Vibe’s implementation):
 
 In this repo, `brain-sync` and `brain-load` are wired via symlinks to `../../skills/<id>/` so sources are not duplicated.
 
+To actually **run** the sync/load scripts at the start of work, Vibe still needs the agent to execute bash — see root **`AGENTS.md`** in this repo (injected when the project folder is trusted).
+
 ## Trusted folder
 
 The clone must be **trusted** in Vibe, and you should run Vibe with this directory as the working tree (typically `cd` into the clone, then `vibe`), so project discovery picks up `.vibe/skills/`.
