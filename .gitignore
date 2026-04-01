@@ -1,0 +1,41 @@
+# Claude Code — runtime files
+.claude/projects/
+.claude/todos/
+.claude/tasks/
+.claude/plans/
+.claude/sessions/
+.claude/session-env/
+.claude/shell-snapshots/
+.claude/file-history/
+.claude/paste-cache/
+.claude/backups/
+.claude/cache/
+.claude/chrome/
+.claude/debug/
+.claude/downloads/
+.claude/ide/
+.claude/telemetry/
+.claude/statsig/
+.claude/history.jsonl
+.claude/stats-cache.json
+.claude/mcp-needs-auth-cache.json
+.claude/.credentials.json
+
+# Generated from template — do not track
+.claude/settings.json
+
+# Local permissions — machine-specific, do not track
+.claude/settings.local.json
+
+# Cursor — runtime files
+.cursor/projects/
+.cursor/plans/
+.cursor/sessions/
+.cursor/snapshots/
+.cursor/ide_state.json
+.cursor/mcp.json
+
+# Plugins — installed at runtime
+.claude/plugins/
+.cursor/plugins/
+.cursor/skills-cursor/
