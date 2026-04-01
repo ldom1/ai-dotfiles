@@ -1,0 +1,44 @@
+---
+description: Sync the Local Brain Obsidian vault at the start and end of every Cursor session.
+alwaysApply: true
+---
+
+# brain-sync
+
+The Local Brain is a git-backed Obsidian vault. Keep it synced around every session.
+
+## Session start
+
+At the beginning of every conversation, run:
+
+```bash
+bash ~/ai-dotfiles/skills/brain-sync/sync.sh start
+```
+
+This pulls the latest remote changes (with rebase). If there is a conflict, abort the rebase and warn the user. If there is no remote, skip silently.
+
+## Session end
+
+At the end of every conversation (after the last user request is resolved), run:
+
+```bash
+bash ~/ai-dotfiles/skills/brain-sync/sync.sh end
+```
+
+This stages all changes, creates a commit `brain: session sync <timestamp>`, and pushes. If push fails (no network, rejected), warn the user that changes are committed locally.
+
+## Edge cases
+
+- **Dirty tree** before pull → stash, pull, pop stash.
+- **Rebase conflict** → abort, warn user, continue.
+- **No remote** → skip network ops, log warning.
+- **Nothing to commit** → skip commit, attempt push for any unpushed commits.
+- **Push failure** → warn user, leave commit local.
+
+## Config
+
+Vault path is in `~/ai-dotfiles/config/brain.env`:
+
+```bash
+BRAIN_PATH=/path/to/your/vault
+```
