@@ -10,6 +10,8 @@ Behavior (aligned with Vibe’s implementation):
 - The **system prompt** summarizes available skills (names + short descriptions).
 - When a task matches a listed skill, the agent calls **`skill`** with that skill’s **name**; the full `SKILL.md` body (instructions, workflows, bundled resources) is **injected into the conversation context**.
 
+**Slash commands:** skills marked **`user-invocable: true`** (including `brain-sync` and `brain-load` here) also appear as **`/brain-sync`** and **`/brain-load`**. That injection is the same idea as the **`skill`** tool. Neither runs shell by itself.
+
 In this repo, `brain-sync` and `brain-load` are wired via symlinks to `../../skills/<id>/` so sources are not duplicated.
 
 To actually **run** the sync/load scripts at the start of work, Vibe still needs the agent to execute bash — see root **`AGENTS.md`** in this repo (injected when the project folder is trusted).

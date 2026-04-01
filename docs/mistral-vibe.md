@@ -18,6 +18,8 @@ After discovery, skills show up for the agent as **`available_skills`** (summari
 
 The built-in **`skill`** tool takes a `name` argument: it loads that skill from the skill manager, reads `SKILL.md`, and **injects the content** into the thread so specialized instructions and workflows apply when the task fits that skill.
 
+**Slash commands:** with `user-invocable: true` in the skill frontmatter (the default in Vibe’s schema), you can type **`/brain-sync`** or **`/brain-load`** in the chat input. That loads the skill content into the conversation the same way — it does **not** execute `sync.sh` or `load.sh`; you still need a bash step (or ask the agent to run it).
+
 ## Layout in `ai-dotfiles`
 
 This repo exposes `brain-sync` and `brain-load` through **`.vibe/skills/`** as symlinks to `skills/brain-sync` and `skills/brain-load` (no duplicated files).

@@ -18,7 +18,7 @@ If the clone is not at `~/ai-dotfiles`, use the real path to `skills/brain-sync/
 
 ## 2. Optional: load full skill text
 
-For detailed procedures, use the **`skill`** tool with `brain-sync` and/or `brain-load` so the full `SKILL.md` is injected into context.
+Use either the **`skill`** tool (`name`: `brain-sync` / `brain-load`) **or** Mistral Vibe slash commands **`/brain-sync`** and **`/brain-load`** — both only **inject** the `SKILL.md` text; they do not run the shell scripts.
 
 ## 3. Session end
 

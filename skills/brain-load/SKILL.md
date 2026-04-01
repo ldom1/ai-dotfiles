@@ -1,6 +1,7 @@
 ---
 name: brain-load
 description: Load the current Local Brain project note into context; detect new projects, ask for a CAP to instantiate from the vault project template, and prime Claude with project context.
+user-invocable: true
 ---
 
 # brain-load
@@ -92,7 +93,9 @@ bash ~/ai-dotfiles/skills/brain-load/load.sh
 
 ## Manual trigger
 
-`/brain-load` — same as running `load.sh` from the project repo.
+**Mistral Vibe:** **`/brain-load`** injects this skill into the chat (same as **`skill`** with `name: brain-load`). Running **`load.sh`** still requires bash; the slash command does not execute the script by itself.
+
+**Direct script:** `bash ~/ai-dotfiles/skills/brain-load/load.sh` (adjust path to your clone; run from the project git root).
 
 ## CLAUDE.md
 

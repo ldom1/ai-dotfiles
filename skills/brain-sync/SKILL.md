@@ -1,6 +1,7 @@
 ---
 name: brain-sync
 description: Sync the Local Brain Obsidian vault (git repo) at the start and end of every Claude Code session. Pulls at session start, commits and pushes at session end.
+user-invocable: true
 ---
 
 # brain-sync
@@ -93,14 +94,9 @@ bash ~/ai-dotfiles/skills/brain-sync/sync.sh end
 
 ## Manual trigger
 
-You can also call the skill explicitly:
+**Mistral Vibe:** type **`/brain-sync`** (slash command menu or autocomplete). That **loads this skill into the thread** — same effect as the **`skill`** tool with `name: brain-sync`. Optional text after the command (e.g. `start` / `end`) is only extra context for the model; **git work still requires running `sync.sh`** (below) via bash.
 
-```
-/brain-sync start   # pull only
-/brain-sync end     # commit + push only
-```
-
-Or call the script directly:
+**Direct script:**
 
 ```bash
 bash ~/ai-dotfiles/skills/brain-sync/sync.sh start
