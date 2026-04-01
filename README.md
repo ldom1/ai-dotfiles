@@ -2,6 +2,33 @@
 
 Personal AI config for Claude Code and Cursor — synced across machines via symlinks.
 
+## Try the skills
+
+You can install the skills from this repo directly in Claude Code, claude.ai, or via the API.
+
+### Claude Code
+
+Register this repo as a plugin marketplace:
+
+```
+/plugin marketplace add ldom1/ai-dotfiles
+```
+
+Then install individual skills:
+
+```
+/plugin install brain-sync@ldom1/ai-dotfiles
+/plugin install brain-load@ldom1/ai-dotfiles
+```
+
+Or browse and install interactively:
+
+1. `/plugin marketplace add ldom1/ai-dotfiles`
+2. Select **Browse and install plugins**
+3. Select **ldom1/ai-dotfiles**
+4. Select the skill you want
+5. Select **Install now**
+
 ## Quick start
 
 ```bash
