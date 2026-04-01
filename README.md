@@ -29,6 +29,12 @@ Or browse and install interactively:
 4. Select the skill you want
 5. Select **Install now**
 
+### Mistral Vibe
+
+Skills are discovered from `.vibe/skills/` (and other [standard paths](https://docs.mistral.ai/mistral-vibe/agents-skills)). Vibe lists them as **`available_skills`**; the built-in **`skill`** tool loads a chosen skill’s `SKILL.md` into the conversation when the task matches.
+
+This repo wires `brain-sync` and `brain-load` into `.vibe/skills/` via symlinks to `skills/`. See [.vibe/README.md](.vibe/README.md) (how `skill` / `available_skills` work) and [docs/mistral-vibe.md](docs/mistral-vibe.md) (setup and config pitfalls).
+
 ## Quick start
 
 ```bash
@@ -52,8 +58,12 @@ ai-dotfiles/
 │       └── rtk-rewrite.sh           # Pre-tool hook: rewrites commands through rtk
 ├── .cursor/
 │   └── rules/                       # Cursor rules (.mdc files)
+├── .vibe/
+│   ├── README.md                    # Vibe: skill tool, available_skills, trust
+│   └── skills/                      # Symlinks → skills/* (Mistral Vibe discovery)
 ├── skills/
-│   └── brain-sync/                  # Sync Local Brain at session start/end
+│   ├── brain-sync/                  # Sync Local Brain at session start/end
+│   └── brain-load/                  # Load / instantiate Local Brain project notes
 ├── config/
 │   ├── brain.env.example            # Local Brain path template
 │   └── brain.env                    # Your config (gitignored)
@@ -94,6 +104,7 @@ Commit format: [docs/git-commits.md](docs/git-commits.md).
 |-----------|------|
 | Local Brain — Obsidian vault as persistent memory | [docs/local-brain.md](docs/local-brain.md) |
 | brain-sync — auto-sync vault at session start/end | [docs/brain-sync.md](docs/brain-sync.md) |
+| Mistral Vibe — skills, `skill` tool, `.vibe/skills/` | [docs/mistral-vibe.md](docs/mistral-vibe.md), [.vibe/README.md](.vibe/README.md) |
 | Git — commit message conventions | [docs/git-commits.md](docs/git-commits.md) |
 
 ## Dependencies
