@@ -33,7 +33,6 @@
 .cursor/sessions/
 .cursor/snapshots/
 .cursor/ide_state.json
-.cursor/mcp.json
 
 # Plugins — installed at runtime
 .claude/plugins/

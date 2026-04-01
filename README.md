@@ -59,7 +59,8 @@ ai-dotfiles/
 │   └── brain.env                    # Your config (gitignored)
 ├── docs/
 │   ├── local-brain.md               # Local Brain full setup guide
-│   └── brain-sync.md                # brain-sync skill documentation
+│   ├── brain-sync.md                # brain-sync skill documentation
+│   └── git-commits.md               # Commit message conventions
 ├── prompts/                         # Reusable prompts
 └── scripts/
     └── install.sh                   # Setup script
@@ -70,11 +71,13 @@ ai-dotfiles/
 Because `~/.claude` and `~/.cursor` are symlinks into this repo, all changes are tracked automatically.
 
 ```bash
-cd ~/ai-dotfiles && git add . && git commit -m "update" && git push
+cd ~/ai-dotfiles && git add . && git commit -m "feat(core): short imperative summary" && git push
 
 # On another machine:
 git pull && bash scripts/install.sh   # re-run only if settings.json.tpl changed
 ```
+
+Commit format: [docs/git-commits.md](docs/git-commits.md).
 
 ## Not tracked (machine-specific)
 
@@ -91,6 +94,7 @@ git pull && bash scripts/install.sh   # re-run only if settings.json.tpl changed
 |-----------|------|
 | Local Brain — Obsidian vault as persistent memory | [docs/local-brain.md](docs/local-brain.md) |
 | brain-sync — auto-sync vault at session start/end | [docs/brain-sync.md](docs/brain-sync.md) |
+| Git — commit message conventions | [docs/git-commits.md](docs/git-commits.md) |
 
 ## Dependencies
 

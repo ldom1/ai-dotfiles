@@ -11,13 +11,32 @@ The Local Brain is a git-backed Obsidian vault that serves as Claude's persisten
 
 ## Configuration
 
-The vault path is defined in `config/brain.env` relative to the ai-dotfiles repository root:
+`BRAIN_PATH` must be an **absolute path** to a **git** repository (your Obsidian vault). The script loads it from the **first match** in this order:
+
+1. **`BRAIN_ENV_FILE`** — path to a file containing `BRAIN_PATH=...`
+2. **`brain.env` beside `sync.sh`** — standalone (copy from `brain.env.example` in this folder)
+3. **`config/brain.env`** — full ai-dotfiles layout (`skills/brain-sync/sync.sh` → repo root `config/brain.env`)
 
 ```bash
 BRAIN_PATH=/path/to/your/vault
 ```
 
-The helper script is at `skills/brain-sync/sync.sh` in the ai-dotfiles repo.
+The helper script is `sync.sh` in this directory.
+
+## Standalone usage
+
+You can use **only** the **`brain-sync/`** folder without the rest of ai-dotfiles.
+
+1. Copy the directory (must include `sync.sh`).
+2. Add **`brain.env`** next to `sync.sh` with **`BRAIN_PATH`** set to your vault (must contain `.git`).
+3. Run:
+
+   ```bash
+   bash /path/to/brain-sync/sync.sh start   # pull / rebase
+   bash /path/to/brain-sync/sync.sh end     # commit + push
+   ```
+
+Or set **`BRAIN_ENV_FILE`** to your env file instead of using a local `brain.env`.
 
 ## Autonomous execution rules
 
@@ -68,6 +87,7 @@ bash ~/ai-dotfiles/skills/brain-sync/sync.sh end
 | Nothing to commit | Skip commit, attempt push |
 | Push failure | Warn user, leave commit local |
 | Script not found | Warn once, continue session |
+| No config file | Script exits with hint: `BRAIN_ENV_FILE`, local `brain.env`, or ai-dotfiles `config/brain.env` |
 
 ## Manual trigger
 
