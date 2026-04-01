@@ -1,131 +1,103 @@
 ---
 name: brain-load
-description: Load the current project brief from the Local Brain Obsidian vault into context at session start. Resolves the project slug automatically, reads the brief, and silently primes Claude with project context.
+description: Load the current Local Brain project note into context; detect new projects, ask for a CAP to instantiate from the vault project template, and prime Claude with project context.
 ---
 
 # brain-load
 
 ## Purpose
 
-Each project in Local Brain has a `brief.md` that captures its goal, stack, key decisions, current status, and open questions. This skill resolves the current project slug, locates the corresponding brief, and loads it into Claude's context — silently, without interrupting the user.
+Each codebase session maps to a **project slug** and a note in the Local Brain vault. This skill loads that note into context. If the project is **not** in the vault yet, you **must ask which CAP** (area of responsibility) to attach, then **instantiate** the note from the vault’s **`projects/_template.md`**.
+
+Vault layout this skill expects (PARA + caps):
+
+- **Project notes:** `projects/<slug>.md` (preferred — matches Obsidian `projects/` + `_template.md`)
+- **Legacy:** `Projects/<slug>/brief.md` (folder per project + `brief.md` from the skill template only)
+- **CAPs:** `caps/<name>.md` — long-term hats (e.g. `developer`, `entrepreneur`)
+
+## Questions — Cursor, Claude Code, and Claude (same skill)
+
+Asking for the CAP or for CAP fields does **not** require a shell script with `read` / `prompt`. The **assistant asks in the current conversation**; the **user answers in the next message** (Cursor agent chat, Claude Code, claude.ai, API, etc.). This SKILL is the single contract: follow it in whatever UI hosts the agent.
+
+- **One turn or several:** you may ask one field per message or send a short numbered form — whichever fits the thread.
+- **No silent defaults** for CAP choice or slug still applies everywhere.
 
 ## Configuration
 
-`BRAIN_PATH` must point at your Local Brain vault. The shell script loads it from the **first match** in this order:
+`BRAIN_PATH` via **`BRAIN_ENV_FILE`**, **`brain.env`** next to `load.sh`, or **ai-dotfiles `config/brain.env`** (see env resolution in script comments).
 
-1. **`BRAIN_ENV_FILE`** — absolute path to a file that contains `BRAIN_PATH=...` (optional override)
-2. **`brain.env` beside `load.sh`** — for standalone installs (copy from `brain.env.example` in this folder)
-3. **`config/brain.env`** — when this skill lives inside the full ai-dotfiles repo (`skills/brain-load/load.sh` → two levels up)
-
-Minimal file contents:
-
-```bash
-BRAIN_PATH=/path/to/your/vault
-```
-
-Project briefs live at:
-
-```
-$BRAIN_PATH/Projects/<slug>/brief.md
-```
-
-The helper script is `load.sh` in this directory.
-
-## Standalone usage
-
-You can use **only** this folder (`load.sh`, `templates/`, optional `brain.env`) without cloning all of ai-dotfiles.
-
-1. Copy or symlink the **`brain-load/`** directory wherever you want.
-2. Add **`brain.env`** next to `load.sh` (see `brain.env.example`) with a real **`BRAIN_PATH`** (absolute path to the vault).
-3. Run from your **project repository** (so slug resolution uses that repo’s `.brain-project`, git remote, or cwd):
-
-   ```bash
-   bash /path/to/brain-load/load.sh
-   ```
-
-Alternatively, set **`BRAIN_ENV_FILE`** to any file that defines `BRAIN_PATH`.
-
-To scaffold a missing brief, use the template at **`templates/brief.md`** in this same folder (next to `load.sh`).
+**Standalone:** copy this whole folder (`_brain_env.sh`, `load.sh`, `instantiate.sh`, `templates/`, optional `brain.env`). **`instantiate.sh` requires Python 3** (template substitution). The vault must contain **`projects/_template.md`**. If the user picks a **new** CAP, create **`caps/<name>.md`** first using **`templates/cap.md`** (see interview above).
 
 ## Slug resolution (priority order)
 
-Claude **must** resolve the project slug using this exact priority chain:
+Use this chain **before** treating the repo as “new”:
 
-1. **`.brain-project` file** at the repo root — read its first non-empty line as the slug (e.g. `artelys-hpc`)
-2. **Git remote** — run `git remote get-url origin`, extract the repository name (last path segment, strip `.git`)
-3. **Directory name** — use `basename "$PWD"` as the slug
-4. **Ask the user once** — if all three above are ambiguous or unavailable, ask: *"Which Local Brain project does this repo map to? (e.g. artelys-hpc)"* — then write the answer to `.brain-project` at the repo root
+1. **`.brain-project`** at git root — first non-empty line
+2. **Git remote `origin`** — repo name (`.git` stripped; SSH `git@host:org/repo.git` → `repo`)
+3. **Directory name** of cwd
+4. **Ask the user once** — then write `.brain-project`
 
-## Autonomous execution rules
+## Scripts (this skill directory)
 
-Claude Code **must** execute these steps automatically at session start, after brain-sync completes.
+| Script | Role |
+|--------|------|
+| `load.sh` | Resolve slug + `BRAIN_PATH`, print note body, or exit `2` with `PROJECT_NOTE_MISSING` |
+| `load.sh --slug-only` | Print `slug`, `note`, `mode`, `template_vault`, `caps_dir` (no exit 2) |
+| `load.sh --list-caps` | Print `cap:<id>` for each `caps/*.md` |
+| `instantiate.sh` | **`--cap <id>`** — copy `_template.md` → `projects/<slug>.md`, set `caps: [[caps/<id>]]`, update `.brain-project` |
+| `templates/cap.md` | Scaffold for a **new** `caps/<id>.md` when the user creates a missing CAP (interactive setup) |
 
-### Session start
+## Autonomous execution (session start)
 
-Run immediately after `brain-sync start`:
+Run **after** `brain-sync start`:
 
 ```bash
 bash ~/ai-dotfiles/skills/brain-load/load.sh
 ```
 
-**What it does:**
-1. Sources `brain.env` (see Configuration — resolution order) to get `BRAIN_PATH`
-2. Resolves the project slug using the priority chain above
-3. Reads `$BRAIN_PATH/Projects/<slug>/brief.md`
-4. Prints the brief content to stdout (captured by Claude as context)
+**If exit 0:** read stdout into context **silently** — do not announce unless the user asks.
 
-**After running the script, Claude must:**
-- Read the brief content into context silently
-- Do **not** summarize or acknowledge the brief to the user unless they ask
-- Do **not** announce that the brief was loaded
-- **Only** speak up in these two cases:
-  - Brief file not found → offer to create it from the template (see below)
-  - Slug is ambiguous and all auto-detection methods failed → ask the user once
+**If exit 2** — parse stderr for `PROJECT_NOTE_MISSING`:
 
-### If the brief doesn't exist
+- **`mode=para_missing`** (vault has `projects/_template.md` or a `projects/` dir):
+  1. Run `load.sh --list-caps` and **`ask the user which CAP`** this repo should use (one choice: `developer`, `entrepreneur`, … from the list).
+  2. **If the chosen CAP does not exist** (`caps/<id>.md` missing): do **not** fail silently. **In the conversation, run a short interview** (see *Questions — Cursor, Claude…* above) to create **`$BRAIN_PATH/caps/<id>.md`** from **`templates/cap.md`** in this skill (same folder as `load.sh`). Minimum fields to collect:
+     - **Identifiant fichier** (slug) — ASCII, no spaces, matches `caps/<id>.md` (e.g. `researcher`). Confirm it matches what they want for `instantiate.sh --cap`.
+     - **Titre affiché** — H1 / frontmatter `title` (e.g. `Researcher`).
+     - **Mission** — one line after `>` (long-term responsibility).
+     - **Objectifs** — bullet list (`- …`), can be a single bullet for MVP.
+     - **Ressources clés** — optional bullets (wiki links or paths); default `- _(à compléter)_` if empty.
+     Replace `{{DATE}}` with today (`YYYY-MM-DD`), then write the file under the vault.
+  3. After the CAP file exists, run:
+     ```bash
+     bash ~/ai-dotfiles/skills/brain-load/instantiate.sh --cap "<their-cap-id>"
+     ```
+     (from the **project git root** so slug/path resolve correctly; optional: `--slug` / `--path` overrides.)
+  4. Re-run `load.sh` and load the new project note into context.
 
-When `$BRAIN_PATH/Projects/<slug>/brief.md` is missing, Claude must offer:
+- **`mode=legacy_missing`** (no vault `projects/` layout): offer to create **`Projects/<slug>/brief.md`** from **`templates/brief.md`** in this skill (replace `{{PROJECT_SLUG}}`, `{{DATE}}`). No CAP in frontmatter for this path unless the user asks to align with vault conventions.
 
-> "No brief found for project **`<slug>`** in Local Brain. Want me to create one at `Projects/<slug>/brief.md`?"
+**Do not** pick a CAP silently — **always ask** when `para_missing`.
 
-If the user confirms, copy **`templates/brief.md`** from this skill directory (same folder as `load.sh`) to `$BRAIN_PATH/Projects/<slug>/brief.md`, replacing `{{PROJECT_SLUG}}` with the resolved slug and `{{DATE}}` with today's date (`YYYY-MM-DD`), then open the file for the user to fill in.
-
-## Edge case summary
+## Edge cases
 
 | Situation | Behavior |
-|---|---|
-| `.brain-project` present | Use it as slug, skip all other detection |
-| No git remote | Fall through to directory name |
-| Git remote is SSH (`git@github.com:org/repo.git`) | Extract `repo` as slug |
-| Brief exists | Load silently, no announcement |
-| Brief missing | Offer to create from template |
-| Slug ambiguous | Ask user once, write `.brain-project` |
-| Script not found | Warn once, continue session |
-| `BRAIN_PATH` not set | Warn once, skip brief loading |
-| No config file found | Script exits with hint: `BRAIN_ENV_FILE`, local `brain.env`, or ai-dotfiles `config/brain.env` |
+|-----------|----------|
+| Note exists (`para` or `legacy`) | Load silently |
+| `para_missing` | Ask CAP → `instantiate.sh` → reload |
+| `legacy_missing` | Offer skill `templates/brief.md` scaffold |
+| `caps/<cap>.md` missing | **Conversation interview** (not a TTY script), write `caps/<id>.md` from **`templates/cap.md`**, then **`instantiate.sh`** |
+| Ambiguous slug | Ask once, write `.brain-project` |
+| Script / missing `BRAIN_PATH` | Warn once, skip |
 
 ## Manual trigger
 
-```
-/brain-load          # resolve slug + load brief
-```
+`/brain-load` — same as running `load.sh` from the project repo.
 
-Or directly:
-
-```bash
-bash ~/ai-dotfiles/skills/brain-load/load.sh
-```
-
-## CLAUDE.md snippet
-
-Add this line to your project or global `CLAUDE.md` after the brain-sync line, so the brief is loaded each session:
+## CLAUDE.md
 
 ```
 @../skills/brain-load/SKILL.md
 ```
 
-Or if using the global `~/.claude/CLAUDE.md`:
-
-```
-@~/ai-dotfiles/skills/brain-load/SKILL.md
-```
+Global: `@~/ai-dotfiles/skills/brain-load/SKILL.md`

@@ -1,0 +1,22 @@
+---
+description: Load Local Brain project context; for new projects ask which CAP and instantiate from vault template.
+alwaysApply: true
+---
+
+# brain-load
+
+After **brain-sync** `start`, run:
+
+```bash
+bash ~/ai-dotfiles/skills/brain-load/load.sh
+```
+
+- **Exit 0:** use printed note in context; **stay silent** (no “brief loaded” unless the user asks).
+- **Exit 2** and stderr contains `PROJECT_NOTE_MISSING` with **`mode=para_missing`**:
+  1. Run `bash ~/ai-dotfiles/skills/brain-load/load.sh --list-caps`.
+  2. **Ask the user which CAP** to use — do **not** choose for them.
+  3. If that CAP has **no** `caps/<id>.md` in the vault: **ask in this chat** (same turn-by-turn pattern as Claude Code / Claude — not a shell `read` loop): slug, titre, mission, objectifs, ressources; then write **`$BRAIN_PATH/caps/<id>.md`** from **`skills/brain-load/templates/cap.md`** (see SKILL.md).
+  4. Run `bash ~/ai-dotfiles/skills/brain-load/instantiate.sh --cap "<id>"` from the project repository root, then `load.sh` again.
+- **`mode=legacy_missing`:** offer creating `Projects/<slug>/brief.md` from `skills/brain-load/templates/brief.md` (see SKILL.md).
+
+Full rules: `skills/brain-load/SKILL.md`.
