@@ -1,6 +1,6 @@
 # ai-dotfiles
 
-Personal AI config for Claude Code and Cursor — synced across machines via symlinks.
+Personal AI config for Claude Code, Cursor, and Mistral Vibe — synced across machines via symlinks. Repository docs are in **English**.
 
 ## Try the skills
 
@@ -70,6 +70,7 @@ ai-dotfiles/
 ├── docs/
 │   ├── local-brain.md               # Local Brain full setup guide
 │   ├── brain-sync.md                # brain-sync skill documentation
+│   ├── mistral-vibe.md              # Mistral Vibe skills and config
 │   └── git-commits.md               # Commit message conventions
 ├── prompts/                         # Reusable prompts
 └── scripts/

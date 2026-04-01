@@ -62,11 +62,11 @@ bash ~/ai-dotfiles/skills/brain-load/load.sh
 - **`mode=para_missing`** (vault has `projects/_template.md` or a `projects/` dir):
   1. Run `load.sh --list-caps` and **`ask the user which CAP`** this repo should use (one choice: `developer`, `entrepreneur`, … from the list).
   2. **If the chosen CAP does not exist** (`caps/<id>.md` missing): do **not** fail silently. **In the conversation, run a short interview** (see *Questions — Cursor, Claude…* above) to create **`$BRAIN_PATH/caps/<id>.md`** from **`templates/cap.md`** in this skill (same folder as `load.sh`). Minimum fields to collect:
-     - **Identifiant fichier** (slug) — ASCII, no spaces, matches `caps/<id>.md` (e.g. `researcher`). Confirm it matches what they want for `instantiate.sh --cap`.
-     - **Titre affiché** — H1 / frontmatter `title` (e.g. `Researcher`).
+     - **File id** (slug) — ASCII, no spaces, matches `caps/<id>.md` (e.g. `researcher`). Confirm it matches what they want for `instantiate.sh --cap`.
+     - **Display title** — H1 / frontmatter `title` (e.g. `Researcher`).
      - **Mission** — one line after `>` (long-term responsibility).
-     - **Objectifs** — bullet list (`- …`), can be a single bullet for MVP.
-     - **Ressources clés** — optional bullets (wiki links or paths); default `- _(à compléter)_` if empty.
+     - **Objectives** — bullet list (`- …`), can be a single bullet for MVP.
+     - **Key resources** — optional bullets (wiki links or paths); default `- _(to complete)_` if empty.
      Replace `{{DATE}}` with today (`YYYY-MM-DD`), then write the file under the vault.
   3. After the CAP file exists, run:
      ```bash

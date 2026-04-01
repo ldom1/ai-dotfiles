@@ -5,18 +5,18 @@ tags: [caps]
 status: active
 ---
 
-# CAPS — {{CAP_TITLE}}
+# CAP — {{CAP_TITLE}}
 
 > {{CAP_MISSION}}
 
-## Objectifs
+## Objectives
 
 {{CAP_OBJECTIVES}}
 
-## Projets liés
+## Related projects
 
-_(backlinks automatiques via Obsidian)_
+_(Obsidian backlinks)_
 
-## Ressources clés
+## Key resources
 
 {{CAP_RESOURCES}}

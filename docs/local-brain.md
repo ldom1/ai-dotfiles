@@ -56,7 +56,7 @@ Update `.claude/LocalBrain.md` with your username:
 ```
 - Vault (WSL) : /mnt/c/Users/<you>/Documents/Local Brain/
 - Vault (Windows) : C:\Users\<you>\Documents\Local Brain
-- Mémoire Claude : /home/<you>/.claude/projects/-home-<you>/memory/
+- Claude memory : `/home/<you>/.claude/projects/-home-<you>/memory/`
 ```
 
 Done. Claude will automatically read `IDENTITY.md`, `breadcrumbs.md`, and `docs/memory/MEMORY.md` at the start of every session.

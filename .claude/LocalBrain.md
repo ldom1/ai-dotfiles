@@ -1,85 +1,91 @@
-# Local Brain — Centre névralgique
+# Local Brain — hub
 
-**Local Brain est la source de vérité unique pour toutes les sessions Claude.**
+**Local Brain is the single source of truth for every Claude session.**
 
-## Paths
+## Paths (customize)
 
-- Vault (WSL) : `/mnt/c/Users/louis/Documents/Local Brain/`
-- Vault (Windows) : `C:\Users\louis\Documents\Local Brain`
-- Mémoire Claude : `/home/lgiron/.claude/projects/-home-lgiron/memory/` (symlink → vault `docs/memory/`)
+1. Set `BRAIN_PATH` in `~/ai-dotfiles/config/brain.env` to your vault’s absolute path.
+2. Keep the list below in sync with that vault so session-start reads stay explicit.
 
-## Démarrage de session obligatoire
+| Role | Path |
+|------|------|
+| Vault root | `$BRAIN_PATH` (examples: WSL `/mnt/c/Users/<you>/Documents/Local Brain/`, Windows `C:\Users\<you>\Documents\Local Brain`, macOS `/Users/<you>/Documents/Local Brain`) |
+| Claude memory (symlink) | `~/.claude/projects/<claude-project-dir>/memory` → should point at `$BRAIN_PATH/docs/memory/` (see [docs/local-brain.md](../docs/local-brain.md)) |
 
-Au début de chaque session, lire dans l'ordre :
-1. `/mnt/c/Users/louis/Documents/Local Brain/IDENTITY.md` — qui est l'utilisateur
-2. `/mnt/c/Users/louis/Documents/Local Brain/breadcrumbs.md` — contexte rapide L2
-3. `/mnt/c/Users/louis/Documents/Local Brain/docs/memory/MEMORY.md` — mémoire persistante
+## Mandatory session start
 
-Si un projet spécifique est mentionné, lire aussi sa fiche dans `projects/`.
+At the beginning of each session, read in order:
 
-## Règles de stockage
+1. `$BRAIN_PATH/IDENTITY.md` — who the user is  
+2. `$BRAIN_PATH/breadcrumbs.md` — quick L2 context  
+3. `$BRAIN_PATH/docs/memory/MEMORY.md` — persistent memory  
 
-Toute information découverte durant une session **doit** être stockée dans Local Brain :
+If a specific project is in scope, also read its note under `projects/`.
 
-| Type d'information | Où stocker |
-|---|---|
-| Décision technique, architecture | `resources/knowledge/architecture/` |
-| Spec / design doc | `resources/knowledge/architecture/specs/YYYY-MM-DD-nom.md` |
-| Plan d'implémentation (superpowers) | `resources/knowledge/architecture/plans/YYYY-MM-DD-nom.md` |
-| ADR (Architecture Decision Record) | `resources/knowledge/architecture/adr/` |
-| Pattern réutilisable | `resources/knowledge/patterns/` |
-| Doc outil / setup | `resources/knowledge/operational/` |
-| SOP, procédure | `resources/knowledge/sops/` |
-| Projet actif | `projects/<nom>.md` |
-| Idée / opportunité | `caps/entrepreneur.md` ou `todo/` |
-| Note de session | `daily/YYYY-MM-DD.md` |
-| Mémoire persistante Claude | `docs/memory/MEMORY.md` |
-| Contexte de session | `docs/context/session-YYYY-MM-DD.md` |
+## Where to store information
 
-## Superpowers — Plans & Specs dans Local Brain
+Anything learned in a session **must** be stored in Local Brain:
 
-Quand les skills superpowers créent des artefacts (plans, specs, ADRs), ils vont dans Local Brain :
+| Information type | Where |
+|------------------|--------|
+| Technical decision, architecture | `resources/knowledge/architecture/` |
+| Spec / design doc | `resources/knowledge/architecture/specs/YYYY-MM-DD-name.md` |
+| Implementation plan (superpowers) | `resources/knowledge/architecture/plans/YYYY-MM-DD-name.md` |
+| ADR | `resources/knowledge/architecture/adr/` |
+| Reusable pattern | `resources/knowledge/patterns/` |
+| Tool / setup doc | `resources/knowledge/operational/` |
+| SOP, procedure | `resources/knowledge/sops/` |
+| Active project | `projects/<name>.md` |
+| Idea / opportunity | `caps/entrepreneur.md` or `todo/` |
+| Session note | `daily/YYYY-MM-DD.md` |
+| Claude persistent memory | `docs/memory/MEMORY.md` |
+| Session context | `docs/context/session-YYYY-MM-DD.md` |
 
-- **`superpowers:writing-plans`** → créer le plan dans `resources/knowledge/architecture/plans/YYYY-MM-DD-<nom>.md`
-- **`superpowers:brainstorming`** → si un design/spec émerge, le sauvegarder dans `resources/knowledge/architecture/specs/`
-- **Après implémentation** → mettre à jour le statut du plan et la fiche projet dans `projects/`
-- **Ne jamais** créer des plans/specs dans `~/docs/superpowers/` ou dans des dossiers `docs/` de projet — tout va dans Local Brain
+## Superpowers — plans and specs in Local Brain
 
-**Chemin vault pour superpowers :**
+When superpowers skills produce artifacts (plans, specs, ADRs), they belong in the vault:
+
+- **`superpowers:writing-plans`** → create the plan at `resources/knowledge/architecture/plans/YYYY-MM-DD-<name>.md`
+- **`superpowers:brainstorming`** → if a design/spec emerges, save it under `resources/knowledge/architecture/specs/`
+- **After implementation** → update plan status and the project note in `projects/`
+- **Never** put plans/specs only in `~/docs/superpowers/` or a repo’s `docs/` — the vault is the canonical place
+
+**Vault path for superpowers artifacts:**
+
 ```
-/mnt/c/Users/louis/Documents/Local Brain/resources/knowledge/architecture/
-├── plans/          ← plans d'implémentation
-├── specs/          ← design docs, specs techniques
+$BRAIN_PATH/resources/knowledge/architecture/
+├── plans/          ← implementation plans
+├── specs/          ← design docs, technical specs
 └── adr/            ← Architecture Decision Records
 ```
 
-## Règles de mise à jour
+## Update rules
 
-- **breadcrumbs.md** : mettre à jour si un nouveau projet démarre, une ressource clé est créée
-- **MEMORY.md** : mettre à jour avec les faits importants persistants entre sessions
-- **Liens** : toujours créer des `[[wiki-links]]` entre les notes liées
-- **Frontmatter** : chaque note a `title`, `created`, `tags`, `status`
+- **breadcrumbs.md** — refresh when a new project starts or a key resource appears  
+- **MEMORY.md** — add durable facts that should carry across sessions  
+- **Links** — use `[[wiki-links]]` between related notes  
+- **Frontmatter** — prefer `title`, `created`, `tags`, `status` on notes  
 
-## Structure PARA
+## PARA layout
 
 ```
 Local Brain/
-├── IDENTITY.md             ← L1 : profil utilisateur
-├── breadcrumbs.md          ← L2 : index rapide
-├── daily/                  ← capture quotidienne
-├── projects/               ← actions court terme
-├── caps/                   ← responsabilités long terme
+├── IDENTITY.md             ← L1: user profile
+├── breadcrumbs.md          ← L2: quick index
+├── daily/                  ← daily capture
+├── projects/               ← short-horizon actions
+├── caps/                   ← long-term areas of responsibility
 │   ├── developer.md
 │   ├── student.md
 │   └── entrepreneur.md
-├── resources/knowledge/    ← L3 : docs profondes
+├── resources/knowledge/    ← L3: deep reference
 │   ├── architecture/
 │   ├── patterns/
-│   ├── operational/        ← lab, claude, mcps, rtk...
+│   ├── operational/        ← lab, Claude, MCPs, RTK…
 │   └── sops/
-├── docs/                   ← fichiers Claude
-│   ├── memory/MEMORY.md    ← L1 mémoire
-│   └── context/            ← contexte session
+├── docs/                   ← Claude-oriented files
+│   ├── memory/MEMORY.md    ← L1 memory
+│   └── context/            ← session context
 ├── todo/
 └── archive/
 ```

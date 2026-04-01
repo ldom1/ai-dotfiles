@@ -1,21 +1,21 @@
-# Mistral Vibe — ce dépôt
+# Mistral Vibe
 
-## Skills et outil `skill`
+## Skills and the `skill` tool
 
-Vibe découvre les skills sur disque (dont ce dossier `.vibe/skills/`), construit la liste **`available_skills`**, et expose l’outil **`skill`**.
+Vibe discovers skills on disk (including this `.vibe/skills/` tree), builds the **`available_skills`** list, and exposes the built-in **`skill`** tool.
 
-Comportement (aligné sur l’implémentation Vibe) :
+Behavior (aligned with Vibe’s implementation):
 
-- Les chemins parcourus incluent notamment `~/.vibe/skills/`, les dossiers projet `.vibe/skills/`, et les entrées **`skill_paths`** du `config.toml` actif.
-- Le **prompt système** mentionne les skills disponibles (noms + descriptions courtes).
-- Quand une tâche correspond à un skill listé, l’agent appelle l’outil **`skill`** avec le **nom** du skill : le contenu complet du `SKILL.md` (instructions, workflows, ressources) est alors **injecté dans le contexte** de la conversation.
+- Search roots include `~/.vibe/skills/`, project `.vibe/skills/` directories, and **`skill_paths`** entries in the **active** `config.toml`.
+- The **system prompt** summarizes available skills (names + short descriptions).
+- When a task matches a listed skill, the agent calls **`skill`** with that skill’s **name**; the full `SKILL.md` body (instructions, workflows, bundled resources) is **injected into the conversation context**.
 
-Ici, `brain-sync` et `brain-load` sont exposés via des liens symboliques vers `../../skills/<id>/` pour ne pas dupliquer les sources.
+In this repo, `brain-sync` and `brain-load` are wired via symlinks to `../../skills/<id>/` so sources are not duplicated.
 
-## Confiance dossier
+## Trusted folder
 
-Le dépôt doit être **trusted** dans Vibe, et tu dois lancer Vibe avec ce dossier comme répertoire de travail (souvent `cd` dans le clone puis `vibe`), pour que `.vibe/skills/` soit pris en compte dans la découverte projet.
+The clone must be **trusted** in Vibe, and you should run Vibe with this directory as the working tree (typically `cd` into the clone, then `vibe`), so project discovery picks up `.vibe/skills/`.
 
-## Ne pas écraser ta config globale
+## Do not wipe your global config
 
-Si tu ajoutes un **`.vibe/config.toml` à la racine du projet**, Vibe peut le charger **à la place** de `~/.vibe/config.toml` lorsque le dossier est trusted — ce qui supprimerait modèles / providers globaux. Pour n’ajouter que des skills, préfère ce répertoire `.vibe/skills/` (ou des `skill_paths` absolus dans **`~/.vibe/config.toml`**).
+If you add **`.vibe/config.toml` at the project root**, Vibe may load it **instead of** `~/.vibe/config.toml` while the folder is trusted — which drops your global models/providers. To add skills only, prefer this `.vibe/skills/` layout (or absolute paths in **`skill_paths`** inside **`~/.vibe/config.toml`**).
