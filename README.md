@@ -35,7 +35,7 @@ Skills are discovered from `.vibe/skills/` (and other [standard paths](https://d
 
 This repo wires `brain-sync` and `brain-load` into `.vibe/skills/` via symlinks to `skills/`. See [.vibe/README.md](.vibe/README.md) (how `skill` / `available_skills` work) and [docs/mistral-vibe.md](docs/mistral-vibe.md) (setup and config pitfalls).
 
-**Session start:** Vibe does not auto-run shell. Root [`AGENTS.md`](AGENTS.md) tells the agent to run `brain-sync` / `brain-load` before substantive work; that only applies if the working directory is trusted and the model follows the file. Details: [docs/mistral-vibe.md](docs/mistral-vibe.md) (*Brain-sync / brain-load at session start*).
+**Session start:** Vibe does not auto-run shell. Instructions live in [`.vibe/AGENTS.md`](.vibe/AGENTS.md); root [`AGENTS.md`](AGENTS.md) is a **symlink** so Vibe’s loader (which only looks for `AGENTS.md` on cwd → trust root, not under `.vibe/` alone) still finds them. Details: [docs/mistral-vibe.md](docs/mistral-vibe.md) (*Brain-sync / brain-load at session start*).
 
 ## Quick start
 
@@ -50,7 +50,7 @@ bash ~/ai-dotfiles/scripts/install.sh
 
 ```
 ai-dotfiles/
-├── AGENTS.md                        # Mistral Vibe: brain-sync / brain-load bootstrap
+├── AGENTS.md                        # symlink → .vibe/AGENTS.md (Vibe discovery)
 ├── .claude/
 │   ├── CLAUDE.md                    # Global instructions (@-includes RTK, LocalBrain, skills)
 │   ├── LocalBrain.md                # Local Brain vault instructions
@@ -62,6 +62,7 @@ ai-dotfiles/
 ├── .cursor/
 │   └── rules/                       # Cursor rules (.mdc files)
 ├── .vibe/
+│   ├── AGENTS.md                    # Mistral Vibe + agent bootstrap (canonical)
 │   ├── README.md                    # Vibe: skill tool, available_skills, trust
 │   └── skills/                      # Symlinks → skills/* (Mistral Vibe discovery)
 ├── skills/

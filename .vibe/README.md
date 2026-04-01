@@ -14,7 +14,7 @@ Behavior (aligned with Vibe’s implementation):
 
 In this repo, `brain-sync` and `brain-load` are wired via symlinks to `../../skills/<id>/` so sources are not duplicated.
 
-To actually **run** the sync/load scripts at the start of work, Vibe still needs the agent to execute bash — see root **`AGENTS.md`** in this repo (injected when the project folder is trusted).
+To actually **run** the sync/load scripts at the start of work, Vibe still needs the agent to execute bash — see **`AGENTS.md`** in this folder (canonical). The repo root has a **symlink** `AGENTS.md` → `.vibe/AGENTS.md` because Vibe only loads `AGENTS.md` on the cwd → trust-root path, not by scanning `.vibe/`.
 
 ## Trusted folder
 

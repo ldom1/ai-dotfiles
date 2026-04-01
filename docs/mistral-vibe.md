@@ -33,12 +33,13 @@ Typical requirements:
 
 Vibe has **no** Cursor-style hook that runs shell when a session opens. The **`skill`** tool only **loads text** into the thread when the model calls it; it does not execute `sync.sh` or `load.sh` by itself.
 
-To make startup explicit for this repo, use root **`AGENTS.md`**: Vibe merges `AGENTS.md` files from the current working directory up to the [trusted-folder](https://docs.mistral.ai/mistral-vibe/introduction/configuration) root into the system prompt (when project context is enabled). That file instructs the agent to run `brain-sync` / `brain-load` **before the first substantive action**.
+To make startup explicit for this repo, edit **`.vibe/AGENTS.md`** (canonical). Vibe merges **`AGENTS.md`** files from the **current working directory upward** to the [trusted-folder](https://docs.mistral.ai/mistral-vibe/introduction/configuration) root — it does **not** look for `AGENTS.md` only inside `.vibe/`. This repo therefore keeps a **symlink** `AGENTS.md` at the repository root pointing to `.vibe/AGENTS.md` so the loader sees the same content when your cwd is the clone root.
 
 If nothing runs on a new session, check:
 
 - **CWD** — start Vibe from the repo you care about (`cd …/ai-dotfiles` then `vibe`, or equivalent).
-- **Trust** — the folder must be trusted; otherwise project `AGENTS.md` may not load.
+- **Trust** — the folder must be trusted; otherwise project instructions from `AGENTS.md` may not load.
+- **Symlink** — on Windows, enable `git config core.symlinks true` before checkout if root `AGENTS.md` must point at `.vibe/AGENTS.md`; otherwise duplicate or copy the file at the root.
 - **Model behavior** — the model must still **invoke bash**; instructions are not executed by the runtime automatically.
 
 You can also paste “run brain-sync start and brain-load” as your first message.
