@@ -98,5 +98,5 @@ if [[ "$NOTE_MODE" == "para" || "$NOTE_MODE" == "legacy" ]]; then
 fi
 
 echo "[brain-load] MISSING: no project note for slug **$SLUG** (mode=$NOTE_MODE)" >&2
-echo "[brain-load] PROJECT_NOTE_MISSING mode=$NOTE_MODE slug=$SLUG note=$NOTE_PATH template_vault=$TEMPLATE_VAULT template_skill=$SKILL_BRIEF_TEMPLATE caps_dir=$CAPS_DIR"
+echo "[brain-load] PROJECT_NOTE_MISSING mode=$NOTE_MODE slug=$SLUG note=$NOTE_PATH template_vault=$TEMPLATE_VAULT template_skill=$SKILL_BRIEF_TEMPLATE caps_dir=$CAPS_DIR" >&2
 exit 2

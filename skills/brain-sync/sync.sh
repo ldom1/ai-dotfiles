@@ -60,13 +60,21 @@ cmd_start() {
 
   # Pull with rebase
   if ! git pull --rebase origin "$(git rev-parse --abbrev-ref HEAD)" 2>&1; then
-    echo "[brain-sync] ERROR: rebase conflict detected." >&2
-    git rebase --abort 2>/dev/null || true
-    if $stashed; then
-      git stash pop || true
+    if git rev-parse --verify -q REBASE_HEAD &>/dev/null || [[ -d .git/rebase-merge ]] || [[ -d .git/rebase-apply ]]; then
+      echo "[brain-sync] ERROR: rebase conflict detected." >&2
+      git rebase --abort 2>/dev/null || true
+      if $stashed; then
+        git stash pop || true
+      fi
+      echo "[brain-sync] Rebase aborted. Brain is at its last clean state." >&2
+      echo "[brain-sync] ACTION REQUIRED: resolve conflicts in $BRAIN_PATH manually." >&2
+    else
+      echo "[brain-sync] ERROR: git pull failed (network, permissions on .git, or remote)." >&2
+      if $stashed; then
+        git stash pop || true
+      fi
+      echo "[brain-sync] Fix access to $BRAIN_PATH or run git pull manually, then retry." >&2
     fi
-    echo "[brain-sync] Rebase aborted. Brain is at its last clean state." >&2
-    echo "[brain-sync] ACTION REQUIRED: resolve conflicts in $BRAIN_PATH manually." >&2
     return 1
   fi
 

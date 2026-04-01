@@ -15,7 +15,7 @@ At the beginning of every conversation, run:
 bash ~/ai-dotfiles/skills/brain-sync/sync.sh start
 ```
 
-This pulls the latest remote changes (with rebase). If there is a conflict, abort the rebase and warn the user. If there is no remote, skip silently.
+This pulls the latest remote changes (with rebase). If a rebase conflict occurs, abort the rebase and warn the user. If pull fails for another reason (network, `.git` permissions), warn without claiming a conflict. If there is no remote, skip pull and log a short warning.
 
 ## Session end
 
@@ -31,6 +31,7 @@ This stages all changes, creates a commit `brain: session sync <timestamp>`, and
 
 - **Dirty tree** before pull → stash, pull, pop stash.
 - **Rebase conflict** → abort, warn user, continue.
+- **Pull failed (not a rebase)** → restore pre-pull stash if any; warn user.
 - **No remote** → skip network ops, log warning.
 - **Nothing to commit** → skip commit, attempt push for any unpushed commits.
 - **Push failure** → warn user, leave commit local.

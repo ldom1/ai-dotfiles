@@ -56,8 +56,9 @@ bash ~/ai-dotfiles/skills/brain-sync/sync.sh start
 - Re-applies the stash
 
 **If it fails:**
-- Rebase conflict → rebase is aborted, brain stays at last clean state. Warn the user with: "brain-sync: pull conflict — brain is at its last clean commit. Please resolve manually in $BRAIN_PATH."
-- No remote → skip pull silently, log a warning, continue session normally.
+- Rebase conflict (in-progress rebase after pull) → rebase is aborted, brain stays at last clean state. Warn the user to resolve manually in `$BRAIN_PATH`.
+- Other `git pull` failure (permissions, network, remote) → stash is restored if one was made; warn to fix access or pull manually — do **not** label it a rebase conflict.
+- No remote → skip pull, log a warning, continue session normally.
 - Script not found → warn the user once, then continue session.
 
 ### Session end (PostSession)
@@ -83,6 +84,7 @@ bash ~/ai-dotfiles/skills/brain-sync/sync.sh end
 |---|---|
 | Dirty tree at pull | Stash → pull → pop |
 | Rebase conflict | Abort rebase, warn user, continue |
+| Pull failed (no rebase state) | Restore stash if any, warn (permissions/network/etc.) |
 | No remote | Skip network ops, log warning |
 | Nothing to commit | Skip commit, attempt push |
 | Push failure | Warn user, leave commit local |
