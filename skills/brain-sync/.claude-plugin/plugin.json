@@ -1,0 +1,10 @@
+{
+  "name": "brain-sync",
+  "version": "1.0.0",
+  "description": "Sync your Local Brain (Obsidian vault) at session start and end via git pull/push",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles"
+}
