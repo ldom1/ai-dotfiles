@@ -40,6 +40,10 @@ Persistent memory = Local Brain vault at $BRAIN_PATH.
 
 Adjust paths if your clone is not at ~/ai-dotfiles.
 
+## Pitfall registry
+
+`$BRAIN_PATH/resources/knowledge/operational/claude-pitfalls.md` — read before substantive implementation or debugging; treat entries as hard constraints. When the user corrects a mistake, append a short bullet (newest first): context → what was wrong → what to do instead. (Cursor: rule `claude-pitfall.mdc`.)
+
 ## Development
 
 Occam’s razor (lex parsimoniae): When several approaches are plausible, prefer the one with fewer assumptions and smaller surface area. Favor structured, simple, human-readable code; avoid spaghetti.
