@@ -1,0 +1,24 @@
+---
+description: Local Brain pitfall registry — mistakes the assistant must not repeat; read and update claude-pitfalls.md in the vault.
+alwaysApply: true
+---
+
+# claude-pitfall
+
+**Canonical list:** `$BRAIN_PATH/resources/knowledge/operational/claude-pitfalls.md`
+
+Resolve `BRAIN_PATH` from `~/ai-dotfiles/config/brain.env` (or `config/brain.env` in the ai-dotfiles repo). If missing, ask the user once.
+
+## Before substantive work
+
+- **Read** `claude-pitfalls.md` when the task is **implementation, debugging, refactors, shell/git, or config** — skim the **Registry** for bullets that match the area (paths, stack, tools).
+- Apply matching entries as **hard constraints**, not suggestions.
+
+## When the user corrects a mistake
+
+- **Append** a new bullet to the **Registry** (newest first): short **context**, what was **wrong**, what to **do instead**.
+- If the lesson belongs in project-specific docs only, still add a **one-line** pitfall here when it could recur across sessions.
+
+## Completion
+
+- Before claiming **done / fixed / passing**, re-check **Registry** for anything that applies to the changed surface.
