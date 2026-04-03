@@ -52,15 +52,16 @@ bash ~/ai-dotfiles/scripts/install.sh
 ai-dotfiles/
 ├── AGENTS.md                        # symlink → .vibe/AGENTS.md (Vibe discovery)
 ├── .claude/
-│   ├── CLAUDE.md                    # Global instructions (@-includes RTK, LocalBrain, skills)
-│   ├── LocalBrain.md                # Local Brain vault instructions
-│   ├── RTK.md                       # RTK token-saving proxy instructions
+│   ├── CLAUDE.md                    # Short global instructions (no heavy @-includes)
+│   ├── LocalBrain.md                # Short pointer to vault layout
+│   ├── RTK.md                       # Short RTK reference (full doc in vault)
+│   ├── skills/create-pr/            # /create-pr — gh + ai-dotfiles commit conventions
 │   ├── settings.json.tpl            # Settings template (HOME placeholder)
 │   ├── settings.local.json.example  # Machine-specific permissions template
 │   └── hooks/
-│       └── rtk-rewrite.sh           # Pre-tool hook: rewrites commands through rtk
+│       └── rtk-rewrite.sh           # PreToolUse Bash: rtk rewrite + FinOps tail on noisy cmds
 ├── .cursor/
-│   └── rules/                       # Cursor rules (.mdc files)
+│   └── rules/                       # brain-sync, brain-load, finops-claude (.mdc)
 ├── .vibe/
 │   ├── AGENTS.md                    # Mistral Vibe + agent bootstrap (canonical)
 │   ├── README.md                    # Vibe: skill tool, available_skills, trust
