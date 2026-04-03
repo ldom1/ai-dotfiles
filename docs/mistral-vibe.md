@@ -20,9 +20,9 @@ The built-in **`skill`** tool takes a `name` argument: it loads that skill from 
 
 **Slash commands:** with `user-invocable: true` in the skill frontmatter (the default in Vibe’s schema), you can type **`/brain-sync`** or **`/brain-load`** in the chat input. That loads the skill content into the conversation the same way — it does **not** execute `sync.sh` or `load.sh`; you still need a bash step (or ask the agent to run it).
 
-## Layout in `ai-dotfiles`
+## Layout in this repository
 
-This repo exposes `brain-sync` and `brain-load` through **`.vibe/skills/`** as symlinks to `skills/brain-sync` and `skills/brain-load` (no duplicated files).
+Every skill under **`skills/<name>/`** with a `SKILL.md` is symlinked from **`.vibe/skills/<name>`** (and from **`.claude/skills/<name>`** for Claude Code). See [skills.md](skills.md).
 
 Typical requirements:
 

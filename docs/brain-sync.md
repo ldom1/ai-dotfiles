@@ -9,7 +9,8 @@ Syncs the Local Brain vault (git repo) at the start and end of every Claude Code
 | Session start | `git pull --rebase` |
 | Session end | `git add -A && git commit && git push` |
 
-Both Claude Code and Cursor trigger this automatically via their respective config files.
+- **Cursor:** `.cursor/rules/brain-sync.mdc` tells the agent to run `sync.sh` at session start/end.
+- **Claude Code:** the **`brain-sync`** skill (`skills/brain-sync/`, symlinked as `~/.claude/skills/brain-sync`) documents the same workflow; invoke `/brain-sync` or rely on `CLAUDE.md` + your habits. See [skills.md](skills.md) for symlink layout.
 
 ## Setup
 
@@ -39,10 +40,15 @@ bash ~/ai-dotfiles/skills/brain-sync/sync.sh end     # commit + push
 
 ```
 skills/brain-sync/
-├── SKILL.md    ← Claude Code skill definition
+├── SKILL.md    ← skill source (Claude Code + Vibe via symlinks)
 └── sync.sh     ← bash helper (start / end subcommands)
+
+.claude/skills/brain-sync  → ../../skills/brain-sync   (Claude Code)
+.vibe/skills/brain-sync   → ../../skills/brain-sync   (Mistral Vibe)
 
 config/
 ├── brain.env.example   ← template (tracked)
 └── brain.env           ← your config (gitignored)
 ```
+
+`scripts/install.sh` recreates the skill symlinks for every `skills/*/SKILL.md`.

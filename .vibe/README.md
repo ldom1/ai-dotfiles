@@ -12,7 +12,7 @@ Behavior (aligned with Vibe’s implementation):
 
 **Slash commands:** skills marked **`user-invocable: true`** (including `brain-sync` and `brain-load` here) also appear as **`/brain-sync`** and **`/brain-load`**. That injection is the same idea as the **`skill`** tool. Neither runs shell by itself.
 
-In this repo, `brain-sync` and `brain-load` are wired via symlinks to `../../skills/<id>/` so sources are not duplicated.
+In this repo, every skill under `skills/<name>/` (with `SKILL.md`) is linked from `.vibe/skills/<name>` → `../../skills/<name>/`. Same links exist under `.claude/skills/` for Claude Code. See [docs/skills.md](../docs/skills.md).
 
 To actually **run** the sync/load scripts at the start of work, Vibe still needs the agent to execute bash — see **`AGENTS.md`** in this folder (canonical). The repo root has a **symlink** `AGENTS.md` → `.vibe/AGENTS.md` because Vibe only loads `AGENTS.md` on the cwd → trust-root path, not by scanning `.vibe/`.
 
