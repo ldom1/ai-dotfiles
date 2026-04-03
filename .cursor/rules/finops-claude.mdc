@@ -3,11 +3,11 @@ description: FinOps & context engineering — lean CLAUDE.md, Local Brain storag
 alwaysApply: false
 ---
 
-# FinOps (Cursor + Claude)
+# FinOps
 
-- **Lean rules:** this file stays short; long procedures live in **Local Brain** (`$BRAIN_PATH/resources/knowledge/operational/`), especially `claude-finops.md`.
-- **Session:** `brain-sync` start/end and `brain-load` per sibling rules in `.cursor/rules/`.
-- **Habits:** `/clear` between unrelated tasks; precise prompts; trim MCP noise per task.
-- **PRs:** use **`/create-pr`** in Claude Code; skill source `~/ai-dotfiles/skills/create-pr/SKILL.md` (symlinked from `~/.claude/skills/create-pr`).
-- **Bash hook:** `~/.claude/hooks/rtk-rewrite.sh` — RTK + tail cap on noisy install/build output.
+- **Lean rules:** long procedures live in the **Local Brain** (`$BRAIN_PATH/resources/knowledge/operational/`), especially `claude-finops.md`.
+- **Session:** brain-sync start/end and brain-load per sibling rules.
+- **Habits:** `/clear` between unrelated tasks; precise prompts; trim MCP per task.
+- **PRs:** `/create-pr` skill — gh + branch/commit conventions.
+- **Bash hook:** RTK + tail cap on noisy install/build output.
 - **Reference:** [FinOps Claude Code (sfeir.dev)](https://www.sfeir.dev/ia/finops-claude-code-comment-optimiser-sa-consommation-de-tokens/).

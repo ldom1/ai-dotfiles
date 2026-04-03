@@ -1,6 +1,6 @@
 # RTK — token proxy
 
-**rtk** rewrites common dev commands so outputs stay small. The **PreToolUse** hook calls `rtk rewrite` before **FinOps tail caps** on noisy installs/builds (`hooks/rtk-rewrite.sh`).
+**rtk** rewrites common dev commands so outputs stay small. The PreToolUse hook calls `rtk rewrite` then applies tail caps on noisy installs/builds.
 
 ## Commands
 
@@ -8,7 +8,7 @@
 rtk gain              # savings summary
 rtk gain --history
 rtk discover          # missed opportunities in Claude history
-rtk proxy '<cmd>'    # run without rewrite
+rtk proxy '<cmd>'     # run without rewrite
 rtk --version
 ```
 
@@ -16,4 +16,4 @@ rtk --version
 
 ## Full doc
 
-Vault: `$BRAIN_PATH/resources/knowledge/operational/rtk.md`.
+`$BRAIN_PATH/resources/knowledge/operational/rtk.md`

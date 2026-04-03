@@ -11,7 +11,7 @@ After **brain-sync** `start`, run:
 bash ~/ai-dotfiles/skills/brain-load/load.sh
 ```
 
-- **Exit 0:** use printed note in context; **stay silent** (no “brief loaded” unless the user asks).
+- **Exit 0:** use printed note in context; **stay silent** (no "brief loaded" unless the user asks).
 - **Exit 2** and stderr contains `PROJECT_NOTE_MISSING` with **`mode=para_missing`**:
   1. Run `bash ~/ai-dotfiles/skills/brain-load/load.sh --list-caps`.
   2. **Ask the user which CAP** to use — do **not** choose for them.

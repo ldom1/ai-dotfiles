@@ -46,16 +46,26 @@ bash ~/ai-dotfiles/scripts/install.sh
 
 `install.sh` symlinks `~/.claude` and `~/.cursor` to this repo, generates `settings.json` from the template, and creates `settings.local.json` if missing.
 
+## Design principle
+
+**The AI tools never know about ai-dotfiles.** Files inside `.claude/`, `.cursor/`, `.vibe/` are written as if they are the native config directories (`~/.claude`, `~/.cursor`, etc.). They contain no references to the repo structure, no "ai-dotfiles" framing, no awareness of the versioning layer. The only things that know about ai-dotfiles are:
+
+- **This README** and the repo-level docs (`docs/`, `scripts/`)
+- **The Local Brain** vault notes (`projects/ai-dotfiles.md`, `resources/knowledge/operational/claude-setup.md`)
+- **`install.sh`** which creates the symlinks
+
+Skills invoke scripts via `~/ai-dotfiles/skills/…` because that's the real filesystem path — but config files never explain *why* things are at that path.
+
 ## Structure
 
 ```
 ai-dotfiles/
 ├── AGENTS.md                        # symlink → .vibe/AGENTS.md (Vibe discovery)
 ├── .claude/
-│   ├── CLAUDE.md                    # Short global instructions (no heavy @-includes)
-│   ├── LocalBrain.md                # Short pointer to vault layout
-│   ├── RTK.md                       # Short RTK reference (full doc in vault)
-│   ├── skills/create-pr             # symlink → ../../skills/create-pr (Claude discovery)
+│   ├── CLAUDE.md                    # Global instructions (tool-native, no ai-dotfiles refs)
+│   ├── LocalBrain.md                # Vault layout pointer
+│   ├── RTK.md                       # RTK reference
+│   ├── skills/create-pr             # symlink → ../../skills/create-pr
 │   ├── settings.json.tpl            # Settings template (HOME placeholder)
 │   ├── settings.local.json.example  # Machine-specific permissions template
 │   └── hooks/
@@ -85,7 +95,7 @@ ai-dotfiles/
 
 ## Sync workflow
 
-Because `~/.claude` and `~/.cursor` are symlinks into this repo, all changes are tracked automatically.
+Because `~/.claude` and `~/.cursor` are symlinks into this repo, all changes are tracked automatically. The AI tools see their standard config paths; ai-dotfiles is invisible to them.
 
 ```bash
 cd ~/ai-dotfiles && git add . && git commit -m "feat(core): short imperative summary" && git push

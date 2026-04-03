@@ -1,24 +1,22 @@
-# Global — ai-dotfiles
+# Global
 
 ## Session
 
 - **Start:** `bash ~/ai-dotfiles/skills/brain-sync/sync.sh start` then `bash ~/ai-dotfiles/skills/brain-load/load.sh`
 - **End:** `bash ~/ai-dotfiles/skills/brain-sync/sync.sh end`
 
-## Memory (Local Brain)
+## Memory
 
-Vault path: `~/ai-dotfiles/config/brain.env` → `BRAIN_PATH`. Where to store what: `.claude/LocalBrain.md` (short index). Deep reference: `$BRAIN_PATH/resources/knowledge/`.
+Persistent memory lives in the **Local Brain** vault (path: `config/brain.env` → `BRAIN_PATH`). Short index: `LocalBrain.md`. Deep reference: `$BRAIN_PATH/resources/knowledge/`.
 
-## Bash / tokens
+## Bash hooks
 
-PreToolUse hook on **Bash** runs **RTK rewrite** (if installed) and **tail-caps** noisy installs/builds. Debugging: `rtk --version`, `rtk gain`. RTK details: `.claude/RTK.md`.
+PreToolUse on **Bash** runs **RTK rewrite** (if installed) + **tail-cap** on noisy installs/builds. Details: `RTK.md`.
 
-## Skills (invoke explicitly)
+## Skills
 
-- **`/create-pr`** — `skills/create-pr/` (symlink from `~/.claude/skills/create-pr` for Claude Code).
+- **`/create-pr`** — GitHub PR with branch + commit conventions.
 
-Install **brain-sync** / **brain-load** from marketplace `ldom1/ai-dotfiles` when not bundled.
+## FinOps
 
-## FinOps habits
-
-`/clear` between unrelated tasks; prefer precise prompts; MCP hygiene. Canonical note: `$BRAIN_PATH/resources/knowledge/operational/claude-finops.md` (also [sfeir.dev FinOps Claude Code](https://www.sfeir.dev/ia/finops-claude-code-comment-optimiser-sa-consommation-de-tokens/)).
+`/clear` between unrelated tasks. Precise prompts. MCP hygiene. Reference: `$BRAIN_PATH/resources/knowledge/operational/claude-finops.md`.
