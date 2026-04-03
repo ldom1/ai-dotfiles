@@ -15,7 +15,7 @@ PreToolUse hook on **Bash** runs **RTK rewrite** (if installed) and **tail-caps*
 
 ## Skills (invoke explicitly)
 
-- **`/create-pr`** — Open a PR (`gh`) with this repo’s branch + commit conventions (see skill).
+- **`/create-pr`** — `skills/create-pr/` (symlink from `~/.claude/skills/create-pr` for Claude Code).
 
 Install **brain-sync** / **brain-load** from marketplace `ldom1/ai-dotfiles` when not bundled.
 

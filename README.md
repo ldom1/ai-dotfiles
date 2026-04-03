@@ -55,7 +55,7 @@ ai-dotfiles/
 │   ├── CLAUDE.md                    # Short global instructions (no heavy @-includes)
 │   ├── LocalBrain.md                # Short pointer to vault layout
 │   ├── RTK.md                       # Short RTK reference (full doc in vault)
-│   ├── skills/create-pr/            # /create-pr — gh + ai-dotfiles commit conventions
+│   ├── skills/create-pr             # symlink → ../../skills/create-pr (Claude discovery)
 │   ├── settings.json.tpl            # Settings template (HOME placeholder)
 │   ├── settings.local.json.example  # Machine-specific permissions template
 │   └── hooks/
@@ -68,7 +68,8 @@ ai-dotfiles/
 │   └── skills/                      # Symlinks → skills/* (Mistral Vibe discovery)
 ├── skills/
 │   ├── brain-sync/                  # Sync Local Brain at session start/end
-│   └── brain-load/                  # Load / instantiate Local Brain project notes
+│   ├── brain-load/                  # Load / instantiate Local Brain project notes
+│   └── create-pr/                   # /create-pr — gh + git conventions (ai-dotfiles)
 ├── config/
 │   ├── brain.env.example            # Local Brain path template
 │   └── brain.env                    # Your config (gitignored)
