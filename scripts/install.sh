@@ -19,6 +19,15 @@ link() {
   local dst="$HOME/$rel"
 
   if [[ -e "$dst" && ! -L "$dst" ]]; then
+    # Preserve sensitive files from existing dir before backing it up
+    if [[ "$rel" == ".claude" ]]; then
+      for f in .credentials.json settings.local.json; do
+        if [[ -f "$dst/$f" && ! -f "$src/$f" ]]; then
+          cp "$dst/$f" "$src/$f"
+          log "Preserved $f → $src/$f"
+        fi
+      done
+    fi
     warn "Backing up $dst → $dst.bak"
     mv "$dst" "$dst.bak"
   fi

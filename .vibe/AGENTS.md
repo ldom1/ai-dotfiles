@@ -23,3 +23,10 @@ Use the **`skill`** tool (`name`: `brain-sync` / `brain-load`) or slash commands
 ```bash
 bash ~/ai-dotfiles/skills/brain-sync/sync.sh end
 ```
+
+(Adjust the path if the clone is not `~/ai-dotfiles`.)
+
+## Development (tokens, simplicity)
+
+- **Tokens and context:** Rationalize what you read, invoke, and output—keep only what you need to answer correctly (no dump walls or aimless exploration).
+- **Occam’s razor (lex parsimoniae):** When several approaches are plausible, prefer the one with fewer assumptions and smaller surface area. Favor **structured, simple, human-readable** code; avoid spaghetti. Core principle for Claude Code, Cursor, and Mistral Vibe.

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "ldom1-ai-dotfiles",
+  "description": "Personal AI skills for Claude Code — brain-sync and brain-load for Local Brain vault management",
+  "owner": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "plugins": [
+    {
+      "name": "brain-sync",
+      "description": "Sync your Local Brain (Obsidian vault) at session start and end via git pull/push. Stashes dirty state, rebases, commits and pushes automatically.",
+      "source": "./skills/brain-sync",
+      "category": "productivity",
+      "homepage": "https://github.com/ldom1/ai-dotfiles"
+    },
+    {
+      "name": "brain-load",
+      "description": "Load your Local Brain project note into Claude context at session start. Auto-instantiates a new project note from template if missing, with CAP (area of responsibility) mapping.",
+      "source": "./skills/brain-load",
+      "category": "productivity",
+      "homepage": "https://github.com/ldom1/ai-dotfiles"
+    }
+  ]
+}

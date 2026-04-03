@@ -1,0 +1,10 @@
+{
+  "name": "brain-load",
+  "version": "1.0.0",
+  "description": "Load your Local Brain project note into Claude context; auto-instantiate from template if missing",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles"
+}
