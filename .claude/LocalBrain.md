@@ -1,25 +1,60 @@
 # Local Brain
 
-**Canonical memory** is the Obsidian vault at `$BRAIN_PATH` (set in `config/brain.env`).
+**Single source of truth for every Claude session.**
+Canonical vault: `$BRAIN_PATH` (set in `~/ai-dotfiles/config/brain.env`).
 
-## Session reads
+## Paths
 
-1. `$BRAIN_PATH/IDENTITY.md`
-2. `$BRAIN_PATH/breadcrumbs.md`
-3. `$BRAIN_PATH/docs/memory/MEMORY.md`
+| Role | Path |
+|------|------|
+| Vault root | `$BRAIN_PATH` — WSL: `/mnt/c/Users/<you>/Documents/Local Brain/` · macOS: `/Users/<you>/Documents/Local Brain/` |
+| Claude memory symlink | `~/.claude/projects/<project-dir>/memory` → `$BRAIN_PATH/docs/memory/` |
+
+## Session reads (in order)
+
+1. `$BRAIN_PATH/IDENTITY.md` — user profile
+2. `$BRAIN_PATH/breadcrumbs.md` — quick context index
+3. `$BRAIN_PATH/docs/memory/MEMORY.md` — persistent memory
 4. Active project: `$BRAIN_PATH/projects/<slug>.md`
 
 ## Where to write
 
 | Kind | Location |
 |------|----------|
-| Ops / Claude / FinOps | `resources/knowledge/operational/` |
-| Architecture, ADR, specs | `resources/knowledge/architecture/` |
-| Active project meta | `projects/` |
-| Daily | `daily/` |
+| Architecture, ADR, specs, plans | `resources/knowledge/architecture/` |
+| Patterns | `resources/knowledge/patterns/` |
+| Ops / Claude / RTK / FinOps | `resources/knowledge/operational/` |
+| SOPs | `resources/knowledge/sops/` |
+| Active project meta | `projects/<name>.md` |
+| Ideas / opportunities | `caps/entrepreneur.md` or `todo/` |
+| Daily capture | `daily/YYYY-MM-DD.md` |
+| Persistent memory | `docs/memory/MEMORY.md` |
+| Session context | `docs/context/session-YYYY-MM-DD.md` |
 
-Superpowers artifacts (plans, specs) go under `resources/knowledge/architecture/`.
+Superpowers artifacts (plans, specs) → `resources/knowledge/architecture/plans/` or `specs/`. Never only in a repo's `docs/`.
+
+## Update rules
+
+- **`breadcrumbs.md`** — refresh when a new project starts or a key resource appears
+- **`MEMORY.md`** — add durable facts that must carry across sessions
+- **Frontmatter** — prefer `title`, `created`, `tags`, `status` on every note
+- **Links** — use `[[wiki-links]]` between related notes
 
 ## Layout
 
-PARA + `docs/memory/`, `docs/context/`, `caps/`, `resources/knowledge/` — see vault root.
+$BRAIN_PATH/
+├── IDENTITY.md
+├── breadcrumbs.md
+├── daily/
+├── projects/
+├── caps/               ← areas of responsibility
+├── todo/
+├── resources/knowledge/
+│   ├── architecture/   ← plans/, specs/, adr/
+│   ├── patterns/
+│   ├── operational/
+│   └── sops/
+├── docs/
+│   ├── memory/MEMORY.md
+│   └── context/
+└── archive/
