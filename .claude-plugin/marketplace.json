@@ -20,6 +20,13 @@
       "source": "./skills/brain-load",
       "category": "productivity",
       "homepage": "https://github.com/ldom1/ai-dotfiles"
+    },
+    {
+      "name": "create-pr",
+      "description": "Open a GitHub PR using gh and ai-dotfiles git conventions — branch prefix (feature/, fix/, enh/), conventional commits, gh pr create workflow.",
+      "source": "./skills/create-pr",
+      "category": "productivity",
+      "homepage": "https://github.com/ldom1/ai-dotfiles"
     }
   ]
 }
