@@ -61,8 +61,6 @@ Details and opt-out: ~/ai-dotfiles/.claude/RTK.md.
 
 Plugins may add more slash commands; this list covers ai-dotfiles only.
 
-Copy table
-
 | Command | Purpose | Notes |
 |---|---|---|
 | /brain-sync | Vault sync procedure | git work = sync.sh |

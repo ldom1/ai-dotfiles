@@ -2,6 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(git:*)",
+      "Bash(gh:*)",
+      "Bash(bash:*)",
       "Bash(npm install:*)",
       "Bash(npm test:*)",
       "Bash(python3:*)"
