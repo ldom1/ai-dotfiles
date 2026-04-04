@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "ldom1-ai-dotfiles",
-  "description": "Personal AI skills for Claude Code — brain-sync and brain-load for Local Brain vault management",
+  "description": "Personal AI skills for Claude Code — Local Brain vault management (brain-sync, brain-load) and GitHub PR workflow (create-pr)",
   "owner": {
     "name": "Louis Giron",
     "github": "ldom1"
