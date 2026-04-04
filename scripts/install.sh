@@ -75,7 +75,20 @@ else
   log "settings.local.json already exists, skipping"
 fi
 
-# ── 4. Hook permissions ────────────────────────────────────────────────────────
+# ── 4. Bootstrap config/brain.env if missing ──────────────────────────────────
+header "Checking config/brain.env"
+
+BRAIN_ENV="$DOTFILES/config/brain.env"
+BRAIN_ENV_EXAMPLE="$DOTFILES/config/brain.env.example"
+
+if [[ ! -f "$BRAIN_ENV" ]]; then
+  cp "$BRAIN_ENV_EXAMPLE" "$BRAIN_ENV"
+  warn "config/brain.env created from example — edit BRAIN_PATH to your vault path before using Claude Code"
+else
+  log "config/brain.env already exists, skipping"
+fi
+
+# ── 5. Hook permissions ────────────────────────────────────────────────────────
 header "Setting hook permissions"
 
 chmod +x \
@@ -88,6 +101,7 @@ log "hook scripts are executable"
 echo -e "\n${BOLD}Done.${RESET} Reload your shell or restart Claude Code.\n"
 
 echo "  Next steps:"
-echo "  1. Install rtk if not present: cargo install rtk"
-echo "  2. Edit ~/.claude/settings.local.json to add your machine permissions"
-echo "  3. Install Claude Code plugins: claude plugins install superpowers"
+echo "  1. Edit config/brain.env — set BRAIN_PATH to your Obsidian vault (absolute path)"
+echo "  2. Install rtk if not present: cargo install rtk"
+echo "  3. Edit ~/.claude/settings.local.json to add your machine permissions"
+echo "  4. Install Claude Code plugins: claude plugins install superpowers"
