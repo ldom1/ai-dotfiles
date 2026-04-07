@@ -6,101 +6,119 @@ user-invocable: true
 
 # brain-load
 
-## Purpose
+Map the current codebase to a **project note** in the Local Brain vault and load it into context. If the project is new, ask which **CAP** (area of responsibility) it belongs to and create the note from the vault template.
 
-Each codebase session maps to a **project slug** and a note in the Local Brain vault. This skill loads that note into context. If the project is **not** in the vault yet, you **must ask which CAP** (area of responsibility) to attach, then **instantiate** the note from the vault’s **`projects/_template.md`**.
+## Quick start
 
-Vault layout this skill expects (PARA + caps):
+```bash
+# Run from your project's git root after brain-sync start:
+bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh
+```
 
-- **Project notes:** `projects/<slug>.md` (preferred — matches Obsidian `projects/` + `_template.md`)
-- **Legacy:** `Projects/<slug>/brief.md` (folder per project + `brief.md` from the skill template only)
-- **CAPs:** `caps/<name>.md` — long-term hats (e.g. `developer`, `entrepreneur`)
+Exit 0 → project note printed to stdout (load into context silently).
+Exit 2 + `PROJECT_NOTE_MISSING` on stderr → new project, follow the CAP flow below.
 
-## Questions — Cursor, Claude Code, and Claude (same skill)
+## Vault layout
 
-Asking for the CAP or for CAP fields does **not** require a shell script with `read` / `prompt`. The **assistant asks in the current conversation**; the **user answers in the next message** (Cursor agent chat, Claude Code, claude.ai, API, etc.). This SKILL is the single contract: follow it in whatever UI hosts the agent.
+```
+$BRAIN_PATH/
+├── projects/
+│   ├── _template.md     ← vault project template (required for PARA mode)
+│   └── <slug>.md        ← active project notes
+├── caps/
+│   └── <id>.md          ← areas of responsibility (developer, entrepreneur, …)
+└── Projects/            ← legacy layout (folder-per-project + brief.md)
+    └── <slug>/
+        └── brief.md
+```
 
-- **One turn or several:** you may ask one field per message or send a short numbered form — whichever fits the thread.
-- **No silent defaults** for CAP choice or slug still applies everywhere.
+See `reference/VAULT-LAYOUT.md` for full structure and PARA conventions.
 
-## Configuration
+## Slug resolution
 
-`BRAIN_PATH` via **`BRAIN_ENV_FILE`**, **`brain.env`** next to `load.sh`, or **ai-dotfiles `config/brain.env`** (see env resolution in script comments).
+The script determines the project slug in this order:
 
-**Standalone:** copy this whole folder (`_brain_env.sh`, `load.sh`, `instantiate.sh`, `templates/`, optional `brain.env`). **`instantiate.sh` requires Python 3** (template substitution). The vault must contain **`projects/_template.md`**. If the user picks a **new** CAP, create **`caps/<name>.md`** first using **`templates/cap.md`** (see interview above).
+1. `.brain-project` file at git root — first non-empty line
+2. Git remote `origin` — repo name (SSH `git@host:org/repo.git` → `repo`)
+3. Directory name of `cwd`
+4. Ask the user once — then write `.brain-project`
 
-## Slug resolution (priority order)
+## Scripts
 
-Use this chain **before** treating the repo as “new”:
-
-1. **`.brain-project`** at git root — first non-empty line
-2. **Git remote `origin`** — repo name (`.git` stripped; SSH `git@host:org/repo.git` → `repo`)
-3. **Directory name** of cwd
-4. **Ask the user once** — then write `.brain-project`
-
-## Scripts (this skill directory)
-
-| Script | Role |
-|--------|------|
-| `load.sh` | Resolve slug + `BRAIN_PATH`, print note body, or exit `2` with `PROJECT_NOTE_MISSING` |
-| `load.sh --slug-only` | Print `slug`, `note`, `mode`, `template_vault`, `caps_dir` (no exit 2) |
-| `load.sh --list-caps` | Print `cap:<id>` for each `caps/*.md` |
-| `instantiate.sh` | **`--cap <id>`** — copy `_template.md` → `projects/<slug>.md`, set `caps: [[caps/<id>]]`, update `.brain-project` |
-| `templates/cap.md` | Scaffold for a **new** `caps/<id>.md` when the user creates a missing CAP (interactive setup) |
+| Script | Flags | Role |
+|--------|-------|------|
+| `scripts/load.sh` | _(none)_ | Resolve slug + BRAIN_PATH, print note or exit 2 |
+| `scripts/load.sh` | `--slug-only` | Print slug, note path, mode, template_vault, caps_dir |
+| `scripts/load.sh` | `--list-caps` | Print `cap:<id>` for each `caps/*.md` |
+| `scripts/instantiate.sh` | `--cap <id>` | Copy `_template.md` → `projects/<slug>.md`, update `.brain-project` |
 
 ## Autonomous execution (session start)
 
 Run **after** `brain-sync start`:
 
 ```bash
-bash ~/ai-dotfiles/skills/brain-load/load.sh
+bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh
 ```
 
-**If exit 0:** read stdout into context **silently** — do not announce unless the user asks.
+**Exit 0** → read stdout into context **silently** (no announcement).
 
-**If exit 2** — parse stderr for `PROJECT_NOTE_MISSING`:
+**Exit 2 + `mode=para_missing`** (vault has a `projects/` dir or `_template.md`):
 
-- **`mode=para_missing`** (vault has `projects/_template.md` or a `projects/` dir):
-  1. Run `load.sh --list-caps` and **`ask the user which CAP`** this repo should use (one choice: `developer`, `entrepreneur`, … from the list).
-  2. **If the chosen CAP does not exist** (`caps/<id>.md` missing): do **not** fail silently. **In the conversation, run a short interview** (see *Questions — Cursor, Claude…* above) to create **`$BRAIN_PATH/caps/<id>.md`** from **`templates/cap.md`** in this skill (same folder as `load.sh`). Minimum fields to collect:
-     - **File id** (slug) — ASCII, no spaces, matches `caps/<id>.md` (e.g. `researcher`). Confirm it matches what they want for `instantiate.sh --cap`.
-     - **Display title** — H1 / frontmatter `title` (e.g. `Researcher`).
-     - **Mission** — one line after `>` (long-term responsibility).
-     - **Objectives** — bullet list (`- …`), can be a single bullet for MVP.
-     - **Key resources** — optional bullets (wiki links or paths); default `- _(to complete)_` if empty.
-     Replace `{{DATE}}` with today (`YYYY-MM-DD`), then write the file under the vault.
-  3. After the CAP file exists, run:
-     ```bash
-     bash ~/ai-dotfiles/skills/brain-load/instantiate.sh --cap "<their-cap-id>"
-     ```
-     (from the **project git root** so slug/path resolve correctly; optional: `--slug` / `--path` overrides.)
-  4. Re-run `load.sh` and load the new project note into context.
+1. Run `--list-caps`, then **ask the user in the conversation which CAP** to use.
+2. If the chosen CAP has **no** `caps/<id>.md`: run a **conversational interview** (not a shell prompt) to gather: file id, display title, mission, objectives, key resources. Write `$BRAIN_PATH/caps/<id>.md` from `reference/templates/cap.md`. See `reference/CAP-INTERVIEW.md` for the full interview template.
+3. Run `instantiate.sh --cap "<id>"` from the project git root.
+4. Re-run `load.sh` and load the new note into context.
 
-- **`mode=legacy_missing`** (no vault `projects/` layout): offer to create **`Projects/<slug>/brief.md`** from **`templates/brief.md`** in this skill (replace `{{PROJECT_SLUG}}`, `{{DATE}}`). No CAP in frontmatter for this path unless the user asks to align with vault conventions.
+**Exit 2 + `mode=legacy_missing`** (no `projects/` layout): offer to create `Projects/<slug>/brief.md` from `reference/templates/brief.md`.
 
-**Do not** pick a CAP silently — **always ask** when `para_missing`.
+**Critical rules:**
+- Never choose a CAP silently — always ask the user.
+- Never use a shell `read` prompt — the interview happens in the chat conversation.
+- Never fail silently on missing `BRAIN_PATH` — warn once, then skip.
+
+## Configuration
+
+`BRAIN_PATH` via **`BRAIN_ENV_FILE`**, **`brain.env`** beside `scripts/load.sh`, or **`config/brain.env`** at the ai-dotfiles root. See `reference/brain.env.example`.
+
+**Standalone:** copy the full `brain-load/` folder (all scripts + reference/). `scripts/instantiate.sh` requires **Python 3**. The vault must have `projects/_template.md` for PARA mode.
 
 ## Edge cases
 
 | Situation | Behavior |
 |-----------|----------|
-| Note exists (`para` or `legacy`) | Load silently |
+| Note exists (para or legacy) | Load silently |
 | `para_missing` | Ask CAP → `instantiate.sh` → reload |
-| `legacy_missing` | Offer skill `templates/brief.md` scaffold |
-| `caps/<cap>.md` missing | **Conversation interview** (not a TTY script), write `caps/<id>.md` from **`templates/cap.md`**, then **`instantiate.sh`** |
+| `legacy_missing` | Offer `reference/templates/brief.md` scaffold |
+| `caps/<cap>.md` missing | Conversational interview → write cap file → `instantiate.sh` |
 | Ambiguous slug | Ask once, write `.brain-project` |
-| Script / missing `BRAIN_PATH` | Warn once, skip |
+| Missing `BRAIN_PATH` or script | Warn once, skip |
 
-## Manual trigger
+## Manual trigger (Mistral Vibe)
 
-**Mistral Vibe:** **`/brain-load`** injects this skill into the chat (same as **`skill`** with `name: brain-load`). Running **`load.sh`** still requires bash; the slash command does not execute the script by itself.
+Type **`/brain-load`** to inject this skill into the chat. Running `scripts/load.sh` still requires a bash step.
 
-**Direct script:** `bash ~/ai-dotfiles/skills/brain-load/load.sh` (adjust path to your clone; run from the project git root).
+**Direct script:**
 
-## CLAUDE.md
+```bash
+bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh         # run from project git root
+bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh --list-caps
+bash ~/ai-dotfiles/skills/brain-load/scripts/instantiate.sh --cap developer
+```
+
+## Files
 
 ```
-@../skills/brain-load/SKILL.md
+skills/brain-load/
+├── SKILL.md
+├── scripts/
+│   ├── load.sh           ← slug resolve + print note (or exit 2)
+│   ├── instantiate.sh    ← create projects/<slug>.md from _template.md
+│   └── _brain_env.sh     ← config loader (sourced by load.sh + instantiate.sh)
+└── reference/
+    ├── brain.env.example
+    ├── VAULT-LAYOUT.md   ← expected vault structure and PARA conventions
+    ├── CAP-INTERVIEW.md  ← conversation template for creating a new CAP
+    └── templates/
+        ├── brief.md      ← legacy project note scaffold
+        └── cap.md        ← new CAP file scaffold
 ```
-
-Global: `@~/ai-dotfiles/skills/brain-load/SKILL.md`

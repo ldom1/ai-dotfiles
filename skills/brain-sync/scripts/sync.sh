@@ -12,12 +12,12 @@ if [[ -n "${BRAIN_ENV_FILE:-}" ]]; then
 elif [[ -f "$SCRIPT_DIR/brain.env" ]]; then
   ENV_FILE="$SCRIPT_DIR/brain.env"
 else
-  ENV_FILE="$(cd "$SCRIPT_DIR/../.." && pwd)/config/brain.env"
+  ENV_FILE="$(cd "$SCRIPT_DIR/../../.." && pwd)/config/brain.env"
 fi
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "[brain-sync] ERROR: brain config not found." >&2
-  echo "[brain-sync] Set BRAIN_ENV_FILE, or add brain.env beside this script, or use ai-dotfiles (config/brain.env). Tried: ${BRAIN_ENV_FILE:-}(env), $SCRIPT_DIR/brain.env, $(cd "$SCRIPT_DIR/../.." && pwd)/config/brain.env" >&2
+  echo "[brain-sync] Set BRAIN_ENV_FILE, or add brain.env beside this script, or use ai-dotfiles (config/brain.env). Tried: ${BRAIN_ENV_FILE:-}(env), $SCRIPT_DIR/brain.env, $(cd "$SCRIPT_DIR/../../.." && pwd)/config/brain.env" >&2
   exit 1
 fi
 

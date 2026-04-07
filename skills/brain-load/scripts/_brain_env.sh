@@ -7,7 +7,7 @@ if [[ -n "${BRAIN_ENV_FILE:-}" ]]; then
 elif [[ -f "$SCRIPT_DIR/brain.env" ]]; then
   ENV_FILE="$SCRIPT_DIR/brain.env"
 else
-  ENV_FILE="$(cd "$SCRIPT_DIR/../.." && pwd)/config/brain.env"
+  ENV_FILE="$(cd "$SCRIPT_DIR/../../.." && pwd)/config/brain.env"
 fi
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "[brain-load] ERROR: brain config not found." >&2

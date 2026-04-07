@@ -22,7 +22,7 @@ Use kebab-case after the prefix. If already on a suitably named branch, keep it.
 
 Format: **`type(scope): imperative description`** (one line unless context needs a body).
 
-Types and scopes: `~/ai-dotfiles/docs/git-commits.md` (in-repo). Quick types: `feat`, `fix`, `enh`, `doc`, `ci`.
+Types and scopes: `reference/GIT-COMMITS.md` in this skill directory. Quick types: `feat`, `fix`, `enh`, `doc`, `ci`.
 
 ## Steps
 
