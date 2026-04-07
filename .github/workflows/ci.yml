@@ -18,6 +18,10 @@ jobs:
         run: |
           find . \
             -not -path './.git/*' \
+            -not -path './.claude/plugins/*' \
+            -not -path './.claude/session-env/*' \
+            -not -path './.claude/shell-snapshots/*' \
+            -not -path './.cursor/plugins/*' \
             -name '*.sh' \
             -print0 \
           | xargs -0 shellcheck --severity=warning
