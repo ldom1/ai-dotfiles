@@ -1,0 +1,15 @@
+node_modules/
+.git/
+dist/
+build/
+*.lock
+*.log
+coverage/
+.next/
+__pycache__/
+*.min.js
+*.map
+.claude/file-history/
+.claude/backups/
+.claude/logs/
+.claude/paste-cache/
