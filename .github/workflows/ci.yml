@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  shellcheck:
+    name: Shell scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+      - name: Lint all shell scripts
+        run: |
+          find . \
+            -not -path './.git/*' \
+            -name '*.sh' \
+            -print0 \
+          | xargs -0 shellcheck --severity=warning
+
+  validate-json:
+    name: JSON files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JSON
+        run: |
+          find . \
+            -not -path './.git/*' \
+            -name '*.json' \
+            -not -name 'package-lock.json' \
+            -print0 \
+          | xargs -0 -I{} python3 -c "
+          import json, sys
+          path = '{}'
+          try:
+              json.load(open(path))
+          except json.JSONDecodeError as e:
+              print(f'FAIL: {path}: {e}', file=sys.stderr)
+              sys.exit(1)
+          print(f'OK: {path}')
+          "
+
+  validate-skills:
+    name: Skill structure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Every skill has SKILL.md and plugin.json
+        run: |
+          fail=0
+          for skill_dir in skills/*/; do
+            name=$(basename "$skill_dir")
+            [[ "$name" == .* ]] && continue
+            if [[ ! -f "$skill_dir/SKILL.md" ]]; then
+              echo "FAIL: $skill_dir missing SKILL.md" >&2
+              fail=1
+            fi
+            if [[ ! -f "$skill_dir/.claude-plugin/plugin.json" ]]; then
+              echo "FAIL: $skill_dir missing .claude-plugin/plugin.json" >&2
+              fail=1
+            fi
+          done
+          exit $fail
