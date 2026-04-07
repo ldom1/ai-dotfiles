@@ -20,10 +20,10 @@ Stdout from SessionStart becomes context. `BRAIN_PATH` is exported to Bash tool 
 
 ```bash
 # start
-bash ~/ai-dotfiles/skills/brain-sync/sync.sh start
-bash ~/ai-dotfiles/skills/brain-load/load.sh
+bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh start
+bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh
 # end
-bash ~/ai-dotfiles/skills/brain-sync/sync.sh end
+bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh end
 ```
 
 Note: /brain-sync and /brain-load slash commands only load the SKILL text — they do not replace the hooks.

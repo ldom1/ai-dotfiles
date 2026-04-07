@@ -12,7 +12,7 @@ The Local Brain is a git-backed Obsidian vault. Keep it synced around every sess
 At the beginning of every conversation, run:
 
 ```bash
-bash ~/ai-dotfiles/skills/brain-sync/sync.sh start
+bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh start
 ```
 
 This pulls the latest remote changes (with rebase). If a rebase conflict occurs, abort the rebase and warn the user. If pull fails for another reason (network, `.git` permissions), warn without claiming a conflict. If there is no remote, skip pull and log a short warning.
@@ -22,7 +22,7 @@ This pulls the latest remote changes (with rebase). If a rebase conflict occurs,
 At the end of every conversation (after the last user request is resolved), run:
 
 ```bash
-bash ~/ai-dotfiles/skills/brain-sync/sync.sh end
+bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh end
 ```
 
 This stages all changes, creates a commit `brain: session sync <timestamp>`, and pushes. If push fails (no network, rejected), warn the user that changes are committed locally.

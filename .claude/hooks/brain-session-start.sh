@@ -3,8 +3,8 @@
 set -euo pipefail
 
 AI_DOTFILES="${AI_DOTFILES:-$HOME/ai-dotfiles}"
-SYNC="$AI_DOTFILES/skills/brain-sync/sync.sh"
-LOAD="$AI_DOTFILES/skills/brain-load/load.sh"
+SYNC="$AI_DOTFILES/skills/brain-sync/scripts/sync.sh"
+LOAD="$AI_DOTFILES/skills/brain-load/scripts/load.sh"
 
 ENV_FILE="${BRAIN_ENV_FILE:-}"
 if [[ -z "$ENV_FILE" || ! -f "$ENV_FILE" ]]; then
