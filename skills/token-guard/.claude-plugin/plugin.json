@@ -1,0 +1,10 @@
+{
+  "name": "token-guard",
+  "version": "1.0.0",
+  "description": "Model routing heuristic and /model-check command — emit routing reminder before multi-step tasks",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles"
+}

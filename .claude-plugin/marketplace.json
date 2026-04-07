@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "ldom1-ai-dotfiles",
-  "description": "Personal AI skills for Claude Code — Local Brain vault management (brain-sync, brain-load) and GitHub PR workflow (create-pr)",
+  "description": "Personal AI skills for Claude Code — Local Brain vault management (brain-sync, brain-load), GitHub PR workflow (create-pr), and token optimization (token-watch, token-guard, finops-audit)",
   "owner": {
     "name": "Louis Giron",
     "github": "ldom1"
@@ -25,6 +25,27 @@
       "name": "create-pr",
       "description": "Open a GitHub PR using gh and ai-dotfiles git conventions — branch prefix (feature/, fix/, enh/), conventional commits, gh pr create workflow.",
       "source": "./skills/create-pr",
+      "category": "productivity",
+      "homepage": "https://github.com/ldom1/ai-dotfiles"
+    },
+    {
+      "name": "token-watch",
+      "description": "Snapshot current token burn rate via ccusage — active 5h window, daily per-model breakdown, session history.",
+      "source": "./skills/token-watch",
+      "category": "productivity",
+      "homepage": "https://github.com/ldom1/ai-dotfiles"
+    },
+    {
+      "name": "token-guard",
+      "description": "Model routing heuristic (Sonnet/Opus/Haiku) and /model-check command. Emits routing reminder before multi-step tasks.",
+      "source": "./skills/token-guard",
+      "category": "productivity",
+      "homepage": "https://github.com/ldom1/ai-dotfiles"
+    },
+    {
+      "name": "finops-audit",
+      "description": "Weekly token spend review via ccusage — structured report appended to finops-history.md.",
+      "source": "./skills/finops-audit",
       "category": "productivity",
       "homepage": "https://github.com/ldom1/ai-dotfiles"
     }
