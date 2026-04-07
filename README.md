@@ -115,9 +115,16 @@ git pull && bash scripts/install.sh
 
 ## Dependencies
 
-- [rtk](https://github.com/rtk-ai/rtk) — token-saving proxy (`cargo install rtk`)
-- [jq](https://jqlang.github.io/jq/) — required by the rtk hook
-- [Obsidian](https://obsidian.md) — for browsing the Local Brain vault
+| Tool | Purpose | Install |
+|------|---------|---------|
+| [Claude Code](https://claude.ai/code) | AI coding assistant (core runtime) | See site |
+| [rtk](https://github.com/ldom1/rtk) | Token-saving CLI proxy for Claude Code hooks | `cargo install rtk` |
+| [ccusage](https://github.com/ryoppippi/ccusage) | Claude Code token & cost usage dashboard | `npx ccusage` |
+| [shellcheck](https://www.shellcheck.net) | Shell script linter (CI + local) | `brew install shellcheck` / `apt install shellcheck` |
+| [gh](https://cli.github.com) | GitHub CLI — used by `create-pr` skill | `brew install gh` / `apt install gh` |
+| [jq](https://jqlang.github.io/jq) | JSON processor — required by rtk hook | `brew install jq` / `apt install jq` |
+| [Python 3](https://www.python.org) | Template substitution in `brain-load` | Pre-installed on most systems |
+| [Obsidian](https://obsidian.md) | Browse the Local Brain vault | See site |
 
 ## Contributing
 
