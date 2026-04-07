@@ -2,29 +2,36 @@
 
 Personal AI config for Claude Code, Cursor, and Mistral Vibe — synced across machines via symlinks. Repository docs are in **English**.
 
-## Skills
+## Skills (installable)
 
-**Canonical source:** `skills/<name>/SKILL.md`. **Claude Code** and **Mistral Vibe** see each skill via **symlinks** from `.claude/skills/` and `.vibe/skills/` (created by `scripts/install.sh` for every folder under `skills/` that has a `SKILL.md`). Full layout: [docs/skills.md](docs/skills.md).
+| Skill | Purpose | Install |
+|-------|---------|---------|
+| brain-sync | Sync Local Brain vault at session start/end | `/plugin install brain-sync@ldom1/ai-dotfiles` |
+| brain-load | Load / instantiate project notes from vault | `/plugin install brain-load@ldom1/ai-dotfiles` |
+| create-pr | GitHub PR with branch + commit conventions | `/plugin install create-pr@ldom1/ai-dotfiles` |
 
-**Cursor** does not use `SKILL.md` discovery. Local Brain automation lives in `.cursor/rules/` (e.g. `brain-sync.mdc`, `brain-load.mdc`) — those are rules, not symlinks into `skills/`.
+Full documentation: **[Wiki](https://github.com/ldom1/ai-dotfiles/wiki)**
 
-### Claude Code (optional marketplace)
+> **Note — nested `skills/<name>/skills/<name>/SKILL.md`**
+>
+> Inside each skill folder you will notice a nested structure like:
+>
+> ```
+> skills/brain-load/
+> └── skills/
+>     └── brain-load/
+>         └── SKILL.md → ../../SKILL.md   (symlink)
+> ```
+>
+> This is intentional and required for the Claude Code marketplace. When you run
+> `/plugin install brain-load@ldom1/ai-dotfiles`, the marketplace targets the declared
+> source folder (`./skills/brain-load`). It then looks for a `skills/<name>/SKILL.md`
+> pattern *inside* that folder to locate the skill definition. The symlink is 14 bytes
+> and contains no duplicated content — it redirects to the actual `SKILL.md` one level up.
+>
+> **Do not delete these symlinks.** They are the marketplace discovery mechanism.
 
-If you use `install.sh`, skills are already on disk under `~/.claude/skills/` — you normally **do not** need plugin installs for `brain-sync` / `brain-load` / `create-pr`.
-
-Optional — same skills from the registry elsewhere:
-
-```
-/plugin marketplace add ldom1/ai-dotfiles
-/plugin install brain-sync@ldom1/ai-dotfiles
-/plugin install brain-load@ldom1/ai-dotfiles
-```
-
-### Mistral Vibe
-
-Skills are discovered from `.vibe/skills/` (and other [standard paths](https://docs.mistral.ai/mistral-vibe/agents-skills)). Vibe lists them as **`available_skills`**; the **`skill`** tool injects a chosen `SKILL.md`. This repo symlinks every skill from `skills/` into `.vibe/skills/`. See [.vibe/README.md](.vibe/README.md) and [docs/mistral-vibe.md](docs/mistral-vibe.md).
-
-**Session start:** Vibe does not auto-run shell. Instructions live in [`.vibe/AGENTS.md`](.vibe/AGENTS.md); root [`AGENTS.md`](AGENTS.md) is a **symlink** so Vibe’s loader (which only looks for `AGENTS.md` on cwd → trust root, not under `.vibe/` alone) still finds them. Details: [docs/mistral-vibe.md](docs/mistral-vibe.md) (*Brain-sync / brain-load at session start*).
+---
 
 ## Quick start
 
@@ -35,11 +42,13 @@ bash ~/ai-dotfiles/scripts/install.sh
 
 `install.sh` symlinks `~/.claude` and `~/.cursor` to this repo, generates `settings.json` from the template, and creates `settings.local.json` if missing.
 
+If you use `install.sh`, skills are already wired under `~/.claude/skills/` — you normally **do not** need the marketplace installs above for your own machine.
+
 ## Design principle
 
 **The AI tools never know about ai-dotfiles.** Files inside `.claude/`, `.cursor/`, `.vibe/` are written as if they are the native config directories (`~/.claude`, `~/.cursor`, etc.). They contain no references to the repo structure, no "ai-dotfiles" framing, no awareness of the versioning layer. The only things that know about ai-dotfiles are:
 
-- **This README** and the repo-level docs (`docs/`, `scripts/`)
+- **This README** and the wiki
 - **The Local Brain** vault notes (`projects/ai-dotfiles.md`, `resources/knowledge/operational/claude-setup.md`)
 - **`install.sh`** which creates the symlinks
 
@@ -64,20 +73,22 @@ ai-dotfiles/
 ├── .vibe/
 │   ├── AGENTS.md                    # Mistral Vibe + agent bootstrap (canonical)
 │   ├── README.md                    # Vibe: skill tool, available_skills, trust
-│   └── skills/                      # Symlinks → skills/* (Mistral Vibe discovery)
+│   └── skills/                      # symlinks → skills/* (Mistral Vibe discovery)
 ├── skills/
 │   ├── brain-sync/                  # Sync Local Brain at session start/end
+│   │   ├── SKILL.md
+│   │   ├── scripts/sync.sh
+│   │   └── reference/
 │   ├── brain-load/                  # Load / instantiate Local Brain project notes
-│   └── create-pr/                   # /create-pr — gh + git conventions (ai-dotfiles)
+│   │   ├── SKILL.md
+│   │   ├── scripts/
+│   │   └── reference/
+│   └── create-pr/                   # /create-pr — gh + git conventions
+│       ├── SKILL.md
+│       └── reference/GIT-COMMITS.md
 ├── config/
 │   ├── brain.env.example            # Local Brain path template
 │   └── brain.env                    # Your config (gitignored)
-├── docs/
-│   ├── local-brain.md               # Local Brain full setup guide
-│   ├── skills.md                    # skills/ layout, symlinks, Cursor vs Claude/Vibe
-│   ├── brain-sync.md               # brain-sync skill documentation
-│   ├── mistral-vibe.md              # Mistral Vibe skills and config
-│   └── git-commits.md               # Commit message conventions
 ├── prompts/                         # Reusable prompts
 └── scripts/
     └── install.sh                   # Setup script
@@ -94,7 +105,7 @@ cd ~/ai-dotfiles && git add . && git commit -m "feat(core): short imperative sum
 git pull && bash scripts/install.sh   # re-run only if settings.json.tpl changed
 ```
 
-Commit format: [docs/git-commits.md](docs/git-commits.md).
+Commit format: [Git Commit Conventions](https://github.com/ldom1/ai-dotfiles/wiki/Git-Commit-Conventions).
 
 ## Not tracked (machine-specific)
 
@@ -109,11 +120,11 @@ Commit format: [docs/git-commits.md](docs/git-commits.md).
 
 | Component | Docs |
 |-----------|------|
-| Skills — `skills/`, symlinks, Claude / Vibe / Cursor | [docs/skills.md](docs/skills.md) |
-| Local Brain — Obsidian vault as persistent memory | [docs/local-brain.md](docs/local-brain.md) |
-| brain-sync — auto-sync vault at session start/end | [docs/brain-sync.md](docs/brain-sync.md) |
-| Mistral Vibe — skills, `skill` tool, `.vibe/skills/` | [docs/mistral-vibe.md](docs/mistral-vibe.md), [.vibe/README.md](.vibe/README.md) |
-| Git — commit message conventions | [docs/git-commits.md](docs/git-commits.md) |
+| Skills — layout, symlinks, Claude / Vibe / Cursor | [Wiki: Skill Architecture](https://github.com/ldom1/ai-dotfiles/wiki/Skill-Architecture) |
+| Local Brain — Obsidian vault as persistent memory | [Wiki: Local Brain Setup](https://github.com/ldom1/ai-dotfiles/wiki/Local-Brain-Setup) |
+| brain-sync — auto-sync vault at session start/end | [Wiki: Brain Sync](https://github.com/ldom1/ai-dotfiles/wiki/Brain-Sync) |
+| Mistral Vibe — skills, `skill` tool, `.vibe/skills/` | [Wiki: Mistral Vibe](https://github.com/ldom1/ai-dotfiles/wiki/Mistral-Vibe), [.vibe/README.md](.vibe/README.md) |
+| Git — commit message conventions | [Wiki: Git Commit Conventions](https://github.com/ldom1/ai-dotfiles/wiki/Git-Commit-Conventions) |
 
 ## Dependencies
 
