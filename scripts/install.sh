@@ -34,7 +34,7 @@ link() {
 
   mkdir -p "$(dirname "$dst")"
   ln -sfn "$src" "$dst"
-  log "~/$rel → $src"
+  log "$HOME/$rel → $src"
 }
 
 link ".claude"
