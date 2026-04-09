@@ -13,3 +13,9 @@ __pycache__/
 .claude/backups/
 .claude/logs/
 .claude/paste-cache/
+!.claude/skills/
+!.claude/skills/**
+!skills/
+!skills/**
+!.cursor/skills/
+!.cursor/skills/**

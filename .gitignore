@@ -21,9 +21,6 @@
 .claude/mcp-needs-auth-cache.json
 .claude/.credentials.json
 
-# Generated from template — do not track
-.claude/settings.json
-
 # Local permissions — machine-specific, do not track
 .claude/settings.local.json
 

@@ -1,0 +1,10 @@
+{
+  "name": "server-audit",
+  "version": "1.0.0",
+  "description": "Run a robust server health audit locally or via SSH with severity-ranked findings",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles"
+}
