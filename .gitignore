@@ -16,6 +16,8 @@
 .claude/ide/
 .claude/telemetry/
 .claude/statsig/
+.claude/logs/
+.claude/usage-data/
 .claude/history.jsonl
 .claude/stats-cache.json
 .claude/mcp-needs-auth-cache.json

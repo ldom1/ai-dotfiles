@@ -34,3 +34,14 @@ Manual fallback:
 bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh [start|end]
 bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh
 ```
+## Remote Server Work
+
+When working on remote servers via SSH, always verify the fix actually works from the user's perspective (e.g., curl the endpoint, check browser response) before declaring success. Never assume a config change resolved the issue without end-to-end verification.
+
+## Git Conventions
+
+For git operations (rm --cached, .gitignore changes, resets): always check for nested .gitignore files that may override rules, and verify the change persists after a full `git status` check. Prefer a clean single-commit approach over incremental fixes.
+
+## Remote Server Work 
+
+When debugging infrastructure (nginx, Docker, Tailscale, Authelia), identify ALL config file locations and which one is actually active before making changes. Run `nginx -T` or equivalent to confirm the live config.

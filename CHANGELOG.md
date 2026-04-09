@@ -14,3 +14,5 @@
 - `.claudeignore` now explicitly keeps `skills/`, `.claude/skills/`, and `.cursor/skills/` includable.
 - `.gitignore` updated to version `.claude/settings.json` (while generation from `.claude/settings.json.tpl` is still supported).
 - `.claude/settings.json` includes a `pre-commit` hook that blocks staged `.cursor` / `.vs` IDE files.
+- `.gitignore` now ignores `.claude/logs/` and `.claude/usage-data/` runtime artifacts.
+- `.claude/CLAUDE.md` adds operational guidance for remote-server verification and git hygiene.
