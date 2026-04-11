@@ -1,0 +1,10 @@
+{
+  "name": "brain-audit",
+  "version": "1.0.0",
+  "description": "Comprehensive maintenance pipeline—processes raw data, finds connections, runs Q&A, generates weekly digest",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles"
+}
