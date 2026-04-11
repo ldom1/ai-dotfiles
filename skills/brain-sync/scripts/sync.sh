@@ -86,6 +86,13 @@ cmd_start() {
   fi
 
   echo "[brain-sync] Brain is up to date."
+
+  # After successful git pull, call brain-route to decide session mode
+  echo "[brain-sync] Calling brain-route for session mode decision..."
+  bash ~/ai-dotfiles/skills/brain-route/scripts/route.sh
+
+  # brain-route will invoke either brain-audit (maintenance) or brain-load (normal)
+  # and print session mode to stdout
 }
 
 cmd_end() {
