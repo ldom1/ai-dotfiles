@@ -1,36 +1,58 @@
 ---
 name: server-audit
-description: Run a robust server health audit locally or via SSH and print severity-ranked findings
+description: Run a comprehensive infra audit with parallel checks and structured JSON reporting
 user-invocable: true
 ---
 
 # server-audit
 
-Run **`/server-audit`** when you need a fast production triage.
+Run **`/server-audit`** for on-demand infrastructure triage across Docker, nginx, Tailscale, Authelia, cron, and git.
 
 ## Usage
 
 ```bash
-# local machine
+# interactive mode (recommended for marketplace / generic usage)
 bash ~/ai-dotfiles/skills/server-audit/scripts/audit.sh
 
-# remote server
-bash ~/ai-dotfiles/skills/server-audit/scripts/audit.sh user@host
-
-# custom SSH port
-bash ~/ai-dotfiles/skills/server-audit/scripts/audit.sh user@host 2222
+# config-driven mode (repeatable automation)
+bash ~/ai-dotfiles/skills/server-audit/scripts/audit.sh \
+  ~/ai-dotfiles/skills/server-audit/config/targets.json
 ```
 
-## What it checks
+## Parallel checks
 
-1. Docker containers (`docker ps -a`)
-2. nginx config (`nginx -T`, first 50 lines)
-3. Failed systemd units (`systemctl --failed`)
-4. Disk space (`df -h`)
-5. Error logs from last hour (`journalctl --since '1 hour ago' -p err`)
+- `check_docker.sh` — container running + health status
+- `check_nginx.sh` — proxy endpoint response checks + buffering directives
+- `check_tailscale.sh` — node visibility/online peer connectivity
+- `check_authelia.sh` — auth portal + protected endpoint flow checks
+- `check_cron.sh` — expected jobs present + recent execution activity
+- `check_git.sh` — dirty tree + embedded-repo/submodule warnings
+
+Each check writes one JSON object. The parent orchestrator runs all checks concurrently and calls `aggregate.py` to compile the final report.
+
+## Agent behavior
+
+When executed by an agent runtime, start by asking what to test (checks, targets, endpoints, repos), run selected checks as parallel sub-agents/tasks, produce one JSON report per check, then compile a parent summary ranked by severity with concrete fix actions.
 
 ## Output contract
 
-- Numbered findings
-- Severity prefix: `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `INFO`
-- Ends with a short summary by severity count
+- Per-check JSON: `skills/server-audit/out/<timestamp>/checks/*.json`
+- Aggregated report: `skills/server-audit/out/<timestamp>/report.json`
+- Terminal summary:
+  - severity counts
+  - top severity-ranked issues
+  - suggested fixes
+
+## JSON schema (per check)
+
+```json
+{
+  "check": "docker|nginx|tailscale|authelia|cron|git",
+  "status": "pass|warn|error",
+  "severity": "critical|high|medium|low|info",
+  "findings": ["..."],
+  "evidence": ["..."],
+  "suggested_fixes": ["..."],
+  "meta": {}
+}
+```

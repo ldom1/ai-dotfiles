@@ -1,0 +1,54 @@
+{
+  "ssh": {
+    "user": "dev",
+    "host": "devbox.local",
+    "port": 22
+  },
+  "docker": {
+    "target": "remote",
+    "required_containers": ["nginx", "authelia"],
+    "health_required": true
+  },
+  "nginx": {
+    "target": "remote",
+    "test_endpoints": [
+      {
+        "name": "app-home",
+        "url": "https://app.example.com/",
+        "expected_status": 200,
+        "contains": "Welcome"
+      },
+      {
+        "name": "api-health",
+        "url": "https://api.example.com/health",
+        "expected_status": 200
+      }
+    ],
+    "require_buffering_directives": [
+      "proxy_buffering",
+      "proxy_buffers",
+      "proxy_busy_buffers_size"
+    ]
+  },
+  "tailscale": {
+    "target": "local",
+    "peer_hosts": ["devbox.local", "router.local"]
+  },
+  "authelia": {
+    "target": "local",
+    "portal_url": "https://auth.example.com/",
+    "protected_url": "https://app.example.com/private",
+    "expect_redirect_when_unauthenticated": true,
+    "user_env": "AUTHELIA_USER",
+    "password_env": "AUTHELIA_PASS"
+  },
+  "cron": {
+    "target": "remote",
+    "required_patterns": ["backup.sh", "certbot renew"],
+    "max_age_hours": 24
+  },
+  "git": {
+    "target": "remote",
+    "repo_paths": ["/srv/app", "/srv/infra"]
+  }
+}

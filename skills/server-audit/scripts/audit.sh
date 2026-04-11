@@ -1,85 +1,176 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TARGET="${1:-}"
-PORT="${2:-22}"
-SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=8 -o ServerAliveInterval=5 -o ServerAliveCountMax=2 -p "$PORT")
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPTS_DIR="$ROOT_DIR/scripts"
+RUN_ID="$(date +%Y%m%d-%H%M%S)"
+OUT_DIR="$ROOT_DIR/out/$RUN_ID"
+CHECKS_DIR="$OUT_DIR/checks"
+REPORT_PATH="$OUT_DIR/report.json"
+RUNTIME_CONFIG="$OUT_DIR/runtime-config.json"
 
-run_remote() {
-  local cmd="$1"
-  if [[ -n "$TARGET" ]]; then
-    ssh "${SSH_OPTS[@]}" "$TARGET" "bash -lc '$cmd'" 2>&1 || true
+mkdir -p "$CHECKS_DIR"
+
+ask() {
+  local prompt="$1" default="${2:-}"
+  if [[ -n "$default" ]]; then
+    read -r -p "$prompt [$default]: " v
+    echo "${v:-$default}"
   else
-    bash -lc "$cmd" 2>&1 || true
+    read -r -p "$prompt: " v
+    echo "$v"
   fi
 }
 
-declare -a OUT=()
-c_critical=0; c_high=0; c_medium=0; c_low=0; c_info=0; i=0
-
-add() {
-  local sev="$1" msg="$2"
-  i=$((i + 1))
-  OUT+=("$i. [$sev] $msg")
-  case "$sev" in
-    CRITICAL) c_critical=$((c_critical + 1)) ;;
-    HIGH) c_high=$((c_high + 1)) ;;
-    MEDIUM) c_medium=$((c_medium + 1)) ;;
-    LOW) c_low=$((c_low + 1)) ;;
-    INFO) c_info=$((c_info + 1)) ;;
-  esac
+yn() {
+  local prompt="$1" default="${2:-y}"
+  local d="y/N"
+  [[ "$default" == "y" ]] && d="Y/n"
+  read -r -p "$prompt ($d): " v
+  v="${v:-$default}"
+  [[ "$v" =~ ^[Yy]$ ]]
 }
 
-docker_out="$(run_remote "command -v docker >/dev/null && docker ps -a --format '{{.Names}} {{.Status}}' || echo '__NO_DOCKER__'")"
-if [[ "$docker_out" == *"__NO_DOCKER__"* ]]; then
-  add LOW "Docker not installed or unavailable."
+build_interactive_config() {
+  local host user port
+  host="$(ask "SSH host (empty for local-only checks)" "")"
+  user="$(ask "SSH user" "$USER")"
+  port="$(ask "SSH port" "22")"
+
+  local use_docker use_nginx use_tailscale use_authelia use_cron use_git
+  yn "Run Docker check?" "y" && use_docker=true || use_docker=false
+  yn "Run nginx check?" "y" && use_nginx=true || use_nginx=false
+  yn "Run Tailscale check?" "y" && use_tailscale=true || use_tailscale=false
+  yn "Run Authelia check?" "y" && use_authelia=true || use_authelia=false
+  yn "Run cron check?" "y" && use_cron=true || use_cron=false
+  yn "Run git repo check?" "y" && use_git=true || use_git=false
+
+  local endpoint1 endpoint2 authelia_portal authelia_protected
+  local tailscale_peer1 git_repo1 cron_pattern1
+  endpoint1="$(ask "nginx endpoint #1 URL (optional)" "")"
+  endpoint2="$(ask "nginx endpoint #2 URL (optional)" "")"
+  authelia_portal="$(ask "Authelia portal URL (optional)" "")"
+  authelia_protected="$(ask "Authelia protected URL (optional)" "")"
+  tailscale_peer1="$(ask "Tailscale peer hostname/IP (optional)" "")"
+  cron_pattern1="$(ask "Cron required pattern (optional, e.g. backup.sh)" "")"
+  git_repo1="$(ask "Git repo path to validate (optional)" "")"
+
+  python3 - "$RUNTIME_CONFIG" <<PY
+import json, sys
+out = sys.argv[1]
+cfg = {
+  "ssh": {"user": "$user", "host": "$host", "port": int("$port")},
+  "docker": {"target": "remote" if "$host" else "local", "required_containers": [], "health_required": True},
+  "nginx": {
+    "target": "remote" if "$host" else "local",
+    "test_endpoints": [],
+    "require_buffering_directives": ["proxy_buffering", "proxy_buffers", "proxy_busy_buffers_size"]
+  },
+  "tailscale": {"target": "local", "peer_hosts": []},
+  "authelia": {
+    "target": "local",
+    "portal_url": "$authelia_portal",
+    "protected_url": "$authelia_protected",
+    "expect_redirect_when_unauthenticated": True,
+    "user_env": "AUTHELIA_USER",
+    "password_env": "AUTHELIA_PASS"
+  },
+  "cron": {"target": "remote" if "$host" else "local", "required_patterns": [], "max_age_hours": 24},
+  "git": {"target": "remote" if "$host" else "local", "repo_paths": []}
+}
+if "$endpoint1": cfg["nginx"]["test_endpoints"].append({"name":"endpoint-1","url":"$endpoint1","expected_status":200})
+if "$endpoint2": cfg["nginx"]["test_endpoints"].append({"name":"endpoint-2","url":"$endpoint2","expected_status":200})
+if "$tailscale_peer1": cfg["tailscale"]["peer_hosts"].append("$tailscale_peer1")
+if "$cron_pattern1": cfg["cron"]["required_patterns"].append("$cron_pattern1")
+if "$git_repo1": cfg["git"]["repo_paths"].append("$git_repo1")
+json.dump(cfg, open(out, "w", encoding="utf-8"), indent=2)
+PY
+
+  local checks=()
+  [[ "$use_docker" == true ]] && checks+=("docker")
+  [[ "$use_nginx" == true ]] && checks+=("nginx")
+  [[ "$use_tailscale" == true ]] && checks+=("tailscale")
+  [[ "$use_authelia" == true ]] && checks+=("authelia")
+  [[ "$use_cron" == true ]] && checks+=("cron")
+  [[ "$use_git" == true ]] && checks+=("git")
+  printf '%s\n' "${checks[@]}"
+}
+
+if [[ -n "${1:-}" ]]; then
+  CONFIG_PATH="$1"
+  if [[ ! -f "$CONFIG_PATH" ]]; then
+    echo "Config not found: $CONFIG_PATH" >&2
+    echo "Copy and customize: $ROOT_DIR/config/targets.json.example" >&2
+    exit 2
+  fi
+  mapfile -t checks < <(printf '%s\n' docker nginx tailscale authelia cron git)
+elif [[ -t 0 ]]; then
+  echo "No config provided: starting interactive setup..."
+  mapfile -t checks < <(build_interactive_config)
+  CONFIG_PATH="$RUNTIME_CONFIG"
 else
-  exited_count="$(printf '%s\n' "$docker_out" | grep -Eci "exited|dead" || true)"
-  restarting_count="$(printf '%s\n' "$docker_out" | grep -Eci "restarting" || true)"
-  (( restarting_count > 0 )) && add HIGH "Docker containers restarting: $restarting_count."
-  (( exited_count > 0 )) && add MEDIUM "Stopped/dead Docker containers: $exited_count."
-  (( restarting_count == 0 && exited_count == 0 )) && add INFO "Docker containers look healthy."
+  CONFIG_PATH="$ROOT_DIR/config/targets.json"
+  if [[ ! -f "$CONFIG_PATH" ]]; then
+    echo "Config not found: $CONFIG_PATH" >&2
+    echo "Run interactively or copy: $ROOT_DIR/config/targets.json.example" >&2
+    exit 2
+  fi
+  mapfile -t checks < <(printf '%s\n' docker nginx tailscale authelia cron git)
 fi
 
-nginx_out="$(run_remote "command -v nginx >/dev/null && nginx -T 2>&1 | head -50 || echo '__NO_NGINX__'")"
-if [[ "$nginx_out" == *"__NO_NGINX__"* ]]; then
-  add LOW "nginx not installed."
-elif [[ "$nginx_out" == *"emerg"* || "$nginx_out" == *"failed"* ]]; then
-  add HIGH "nginx reports config/runtime errors. Inspect nginx -T output."
-else
-  add INFO "nginx config dump succeeded."
+if [[ ${#checks[@]} -eq 0 ]]; then
+  echo "No checks selected; nothing to run."
+  exit 0
 fi
 
-failed_units="$(run_remote "command -v systemctl >/dev/null && systemctl --failed --no-legend --plain || echo '__NO_SYSTEMD__'")"
-if [[ "$failed_units" == *"__NO_SYSTEMD__"* ]]; then
-  add LOW "systemd not available."
-else
-  n_failed="$(printf '%s\n' "$failed_units" | grep -Ec "failed" || true)"
-  (( n_failed > 0 )) && add HIGH "Failed systemd units: $n_failed."
-  (( n_failed == 0 )) && add INFO "No failed systemd units."
-fi
+run_check() {
+  local name="$1"
+  local script="$SCRIPTS_DIR/check_${name}.sh"
+  local out="$CHECKS_DIR/${name}.json"
 
-df_out="$(run_remote "df -h --output=pcent,target 2>/dev/null || df -h")"
-critical_fs="$(printf '%s\n' "$df_out" | grep -En "([9][5-9]%|100%)" || true)"
-high_fs="$(printf '%s\n' "$df_out" | grep -En "([9][0-4]%)" || true)"
-if [[ -n "$critical_fs" ]]; then
-  add CRITICAL "Filesystem usage >=95% detected."
-elif [[ -n "$high_fs" ]]; then
-  add HIGH "Filesystem usage >=90% detected."
-else
-  add INFO "Disk usage below 90%."
-fi
+  if [[ ! -x "$script" ]]; then
+    python3 - "$name" "$out" <<'PY'
+import json, sys
+name, out = sys.argv[1], sys.argv[2]
+payload = {
+    "check": name,
+    "status": "error",
+    "severity": "high",
+    "findings": [f"Check script missing or not executable: check_{name}.sh"],
+    "evidence": [],
+    "suggested_fixes": [f"chmod +x skills/server-audit/scripts/check_{name}.sh"],
+    "meta": {}
+}
+with open(out, "w", encoding="utf-8") as f:
+    json.dump(payload, f, indent=2)
+PY
+    return 1
+  fi
 
-journal_out="$(run_remote "command -v journalctl >/dev/null && journalctl --since '1 hour ago' -p err --no-pager || echo '__NO_JOURNAL__'")"
-if [[ "$journal_out" == *"__NO_JOURNAL__"* ]]; then
-  add LOW "journalctl not available."
-else
-  err_count="$(printf '%s\n' "$journal_out" | grep -Ec "." || true)"
-  (( err_count > 20 )) && add HIGH "journalctl has many recent errors ($err_count lines)."
-  (( err_count > 0 && err_count <= 20 )) && add MEDIUM "journalctl has recent errors ($err_count lines)."
-  (( err_count == 0 )) && add INFO "No error-level journal entries in the last hour."
-fi
+  if ! "$script" "$CONFIG_PATH" > "$out"; then
+    python3 - "$name" "$out" <<'PY'
+import json, sys
+name, out = sys.argv[1], sys.argv[2]
+payload = {
+    "check": name,
+    "status": "error",
+    "severity": "high",
+    "findings": [f"Check script failed unexpectedly: check_{name}.sh"],
+    "evidence": [],
+    "suggested_fixes": ["Inspect script stderr and command prerequisites."],
+    "meta": {}
+}
+with open(out, "w", encoding="utf-8") as f:
+    json.dump(payload, f, indent=2)
+PY
+    return 1
+  fi
+}
 
-printf '%s\n' "${OUT[@]}"
-echo
-echo "Summary: CRITICAL=$c_critical HIGH=$c_high MEDIUM=$c_medium LOW=$c_low INFO=$c_info"
+for c in "${checks[@]}"; do
+  run_check "$c" &
+done
+wait
+
+python3 "$SCRIPTS_DIR/aggregate.py" "$CHECKS_DIR" "$REPORT_PATH"
+echo "Saved report: $REPORT_PATH"
