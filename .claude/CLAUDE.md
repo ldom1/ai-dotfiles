@@ -34,6 +34,23 @@ Manual fallback:
 bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh [start|end]
 bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh
 ```
+
+## Brain System Integration
+
+Brain system runs automatically at session start:
+
+1. **brain-sync start** — pulls vault
+2. **brain-route** — decides session mode (normal or maintenance)
+   - If maintenance → runs brain-audit (compiles raw data, finds connections, runs Q&A, generates digest)
+   - If normal → runs brain-load (loads project context)
+3. **work** — your normal session
+4. **brain-sync end** — commits + pushes vault
+
+### Manual Triggers
+
+- Force maintenance mode: `brain-route --maintenance` (at session start)
+- View last maintenance: `cat $BRAIN_PATH/meta/last-maintenance.md`
+- View latest digest: `ls -lt $BRAIN_PATH/meta/digest-*.md | head -1`
 ## Remote Server Work
 
 When working on remote servers via SSH, always verify the fix actually works from the user's perspective (e.g., curl the endpoint, check browser response) before declaring success. Never assume a config change resolved the issue without end-to-end verification.
@@ -45,3 +62,10 @@ For git operations (rm --cached, .gitignore changes, resets): always check for n
 ## Remote Server Work 
 
 When debugging infrastructure (nginx, Docker, Tailscale, Authelia), identify ALL config file locations and which one is actually active before making changes. Run `nginx -T` or equivalent to confirm the live config.
+
+## Documentation Hygiene
+
+When behavior, workflow, setup, commands, or visible outputs change:
+- Always update `CHANGELOG.md` in the same work.
+- Update `README.md` when user-facing usage/structure changed.
+- Do not skip docs updates even for "small" infra/skill changes.
