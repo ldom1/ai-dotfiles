@@ -23,7 +23,7 @@ AI skills for Claude Code, Cursor, and Mistral Vibe — plus personal config syn
 | [brain-sync](https://github.com/ldom1/ai-dotfiles/wiki/Brain-Sync) | Sync Local Brain Obsidian vault at session start/end |
 | [brain-load](https://github.com/ldom1/ai-dotfiles/wiki/Brain-Load) | Load / instantiate project notes from vault |
 | [create-pr](https://github.com/ldom1/ai-dotfiles/wiki/Create-PR) | GitHub PR with branch + commit conventions |
-| `server-audit` | Server health triage (local/SSH): Docker, nginx, systemd, disk, journalctl |
+| `server-audit` | Comprehensive infra audit with parallel checks and JSON reports |
 
 **Full documentation → [Wiki](https://github.com/ldom1/ai-dotfiles/wiki)**
 
@@ -80,6 +80,9 @@ ai-dotfiles/
 │   └── server-audit/                # /server-audit — robust server audit
 │       ├── SKILL.md
 │       ├── scripts/audit.sh
+│       ├── scripts/check_*.sh
+│       ├── scripts/aggregate.py
+│       ├── config/targets.json.example
 │       ├── .claude-plugin/plugin.json
 │       └── skills/server-audit/SKILL.md -> ../../SKILL.md
 ├── config/
@@ -113,6 +116,28 @@ cd ~/ai-dotfiles && git add . && git commit -m "feat(core): short summary" && gi
 # On another machine:
 git pull && bash scripts/install.sh
 ```
+
+## Server audit skill
+
+`server-audit` runs six checks in parallel and writes structured output:
+- Docker container health
+- nginx endpoint + buffering validation
+- Tailscale peer connectivity
+- Authelia auth-flow probes
+- cron registration + recency
+- git cleanliness + embedded-repo warnings
+
+```bash
+# Interactive (asks what to test)
+bash skills/server-audit/scripts/audit.sh
+
+# Config-driven (repeatable)
+bash skills/server-audit/scripts/audit.sh skills/server-audit/config/targets.json
+```
+
+Outputs:
+- `skills/server-audit/out/<timestamp>/checks/*.json`
+- `skills/server-audit/out/<timestamp>/report.json`
 
 ## Dependencies
 

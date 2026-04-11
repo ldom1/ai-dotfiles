@@ -40,3 +40,7 @@
 
 # Local Brain config — machine-specific, do not track
 config/brain.env
+
+# Server audit local/runtime artifacts
+skills/server-audit/config/targets.json
+skills/server-audit/out/

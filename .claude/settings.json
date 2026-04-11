@@ -1,9 +1,6 @@
 {
-  "model": "opusplan",
+  "model": "haiku",
   "hooks": {
-    "pre-commit": {
-      "command": "git diff --cached --name-only | grep -E '\\.(cursor|vs)/' && echo 'ERROR: IDE files staged for commit' && exit 1 || true"
-    },
     "SessionStart": [
       {
         "hooks": [

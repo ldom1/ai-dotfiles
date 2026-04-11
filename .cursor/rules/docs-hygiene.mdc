@@ -1,0 +1,10 @@
+---
+description: Always update changelog and README when relevant behavior changes.
+alwaysApply: true
+---
+
+# Documentation Hygiene
+
+- When behavior, workflow, setup, commands, or visible outputs change, always update `CHANGELOG.md` in the same work.
+- Update `README.md` whenever user-facing usage, configuration, or project structure has changed.
+- Do not skip docs updates for small infra or skill changes.

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "clawvis-skills": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "/clawvis/mcp/server.js"
+      ]
+    }
+  }
+}
