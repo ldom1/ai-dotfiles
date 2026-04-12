@@ -5,7 +5,7 @@ set -euo pipefail
 
 # Resolve BRAIN_PATH
 if [[ -f ~/ai-dotfiles/config/brain.env ]]; then
-  BRAIN_PATH=$(grep BRAIN_PATH ~/ai-dotfiles/config/brain.env | cut -d= -f2)
+  BRAIN_PATH=$(grep "^BRAIN_PATH=" ~/ai-dotfiles/config/brain.env | cut -d= -f2 | tr -d '"')
 else
   echo "Error: ~/ai-dotfiles/config/brain.env not found" >&2
   exit 1
