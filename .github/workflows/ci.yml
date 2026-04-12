@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -25,6 +26,7 @@ jobs:
               - 'docs/wiki/**'
               - 'scripts/update-wiki.sh'
               - '.pre-commit-config.yaml'
+              - '.github/workflows/ci.yml'
 
   shellcheck:
     name: Shell scripts
@@ -95,9 +97,11 @@ jobs:
     needs: [changes, shellcheck, validate-json, validate-skills]
     runs-on: ubuntu-latest
     if: >
-      github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
-      needs.changes.outputs.wiki == 'true'
+      (
+        (github.event_name == 'push' && needs.changes.outputs.wiki == 'true') ||
+        github.event_name == 'workflow_dispatch'
+      )
     permissions:
       contents: write
     steps:
@@ -114,4 +118,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WIKI_PUSH_TOKEN: ${{ secrets.WIKI_PUSH_TOKEN }}
-        run: pre-commit run update-wiki --hook-stage manual --all-files
+        run: |
+          if [ -z "${WIKI_PUSH_TOKEN:-}" ]; then
+            echo "::notice::WIKI_PUSH_TOKEN is empty — using GITHUB_TOKEN. If push fails, add a repo secret WIKI_PUSH_TOKEN (classic PAT: repo scope) or enable Workflow permissions → Read and write in repo Settings → Actions → General."
+          fi
+          pre-commit run update-wiki --hook-stage manual --all-files

@@ -61,6 +61,10 @@ fi
 
 MSG="sync: docs/wiki (${GITHUB_SHA:-$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null || echo local)})"
 git commit -m "$MSG"
-git push origin HEAD
+if ! git push origin HEAD; then
+  echo "[update-wiki] git push failed — GitHub Actions often cannot push the wiki with GITHUB_TOKEN alone." >&2
+  echo "[update-wiki] Add repo secret WIKI_PUSH_TOKEN (PAT with repo scope) or push from your machine: bash scripts/update-wiki.sh" >&2
+  exit 1
+fi
 
 echo "[update-wiki] pushed to wiki"
