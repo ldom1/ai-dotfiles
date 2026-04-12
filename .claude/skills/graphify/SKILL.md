@@ -62,7 +62,25 @@ Follow these steps in order. Do not skip steps.
 ### Step 1 - Ensure graphify is installed
 
 ```bash
-# Detect the correct Python interpreter (handles pipx, venv, system installs)
+# Check for local uv-based graphify project first
+mkdir -p graphify-out
+if [ -f /home/lgiron/lab/graphify/uv.lock ] && command -v uv &>/dev/null; then
+    # Create a wrapper script for uv run python
+    cat > graphify-out/.graphify_wrapper.sh << 'EOF'
+#!/bin/bash
+cd /home/lgiron/lab/graphify && exec uv run python "$@"
+EOF
+    chmod +x graphify-out/.graphify_wrapper.sh
+    
+    # Test it
+    if graphify-out/.graphify_wrapper.sh -c "import graphify; print('ok')" > /dev/null 2>&1; then
+        echo "graphify-out/.graphify_wrapper.sh" > graphify-out/.graphify_python
+        echo "Using local uv graphify"
+        exit 0
+    fi
+fi
+
+# Fallback: Detect the correct Python interpreter (handles pipx, venv, system installs)
 GRAPHIFY_BIN=$(which graphify 2>/dev/null)
 if [ -n "$GRAPHIFY_BIN" ]; then
     PYTHON=$(head -1 "$GRAPHIFY_BIN" | tr -d '#!')
@@ -73,8 +91,8 @@ else
     PYTHON="python3"
 fi
 "$PYTHON" -c "import graphify" 2>/dev/null || "$PYTHON" -m pip install graphifyy -q 2>/dev/null || "$PYTHON" -m pip install graphifyy -q --break-system-packages 2>&1 | tail -3
+
 # Write interpreter path for all subsequent steps (persists across invocations)
-mkdir -p graphify-out
 "$PYTHON" -c "import sys; open('graphify-out/.graphify_python', 'w').write(sys.executable)"
 ```
 

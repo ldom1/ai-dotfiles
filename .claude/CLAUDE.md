@@ -73,6 +73,18 @@ When behavior, workflow, setup, commands, or visible outputs change:
 - Always update `CHANGELOG.md` in the same work.
 - Update `README.md` when user-facing usage/structure changed.
 - Do not skip docs updates even for "small" infra/skill changes.
-# graphify
-- **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
-When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` before doing anything else.
+
+## Graphify
+
+### Project context (`graphify-out*`)
+
+At the **start of substantive work** in a project repo, check the **repository root** for Graphify output:
+
+- `graphify-out.md`, `graphify-out.json`, or any **file** whose name starts with `graphify-out`
+- If there is a **`graphify-out/`** directory at the root (common CLI layout), treat **`graphify-out/graph.json`** as the canonical graph when present; otherwise read the clearest summary **`.md` or `.json`** in that directory (not the whole folder blindly)
+
+**If found:** read enough to ground architecture, modules, dependencies, entry points, data flow, naming, and stated constraints. **Prefer this over inferring structure from raw file trees** when it does not contradict the task. Proceed **silently** after loading unless something conflicts with the request or needs clarification.
+
+**If not found:** work as usual; context may be incomplete. You may suggest generating output via [Graphify](https://graphify.net/).
+
+**Never** modify, overwrite, or delete `graphify-out*` artifacts.
