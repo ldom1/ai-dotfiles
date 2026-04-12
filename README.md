@@ -16,12 +16,14 @@ AI skills for Claude Code, Cursor, and Mistral Vibe — plus personal config syn
 /plugin install brain-load@ldom1/ai-dotfiles
 /plugin install create-pr@ldom1/ai-dotfiles
 /plugin install server-audit@ldom1/ai-dotfiles
+/plugin install notion-brain-sync@ldom1/ai-dotfiles
 ```
 
 | Skill | Purpose |
 |-------|---------|
 | [brain-sync](https://github.com/ldom1/ai-dotfiles/wiki/Brain-Sync) | Sync Local Brain Obsidian vault at session start/end |
 | [brain-load](https://github.com/ldom1/ai-dotfiles/wiki/Brain-Load) | Load / instantiate project notes from vault |
+| `notion-brain-sync` | Ingest Notion-style captures into the vault with L1/L2/L3 routing and `log.md` |
 | [create-pr](https://github.com/ldom1/ai-dotfiles/wiki/Create-PR) | GitHub PR with branch + commit conventions |
 | `server-audit` | Comprehensive infra audit with parallel checks and JSON reports |
 
@@ -59,7 +61,7 @@ ai-dotfiles/
 │   └── hooks/
 │       └── rtk-rewrite.sh           # PreToolUse: rtk rewrite + tail cap on noisy output
 ├── .cursor/
-│   ├── rules/                       # brain-sync, brain-load, finops-claude (.mdc)
+│   ├── rules/                       # brain-sync, brain-load, finops-claude, graphify-context (.mdc)
 │   └── skills                       # symlink → ../skills (shared skill source)
 ├── .vibe/
 │   ├── AGENTS.md                    # Mistral Vibe bootstrap (canonical)
@@ -73,6 +75,9 @@ ai-dotfiles/
 │   ├── brain-load/                  # Load / instantiate Local Brain project notes
 │   │   ├── SKILL.md
 │   │   ├── scripts/
+│   │   └── reference/
+│   ├── notion-brain-sync/           # /notion-brain-sync — Notion → vault ingest + log.md
+│   │   ├── SKILL.md
 │   │   └── reference/
 │   ├── create-pr/                   # /create-pr — gh + git conventions
 │   │   ├── SKILL.md

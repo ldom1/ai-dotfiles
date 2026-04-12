@@ -47,16 +47,19 @@ Run this skill to generate token spend reports in markdown (appended to vault) a
 
 ## Configuration
 
-Optional settings in `~/.claude/finops.json`:
+Optional settings in `~/.claude/settings.json` under `pluginConfigs`:
 
 ```json
 {
-  "finops": {
-    "enabled": true,
-    "session_token_budget": 44000,
-    "json_report_path": "~/.claude/reports",
-    "json_report_filename_pattern": "token-report-{date}.json",
-    "include_all_time_totals": true
+  "pluginConfigs": {
+    "finops-audit": {
+      "options": {
+        "session_token_budget": 44000,
+        "json_report_path": "~/.claude/reports",
+        "json_report_filename_pattern": "token-report-{date}.json",
+        "include_all_time_totals": true
+      }
+    }
   }
 }
 ```

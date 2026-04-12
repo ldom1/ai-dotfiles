@@ -73,3 +73,6 @@ When behavior, workflow, setup, commands, or visible outputs change:
 - Always update `CHANGELOG.md` in the same work.
 - Update `README.md` when user-facing usage/structure changed.
 - Do not skip docs updates even for "small" infra/skill changes.
+# graphify
+- **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
+When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` before doing anything else.

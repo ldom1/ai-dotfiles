@@ -4,6 +4,8 @@
 
 ### Added
 
+- **Cursor rule** `.cursor/rules/graphify-context.mdc`: when `graphify-out*` exists at the project root (file or `graphify-out/` with `graph.json`), treat it as canonical architecture context; do not overwrite those artifacts.
+
 - **brain-route skill**: Session mode decision router that determines whether to run maintenance (brain-audit) or normal context load (brain-load) based on vault state
   - Decision rules: >7 days since last maintenance, >50 unprocessed raw files, or explicit --maintenance flag
   - Logs decision + reason to session context

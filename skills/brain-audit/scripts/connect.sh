@@ -61,8 +61,7 @@ extract_keywords() {
     grep -io '\b[a-z][a-z-]*\b' "$file" 2>/dev/null | \
         tr '[:upper:]' '[:lower:]' | \
         grep -v '^\(the\|and\|or\|but\|for\|in\|of\|to\|a\|an\|is\|are\|be\|at\|by\|from\|it\|on\|as\)$' | \
-        sort -u | \
-        head -20
+        awk '!seen[$0]++ { if (n++ < 20) print }'
 }
 
 # Build suggestion file
@@ -85,7 +84,8 @@ log_info "Analyzing connections..."
         rel_path_a="${file_a#$BRAIN_PATH/}"
 
         # Simple connection count: lines containing [[
-        connection_count=$(grep -c '\[\[' "$file_a" 2>/dev/null || echo 0)
+        connection_count=$(grep -c '\[\[' "$file_a" 2>/dev/null) || true
+        connection_count=${connection_count:-0}
 
         # If weakly connected, suggest links
         if [[ $connection_count -lt 2 ]]; then
@@ -104,7 +104,7 @@ log_info "Analyzing connections..."
                 keywords_b=$(extract_keywords "$file_b")
 
                 # Count matching keywords (simple similarity)
-                matches=$(comm -12 <(echo "$keywords_a") <(echo "$keywords_b") | wc -l)
+                matches=$(comm -12 <(echo "$keywords_a") <(echo "$keywords_b") | wc -l | tr -d '[:space:]')
 
                 if [[ $matches -gt 2 ]]; then
                     filename_b=$(basename "$file_b")
