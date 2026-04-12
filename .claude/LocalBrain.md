@@ -28,6 +28,7 @@ Canonical vault: `$BRAIN_PATH` (set in `~/ai-dotfiles/config/brain.env`).
 | Active project meta | `projects/<name>.md` |
 | Ideas / opportunities | `caps/entrepreneur.md` or `todo/` |
 | Daily capture | `daily/YYYY-MM-DD.md` |
+| Implementation session log | `inbox/daily/implementation/<slug>/YYYY-MM-DD-topic.md` |
 | Persistent memory | `docs/memory/MEMORY.md` |
 | Session context | `docs/context/session-YYYY-MM-DD.md` |
 
@@ -45,6 +46,9 @@ Superpowers artifacts (plans, specs) → `resources/knowledge/architecture/plans
 $BRAIN_PATH/
 ├── IDENTITY.md
 ├── breadcrumbs.md
+├── inbox/
+│   └── daily/
+│       └── implementation/  ← implementation session logs by project
 ├── daily/
 ├── projects/
 ├── caps/               ← areas of responsibility

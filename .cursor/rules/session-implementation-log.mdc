@@ -1,0 +1,20 @@
+---
+description: Log every agent session under Local Brain inbox/daily/implementation by project.
+alwaysApply: true
+---
+
+# Session implementation log (Local Brain)
+
+For **every** conversation that does substantive work on a project (code, infra, skills, vault structure):
+
+1. Resolve **`$BRAIN_PATH`** from `~/ai-dotfiles/config/brain.env` if unset.
+2. Choose **`<project-name>`** (slug): prefer an existing `projects/<slug>.md`, CAP id, or git remote/repo name; if unclear, ask once and then reuse that slug.
+3. Create or update a markdown file under:
+
+   `$BRAIN_PATH/inbox/daily/implementation/<project-name>/`
+
+   Prefer **`YYYY-MM-DD-short-topic.md`** for new sessions, or append to today's file if it is the same thread.
+
+4. Record at minimum: **goal**, **what changed** (files, decisions), **commands/tests** worth repeating, **open follow-ups**.
+
+**Do not** write new implementation history under `index/implementation/` (that path does not exist in the vault).

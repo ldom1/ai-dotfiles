@@ -15,6 +15,10 @@ Occam's razor: fewest assumptions, smallest surface area. Structured, simple, re
 ## Session discipline
 /clear on context switches. /rename before /clear if you may --resume. /compact at every milestone — do not wait for the limit.
 
+## Session implementation log (Local Brain)
+
+For every substantive session on a project: write to **`$BRAIN_PATH/inbox/daily/implementation/<project-name>/YYYY-MM-DD-topic.md`** (resolve `BRAIN_PATH` from `~/ai-dotfiles/config/brain.env`). Continue the same day's file if the thread continues. Include goal, changes, commands/tests, and follow-ups. **Do not** use `index/implementation/` — that path does not exist in the vault.
+
 ## Compaction focus
 When compacting, preserve: files in scope, open decisions, failing tests/errors, next command to run, explicit user constraints.
 
