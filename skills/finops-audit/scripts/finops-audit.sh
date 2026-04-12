@@ -132,6 +132,30 @@ format_json_report() {
 JSON
 }
 
+# Write JSON report to file
+write_json_report() {
+  local json_report="$1"
+  local output_path="$2"
+  local filename_pattern="$3"
+
+  # Create output directory if needed
+  mkdir -p "$output_path"
+
+  # Generate filename from pattern
+  local today=$(date +%Y-%m-%d)
+  local filename="${filename_pattern/\{date\}/$today}"
+  local filepath="$output_path/$filename"
+
+  # Write JSON to file
+  echo "$json_report" > "$filepath"
+
+  if [[ "$QUIET" == "false" ]]; then
+    echo "JSON report written to: $filepath" >&2
+  fi
+
+  echo "$filepath"  # Return filepath for stdout output if needed
+}
+
 # Main execution
 check_ccusage
 
@@ -144,4 +168,11 @@ AGGREGATES=$(aggregate_tokens "$CCUSAGE_DATA")
 # Format as JSON if needed
 if [[ "$OUTPUT_FORMAT" == "json" || "$OUTPUT_FORMAT" == "both" ]]; then
   JSON_REPORT=$(format_json_report "$CCUSAGE_DATA" "$AGGREGATES")
+
+  # Write JSON to file if requested
+  JSON_FILE=$(write_json_report "$JSON_REPORT" "$JSON_REPORT_PATH" "$JSON_FILENAME_PATTERN")
+
+  if [[ "$OUTPUT_FORMAT" == "json" && "$QUIET" == "false" ]]; then
+    echo "$JSON_REPORT"
+  fi
 fi
