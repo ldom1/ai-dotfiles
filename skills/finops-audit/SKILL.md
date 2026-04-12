@@ -1,33 +1,72 @@
 ---
 name: finops-audit
-description: Weekly token spend review via ccusage — structured report appended to finops-history.md in the Local Brain vault
+description: >-
+  Weekly token spend review via ccusage — structured markdown + JSON reports. 
+  Run every Monday to review token spend, set concrete improvements, and optionally 
+  export JSON for external tools (dashboards, analytics, visualizers).
 user-invocable: true
 ---
 
 # finops-audit
 
-Run **`/finops-audit`** every Monday to review last week's token spend and set a concrete improvement for the coming week.
+Run this skill to generate token spend reports in markdown (appended to vault) and/or JSON (exported to file).
 
-## What it does
+## Commands
 
-1. Runs ccusage for monthly and weekly breakdowns
-2. Generates a structured report
-3. Appends to `$BRAIN_PATH/resources/knowledge/operational/finops-history.md`
-
-## Commands to run
-
+### Default: Markdown report (append to vault)
 ```bash
-# Monthly breakdown (includes last 7 days)
-npx ccusage@latest monthly --breakdown
+/finops-audit
+```
+- Runs ccusage commands (monthly, daily breakdown)
+- Generates markdown report
+- Appends to `$BRAIN_PATH/resources/knowledge/operational/finops-history.md`
 
-# Daily breakdown since last Monday (adjust date)
-LAST_MONDAY=$(date -d "last monday" +%Y-%m-%d 2>/dev/null || date -v-monday +%Y-%m-%d)
-npx ccusage@latest daily --breakdown
+### JSON-only export
+```bash
+/finops-audit --json
+```
+- Generates JSON report
+- Writes to `~/.claude/reports/token-report-<YYYY-MM-DD>.json` (configurable)
+- Prints to stdout
+
+### Both markdown and JSON
+```bash
+/finops-audit --both
+```
+- Generates both markdown and JSON
+- Appends markdown to vault
+- Writes JSON to file
+- Prints both to stdout
+
+### Silent JSON export (file only)
+```bash
+/finops-audit --json --quiet
+```
+- Generates JSON and writes to file
+- No stdout output
+
+## Configuration
+
+Optional settings in `~/.claude/settings.json`:
+
+```json
+{
+  "finops": {
+    "enabled": true,
+    "session_token_budget": 44000,
+    "json_report_path": "~/.claude/reports",
+    "json_report_filename_pattern": "token-report-{date}.json",
+    "include_all_time_totals": true
+  }
+}
 ```
 
-## Report format
+**Defaults:**
+- `session_token_budget`: 44000 (Claude Code Pro 5-hour window)
+- `json_report_path`: `~/.claude/reports`
+- `include_all_time_totals`: true
 
-After running the commands above, generate and append this report:
+## Markdown Report Format
 
 ```markdown
 ## Token Audit — Week of <YYYY-MM-DD>
@@ -39,28 +78,71 @@ Hotspot day: <weekday> (<X> tokens)
 Recommendation: <one concrete change for next week>
 ```
 
-Append to: `$BRAIN_PATH/resources/knowledge/operational/finops-history.md`
+Appended to: `$BRAIN_PATH/resources/knowledge/operational/finops-history.md`
 
-```bash
-BRAIN_PATH=$(grep BRAIN_PATH ~/ai-dotfiles/config/brain.env | cut -d= -f2)
-echo "## Token Audit — Week of $(date +%Y-%m-%d)" >> "$BRAIN_PATH/resources/knowledge/operational/finops-history.md"
-# ... append full report
+## JSON Report Schema
+
+The JSON includes aggregates (year/month/week/day), projects, sessions, and current session snapshot.
+
+```json
+{
+  "generated_at": "2026-04-12T14:32:00Z",
+  "totals": {
+    "all_time": { "tokens": 150000, "cost_usd": 2.5000 },
+    "year": { "tokens": 145000, "cost_usd": 2.4500 },
+    "month": { "tokens": 85000, "cost_usd": 1.4200 },
+    "week": { "tokens": 25000, "cost_usd": 0.4100 },
+    "day": { "tokens": 8500, "cost_usd": 0.1400 }
+  },
+  "projects": [ ... ],
+  "sessions": [ ... ],
+  "current_session": { ... }
+}
 ```
 
-## Weekly habit triggers
+See the implementation docs for complete schema.
 
-| Signal | Action |
-|--------|--------|
-| Opus > 40% of weekly tokens | Audit which sessions used Opus; move to Sonnet |
-| Any single session > 20k tokens | Was that session worth it? Add to pitfalls if not |
-| Total > 200k tokens/week | Reduce brain-load verbosity (`BRAIN_LOAD_SLIM=1` for non-project work) |
-| CLAUDE.md > 50 lines | Trim again |
+## Weekly Habit
 
-## Cron reminder
-
-Add to your calendar or shell alias: run `/finops-audit` every Monday before starting Claude Code.
+Every Monday morning, run:
 
 ```bash
-# Optional cron (runs ccusage summary, not Claude)
-# 0 9 * * 1  npx ccusage@latest monthly --breakdown >> ~/.claude/logs/finops-weekly.log
+/finops-audit --both
 ```
+
+to review last week's spend AND export JSON for your tracking tool.
+
+## Integration with External Tools
+
+JSON export is designed for consumption by external applications:
+
+```bash
+/finops-audit --json --quiet
+# Writes to ~/.claude/reports/token-report-2026-04-12.json
+# Your visualizer can now read and display this data
+```
+
+## Troubleshooting
+
+**Error: ccusage not found**
+
+Install with:
+```bash
+npm install -g ccusage
+```
+
+Or use via npx (no installation):
+```bash
+npx ccusage@latest blocks --live
+```
+
+**Error: Cannot write to JSON path**
+
+Check that `~/.claude/reports/` exists and is writable:
+```bash
+mkdir -p ~/.claude/reports && chmod 755 ~/.claude/reports
+```
+
+**No session data available**
+
+This can happen if ccusage hasn't recorded any sessions yet. Run a Claude Code session first, then run finops-audit.
