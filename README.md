@@ -18,16 +18,26 @@ AI skills for Claude Code, Cursor, and Mistral Vibe — plus personal config syn
 /plugin install server-audit@ldom1/ai-dotfiles
 /plugin install notion-brain-sync@ldom1/ai-dotfiles
 /plugin install graphify@ldom1/ai-dotfiles
+/plugin install token-watch@ldom1/ai-dotfiles
+/plugin install token-guard@ldom1/ai-dotfiles
+/plugin install finops-audit@ldom1/ai-dotfiles
 ```
 
 | Skill | Purpose |
 |-------|---------|
-| [brain-sync](https://github.com/ldom1/ai-dotfiles/wiki/Brain-Sync) | Sync Local Brain Obsidian vault at session start/end |
-| [brain-load](https://github.com/ldom1/ai-dotfiles/wiki/Brain-Load) | Load / instantiate project notes from vault |
-| `notion-brain-sync` | Ingest Notion-style captures into the vault with L1/L2/L3 routing and `log.md` |
-| [create-pr](https://github.com/ldom1/ai-dotfiles/wiki/Create-PR) | GitHub PR with branch + commit conventions |
-| `server-audit` | Comprehensive infra audit with parallel checks and JSON reports |
-| `graphify` | `/graphify` — folder → knowledge graph (HTML, JSON, Obsidian, queries); see [Graphify](https://graphify.net/) |
+| [brain-sync](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Sync) | Sync Local Brain Obsidian vault at session start/end |
+| [brain-load](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Load) | Load / instantiate project notes from vault |
+| [brain-route](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Route) | Session router: maintenance vs normal (used after brain-sync pull) |
+| [brain-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Audit) | Four-phase vault maintenance (raw → digest) |
+| [notion-brain-sync](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Notion-Brain-Sync) | Notion → vault ingest, L1/L2/L3 routing, `log.md` |
+| [create-pr](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Create-PR) | GitHub PR with branch + commit conventions |
+| [server-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Server-Audit) | Infra audit: parallel checks and JSON reports |
+| [graphify](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Graphify) | `/graphify` — folder → knowledge graph; also [graphify.net](https://graphify.net/) |
+| [token-watch](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Token-Watch) | Token burn snapshot via ccusage |
+| [token-guard](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Token-Guard) | Model routing heuristic + `/model-check` |
+| [finops-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/FinOps-Audit) | Weekly token spend review → vault |
+
+Wiki hub: **[Skills](https://github.com/ldom1/ai-dotfiles/wiki/Skills)** (catalogue). Each skill page should live under the **`Skills/`** namespace (e.g. `Skills/Brain-Sync`). Source stubs live in **[`docs/wiki/`](docs/wiki/README.md)**. On **push to `main`**, after **shellcheck, JSON, and skill checks** succeed, CI runs the **Publish wiki** job (path-filtered: `docs/wiki/**`, `scripts/update-wiki.sh`, `.pre-commit-config.yaml`) via **`pre-commit run update-wiki`** → [`scripts/update-wiki.sh`](scripts/update-wiki.sh). If push fails, add repo secret **`WIKI_PUSH_TOKEN`**. Local: `pip install -r requirements-dev.txt` and `pre-commit run update-wiki --hook-stage manual --all-files`.
 
 **Full documentation → [Wiki](https://github.com/ldom1/ai-dotfiles/wiki)**
 
@@ -103,13 +113,18 @@ ai-dotfiles/
 │   └── graphify.env                 # Your graphify clone path (gitignored)
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml                   # Shellcheck, JSON validation, skill structure
+│       ├── ci.yml                   # Shellcheck, JSON, skills; wiki publish after pass (main + paths)
 │       └── release.yml              # GitHub Release on v* tags
+├── .pre-commit-config.yaml          # manual hook: update-wiki → scripts/update-wiki.sh
+├── docs/
+│   └── wiki/                        # Markdown stubs → copy to GitHub wiki (`Skills/` pages)
+├── requirements-dev.txt             # pre-commit (wiki hook + local dev)
 ├── LICENSE
 ├── CONTRIBUTING.md
 ├── prompts/
 └── scripts/
-    └── install.sh                   # Setup script (symlinks, settings, hooks)
+    ├── install.sh                   # Setup script (symlinks, settings, hooks)
+    └── update-wiki.sh               # Sync docs/wiki into GitHub wiki (.wiki.git)
 ```
 
 > **Note — nested `skills/<name>/skills/<name>/SKILL.md`**
