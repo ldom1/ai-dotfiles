@@ -79,8 +79,69 @@ run_ccusage() {
 JSON
 }
 
+# Aggregate token data into structured format
+# Returns JSON object with totals for all_time, year, month, week, day
+aggregate_tokens() {
+  local ccusage_data="$1"
+
+  # Parse ccusage data and aggregate by time period
+  # For now, return structure with null placeholders for Task 8 parsing
+  cat <<JSON
+{
+  "all_time": {
+    "tokens": null,
+    "cost_usd": null
+  },
+  "year": {
+    "tokens": null,
+    "cost_usd": null
+  },
+  "month": {
+    "tokens": null,
+    "cost_usd": null
+  },
+  "week": {
+    "tokens": null,
+    "cost_usd": null
+  },
+  "day": {
+    "tokens": null,
+    "cost_usd": null
+  }
+}
+JSON
+}
+
+# Format aggregated data into complete JSON report with metadata
+# Includes timestamp, aggregates, and ccusage data structure
+format_json_report() {
+  local ccusage_data="$1"
+  local aggregates="$2"
+  local timestamp
+
+  # Generate ISO 8601 timestamp
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+  # Merge aggregates with metadata and ccusage structure
+  cat <<JSON
+{
+  "generated_at": "$timestamp",
+  "totals": $aggregates,
+  "raw_ccusage": $ccusage_data
+}
+JSON
+}
+
 # Main execution
 check_ccusage
 
 # Capture ccusage data
 CCUSAGE_DATA=$(run_ccusage)
+
+# Aggregate token data
+AGGREGATES=$(aggregate_tokens "$CCUSAGE_DATA")
+
+# Format as JSON if needed
+if [[ "$OUTPUT_FORMAT" == "json" || "$OUTPUT_FORMAT" == "both" ]]; then
+  JSON_REPORT=$(format_json_report "$CCUSAGE_DATA" "$AGGREGATES")
+fi
