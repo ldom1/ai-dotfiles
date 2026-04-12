@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 set -euo pipefail
 
 # Load configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/_config.sh"
+
+# Validate configuration
+if [[ -z "$BRAIN_PATH" || -z "$JSON_REPORT_PATH" ]]; then
+  echo "Error: Configuration incomplete" >&2
+  exit 1
+fi
 
 # Default flags
 OUTPUT_FORMAT="markdown"  # markdown, json, both
