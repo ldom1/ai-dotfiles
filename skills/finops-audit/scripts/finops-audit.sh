@@ -168,29 +168,42 @@ extract_daily_totals() {
 aggregate_tokens() {
   local json_data="$1"
 
-  # Get current date and date ranges for calculations
-  local today
-  today=$(date +%Y-%m-%d)
-  local this_month
-  this_month=$(date +%Y-%m)
-  local this_year
-  this_year=$(date +%Y)
-  # Week starts on Sunday (0 days back) for this week
-  local week_start
-  week_start=$(date -d "$(date +%Y-%m-%d) - $(date +%w) days" +%Y-%m-%d 2>/dev/null || date -v-"$(date +%w)"d +%Y-%m-%d)
+  # Validate input
+  if [[ -z "$json_data" || "$json_data" == "{}" ]]; then
+    echo '{"all_time":{"tokens":0,"cost_usd":"0.0000"},"year":{"tokens":0,"cost_usd":"0.0000"},"month":{"tokens":0,"cost_usd":"0.0000"},"week":{"tokens":0,"cost_usd":"0.0000"},"day":{"tokens":0,"cost_usd":"0.0000"}}'
+    return 0
+  fi
 
-  # Create temporary Python script for aggregation
+  # Get current date and date ranges for calculations
+  local today this_month this_year week_start
+  today=$(date +%Y-%m-%d)
+  this_month=$(date +%Y-%m)
+  this_year=$(date +%Y)
+
+  # Calculate week start (days back from today)
+  if command -v date &>/dev/null; then
+    week_start=$(date -d "$(date +%Y-%m-%d) - $(date +%w) days" +%Y-%m-%d 2>/dev/null || date -v-"$(date +%w)"d +%Y-%m-%d 2>/dev/null || echo "$today")
+  else
+    week_start="$today"
+  fi
+
+  # Try Python first, fall back to grep parsing
   local py_script="/tmp/finops_aggregate_$$.py"
+  local result=""
+
   cat > "$py_script" << 'PYTHON_SCRIPT'
 import json
 import sys
 
 try:
   data = json.load(sys.stdin)
-  today = sys.argv[1]
-  this_month = sys.argv[2]
-  this_year = sys.argv[3]
-  week_start = sys.argv[4]
+  if not isinstance(data, dict) or 'daily' not in data:
+    sys.exit(1)
+
+  today = sys.argv[1] if len(sys.argv) > 1 else ""
+  this_month = sys.argv[2] if len(sys.argv) > 2 else ""
+  this_year = sys.argv[3] if len(sys.argv) > 3 else ""
+  week_start = sys.argv[4] if len(sys.argv) > 4 else ""
 
   all_time_tokens = all_time_cost = 0
   year_tokens = year_cost = 0
@@ -202,6 +215,9 @@ try:
     date_str = entry.get('date', '')
     tokens = entry.get('totalTokens', 0)
     cost = entry.get('totalCost', 0)
+
+    if not isinstance(tokens, (int, float)) or not isinstance(cost, (int, float)):
+      continue
 
     all_time_tokens += tokens
     all_time_cost += cost
@@ -223,22 +239,28 @@ try:
       day_cost += cost
 
   result = {
-    "all_time": {"tokens": all_time_tokens, "cost_usd": f"{all_time_cost:.4f}"},
-    "year": {"tokens": year_tokens, "cost_usd": f"{year_cost:.4f}"},
-    "month": {"tokens": month_tokens, "cost_usd": f"{month_cost:.4f}"},
-    "week": {"tokens": week_tokens, "cost_usd": f"{week_cost:.4f}"},
-    "day": {"tokens": day_tokens, "cost_usd": f"{day_cost:.4f}"}
+    "all_time": {"tokens": int(all_time_tokens), "cost_usd": f"{all_time_cost:.4f}"},
+    "year": {"tokens": int(year_tokens), "cost_usd": f"{year_cost:.4f}"},
+    "month": {"tokens": int(month_tokens), "cost_usd": f"{month_cost:.4f}"},
+    "week": {"tokens": int(week_tokens), "cost_usd": f"{week_cost:.4f}"},
+    "day": {"tokens": int(day_tokens), "cost_usd": f"{day_cost:.4f}"}
   }
-  # Output compact JSON (no pretty printing)
   print(json.dumps(result, separators=(',', ':')))
-except:
-  pass
+except Exception as e:
+  sys.stderr.write(f"Error in aggregation: {e}\n")
+  sys.exit(1)
 PYTHON_SCRIPT
 
-  # Run Python script with proper error handling
-  echo "$json_data" | python3 "$py_script" "$today" "$this_month" "$this_year" "$week_start" 2>/dev/null || parse_json_with_grep "$json_data" "$today" "$this_month" "$this_year" "$week_start"
+  if command -v python3 &>/dev/null; then
+    result=$(echo "$json_data" | python3 "$py_script" "$today" "$this_month" "$this_year" "$week_start" 2>/dev/null)
+  fi
 
-  # Clean up temp file
+  # Fall back to grep if Python failed
+  if [[ -z "$result" ]]; then
+    result=$(parse_json_with_grep "$json_data" "$today" "$this_month" "$this_year" "$week_start")
+  fi
+
+  echo "$result"
   rm -f "$py_script"
 }
 
@@ -298,6 +320,8 @@ parse_json_with_grep() {
 build_projects_array() {
   local json_data="$1"
 
+  [[ -z "$json_data" ]] && echo "[]" && return 0
+
   local py_script="/tmp/finops_projects_$$.py"
   cat > "$py_script" << 'PYTHON_SCRIPT'
 import json
@@ -305,14 +329,24 @@ import sys
 
 try:
   data = json.load(sys.stdin)
+  if not isinstance(data, dict):
+    print("[]")
+    sys.exit(0)
+
   models = {}
 
   for entry in data.get('daily', []):
+    if not isinstance(entry, dict):
+      continue
     for model_breakdown in entry.get('modelBreakdowns', []):
+      if not isinstance(model_breakdown, dict):
+        continue
       model_name = model_breakdown.get('modelName', 'unknown')
-      tokens = model_breakdown.get('inputTokens', 0) + model_breakdown.get('outputTokens', 0) + \
-               model_breakdown.get('cacheCreationTokens', 0) + model_breakdown.get('cacheReadTokens', 0)
-      cost = model_breakdown.get('cost', 0)
+      tokens = (model_breakdown.get('inputTokens', 0) or 0) + \
+               (model_breakdown.get('outputTokens', 0) or 0) + \
+               (model_breakdown.get('cacheCreationTokens', 0) or 0) + \
+               (model_breakdown.get('cacheReadTokens', 0) or 0)
+      cost = model_breakdown.get('cost', 0) or 0
 
       if model_name not in models:
         models[model_name] = {'tokens': 0, 'cost': 0}
@@ -323,16 +357,20 @@ try:
   for model, data in sorted(models.items()):
     result.append({
       "project": model,
-      "tokens": data['tokens'],
+      "tokens": int(data['tokens']),
       "cost_usd": f"{data['cost']:.4f}"
     })
 
-  print(json.dumps(result))
-except:
+  print(json.dumps(result) if result else "[]")
+except Exception as e:
   print("[]")
 PYTHON_SCRIPT
 
-  echo "$json_data" | python3 "$py_script" 2>/dev/null || echo "[]"
+  if command -v python3 &>/dev/null; then
+    echo "$json_data" | python3 "$py_script" 2>/dev/null || echo "[]"
+  else
+    echo "[]"
+  fi
   rm -f "$py_script"
 }
 
@@ -341,6 +379,8 @@ PYTHON_SCRIPT
 build_sessions_array() {
   local json_data="$1"
 
+  [[ -z "$json_data" ]] && echo "[]" && return 0
+
   local py_script="/tmp/finops_sessions_$$.py"
   cat > "$py_script" << 'PYTHON_SCRIPT'
 import json
@@ -348,30 +388,46 @@ import sys
 
 try:
   data = json.load(sys.stdin)
-  sessions = []
+  if not isinstance(data, dict):
+    print("[]")
+    sys.exit(0)
 
-  for entry in data.get('daily', [])[-10:]:  # Last 10 days
+  sessions = []
+  daily_entries = data.get('daily', [])
+
+  # Process last 10 days
+  for entry in daily_entries[-10:]:
+    if not isinstance(entry, dict):
+      continue
     date = entry.get('date', 'unknown')
     for model_breakdown in entry.get('modelBreakdowns', []):
+      if not isinstance(model_breakdown, dict):
+        continue
       model_name = model_breakdown.get('modelName', 'unknown')
-      tokens = model_breakdown.get('inputTokens', 0) + model_breakdown.get('outputTokens', 0) + \
-               model_breakdown.get('cacheCreationTokens', 0) + model_breakdown.get('cacheReadTokens', 0)
-      cost = model_breakdown.get('cost', 0)
+      tokens = (model_breakdown.get('inputTokens', 0) or 0) + \
+               (model_breakdown.get('outputTokens', 0) or 0) + \
+               (model_breakdown.get('cacheCreationTokens', 0) or 0) + \
+               (model_breakdown.get('cacheReadTokens', 0) or 0)
+      cost = model_breakdown.get('cost', 0) or 0
       sessions.append({
         "project": "session",
         "model": model_name,
-        "tokens": tokens,
+        "tokens": int(tokens),
         "cost_usd": f"{cost:.4f}",
         "timestamp": date
       })
 
   # Limit to 20 most recent
-  print(json.dumps(sessions[-20:]))
-except:
+  print(json.dumps(sessions[-20:]) if sessions else "[]")
+except Exception as e:
   print("[]")
 PYTHON_SCRIPT
 
-  echo "$json_data" | python3 "$py_script" 2>/dev/null || echo "[]"
+  if command -v python3 &>/dev/null; then
+    echo "$json_data" | python3 "$py_script" 2>/dev/null || echo "[]"
+  else
+    echo "[]"
+  fi
   rm -f "$py_script"
 }
 
@@ -439,6 +495,7 @@ write_json_report() {
 # Generates markdown with week summary, totals, and recommendations
 format_markdown_report() {
   local aggregates="$1"
+  local json_data="$2"
   local timestamp
   local week_start
 
@@ -446,27 +503,51 @@ format_markdown_report() {
   timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
   week_start=$(date -d "$(date +%Y-%m-%d) - $(date +%w) days" +%Y-%m-%d 2>/dev/null || date -v-"$(date +%w)"d +%Y-%m-%d)
 
-  # Extract placeholder values from aggregates using grep
-  local total_tokens
-  total_tokens=$(echo "$aggregates" | grep -o '"week"[^}]*"tokens": [0-9]*' | grep -o '[0-9]*$')
-  local total_cost
-  total_cost=$(echo "$aggregates" | grep -o '"week"[^}]*"cost_usd": "[^"]*' | grep -o '[0-9.]*$')
-  total_tokens=${total_tokens:-N/A}
-  total_cost=${total_cost:-N/A}
+  # Extract actual values from aggregates JSON
+  local week_tokens week_cost month_tokens month_cost
+  week_tokens=$(echo "$aggregates" | sed -n 's/.*"week":{[^}]*"tokens":\([0-9]*\).*/\1/p')
+  week_cost=$(echo "$aggregates" | sed -n 's/.*"week":{[^}]*"cost_usd":"\([^"]*\)".*/\1/p')
+  month_tokens=$(echo "$aggregates" | sed -n 's/.*"month":{[^}]*"tokens":\([0-9]*\).*/\1/p')
+  month_cost=$(echo "$aggregates" | sed -n 's/.*"month":{[^}]*"cost_usd":"\([^"]*\)".*/\1/p')
 
-  # Generate markdown report with placeholder values
-  cat <<'MARKDOWN'
-## Token Audit — Week of YYYY-MM-DD
+  week_tokens=${week_tokens:-0}
+  week_cost=${week_cost:-0.00}
+  month_tokens=${month_tokens:-0}
+  month_cost=${month_cost:-0.00}
 
-Total tokens: N/A | Sessions: N/A
-Top model: claude-3.5-sonnet (N/A% of tokens)
-Longest session: N/A — N/A tokens
-Hotspot day: N/A (N/A tokens)
-Recommendation: Review session patterns and optimize prompt caching for frequently accessed documents.
+  # Format large numbers for readability (e.g., 203684131 -> 203.7M)
+  local formatted_week_tokens formatted_month_tokens
+  formatted_week_tokens=$(printf "%.1fM" "$(echo "scale=1; $week_tokens / 1000000" | bc 2>/dev/null || echo 0)")
+  formatted_month_tokens=$(printf "%.1fM" "$(echo "scale=1; $month_tokens / 1000000" | bc 2>/dev/null || echo 0)")
+
+  # Generate markdown report with actual values
+  cat <<MARKDOWN
+## Token Audit — Week of $week_start
+
+**Generated:** $(date +%Y-%m-%d)
+
+### Summary
+- **Total tokens (week):** $formatted_week_tokens | **Monthly:** $formatted_month_tokens
+- **Week cost:** \$$week_cost | **Monthly cost:** \$$month_cost
+- **Recommendation:** $(get_recommendation "$week_cost" "$month_cost")
 
 ---
-Generated: TIMESTAMP
 MARKDOWN
+}
+
+# Generate a recommendation based on spend patterns
+get_recommendation() {
+  local week_cost="$1"
+  local month_cost="$2"
+
+  # Simple heuristic: if costs are low, encourage current practice; if high, suggest optimization
+  if (( $(echo "$month_cost > 100" | bc 2>/dev/null || echo 0) )); then
+    echo "Review session patterns and consider batching queries for efficiency"
+  elif (( $(echo "$week_cost > 20" | bc 2>/dev/null || echo 0) )); then
+    echo "Strong activity this week - maintain current cache strategy"
+  else
+    echo "Low spend - current approach is sustainable"
+  fi
 }
 
 # Append markdown report to vault finops history file
@@ -505,8 +586,20 @@ check_ccusage
 # Capture ccusage session data
 SESSION_DATA=$(run_ccusage)
 
+# Validate we got data
+if [[ -z "$SESSION_DATA" || "$SESSION_DATA" == "{}" ]]; then
+  echo "Error: No token usage data available. Run a Claude Code session first." >&2
+  exit 1
+fi
+
 # Aggregate token data
 AGGREGATES=$(aggregate_tokens "$SESSION_DATA")
+
+# Validate aggregation
+if [[ -z "$AGGREGATES" ]]; then
+  echo "Error: Failed to aggregate token data" >&2
+  exit 1
+fi
 
 # Format as JSON if needed
 if [[ "$OUTPUT_FORMAT" == "json" || "$OUTPUT_FORMAT" == "both" ]]; then
@@ -522,7 +615,7 @@ fi
 
 # Generate and output markdown if requested
 if [[ "$OUTPUT_FORMAT" == "markdown" || "$OUTPUT_FORMAT" == "both" ]]; then
-  MARKDOWN_REPORT=$(format_markdown_report "$AGGREGATES")
+  MARKDOWN_REPORT=$(format_markdown_report "$AGGREGATES" "$SESSION_DATA")
 
   if [[ "$QUIET" == "false" ]]; then
     echo "$MARKDOWN_REPORT"
