@@ -41,6 +41,7 @@
 ### Changed
 
 - **brain-sync**: Now calls brain-route after successful pull to determine session mode
+- **brain-route / brain-audit**: ShellCheck clean — `SC1090`/`SC2155`/`SC2034` fixes in `_brain_env.sh`, `route.sh`, and `connect.sh`
 
 ## 2026-04-09
 

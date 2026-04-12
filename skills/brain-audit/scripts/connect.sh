@@ -80,7 +80,6 @@ log_info "Analyzing connections..."
 
     # For each file, count connections and suggest links
     for file_a in "${all_files[@]}"; do
-        filename_a=$(basename "$file_a")
         rel_path_a="${file_a#$BRAIN_PATH/}"
 
         # Simple connection count: lines containing [[
@@ -107,7 +106,6 @@ log_info "Analyzing connections..."
                 matches=$(comm -12 <(echo "$keywords_a") <(echo "$keywords_b") | wc -l | tr -d '[:space:]')
 
                 if [[ $matches -gt 2 ]]; then
-                    filename_b=$(basename "$file_b")
                     rel_path_b="${file_b#$BRAIN_PATH/}"
                     confidence=$((matches * 12))  # Simple scoring
                     [[ $confidence -gt 100 ]] && confidence=100
