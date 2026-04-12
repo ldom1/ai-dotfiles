@@ -40,10 +40,10 @@
 
 ### Changed
 
-- **README**: Skills table lists all 11 repo skills with wiki URLs under `wiki/Skills/…`; FinOps + token plugins added to install snippet; wiki publish note points to `docs/wiki/`.
-- **docs/wiki/**: Stubs for `Skills.md` and `Skills/*.md` to copy into the GitHub wiki repo so every skill has a page under the `Skills/` namespace.
-- **Wiki automation**: `scripts/update-wiki.sh`, `.pre-commit-config.yaml` (manual hook `update-wiki`), `requirements-dev.txt` (`pre-commit`); CI **Publish wiki** job in `ci.yml` runs only after shellcheck/JSON/skill jobs pass on **push to `main`** when wiki-related paths change; optional `WIKI_PUSH_TOKEN` if `GITHUB_TOKEN` cannot push the wiki.
-- **Wiki CI**: `workflow_dispatch` on CI to publish on demand; path filter includes `.github/workflows/ci.yml` so the job is not skipped when only workflow files change; clearer PAT / push-failure hints.
+- **Wiki source of truth**: switched from `docs/wiki/` stubs to direct `.wiki/` repository workflow. `scripts/update-wiki.sh` now commits/pushes local `.wiki/` changes.
+- **CI**: removed dedicated wiki publish job from `ci.yml`; wiki updates are now explicit/manual via `scripts/update-wiki.sh` when needed.
+- **Cleanup**: removed `docs/wiki/`, `.pre-commit-config.yaml`, and `requirements-dev.txt` from the wiki workflow path.
+- **README**: Skills table lists all 11 repo skills with wiki URLs under `wiki/Skills/…`; FinOps + token plugins added to install snippet; wiki process now points to local `.wiki/` + `scripts/update-wiki.sh`.
 - **brain-sync**: Now calls brain-route after successful pull to determine session mode
 - **brain-route / brain-audit**: ShellCheck clean — `SC1090`/`SC2155`/`SC2034` fixes in `_brain_env.sh`, `route.sh`, and `connect.sh`
 

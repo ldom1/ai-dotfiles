@@ -1,2 +1,0 @@
-# Optional: local hooks and CI parity (wiki manual hook)
-pre-commit>=3.7.0
