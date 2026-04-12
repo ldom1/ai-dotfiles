@@ -52,15 +52,15 @@ check_ccusage() {
   fi
 }
 
-# Run ccusage and capture output - returns outputs for parsing
+# Run ccusage and capture output - returns JSON for parsing
 run_ccusage() {
   echo "Running ccusage commands..." >&2
 
-  # Capture session, daily, and monthly data
+  # Capture daily, weekly data in JSON format for structured parsing
   if command -v ccusage &>/dev/null; then
-    ccusage session 2>/dev/null || echo ""
+    ccusage daily --json 2>/dev/null || echo ""
   else
-    npx ccusage@latest session 2>/dev/null || echo ""
+    npx ccusage@latest daily --json 2>/dev/null || echo ""
   fi
 }
 
@@ -163,152 +163,218 @@ extract_daily_totals() {
     '
 }
 
-# Aggregate token data into structured format
+# Aggregate token data by date ranges from JSON daily breakdown
 # Returns JSON object with totals for all_time, year, month, week, day
 aggregate_tokens() {
-  local session_data="$1"
+  local json_data="$1"
 
-  # Parse session data for all-time totals
-  local session_tokens session_cost
-  local totals
-  totals=$(extract_totals_from_session "$session_data")
+  # Get current date and date ranges for calculations
+  local today=$(date +%Y-%m-%d)
+  local this_month=$(date +%Y-%m)
+  local this_year=$(date +%Y)
+  # Week starts on Sunday (0 days back) for this week
+  local week_start=$(date -d "$(date +%Y-%m-%d) - $(date +%w) days" +%Y-%m-%d 2>/dev/null || date -v-$(date +%w)d +%Y-%m-%d)
 
-  session_tokens=$(echo "$totals" | awk '{print $1}')
-  session_cost=$(echo "$totals" | awk '{print $2}')
+  # Create temporary Python script for aggregation
+  local py_script="/tmp/finops_aggregate_$$.py"
+  cat > "$py_script" << 'PYTHON_SCRIPT'
+import json
+import sys
 
-  # If no session data, use defaults
-  if [[ -z "$session_tokens" || "$session_tokens" == "0" ]]; then
-    session_tokens=0
-    session_cost="0.0000"
-  else
-    # Ensure cost is properly formatted with 4 decimals
-    session_cost=$(printf "%.4f" "$session_cost" 2>/dev/null || echo "0.0000")
-  fi
+try:
+  data = json.load(sys.stdin)
+  today = sys.argv[1]
+  this_month = sys.argv[2]
+  this_year = sys.argv[3]
+  week_start = sys.argv[4]
 
-  session_tokens=${session_tokens:-0}
+  all_time_tokens = all_time_cost = 0
+  year_tokens = year_cost = 0
+  month_tokens = month_cost = 0
+  week_tokens = week_cost = 0
+  day_tokens = day_cost = 0
 
-  # For this week/month/day, we'd need date parsing
-  # For now, use session totals as all_time proxy
-  printf '{"all_time":{"tokens":%s,"cost_usd":"%s"},"year":{"tokens":null,"cost_usd":null},"month":{"tokens":null,"cost_usd":null},"week":{"tokens":%s,"cost_usd":"%s"},"day":{"tokens":null,"cost_usd":null}}' "$session_tokens" "$session_cost" "$session_tokens" "$session_cost"
+  for entry in data.get('daily', []):
+    date_str = entry.get('date', '')
+    tokens = entry.get('totalTokens', 0)
+    cost = entry.get('totalCost', 0)
+
+    all_time_tokens += tokens
+    all_time_cost += cost
+
+    if date_str.startswith(this_year):
+      year_tokens += tokens
+      year_cost += cost
+
+    if date_str.startswith(this_month):
+      month_tokens += tokens
+      month_cost += cost
+
+    if week_start <= date_str <= today:
+      week_tokens += tokens
+      week_cost += cost
+
+    if date_str == today:
+      day_tokens += tokens
+      day_cost += cost
+
+  result = {
+    "all_time": {"tokens": all_time_tokens, "cost_usd": f"{all_time_cost:.4f}"},
+    "year": {"tokens": year_tokens, "cost_usd": f"{year_cost:.4f}"},
+    "month": {"tokens": month_tokens, "cost_usd": f"{month_cost:.4f}"},
+    "week": {"tokens": week_tokens, "cost_usd": f"{week_cost:.4f}"},
+    "day": {"tokens": day_tokens, "cost_usd": f"{day_cost:.4f}"}
+  }
+  # Output compact JSON (no pretty printing)
+  print(json.dumps(result, separators=(',', ':')))
+except:
+  pass
+PYTHON_SCRIPT
+
+  # Run Python script with proper error handling
+  echo "$json_data" | python3 "$py_script" "$today" "$this_month" "$this_year" "$week_start" 2>/dev/null || parse_json_with_grep "$json_data" "$today" "$this_month" "$this_year" "$week_start"
+
+  # Clean up temp file
+  rm -f "$py_script"
 }
 
-# Build projects array from session data
+# Fallback function to parse JSON with grep if Python unavailable
+parse_json_with_grep() {
+  local json_data="$1"
+  local today="$2"
+  local this_month="$3"
+  local this_year="$4"
+  local week_start="$5"
+
+  local all_time_tokens=0 all_time_cost=0
+  local year_tokens=0 year_cost=0
+  local month_tokens=0 month_cost=0
+  local week_tokens=0 week_cost=0
+  local day_tokens=0 day_cost=0
+
+  # Extract date, tokens, cost using grep and sed
+  while IFS='|' read -r date tokens cost; do
+    [[ -z "$date" || -z "$tokens" ]] && continue
+
+    all_time_tokens=$((all_time_tokens + tokens))
+    all_time_cost=$(echo "$all_time_cost + $cost" | bc 2>/dev/null || echo "$all_time_cost")
+
+    [[ "$date" == "$this_year"* ]] && {
+      year_tokens=$((year_tokens + tokens))
+      year_cost=$(echo "$year_cost + $cost" | bc 2>/dev/null || echo "$year_cost")
+    }
+
+    [[ "$date" == "$this_month"* ]] && {
+      month_tokens=$((month_tokens + tokens))
+      month_cost=$(echo "$month_cost + $cost" | bc 2>/dev/null || echo "$month_cost")
+    }
+
+    [[ "$date" > "$week_start" || "$date" == "$week_start" ]] && [[ "$date" < "$today" || "$date" == "$today" ]] && {
+      week_tokens=$((week_tokens + tokens))
+      week_cost=$(echo "$week_cost + $cost" | bc 2>/dev/null || echo "$week_cost")
+    }
+
+    [[ "$date" == "$today" ]] && {
+      day_tokens=$((day_tokens + tokens))
+      day_cost=$(echo "$day_cost + $cost" | bc 2>/dev/null || echo "$day_cost")
+    }
+  done < <(echo "$json_data" | grep -o '"date":"[^"]*".*"totalTokens":[0-9]*.*"totalCost":[0-9.]*' | sed 's/"date":"\([^"]*\)".*"totalTokens":\([0-9]*\).*"totalCost":\([0-9.]*\)/\1|\2|\3/')
+
+  # Format and output
+  printf '{"all_time":{"tokens":%s,"cost_usd":"%s"},"year":{"tokens":%s,"cost_usd":"%s"},"month":{"tokens":%s,"cost_usd":"%s"},"week":{"tokens":%s,"cost_usd":"%s"},"day":{"tokens":%s,"cost_usd":"%s"}}' \
+    "$all_time_tokens" "$(printf "%.4f" "${all_time_cost:-0}" 2>/dev/null || echo "0.0000")" \
+    "$year_tokens" "$(printf "%.4f" "${year_cost:-0}" 2>/dev/null || echo "0.0000")" \
+    "$month_tokens" "$(printf "%.4f" "${month_cost:-0}" 2>/dev/null || echo "0.0000")" \
+    "$week_tokens" "$(printf "%.4f" "${week_cost:-0}" 2>/dev/null || echo "0.0000")" \
+    "$day_tokens" "$(printf "%.4f" "${day_cost:-0}" 2>/dev/null || echo "0.0000")"
+}
+
+# Build projects array from JSON daily breakdown
+# Aggregates tokens and costs by model/project across all dates
 build_projects_array() {
-  local session_output="$1"
+  local json_data="$1"
 
-  # Parse session output and build array of projects with token/cost breakdown
-  # Extract unique projects and their stats
-  local projects
-  projects=$(echo "$session_output" | \
-    sed 's/\x1b\[[0-9;]*m//g' | \
-    grep -E '^\│' | \
-    grep -v -E '(Total|┌|├|└|─|┬|┼|┴)' | \
-    awk -F'│' '
-      NF > 3 {
-        # Extract project name from first column
-        project = $2
-        gsub(/^[[:space:]]+|[[:space:]]+$/, "", project)
+  local py_script="/tmp/finops_projects_$$.py"
+  cat > "$py_script" << 'PYTHON_SCRIPT'
+import json
+import sys
 
-        # Skip if empty or model line
-        if (project == "" || project ~ /^-/) next
+try:
+  data = json.load(sys.stdin)
+  models = {}
 
-        # Extract cost from cost column
-        for(i=1; i<=NF; i++) {
-          val = $i
-          gsub(/^[[:space:]]+|[[:space:]]+$/, "", val)
-          if (val ~ /^\$[0-9.]+$/) {
-            cost = val
-            gsub(/[\$]/, "", cost)
-          }
-        }
+  for entry in data.get('daily', []):
+    for model_breakdown in entry.get('modelBreakdowns', []):
+      model_name = model_breakdown.get('modelName', 'unknown')
+      tokens = model_breakdown.get('inputTokens', 0) + model_breakdown.get('outputTokens', 0) + \
+               model_breakdown.get('cacheCreationTokens', 0) + model_breakdown.get('cacheReadTokens', 0)
+      cost = model_breakdown.get('cost', 0)
 
-        if (project != "" && project != "Total") {
-          print project " " cost
-        }
-      }
-    ' | sort -u)
+      if model_name not in models:
+        models[model_name] = {'tokens': 0, 'cost': 0}
+      models[model_name]['tokens'] += tokens
+      models[model_name]['cost'] += cost
 
-  if [[ -z "$projects" ]]; then
-    echo "[]"
-    return
-  fi
+  result = []
+  for model, data in sorted(models.items()):
+    result.append({
+      "project": model,
+      "tokens": data['tokens'],
+      "cost_usd": f"{data['cost']:.4f}"
+    })
 
-  # Build JSON array
-  local first=true
-  echo -n "["
-  while IFS=' ' read -r project cost; do
-    if [[ -z "$project" ]]; then continue; fi
-    if [[ "$first" == false ]]; then echo -n ","; fi
-    printf '{"project":"%s","tokens":0,"cost_usd":"%s"}' "$project" "${cost:-0.0000}"
-    first=false
-  done <<< "$projects"
-  echo "]"
+  print(json.dumps(result))
+except:
+  print("[]")
+PYTHON_SCRIPT
+
+  echo "$json_data" | python3 "$py_script" 2>/dev/null || echo "[]"
+  rm -f "$py_script"
 }
 
-# Build sessions array from session data
+# Build sessions array from JSON daily breakdown
+# Extracts recent model usage sessions (last N days)
 build_sessions_array() {
-  local session_output="$1"
+  local json_data="$1"
 
-  # Extract recent sessions with model and cost
-  local sessions
-  sessions=$(echo "$session_output" | \
-    sed 's/\x1b\[[0-9;]*m//g' | \
-    grep -E '^\│' | \
-    grep -E '[0-9,]' | \
-    grep -v -E 'Total' | \
-    awk -F'│' '
-      NF > 3 {
-        # Extract fields: project, model, tokens, cost, timestamp
-        project = $2
-        model = $3
-        cost_field = ""
-        timestamp = ""
+  local py_script="/tmp/finops_sessions_$$.py"
+  cat > "$py_script" << 'PYTHON_SCRIPT'
+import json
+import sys
 
-        for(i=1; i<=NF; i++) {
-          val = $i
-          gsub(/^[[:space:]]+|[[:space:]]+$/, "", val)
-          if (val ~ /^\$[0-9.]+$/) {
-            cost_field = val
-            gsub(/[\$]/, "", cost_field)
-          }
-          if (val ~ /^[0-9]{4}-[0-9]{2}/) {
-            timestamp = val
-          }
-        }
+try:
+  data = json.load(sys.stdin)
+  sessions = []
 
-        gsub(/^[[:space:]]+|[[:space:]]+$/, "", project)
-        gsub(/^[[:space:]]+|[[:space:]]+$/, "", model)
+  for entry in data.get('daily', [])[-10:]:  # Last 10 days
+    date = entry.get('date', 'unknown')
+    for model_breakdown in entry.get('modelBreakdowns', []):
+      model_name = model_breakdown.get('modelName', 'unknown')
+      tokens = model_breakdown.get('inputTokens', 0) + model_breakdown.get('outputTokens', 0) + \
+               model_breakdown.get('cacheCreationTokens', 0) + model_breakdown.get('cacheReadTokens', 0)
+      cost = model_breakdown.get('cost', 0)
+      sessions.append({
+        "project": "session",
+        "model": model_name,
+        "tokens": tokens,
+        "cost_usd": f"{cost:.4f}",
+        "timestamp": date
+      })
 
-        if (project != "" && project != "Total" && model ~ /^-/) {
-          print project "|" model "|" cost_field "|" timestamp
-        }
-      }
-    ' | head -20)
+  # Limit to 20 most recent
+  print(json.dumps(sessions[-20:]))
+except:
+  print("[]")
+PYTHON_SCRIPT
 
-  if [[ -z "$sessions" ]]; then
-    echo "[]"
-    return
-  fi
-
-  local first=true
-  echo -n "["
-  while IFS='|' read -r project model cost timestamp; do
-    if [[ -z "$project" ]] || [[ -z "$model" ]]; then continue; fi
-    if [[ "$first" == false ]]; then echo -n ","; fi
-    # Clean up model name (remove leading "- ")
-    model="${model#\- }"
-    model="${model# }"
-    timestamp=${timestamp:-unknown}
-    printf '{"project":"%s","model":"%s","tokens":0,"cost_usd":"%s","timestamp":"%s"}' "$project" "$model" "${cost:-0.0000}" "$timestamp"
-    first=false
-  done <<< "$sessions"
-  echo "]"
+  echo "$json_data" | python3 "$py_script" 2>/dev/null || echo "[]"
+  rm -f "$py_script"
 }
 
 # Format aggregated data into complete JSON report with metadata
 # Includes timestamp, aggregates, and ccusage data structure
 format_json_report() {
-  local session_data="$1"
+  local json_data="$1"
   local aggregates="$2"
   local timestamp
 
@@ -317,26 +383,27 @@ format_json_report() {
 
   # Extract session data for arrays
   local projects_array sessions_array
-  projects_array=$(build_projects_array "$session_data")
-  sessions_array=$(build_sessions_array "$session_data")
+  projects_array=$(build_projects_array "$json_data")
+  sessions_array=$(build_sessions_array "$json_data")
 
-  # Extract aggregates for current_session budget calculation using bash pattern matching
-  local week_tokens week_cost
-  # Extract "week":{"tokens":NN... from aggregates JSON
-  week_tokens=$(echo "$aggregates" | sed -n 's/.*"week":{[^}]*"tokens":\([0-9]*\).*/\1/p')
-  week_cost=$(echo "$aggregates" | sed -n 's/.*"week":{[^}]*"cost_usd":"\([^"]*\)".*/\1/p')
+  # Extract day aggregates for current_session budget calculation
+  local day_tokens day_cost budget_pct
 
-  week_tokens=${week_tokens:-0}
-  week_cost=${week_cost:-0.0000}
+  # Use sed extraction for reliable JSON parsing
+  day_tokens=$(echo "$aggregates" | sed -n 's/.*"day":{[^}]*"tokens":\([0-9]*\).*/\1/p')
+  day_cost=$(echo "$aggregates" | sed -n 's/.*"day":{[^}]*"cost_usd":"\([^"]*\)".*/\1/p')
 
-  # Calculate budget percentage used
-  local budget_pct="0.0"
-  if [[ "$week_tokens" -gt 0 ]]; then
-    budget_pct=$(echo "scale=1; ($week_tokens / $SESSION_TOKEN_BUDGET) * 100" | bc 2>/dev/null || echo "0.0")
+  day_tokens=${day_tokens:-0}
+  day_cost=${day_cost:-0.0000}
+
+  # Calculate budget percentage used (daily tokens vs. 5-hour session budget)
+  budget_pct="0.0"
+  if [[ "$day_tokens" -gt 0 ]]; then
+    budget_pct=$(echo "scale=1; ($day_tokens / $SESSION_TOKEN_BUDGET) * 100" | bc 2>/dev/null || echo "0.0")
   fi
 
   # Merge aggregates with metadata and ccusage structure
-  printf '{\n  "generated_at": "%s",\n  "totals": %s,\n  "projects": %s,\n  "sessions": %s,\n  "current_session": {\n    "tokens_used": %s,\n    "cost_usd": "%s",\n    "budget_pct": %s\n  }\n}\n' "$timestamp" "$aggregates" "$projects_array" "$sessions_array" "$week_tokens" "$week_cost" "$budget_pct"
+  printf '{\n  "generated_at": "%s",\n  "totals": %s,\n  "projects": %s,\n  "sessions": %s,\n  "current_session": {\n    "tokens_used": %s,\n    "cost_usd": "%s",\n    "budget_pct": %s\n  }\n}\n' "$timestamp" "$aggregates" "$projects_array" "$sessions_array" "$day_tokens" "$day_cost" "$budget_pct"
 }
 
 # Write JSON report to file

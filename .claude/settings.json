@@ -1,5 +1,5 @@
 {
-  "model": "sonnet[1m]",
+  "model": "haiku",
   "hooks": {
     "SessionStart": [
       {
@@ -40,7 +40,6 @@
     "code-simplifier@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true
   },
-  "skipDangerousModePermissionPrompt": true,
   "pluginConfigs": {
     "finops-audit": {
       "options": {
@@ -50,5 +49,6 @@
         "include_all_time_totals": true
       }
     }
-  }
+  },
+  "skipDangerousModePermissionPrompt": true
 }
