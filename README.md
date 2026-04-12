@@ -37,7 +37,15 @@ AI skills for Claude Code, Cursor, and Mistral Vibe — plus personal config syn
 | [token-guard](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Token-Guard) | Model routing heuristic + `/model-check` |
 | [finops-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/FinOps-Audit) | Weekly token spend review → vault |
 
-Wiki hub: **[Skills](https://github.com/ldom1/ai-dotfiles/wiki/Skills)** (catalogue). Each skill page should live under the **`Skills/`** namespace (e.g. `Skills/Brain-Sync`). Source stubs live in **[`docs/wiki/`](docs/wiki/README.md)**. On **push to `main`**, after **shellcheck, JSON, and skill checks** succeed, CI runs **Publish wiki** when relevant paths change (see `.github/workflows/ci.yml`) via **`pre-commit run update-wiki`** → [`scripts/update-wiki.sh`](scripts/update-wiki.sh). You can also run **Actions → CI → Run workflow** on `main` to publish once. **`GITHUB_TOKEN` often cannot push the wiki** — set repo secret **`WIKI_PUSH_TOKEN`** (classic PAT, `repo` scope) if pushes fail. Local: `pip install -r requirements-dev.txt` and `pre-commit run update-wiki --hook-stage manual --all-files`.
+Wiki hub: **[Skills](https://github.com/ldom1/ai-dotfiles/wiki/Skills)** (catalogue). Keep wiki pages directly in the local **`.wiki/`** clone (GitHub wiki repo) under the **`Skills/`** namespace (e.g. `Skills/Brain-Sync`), then publish explicitly with:
+
+```bash
+# one-time setup:
+git clone https://github.com/ldom1/ai-dotfiles.wiki.git .wiki
+
+# publish:
+bash scripts/update-wiki.sh
+```
 
 **Full documentation → [Wiki](https://github.com/ldom1/ai-dotfiles/wiki)**
 
@@ -113,18 +121,15 @@ ai-dotfiles/
 │   └── graphify.env                 # Your graphify clone path (gitignored)
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml                   # Shellcheck, JSON, skills; wiki publish after pass (main + paths)
+│       ├── ci.yml                   # Shellcheck, JSON validation, skill structure
 │       └── release.yml              # GitHub Release on v* tags
-├── .pre-commit-config.yaml          # manual hook: update-wiki → scripts/update-wiki.sh
-├── docs/
-│   └── wiki/                        # Markdown stubs → copy to GitHub wiki (`Skills/` pages)
-├── requirements-dev.txt             # pre-commit (wiki hook + local dev)
+├── .wiki/                           # Local clone of GitHub wiki repo (source for wiki pages)
 ├── LICENSE
 ├── CONTRIBUTING.md
 ├── prompts/
 └── scripts/
     ├── install.sh                   # Setup script (symlinks, settings, hooks)
-    └── update-wiki.sh               # Sync docs/wiki into GitHub wiki (.wiki.git)
+    └── update-wiki.sh               # Commit/push local .wiki/ changes
 ```
 
 > **Note — nested `skills/<name>/skills/<name>/SKILL.md`**

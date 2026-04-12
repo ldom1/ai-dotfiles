@@ -37,6 +37,7 @@
 .claude/plugins/
 .cursor/plugins/
 .cursor/skills-cursor/
+.wiki/
 
 # Local Brain config — machine-specific, do not track
 config/brain.env
