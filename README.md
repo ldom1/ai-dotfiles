@@ -17,6 +17,7 @@ AI skills for Claude Code, Cursor, and Mistral Vibe — plus personal config syn
 /plugin install create-pr@ldom1/ai-dotfiles
 /plugin install server-audit@ldom1/ai-dotfiles
 /plugin install notion-brain-sync@ldom1/ai-dotfiles
+/plugin install graphify@ldom1/ai-dotfiles
 ```
 
 | Skill | Purpose |
@@ -26,6 +27,7 @@ AI skills for Claude Code, Cursor, and Mistral Vibe — plus personal config syn
 | `notion-brain-sync` | Ingest Notion-style captures into the vault with L1/L2/L3 routing and `log.md` |
 | [create-pr](https://github.com/ldom1/ai-dotfiles/wiki/Create-PR) | GitHub PR with branch + commit conventions |
 | `server-audit` | Comprehensive infra audit with parallel checks and JSON reports |
+| `graphify` | `/graphify` — folder → knowledge graph (HTML, JSON, Obsidian, queries); see [Graphify](https://graphify.net/) |
 
 **Full documentation → [Wiki](https://github.com/ldom1/ai-dotfiles/wiki)**
 
@@ -79,6 +81,10 @@ ai-dotfiles/
 │   ├── notion-brain-sync/           # /notion-brain-sync — Notion → vault ingest + log.md
 │   │   ├── SKILL.md
 │   │   └── reference/
+│   ├── graphify/                    # /graphify — corpus → knowledge graph
+│   │   ├── SKILL.md
+│   │   ├── .claude-plugin/plugin.json
+│   │   └── skills/graphify/SKILL.md -> ../../SKILL.md
 │   ├── create-pr/                   # /create-pr — gh + git conventions
 │   │   ├── SKILL.md
 │   │   └── reference/GIT-COMMITS.md
@@ -92,7 +98,9 @@ ai-dotfiles/
 │       └── skills/server-audit/SKILL.md -> ../../SKILL.md
 ├── config/
 │   ├── brain.env.example            # Local Brain path template
-│   └── brain.env                    # Your config (gitignored)
+│   ├── brain.env                    # Your config (gitignored)
+│   ├── graphify.env.example         # Optional: GRAPHIFY_PROJECT for uv-based graphify clone
+│   └── graphify.env                 # Your graphify clone path (gitignored)
 ├── .github/
 │   └── workflows/
 │       ├── ci.yml                   # Shellcheck, JSON validation, skill structure

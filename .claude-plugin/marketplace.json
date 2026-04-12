@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "ldom1-ai-dotfiles",
-  "description": "Personal AI skills for Claude Code — Local Brain vault management (brain-sync, brain-load), GitHub PR workflow (create-pr), and token optimization (token-watch, token-guard, finops-audit)",
+  "description": "Personal AI skills for Claude Code — Local Brain (brain-sync, brain-load), knowledge graphs (graphify), GitHub PRs (create-pr), token optimization (token-watch, token-guard, finops-audit)",
   "owner": {
     "name": "Louis Giron",
     "github": "ldom1"
@@ -48,6 +48,13 @@
       "source": "./skills/finops-audit",
       "category": "productivity",
       "homepage": "https://github.com/ldom1/ai-dotfiles"
+    },
+    {
+      "name": "graphify",
+      "description": "Corpus → knowledge graph: clustering, HTML/JSON exports, Obsidian, GraphRAG queries. Trigger /graphify.",
+      "source": "./skills/graphify",
+      "category": "productivity",
+      "homepage": "https://graphify.net/"
     }
   ]
 }

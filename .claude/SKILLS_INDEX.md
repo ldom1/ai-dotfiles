@@ -8,3 +8,4 @@
 | /token-watch | Snapshot token burn rate via ccusage |
 | /token-guard | Model routing heuristic + /model-check |
 | /finops-audit | Weekly token spend review → finops-history.md |
+| /graphify | Corpus → knowledge graph (HTML, JSON, Obsidian, queries) |

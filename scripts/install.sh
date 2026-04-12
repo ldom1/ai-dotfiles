@@ -88,6 +88,19 @@ else
   log "config/brain.env already exists, skipping"
 fi
 
+# ── 4b. Bootstrap config/graphify.env if missing (optional — local uv graphify clone) ─
+header "Checking config/graphify.env"
+
+GRAPHIFY_ENV="$DOTFILES/config/graphify.env"
+GRAPHIFY_ENV_EXAMPLE="$DOTFILES/config/graphify.env.example"
+
+if [[ ! -f "$GRAPHIFY_ENV" ]]; then
+  cp "$GRAPHIFY_ENV_EXAMPLE" "$GRAPHIFY_ENV"
+  warn "config/graphify.env created from example — set GRAPHIFY_PROJECT if you use a local graphify checkout + uv"
+else
+  log "config/graphify.env already exists, skipping"
+fi
+
 # ── 5. Hook permissions ────────────────────────────────────────────────────────
 header "Setting hook permissions"
 
@@ -102,6 +115,7 @@ echo -e "\n${BOLD}Done.${RESET} Reload your shell or restart Claude Code.\n"
 
 echo "  Next steps:"
 echo "  1. Edit config/brain.env — set BRAIN_PATH to your Obsidian vault (absolute path)"
-echo "  2. Install rtk if not present: cargo install rtk"
-echo "  3. Edit ~/.claude/settings.local.json to add your machine permissions"
-echo "  4. Install Claude Code plugins: claude plugins install superpowers"
+echo "  2. Optional: edit config/graphify.env — GRAPHIFY_PROJECT if you use a local uv graphify clone"
+echo "  3. Install rtk if not present: cargo install rtk"
+echo "  4. Edit ~/.claude/settings.local.json to add your machine permissions"
+echo "  5. Install Claude Code plugins: claude plugins install superpowers"
