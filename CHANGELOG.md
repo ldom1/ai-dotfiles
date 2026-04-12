@@ -13,6 +13,8 @@
 
 - **Cursor rule** `.cursor/rules/graphify-context.mdc`: when `graphify-out*` exists at the project root (file or `graphify-out/` with `graph.json`), treat it as canonical architecture context; do not overwrite those artifacts.
 - **CLAUDE.md**: same Graphify `graphify-out*` context rules plus existing `/graphify` skill trigger, under `## Graphify`.
+- **graphify skill**: moved from `.claude/skills/graphify/` to `skills/graphify/`; `.claude/skills/graphify` and `.vibe/skills/graphify` are symlinks (same pattern as other skills). Cursor picks it up via `.cursor/skills` → `../skills`. Added `skills/graphify/.claude-plugin/plugin.json`, nested `skills/graphify/skills/graphify/SKILL.md` symlink, and marketplace entry.
+- **graphify skill**: removed hardcoded uv clone path; resolve `GRAPHIFY_PROJECT` via env, `config/graphify.env`, `graphify-out/.graphify_project`, or **ask the user once** for the clone root. Added `config/graphify.env.example`, gitignore + `install.sh` bootstrap for `config/graphify.env`.
 
 - **brain-route skill**: Session mode decision router that determines whether to run maintenance (brain-audit) or normal context load (brain-load) based on vault state
   - Decision rules: >7 days since last maintenance, >50 unprocessed raw files, or explicit --maintenance flag

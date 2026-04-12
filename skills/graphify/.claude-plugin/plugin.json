@@ -1,0 +1,10 @@
+{
+  "name": "graphify",
+  "version": "1.0.0",
+  "description": "Turn folders of code, docs, and media into a knowledge graph — HTML, JSON, Obsidian, GraphRAG queries. Trigger: /graphify",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles"
+}

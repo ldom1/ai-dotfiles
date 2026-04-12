@@ -45,6 +45,7 @@ jobs:
             /plugin install brain-sync@ldom1/ai-dotfiles
             /plugin install brain-load@ldom1/ai-dotfiles
             /plugin install notion-brain-sync@ldom1/ai-dotfiles
+            /plugin install graphify@ldom1/ai-dotfiles
             /plugin install create-pr@ldom1/ai-dotfiles
             ```
           generate_release_notes: false

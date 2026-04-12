@@ -88,3 +88,8 @@ At the **start of substantive work** in a project repo, check the **repository r
 **If not found:** work as usual; context may be incomplete. You may suggest generating output via [Graphify](https://graphify.net/).
 
 **Never** modify, overwrite, or delete `graphify-out*` artifacts.
+
+### Skill (`/graphify`)
+
+- **graphify** (`~/.claude/skills/graphify/SKILL.md` → `~/ai-dotfiles/skills/graphify/SKILL.md`) — corpus → knowledge graph. Trigger: `/graphify`.
+- When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` before doing anything else.

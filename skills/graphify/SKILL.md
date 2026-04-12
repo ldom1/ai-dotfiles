@@ -55,27 +55,45 @@ Use it for:
 
 ## What You Must Do When Invoked
 
-If no path was given, use `.` (current directory). Do not ask the user for a path.
+If no **corpus** path was given for `/graphify`, use `.` (current directory). Do not ask the user for that corpus path.
+
+**Local graphify install (uv clone):** If the user relies on a **git clone** of graphify and `uv run python` (not only `pip install graphifyy`), resolve the clone root `GRAPHIFY_PROJECT` (directory that contains `uv.lock`) in this order:
+
+1. Environment variable **`GRAPHIFY_PROJECT`**
+2. **`~/ai-dotfiles/config/graphify.env`** if it exists — `source` it (same pattern as `config/brain.env`); it may set `GRAPHIFY_PROJECT=...`
+3. **`graphify-out/.graphify_project`** in the corpus directory (single line: absolute path), from a prior run
+
+If still unset and `command -v uv` succeeds: **ask the user once in chat** for the absolute path to their graphify project root, then write it to `graphify-out/.graphify_project` (after `mkdir -p graphify-out`) and proceed. **Do not guess or hardcode a path.** If they only use pip/PATH installs, they can decline or leave it empty — the fallback below still works.
 
 Follow these steps in order. Do not skip steps.
 
 ### Step 1 - Ensure graphify is installed
 
 ```bash
-# Check for local uv-based graphify project first
+# Optional: local uv-based graphify clone (GRAPHIFY_PROJECT must be set, or in graphify.env / graphify-out/.graphify_project)
 mkdir -p graphify-out
-if [ -f /home/lgiron/lab/graphify/uv.lock ] && command -v uv &>/dev/null; then
-    # Create a wrapper script for uv run python
-    cat > graphify-out/.graphify_wrapper.sh << 'EOF'
-#!/bin/bash
-cd /home/lgiron/lab/graphify && exec uv run python "$@"
+: "${GRAPHIFY_PROJECT:=}"
+if [[ -z "$GRAPHIFY_PROJECT" && -f "$HOME/ai-dotfiles/config/graphify.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$HOME/ai-dotfiles/config/graphify.env"
+  set +a
+fi
+if [[ -z "$GRAPHIFY_PROJECT" && -f graphify-out/.graphify_project ]]; then
+  GRAPHIFY_PROJECT=$(tr -d '\r\n' < graphify-out/.graphify_project)
+fi
+
+if [[ -n "$GRAPHIFY_PROJECT" && -f "$GRAPHIFY_PROJECT/uv.lock" ]] && command -v uv &>/dev/null; then
+    cat > graphify-out/.graphify_wrapper.sh << EOF
+#!/usr/bin/env bash
+cd "$GRAPHIFY_PROJECT" || exit 1
+exec uv run python "\$@"
 EOF
     chmod +x graphify-out/.graphify_wrapper.sh
-    
-    # Test it
+
     if graphify-out/.graphify_wrapper.sh -c "import graphify; print('ok')" > /dev/null 2>&1; then
         echo "graphify-out/.graphify_wrapper.sh" > graphify-out/.graphify_python
-        echo "Using local uv graphify"
+        echo "Using local uv graphify ($GRAPHIFY_PROJECT)"
         exit 0
     fi
 fi
