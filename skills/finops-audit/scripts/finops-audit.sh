@@ -169,11 +169,15 @@ aggregate_tokens() {
   local json_data="$1"
 
   # Get current date and date ranges for calculations
-  local today=$(date +%Y-%m-%d)
-  local this_month=$(date +%Y-%m)
-  local this_year=$(date +%Y)
+  local today
+  today=$(date +%Y-%m-%d)
+  local this_month
+  this_month=$(date +%Y-%m)
+  local this_year
+  this_year=$(date +%Y)
   # Week starts on Sunday (0 days back) for this week
-  local week_start=$(date -d "$(date +%Y-%m-%d) - $(date +%w) days" +%Y-%m-%d 2>/dev/null || date -v-$(date +%w)d +%Y-%m-%d)
+  local week_start
+  week_start=$(date -d "$(date +%Y-%m-%d) - $(date +%w) days" +%Y-%m-%d 2>/dev/null || date -v-"$(date +%w)"d +%Y-%m-%d)
 
   # Create temporary Python script for aggregation
   local py_script="/tmp/finops_aggregate_$$.py"
@@ -416,7 +420,8 @@ write_json_report() {
   mkdir -p "$output_path"
 
   # Generate filename from pattern
-  local today=$(date +%Y-%m-%d)
+  local today
+  today=$(date +%Y-%m-%d)
   local filename="${filename_pattern/\{date\}/$today}"
   local filepath="$output_path/$filename"
 
@@ -439,11 +444,13 @@ format_markdown_report() {
 
   # Generate timestamps
   timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  week_start=$(date -d "$(date +%Y-%m-%d) - $(date +%w) days" +%Y-%m-%d 2>/dev/null || date -v-$(date +%w)d +%Y-%m-%d)
+  week_start=$(date -d "$(date +%Y-%m-%d) - $(date +%w) days" +%Y-%m-%d 2>/dev/null || date -v-"$(date +%w)"d +%Y-%m-%d)
 
   # Extract placeholder values from aggregates using grep
-  local total_tokens=$(echo "$aggregates" | grep -o '"week"[^}]*"tokens": [0-9]*' | grep -o '[0-9]*$')
-  local total_cost=$(echo "$aggregates" | grep -o '"week"[^}]*"cost_usd": "[^"]*' | grep -o '[0-9.]*$')
+  local total_tokens
+  total_tokens=$(echo "$aggregates" | grep -o '"week"[^}]*"tokens": [0-9]*' | grep -o '[0-9]*$')
+  local total_cost
+  total_cost=$(echo "$aggregates" | grep -o '"week"[^}]*"cost_usd": "[^"]*' | grep -o '[0-9.]*$')
   total_tokens=${total_tokens:-N/A}
   total_cost=${total_cost:-N/A}
 
@@ -506,7 +513,7 @@ if [[ "$OUTPUT_FORMAT" == "json" || "$OUTPUT_FORMAT" == "both" ]]; then
   JSON_REPORT=$(format_json_report "$SESSION_DATA" "$AGGREGATES")
 
   # Write JSON to file if requested
-  JSON_FILE=$(write_json_report "$JSON_REPORT" "$JSON_REPORT_PATH" "$JSON_FILENAME_PATTERN")
+  write_json_report "$JSON_REPORT" "$JSON_REPORT_PATH" "$JSON_FILENAME_PATTERN" > /dev/null
 
   if [[ "$OUTPUT_FORMAT" == "json" && "$QUIET" == "false" ]]; then
     echo "$JSON_REPORT"
