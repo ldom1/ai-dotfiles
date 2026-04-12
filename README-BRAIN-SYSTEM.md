@@ -25,8 +25,9 @@ Between sessions, your vault stays lightweight—only when maintenance is trigge
    - **Normal mode**: Otherwise, proceed with normal session
 3. **brain-audit** (maintenance only) runs the four-phase pipeline
 4. **brain-load** (normal mode) loads your current project context
-5. **Your work**: Continue your session as normal
-6. **brain-sync end** commits and pushes vault changes
+5. **notion-brain-sync** (optional): when you paste Notion exports or ask to compile decisions into the vault, agents use L1/L2/L3 routing and append `$BRAIN_PATH/log.md` per change
+6. **Your work**: Continue your session as normal
+7. **brain-sync end** commits and pushes vault changes
 
 #### Normal Mode
 

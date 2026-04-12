@@ -1,142 +1,88 @@
-# brain-audit Skill
+---
+name: brain-audit
+description: >-
+  Autonomous four-phase maintenance pipeline for the Local Brain vault.
+  Use when brain-route decides maintenance mode, when the user runs /brain-audit,
+  or whenever vault maintenance, brain cleanup, or weekly digest generation is
+  requested. Trigger on: "clean up my brain", "run vault maintenance", "generate
+  the weekly digest", "audit my notes", or any request to process raw notes.
+user-invocable: true
+---
 
-**autonomous maintenance pipeline for the Local Brain vault**
+# brain-audit
 
-## Purpose
+Four-phase pipeline that keeps the Local Brain vault organized and current. Run when `brain-route` decides maintenance mode, or on demand.
 
-Brain-audit is a four-phase maintenance pipeline that keeps your Local Brain vault organized, connected, and up-to-date. It processes raw notes into publishable articles, discovers orphaned files, runs templated Q&A queries, and generates a weekly digest report.
-
-## What It Does
-
-| Phase | Name | Input | Output | Time | Notes |
-|-------|------|-------|--------|------|-------|
-| 1 | Raw Data Processing | Markdown fragments, inbox clippings | Draft articles, indexed metadata | 5-10m | Applies semantic structure |
-| 2 | Orphan Detection | All vault files, connection graph | Isolated notes, suggested links | 10-15m | Finds knowledge gaps |
-| 3 | Templated Q&A | Vault state snapshot | Structured answers, insights | 15-30m | Runs custom queries |
-| 4 | Digest Generation | Phases 1-3 outputs | Weekly summary report | 5-10m | Resets maintenance clock |
-
-## Quick Start
+## Quick start
 
 ```bash
-# View this skill documentation
-cat ~/ai-dotfiles/skills/brain-audit/SKILL.md
+# Full audit (all 4 phases)
+bash ~/ai-dotfiles/skills/brain-audit/scripts/audit.sh
 
-# Check configuration
-grep BRAIN_PATH ~/ai-dotfiles/config/brain.env
-
-# Run full audit (all 4 phases)
-brain-audit --full
-
-# Run single phase
-brain-audit --phase 1
-brain-audit --phase 2
-brain-audit --phase 3
-brain-audit --phase 4
-
-# View detailed phase documentation
-cat ~/ai-dotfiles/skills/brain-audit/reference/PHASES.md
-
-# Review query templates
-ls -la ~/ai-dotfiles/skills/brain-audit/reference/queries/
+# Individual phases
+bash ~/ai-dotfiles/skills/brain-audit/scripts/compile.sh   # raw → articles
+bash ~/ai-dotfiles/skills/brain-audit/scripts/connect.sh   # orphan detection
+bash ~/ai-dotfiles/skills/brain-audit/scripts/qa.sh        # templated Q&A
+bash ~/ai-dotfiles/skills/brain-audit/scripts/digest.sh    # weekly digest
 ```
+
+## What each phase does
+
+| Phase | Script | Input | Output |
+|-------|--------|-------|--------|
+| 1 — Compile | `compile.sh` | Raw markdown in `raw/`, inbox clippings | Draft articles in `inbox/drafts/` |
+| 2 — Connect | `connect.sh` | All vault files | Orphan list + suggested links in `inbox/connections/` |
+| 3 — Q&A | `qa.sh` | Vault state snapshot | Structured answers in `inbox/qa/` |
+| 4 — Digest | `digest.sh` | Phases 1–3 counts | Weekly summary in `resources/queries/archive/`; resets maintenance clock |
 
 ## Configuration
 
-The skill requires `BRAIN_PATH` to be set in your environment:
+`BRAIN_PATH` must point to a git repository (your Obsidian vault). Loaded from the first match:
+
+1. `BRAIN_ENV_FILE` env var → env file containing `BRAIN_PATH=…`
+2. `brain.env` beside `scripts/` — standalone usage
+3. `config/brain.env` at the ai-dotfiles root — default install
 
 ```bash
-# Check current setting
-echo $BRAIN_PATH
-
-# Set it (add to ~/.zshrc or ~/ai-dotfiles/config/brain.env)
-export BRAIN_PATH="/path/to/your/Local Brain"
+grep BRAIN_PATH ~/ai-dotfiles/config/brain.env
 ```
 
-The Local Brain vault must be a git repository with the following structure:
-```
-Local Brain/
-├── daily/                 # Daily notes, implementation logs
-├── resources/             # Stable knowledge base
-│   ├── articles/         # Published articles
-│   ├── knowledge/        # Reference materials
-│   └── queries/          # Q&A results archive
-├── projects/             # Active project CAPs
-└── .git/                 # Git repository root
-```
+## Human review checkpoints
 
-## Human Review Workflow
+After running, present results to the user at each phase output:
 
-Brain-audit produces outputs that require human review and approval:
+1. **Phase 1:** Drafts in `inbox/drafts/` — ask to review, approve, or revise before publishing.
+2. **Phase 2:** Orphans and suggestions in `inbox/connections/` — let the user decide: merge, archive, or keep.
+3. **Phase 3:** Q&A results in `inbox/qa/` — validate, extract action items.
+4. **Phase 4:** Digest in `resources/queries/archive/` — confirm accuracy, then remind user to run `brain-sync end` to commit.
 
-1. **After Phase 1:** Review generated draft articles
-   - Check semantic structure correctness
-   - Approve or request revisions
-   - Mark articles ready for publication
+## On failure
 
-2. **After Phase 2:** Review orphaned notes
-   - Examine connection suggestions
-   - Decide: merge, archive, or keep isolated
-   - Update vault structure as needed
-
-3. **After Phase 3:** Review Q&A insights
-   - Validate query results
-   - Extract actionable items
-   - Update related articles/projects
-
-4. **After Phase 4:** Review and archive digest
-   - Confirm weekly summary is accurate
-   - Store in `resources/queries/` archive
-   - Reset audit clock for next week
-
-## Scripts
-
-The skill includes six executable scripts in `scripts/`:
-
-| Script | Purpose | Called By | Output |
-|--------|---------|-----------|--------|
-| `phase1.sh` | Raw data → articles | Main pipeline | `phase1-results.json` |
-| `phase2.sh` | Orphan detection | Main pipeline | `phase2-results.json` |
-| `phase3.sh` | Q&A queries | Main pipeline | `phase3-results.json` |
-| `phase4.sh` | Digest generation | Main pipeline | `phase4-results.json` |
-| `validate.sh` | Check outputs before commit | Main pipeline | `validation-report.json` |
-| `cleanup.sh` | Archive results, reset state | End of cycle | None |
+- Missing or invalid `BRAIN_PATH` → warn once, stop.
+- Individual phase failure → report the error, ask whether to continue with remaining phases.
+- `audit.sh` exits 1 on any phase failure; individual scripts can be re-run standalone.
 
 ## Files
 
 ```
-~/ai-dotfiles/skills/brain-audit/
-├── SKILL.md                          # This file
-├── .claude-plugin/
-│   └── plugin.json                   # Marketplace metadata
+skills/brain-audit/
+├── SKILL.md
 ├── scripts/
-│   ├── phase1.sh                     # Raw data processing
-│   ├── phase2.sh                     # Orphan detection
-│   ├── phase3.sh                     # Templated Q&A
-│   ├── phase4.sh                     # Digest generation
-│   ├── validate.sh                   # Output validation
-│   └── cleanup.sh                    # Archive & reset
+│   ├── audit.sh          ← orchestrates all 4 phases
+│   ├── compile.sh        ← phase 1: raw data → draft articles
+│   ├── connect.sh        ← phase 2: orphan detection + link suggestions
+│   ├── qa.sh             ← phase 3: templated Q&A queries
+│   ├── digest.sh         ← phase 4: digest generation + clock reset
+│   └── _brain_env.sh     ← config loader (sourced by all scripts)
 └── reference/
-    ├── brain.env.example             # Configuration template
-    ├── PHASES.md                     # Detailed phase documentation
-    └── queries/
-        ├── project-summary.md        # Q&A: Project status
-        └── knowledge-gaps.md         # Q&A: Knowledge coverage
+    ├── PHASES.md         ← detailed phase documentation
+    ├── brain.env.example ← configuration template
+    └── queries/          ← Q&A templates for phase 3
 ```
 
-## Related Documentation
+Read `reference/PHASES.md` for detailed documentation on each phase.
 
-- **Phase Details:** `reference/PHASES.md` — comprehensive breakdown of each phase with examples
-- **Configuration:** `reference/brain.env.example` — environment variable setup
-- **Q&A Templates:** `reference/queries/` — standard query formats for Phase 3
-- **Brain Vault Structure:** Check your Local Brain `README.md` for vault organization
+## Integration
 
-## Integration with Other Skills
-
-- **brain-load:** Load project context before running brain-audit
-- **brain-sync:** Sync vault before and after audit runs
-- **finops-audit:** Track time spent on audit phases
-
----
-
-**Last Updated:** 2026-04-11  
-**Version:** 1.0.0
+- **brain-route** → calls this skill when maintenance mode is triggered
+- **brain-sync** → run before and after; `audit.sh` does not pull/push itself

@@ -55,6 +55,7 @@ for raw_file in "$raw_dir"/*; do
     fi
 
     filename=$(basename "$raw_file")
+    [[ "$filename" == "index.md" || "$filename" == "README.md" ]] && continue
     # Extract slug from filename (remove extension)
     slug="${filename%.*}"
     # Convert to lowercase and replace spaces/special chars with hyphens

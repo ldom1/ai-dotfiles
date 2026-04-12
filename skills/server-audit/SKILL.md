@@ -1,6 +1,11 @@
 ---
 name: server-audit
-description: Run a comprehensive infra audit with parallel checks and structured JSON reporting
+description: >-
+  Run a comprehensive infra audit with parallel checks and structured JSON reporting.
+  Use whenever the user asks to check server health, debug infra issues, audit Docker
+  containers, nginx, Tailscale, Authelia, cron jobs, or git repos on a remote or local
+  machine. Trigger on: "is everything running?", "check my server", "something's broken
+  on the vps", "audit my infra", or any request to inspect a live environment.
 user-invocable: true
 ---
 

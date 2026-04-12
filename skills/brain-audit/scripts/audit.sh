@@ -49,9 +49,9 @@ log_info "All required directories verified"
 
 # Run Phase 1: Raw Data → Drafts
 log_section "Phase 1: Compile (Raw Data → Drafts)"
-if bash "$script_dir/phase-1-compile.sh"; then
+if bash "$script_dir/compile.sh"; then
     # Count created drafts
-    draft_count=$(find "$BRAIN_PATH/inbox/drafts" -maxdepth 1 -type f 2>/dev/null | wc -l)
+    draft_count=$(find "$BRAIN_PATH/inbox/drafts" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d '[:space:]')
     log_result "Phase 1 successful: $draft_count draft(s) created"
 else
     log_error "Phase 1 failed"
@@ -60,11 +60,12 @@ fi
 
 # Run Phase 2: Connection Detection
 log_section "Phase 2: Connect (Orphan Detection & Suggestions)"
-if bash "$script_dir/phase-2-connect.sh"; then
+if bash "$script_dir/connect.sh"; then
     # Count connection suggestions
     connections_file="$BRAIN_PATH/inbox/connections/suggested-connections.md"
     if [[ -f "$connections_file" ]]; then
-        suggestion_count=$(grep -c '^- \`' "$connections_file" 2>/dev/null || echo 0)
+        suggestion_count=$(grep -c '^- \`' "$connections_file" 2>/dev/null) || true
+        suggestion_count=${suggestion_count:-0}
         log_result "Phase 2 successful: ~$suggestion_count connection suggestion(s) generated"
     else
         suggestion_count=0
@@ -77,9 +78,9 @@ fi
 
 # Run Phase 3: Q&A Queries
 log_section "Phase 3: Query (Templated Q&A)"
-if bash "$script_dir/phase-3-qa.sh"; then
+if bash "$script_dir/qa.sh"; then
     # Count created Q&A files
-    qa_count=$(find "$BRAIN_PATH/inbox/qa" -maxdepth 1 -type f 2>/dev/null | wc -l)
+    qa_count=$(find "$BRAIN_PATH/inbox/qa" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d '[:space:]')
     log_result "Phase 3 successful: $qa_count Q&A result(s) created"
 else
     log_error "Phase 3 failed"
@@ -88,7 +89,7 @@ fi
 
 # Run Phase 4: Digest Generation & Clock Reset
 log_section "Phase 4: Digest (Synthesis & Clock Reset)"
-if bash "$script_dir/phase-4-digest.sh" "$draft_count" "$suggestion_count" "$qa_count"; then
+if bash "$script_dir/digest.sh" "$draft_count" "$suggestion_count" "$qa_count"; then
     log_result "Phase 4 successful: digest generated and maintenance clock reset"
 else
     log_error "Phase 4 failed"

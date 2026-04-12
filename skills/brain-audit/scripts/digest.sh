@@ -124,6 +124,7 @@ log_info "Resetting maintenance clock..."
 maintenance_file="$meta_dir/last-maintenance.md"
 
 cat > "$maintenance_file" << EOF
+$(date -u +"%Y-%m-%d %H:%M:%S")
 # Last Maintenance Timestamp
 
 **Timestamp (ISO):** $now

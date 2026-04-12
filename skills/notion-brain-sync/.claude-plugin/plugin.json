@@ -1,0 +1,10 @@
+{
+  "name": "notion-brain-sync",
+  "version": "1.0.0",
+  "description": "Ingest Notion exports into the Local Brain vault with L1/L2/L3 routing, log.md auditing, and BrainSync conventions",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles"
+}

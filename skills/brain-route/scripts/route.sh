@@ -95,7 +95,6 @@ fi
 
 # Rule 2: Check unprocessed files (>50 in /raw/)
 if [[ "$session_mode" == "NORMAL" ]]; then
-    local unprocessed_count
     unprocessed_count=$(_count_unprocessed_files)
     if (( unprocessed_count > 50 )); then
         session_mode="MAINTENANCE"

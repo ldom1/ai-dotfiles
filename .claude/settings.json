@@ -1,5 +1,5 @@
 {
-  "model": "haiku",
+  "model": "sonnet[1m]",
   "hooks": {
     "SessionStart": [
       {
@@ -40,5 +40,15 @@
     "code-simplifier@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true
   },
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "pluginConfigs": {
+    "finops-audit": {
+      "options": {
+        "session_token_budget": 44000,
+        "json_report_path": "~/.claude/reports",
+        "json_report_filename_pattern": "token-report-{date}.json",
+        "include_all_time_totals": true
+      }
+    }
+  }
 }
