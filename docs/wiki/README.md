@@ -6,7 +6,8 @@ GitHub wikis are a **separate git repo** (`https://github.com/ldom1/ai-dotfiles.
 
 On **push to `main`**, after **CI** jobs (shellcheck, JSON, skill layout) succeed, the **Publish wiki** job runs **only if** the push touched `docs/wiki/**`, `scripts/update-wiki.sh`, or `.pre-commit-config.yaml` (see `.github/workflows/ci.yml` + `dorny/paths-filter`). It runs **`pre-commit run update-wiki --hook-stage manual`**, which executes [`scripts/update-wiki.sh`](../scripts/update-wiki.sh).
 
-- The job uses `WIKI_PUSH_TOKEN` if set (repo secret); otherwise `GITHUB_TOKEN`. If the push is denied, add a **fine-grained or classic PAT** with wiki/repo access as secret **`WIKI_PUSH_TOKEN`** on `ldom1/ai-dotfiles`.
+- The job uses `WIKI_PUSH_TOKEN` if set (repo secret); otherwise `GITHUB_TOKEN`. **`GITHUB_TOKEN` usually cannot push the `.wiki.git` repo** — if the wiki never updates, add a **classic PAT** (`repo` scope) as secret **`WIKI_PUSH_TOKEN`**. In the repo: **Settings → Secrets and variables → Actions**.
+- **Publish wiki did not run:** the path filter only runs the job when `docs/wiki/**`, `scripts/update-wiki.sh`, `.pre-commit-config.yaml`, or `.github/workflows/ci.yml` change. If you merged CI before `docs/wiki` was on `main` in the same push, the job may have been skipped — run **Actions → CI → Run workflow** (workflow dispatch) on `main` after checks pass, or push any edit under `docs/wiki/`.
 - Forks skip the sync (script exits 0).
 
 ## Manual publish
