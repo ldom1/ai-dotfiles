@@ -4,7 +4,15 @@
 
 ### Added
 
+- **finops-audit**: JSON export capability with `--json`, `--both`, `--quiet` flags
+  - Structured JSON reports with token aggregates (year/month/week/day)
+  - Project and session-level breakdown
+  - Configurable output path via `.claude/settings.json`
+  - Backward compatible with existing markdown reports
+  - Support for external tool integration (e.g., techspend visualizer)
+
 - **Cursor rule** `.cursor/rules/graphify-context.mdc`: when `graphify-out*` exists at the project root (file or `graphify-out/` with `graph.json`), treat it as canonical architecture context; do not overwrite those artifacts.
+- **CLAUDE.md**: same Graphify `graphify-out*` context rules plus existing `/graphify` skill trigger, under `## Graphify`.
 
 - **brain-route skill**: Session mode decision router that determines whether to run maintenance (brain-audit) or normal context load (brain-load) based on vault state
   - Decision rules: >7 days since last maintenance, >50 unprocessed raw files, or explicit --maintenance flag
