@@ -7,7 +7,7 @@ Thanks for your interest in contributing to ai-dotfiles. Contributions are welco
 - **New skills** — self-contained AI skills compatible with Claude Code and Mistral Vibe
 - **Improvements to existing skills** — better SKILL.md docs, more robust scripts
 - **Bug fixes** — broken scripts, incorrect paths, edge case handling
-- **Documentation** — wiki pages, reference files inside skills
+- **Documentation** — GitHub wiki (publish skill stubs from [`docs/wiki/`](docs/wiki/README.md)), reference files inside skills
 
 ## Skill requirements
 
@@ -27,6 +27,17 @@ skills/<name>/
 The CI checks that every skill has `SKILL.md` and `.claude-plugin/plugin.json`.
 
 Shell scripts must pass `shellcheck --severity=warning`.
+
+## Dev tools (optional)
+
+```bash
+pip install -r requirements-dev.txt
+pre-commit install          # optional: install default hook stages only
+# Wiki sync is a manual-stage hook (not run on every commit). Run when needed:
+pre-commit run update-wiki --hook-stage manual --all-files
+```
+
+CI runs the same wiki hook after all checks pass on `main` when wiki paths change.
 
 ## SKILL.md frontmatter
 

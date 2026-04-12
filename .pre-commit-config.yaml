@@ -1,0 +1,14 @@
+# Local: `pip install pre-commit && pre-commit install` only adds default stages.
+# Wiki sync is manual-stage — run: pre-commit run update-wiki --hook-stage manual --all-files
+# CI runs that on push to main (see .github/workflows/wiki-sync.yml).
+
+repos:
+  - repo: local
+    hooks:
+      - id: update-wiki
+        name: sync GitHub wiki from docs/wiki
+        entry: bash scripts/update-wiki.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [manual]

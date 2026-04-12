@@ -6,7 +6,26 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
+  changes:
+    name: Path filter
+    runs-on: ubuntu-latest
+    outputs:
+      wiki: ${{ steps.filter.outputs.wiki }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            wiki:
+              - 'docs/wiki/**'
+              - 'scripts/update-wiki.sh'
+              - '.pre-commit-config.yaml'
+
   shellcheck:
     name: Shell scripts
     runs-on: ubuntu-latest
@@ -70,3 +89,29 @@ jobs:
             fi
           done
           exit $fail
+
+  wiki-sync:
+    name: Publish wiki
+    needs: [changes, shellcheck, validate-json, validate-skills]
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.changes.outputs.wiki == 'true'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pre-commit
+        run: pip install -r requirements-dev.txt
+
+      - name: Sync docs/wiki to GitHub wiki
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WIKI_PUSH_TOKEN: ${{ secrets.WIKI_PUSH_TOKEN }}
+        run: pre-commit run update-wiki --hook-stage manual --all-files

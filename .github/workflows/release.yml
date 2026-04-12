@@ -46,6 +46,9 @@ jobs:
             /plugin install brain-load@ldom1/ai-dotfiles
             /plugin install notion-brain-sync@ldom1/ai-dotfiles
             /plugin install graphify@ldom1/ai-dotfiles
+            /plugin install token-watch@ldom1/ai-dotfiles
+            /plugin install token-guard@ldom1/ai-dotfiles
+            /plugin install finops-audit@ldom1/ai-dotfiles
             /plugin install create-pr@ldom1/ai-dotfiles
             ```
           generate_release_notes: false
