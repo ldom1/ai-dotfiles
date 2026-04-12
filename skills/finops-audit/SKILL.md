@@ -47,7 +47,7 @@ Run this skill to generate token spend reports in markdown (appended to vault) a
 
 ## Configuration
 
-Optional settings in `~/.claude/settings.json`:
+Optional settings in `~/.claude/finops.json`:
 
 ```json
 {

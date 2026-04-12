@@ -1,0 +1,9 @@
+{
+  "finops": {
+    "enabled": true,
+    "session_token_budget": 44000,
+    "json_report_path": "~/.claude/reports",
+    "json_report_filename_pattern": "token-report-{date}.json",
+    "include_all_time_totals": true
+  }
+}
