@@ -46,3 +46,10 @@ config/graphify.env
 # Server audit local/runtime artifacts
 skills/server-audit/config/targets.json
 skills/server-audit/out/
+
+# COE Skills — synced from external repo, not tracked
+scripts/sync-coe-skills.sh
+skills/coe-*
+
+# Temporary files
+tmp/
