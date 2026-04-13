@@ -138,10 +138,6 @@ extract_totals_from_session() {
 extract_daily_totals() {
   local daily_data="$1"
 
-  # Parse daily data by looking for date entries and their totals
-  local total_tokens=0
-  local total_cost=0
-
   echo "$daily_data" | \
     sed 's/\x1b\[[0-9;]*m//g' | \
     grep -E '^\│' | \

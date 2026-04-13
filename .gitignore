@@ -51,6 +51,8 @@ skills/server-audit/out/
 scripts/sync-coe-skills.sh
 scripts/.coe-skills-sync-list
 skills/coe-*
+.claude/skills/coe-*
+.cursor/skills/coe-*
 
 # Temporary files
 tmp/
