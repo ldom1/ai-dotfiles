@@ -49,6 +49,7 @@ skills/server-audit/out/
 
 # COE Skills — synced from external repo, not tracked
 scripts/sync-coe-skills.sh
+scripts/.coe-skills-sync-list
 skills/coe-*
 
 # Temporary files
