@@ -46,6 +46,7 @@
 - **README**: Skills table lists all 11 repo skills with wiki URLs under `wiki/Skills/…`; FinOps + token plugins added to install snippet; wiki process now points to local `.wiki/` + `scripts/update-wiki.sh`.
 - **brain-sync**: Now calls brain-route after successful pull to determine session mode
 - **brain-route / brain-audit**: ShellCheck clean — `SC1090`/`SC2155`/`SC2034` fixes in `_brain_env.sh`, `route.sh`, and `connect.sh`
+- **finops-audit**: removed unused local variables in `skills/finops-audit/scripts/finops-audit.sh` to resolve ShellCheck `SC2034`.
 
 ## 2026-04-09
 
