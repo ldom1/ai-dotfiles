@@ -14,7 +14,8 @@ Env overrides:
   CTX_WINDOW                 context window size    (default 200000)
   CLAUDE_WEEKLY_LIMIT_TOK    weekly baseline for % (default 100000000)
                               Pro-style ~5M/week: set CLAUDE_WEEKLY_LIMIT_TOK=5000000
-  CCUSAGE_TOKEN_LIMIT        ccusage --token-limit value (default "max")
+  CLAUDE_SESSION_LIMIT_TOK   fixed session denominator override (default 0 = auto)
+  CCUSAGE_TOKEN_LIMIT        ccusage --token-limit override (default "max")
   STATUSLINE_CACHE_TTL       seconds for the blocks cache (default 30)
 """
 from __future__ import annotations
@@ -36,7 +37,8 @@ CTX_WINDOW = int(os.environ.get("CTX_WINDOW", "200000"))
 # Weekly baseline for `week N%`: default 100M matches Max / heavy-usage tiers (~7M used → ~7%).
 # For Pro-style weekly caps, set CLAUDE_WEEKLY_LIMIT_TOK=5000000 (or your real limit).
 WEEKLY_LIMIT_TOK = int(os.environ.get("CLAUDE_WEEKLY_LIMIT_TOK", "100000000"))
-CCUSAGE_TOKEN_LIMIT = os.environ.get("CCUSAGE_TOKEN_LIMIT", "max")
+SESSION_LIMIT_TOK = int(os.environ.get("CLAUDE_SESSION_LIMIT_TOK", "0"))
+CCUSAGE_TOKEN_LIMIT = os.environ.get("CCUSAGE_TOKEN_LIMIT", "max").strip()
 
 R = "\033[0m"
 DIM = "\033[2m"; BOLD = "\033[1m"
@@ -88,6 +90,16 @@ def progress_bar(pct: int, width: int = 10) -> str:
     p = max(0, min(100, pct))
     filled = int(round(p * width / 100))
     return f"[{'█' * filled}{'░' * (width - filled)}]"
+
+
+def should_use_color() -> bool:
+    if os.environ.get("FORCE_COLOR"):
+        return True
+    if os.environ.get("NO_COLOR"):
+        return False
+    if os.environ.get("CLICOLOR") == "0":
+        return False
+    return True
 
 
 def run(cmd: list[str], timeout: float = 3.0) -> str | None:
@@ -181,16 +193,16 @@ def _parse_iso(ts: str) -> datetime | None:
         return None
 
 
-def session_info() -> tuple[str, str, int, float | None]:
+def session_info() -> tuple[str, str, int, float | None, dict]:
     cmd = ["ccusage", "blocks", "--json"]
     if CCUSAGE_TOKEN_LIMIT:
         cmd += ["--token-limit", CCUSAGE_TOKEN_LIMIT]
     data = cached_json("blocks", cmd, ttl=CACHE_TTL)
     if not data:
-        return ("-", "-", 0, None)
+        return ("-", "-", 0, None, {"source": "none"})
     active = next((b for b in data.get("blocks", []) if b.get("isActive")), None)
     if not active:
-        return ("-", "-", 0, None)
+        return ("-", "-", 0, None, {"source": "none"})
     total = int(active.get("totalTokens") or 0)
     tls = active.get("tokenLimitStatus") or {}
     end = active.get("endTime")
@@ -199,18 +211,72 @@ def session_info() -> tuple[str, str, int, float | None]:
         dt = _parse_iso(end)
         if dt:
             reset = fmt_hm(int((dt - datetime.now(timezone.utc)).total_seconds()))
+    limit = tls.get("limit")
+    # Prefer explicit user override for deterministic % (useful for Pro plan tuning).
+    if SESSION_LIMIT_TOK > 0:
+        limit = SESSION_LIMIT_TOK
+    if limit:
+        # ccusage tokenLimitStatus.percentUsed is projected usage (% at end of block),
+        # not current usage. For statusline "session %", use current total/limit.
+        limit_i = int(limit)
+        pct_float = (total * 100.0 / limit_i) if limit_i > 0 else 0.0
+        pct = int(round(pct_float))
+        return (
+            f"{pct}%",
+            reset,
+            pct,
+            float(active.get("costUSD")) if active.get("costUSD") is not None else None,
+            {
+                "source": "current_total_over_limit",
+                "totalTokens": total,
+                "limit": limit_i,
+                "limitFromOverride": SESSION_LIMIT_TOK > 0,
+                "projectedPercentUsed": tls.get("percentUsed"),
+                "projectedUsage": tls.get("projectedUsage"),
+                "computed": {
+                    "formula": "round(totalTokens * 100 / limit)",
+                    "percentRaw": round(pct_float, 6),
+                    "percentRounded": pct,
+                    "remainingTokens": max(0, limit_i - total),
+                },
+            },
+        )
     if "percentUsed" in tls:
         pct = int(round(float(tls["percentUsed"])))
-        return (f"{pct}%", reset, pct, float(active.get("costUSD")) if active.get("costUSD") is not None else None)
-    limit = tls.get("limit")
-    if limit:
-        pct = int(round(total * 100 / int(limit)))
-        return (f"{pct}%", reset, pct, float(active.get("costUSD")) if active.get("costUSD") is not None else None)
+        return (
+            f"{pct}%",
+            reset,
+            pct,
+            float(active.get("costUSD")) if active.get("costUSD") is not None else None,
+            {
+                "source": "projected_percent_used_fallback",
+                "totalTokens": total,
+                "limit": tls.get("limit"),
+                "projectedPercentUsed": tls.get("percentUsed"),
+                "projectedUsage": tls.get("projectedUsage"),
+                "computed": {
+                    "formula": "round(projectedPercentUsed)",
+                    "percentRaw": float(tls.get("percentUsed")),
+                    "percentRounded": pct,
+                },
+            },
+        )
     # no tier/limit known → show raw tokens
-    return (fmt_tokens(total), reset, 0, float(active.get("costUSD")) if active.get("costUSD") is not None else None)
+    return (
+        fmt_tokens(total),
+        reset,
+        0,
+        float(active.get("costUSD")) if active.get("costUSD") is not None else None,
+        {
+            "source": "raw_tokens_only",
+            "totalTokens": total,
+            "limit": None,
+            "computed": {"formula": "no limit available; display raw tokens"},
+        },
+    )
 
 
-def week_info() -> tuple[int, str]:
+def week_info() -> tuple[int, str, dict]:
     now = datetime.now()
     # Weekly reset label target in local time: Friday 10:00 AM.
     reset = now.replace(hour=10, minute=0, second=0, microsecond=0)
@@ -231,11 +297,29 @@ def week_info() -> tuple[int, str]:
                 t = ((d.get("inputTokens") or 0) + (d.get("outputTokens") or 0)
                      + (d.get("cacheCreationTokens") or 0) + (d.get("cacheReadTokens") or 0))
             total += int(t)
-    pct = int(round(total * 100 / WEEKLY_LIMIT_TOK)) if WEEKLY_LIMIT_TOK > 0 else 0
-    return (pct, fmt_weekly_reset(reset, now))
+    pct_float = (total * 100.0 / WEEKLY_LIMIT_TOK) if WEEKLY_LIMIT_TOK > 0 else 0.0
+    pct = int(round(pct_float)) if WEEKLY_LIMIT_TOK > 0 else 0
+    return (
+        pct,
+        fmt_weekly_reset(reset, now),
+        {
+            "source": "rolling_window_sum_over_weekly_limit",
+            "windowStart": since,
+            "windowEnd": reset.date().isoformat(),
+            "weeklyTotalTokens": total,
+            "weeklyLimitTokens": WEEKLY_LIMIT_TOK,
+            "computed": {
+                "formula": "round(weeklyTotalTokens * 100 / weeklyLimitTokens)",
+                "percentRaw": round(pct_float, 6),
+                "percentRounded": pct,
+                "remainingTokens": max(0, WEEKLY_LIMIT_TOK - total),
+            },
+        },
+    )
 
 
 def main() -> int:
+    debug_mode = "--debug" in sys.argv[1:]
     try:
         raw = sys.stdin.read()
         payload = json.loads(raw) if raw.strip() else {}
@@ -254,7 +338,7 @@ def main() -> int:
 
     project, branch = git_info(cwd)
 
-    ansi = sys.stdout.isatty()
+    ansi = should_use_color()
     sep = SEP if ansi else "|"
     l1 = [paint(model, CYAN, enabled=ansi), paint(project, BOLD, enabled=ansi)]
     if branch:
@@ -286,18 +370,33 @@ def main() -> int:
         line2_parts.append(paint(fmt_cost(cost), DIM, enabled=ansi))
     line2 = f" {sep} ".join(line2_parts)
 
-    s_str, s_reset, s_pct, s_cost = session_info()
+    s_str, s_reset, s_pct, s_cost, s_dbg = session_info()
     if cost is None:
         cost = s_cost
         if cost is not None:
             line2 += f" {sep} {paint(fmt_cost(cost), DIM, enabled=ansi)}"
 
-    w_pct, w_reset = week_info()
+    w_pct, w_reset, w_dbg = week_info()
     line3 = (f"{paint('session', DIM, enabled=ansi)} {paint(s_str, color_for(s_pct), enabled=ansi)} "
              f"{paint(f'reset {s_reset}', DIM, enabled=ansi)} "
              f"{sep} "
              f"{paint('week', DIM, enabled=ansi)} {paint(f'{w_pct}%', color_for(w_pct), enabled=ansi)} "
              f"{paint(w_reset, DIM, enabled=ansi)}")
+
+    if debug_mode:
+        debug_payload = {
+            "session": s_dbg,
+            "week": w_dbg,
+            "config": {
+                "COMPACT_PCT": COMPACT_PCT,
+                "CTX_WINDOW": CTX_WINDOW,
+                "CLAUDE_WEEKLY_LIMIT_TOK": WEEKLY_LIMIT_TOK,
+                "CLAUDE_SESSION_LIMIT_TOK": SESSION_LIMIT_TOK,
+                "CCUSAGE_TOKEN_LIMIT": CCUSAGE_TOKEN_LIMIT or None,
+            },
+        }
+        sys.stdout.write(json.dumps(debug_payload, indent=2))
+        return 0
 
     sys.stdout.write(f"{line1}\n{line2}\n{line3}")
     return 0
