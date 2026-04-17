@@ -12,7 +12,8 @@ weekly usage, cached on disk to keep invocations cheap.
 Env overrides:
   COMPACT_PCT                auto-compact threshold (default 95)
   CTX_WINDOW                 context window size    (default 200000)
-  CLAUDE_WEEKLY_LIMIT_TOK    weekly baseline (default 5000000)
+  CLAUDE_WEEKLY_LIMIT_TOK    weekly baseline for % (default 100000000)
+                              Pro-style ~5M/week: set CLAUDE_WEEKLY_LIMIT_TOK=5000000
   CCUSAGE_TOKEN_LIMIT        ccusage --token-limit value (default "max")
   STATUSLINE_CACHE_TTL       seconds for the blocks cache (default 30)
 """
@@ -32,8 +33,9 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 CACHE_TTL = int(os.environ.get("STATUSLINE_CACHE_TTL", "30"))
 COMPACT_PCT = int(os.environ.get("COMPACT_PCT", "95"))
 CTX_WINDOW = int(os.environ.get("CTX_WINDOW", "200000"))
-# Weekly baseline for `week X (YY%)`; default matches common Pro weekly token guidance.
-WEEKLY_LIMIT_TOK = int(os.environ.get("CLAUDE_WEEKLY_LIMIT_TOK", "5000000"))
+# Weekly baseline for `week N%`: default 100M matches Max / heavy-usage tiers (~7M used → ~7%).
+# For Pro-style weekly caps, set CLAUDE_WEEKLY_LIMIT_TOK=5000000 (or your real limit).
+WEEKLY_LIMIT_TOK = int(os.environ.get("CLAUDE_WEEKLY_LIMIT_TOK", "100000000"))
 CCUSAGE_TOKEN_LIMIT = os.environ.get("CCUSAGE_TOKEN_LIMIT", "max")
 
 R = "\033[0m"
@@ -74,12 +76,12 @@ def fmt_hm(seconds: int) -> str:
     return f"{h}h{m:02d}m" if h else f"{m}m"
 
 
-def fmt_dh(seconds: int) -> str:
+def fmt_weekly_reset(target: datetime, now: datetime) -> str:
+    seconds = int((target - now).total_seconds())
     if seconds <= 0:
-        return "now"
-    d, rem = divmod(seconds, 86400)
-    h = rem // 3600
-    return f"{d}d{h:02d}h" if d else f"{h}h"
+        return "resets now (0 days)"
+    days = (seconds + 86399) // 86400
+    return f"resets {target.strftime('%a %I:%M %p')} ({days} days)"
 
 
 def progress_bar(pct: int, width: int = 10) -> str:
@@ -208,14 +210,18 @@ def session_info() -> tuple[str, str, int, float | None]:
     return (fmt_tokens(total), reset, 0, float(active.get("costUSD")) if active.get("costUSD") is not None else None)
 
 
-def week_info() -> tuple[str, str, int]:
+def week_info() -> tuple[int, str]:
     now = datetime.now()
-    monday = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
-    next_monday = monday + timedelta(days=7)
+    # Weekly reset label target in local time: Friday 10:00 AM.
+    reset = now.replace(hour=10, minute=0, second=0, microsecond=0)
+    days_until_friday = (4 - now.weekday()) % 7
+    reset = reset + timedelta(days=days_until_friday)
+    if reset <= now:
+        reset = reset + timedelta(days=7)
     data = cached_json("daily", ["ccusage", "daily", "--json"], ttl=300)
     total = 0
     if data:
-        since = monday.date().isoformat()
+        since = (reset - timedelta(days=7)).date().isoformat()
         for d in data.get("daily", []):
             date_s = str(d.get("date", ""))
             if date_s < since:
@@ -225,9 +231,8 @@ def week_info() -> tuple[str, str, int]:
                 t = ((d.get("inputTokens") or 0) + (d.get("outputTokens") or 0)
                      + (d.get("cacheCreationTokens") or 0) + (d.get("cacheReadTokens") or 0))
             total += int(t)
-    reset = fmt_dh(int((next_monday - now).total_seconds()))
     pct = int(round(total * 100 / WEEKLY_LIMIT_TOK)) if WEEKLY_LIMIT_TOK > 0 else 0
-    return (fmt_tokens(total), reset, pct)
+    return (pct, fmt_weekly_reset(reset, now))
 
 
 def main() -> int:
@@ -287,13 +292,12 @@ def main() -> int:
         if cost is not None:
             line2 += f" {sep} {paint(fmt_cost(cost), DIM, enabled=ansi)}"
 
-    w_tok, w_reset, w_pct = week_info()
+    w_pct, w_reset = week_info()
     line3 = (f"{paint('session', DIM, enabled=ansi)} {paint(s_str, color_for(s_pct), enabled=ansi)} "
              f"{paint(f'reset {s_reset}', DIM, enabled=ansi)} "
              f"{sep} "
-             f"{paint('week', DIM, enabled=ansi)} {paint(w_tok, color_for(w_pct), enabled=ansi)} "
-             f"{paint(f'({w_pct}%)', color_for(w_pct), enabled=ansi)} "
-             f"{paint(f'reset {w_reset}', DIM, enabled=ansi)}")
+             f"{paint('week', DIM, enabled=ansi)} {paint(f'{w_pct}%', color_for(w_pct), enabled=ansi)} "
+             f"{paint(w_reset, DIM, enabled=ansi)}")
 
     sys.stdout.write(f"{line1}\n{line2}\n{line3}")
     return 0
