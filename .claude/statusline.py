@@ -10,11 +10,11 @@ Uses `ccusage blocks --json` and `ccusage daily --json` for session and
 weekly usage, cached on disk to keep invocations cheap.
 
 Env overrides:
-  COMPACT_PCT             auto-compact threshold (default 95)
-  CTX_WINDOW              context window size    (default 200000)
-  WEEK_TOKEN_CAP          weekly token cap for % display; 0 = raw count
-  CCUSAGE_TOKEN_LIMIT     ccusage --token-limit value (default "max")
-  STATUSLINE_CACHE_TTL    seconds for the blocks cache (default 30)
+  COMPACT_PCT                auto-compact threshold (default 95)
+  CTX_WINDOW                 context window size    (default 200000)
+  CLAUDE_WEEKLY_LIMIT_TOK    weekly baseline (default 5000000)
+  CCUSAGE_TOKEN_LIMIT        ccusage --token-limit value (default "max")
+  STATUSLINE_CACHE_TTL       seconds for the blocks cache (default 30)
 """
 from __future__ import annotations
 
@@ -32,7 +32,8 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 CACHE_TTL = int(os.environ.get("STATUSLINE_CACHE_TTL", "30"))
 COMPACT_PCT = int(os.environ.get("COMPACT_PCT", "95"))
 CTX_WINDOW = int(os.environ.get("CTX_WINDOW", "200000"))
-WEEK_TOKEN_CAP = int(os.environ.get("WEEK_TOKEN_CAP", "0"))
+# Weekly baseline for `week X (YY%)`; default matches common Pro weekly token guidance.
+WEEKLY_LIMIT_TOK = int(os.environ.get("CLAUDE_WEEKLY_LIMIT_TOK", "5000000"))
 CCUSAGE_TOKEN_LIMIT = os.environ.get("CCUSAGE_TOKEN_LIMIT", "max")
 
 R = "\033[0m"
@@ -49,12 +50,20 @@ def color_for(pct: int, *, invert: bool = False) -> str:
     return GREEN if pct < 60 else YELLOW if pct < 85 else RED
 
 
+def paint(text: str, color: str, *, enabled: bool) -> str:
+    return f"{color}{text}{R}" if enabled else text
+
+
 def fmt_tokens(n: int) -> str:
     if n >= 1_000_000:
         return f"{n / 1_000_000:.1f}M"
     if n >= 1_000:
         return f"{n / 1_000:.1f}k"
     return str(int(n))
+
+
+def fmt_cost(cost: float | None) -> str:
+    return f"${cost:.3f}" if cost is not None else ""
 
 
 def fmt_hm(seconds: int) -> str:
@@ -71,6 +80,12 @@ def fmt_dh(seconds: int) -> str:
     d, rem = divmod(seconds, 86400)
     h = rem // 3600
     return f"{d}d{h:02d}h" if d else f"{h}h"
+
+
+def progress_bar(pct: int, width: int = 10) -> str:
+    p = max(0, min(100, pct))
+    filled = int(round(p * width / 100))
+    return f"[{'█' * filled}{'░' * (width - filled)}]"
 
 
 def run(cmd: list[str], timeout: float = 3.0) -> str | None:
@@ -164,16 +179,16 @@ def _parse_iso(ts: str) -> datetime | None:
         return None
 
 
-def session_info() -> tuple[str, str, int]:
+def session_info() -> tuple[str, str, int, float | None]:
     cmd = ["ccusage", "blocks", "--json"]
     if CCUSAGE_TOKEN_LIMIT:
         cmd += ["--token-limit", CCUSAGE_TOKEN_LIMIT]
     data = cached_json("blocks", cmd, ttl=CACHE_TTL)
     if not data:
-        return ("-", "-", 0)
+        return ("-", "-", 0, None)
     active = next((b for b in data.get("blocks", []) if b.get("isActive")), None)
     if not active:
-        return ("-", "-", 0)
+        return ("-", "-", 0, None)
     total = int(active.get("totalTokens") or 0)
     tls = active.get("tokenLimitStatus") or {}
     end = active.get("endTime")
@@ -184,13 +199,13 @@ def session_info() -> tuple[str, str, int]:
             reset = fmt_hm(int((dt - datetime.now(timezone.utc)).total_seconds()))
     if "percentUsed" in tls:
         pct = int(round(float(tls["percentUsed"])))
-        return (f"{pct}%", reset, pct)
+        return (f"{pct}%", reset, pct, float(active.get("costUSD")) if active.get("costUSD") is not None else None)
     limit = tls.get("limit")
     if limit:
         pct = int(round(total * 100 / int(limit)))
-        return (f"{pct}%", reset, pct)
+        return (f"{pct}%", reset, pct, float(active.get("costUSD")) if active.get("costUSD") is not None else None)
     # no tier/limit known → show raw tokens
-    return (fmt_tokens(total), reset, 0)
+    return (fmt_tokens(total), reset, 0, float(active.get("costUSD")) if active.get("costUSD") is not None else None)
 
 
 def week_info() -> tuple[str, str, int]:
@@ -211,10 +226,8 @@ def week_info() -> tuple[str, str, int]:
                      + (d.get("cacheCreationTokens") or 0) + (d.get("cacheReadTokens") or 0))
             total += int(t)
     reset = fmt_dh(int((next_monday - now).total_seconds()))
-    if WEEK_TOKEN_CAP > 0:
-        pct = int(round(total * 100 / WEEK_TOKEN_CAP))
-        return (f"{pct}%", reset, pct)
-    return (fmt_tokens(total), reset, 0)
+    pct = int(round(total * 100 / WEEKLY_LIMIT_TOK)) if WEEKLY_LIMIT_TOK > 0 else 0
+    return (fmt_tokens(total), reset, pct)
 
 
 def main() -> int:
@@ -236,23 +249,51 @@ def main() -> int:
 
     project, branch = git_info(cwd)
 
-    l1 = [f"{CYAN}{model}{R}", f"{BOLD}{project}{R}"]
+    ansi = sys.stdout.isatty()
+    sep = SEP if ansi else "|"
+    l1 = [paint(model, CYAN, enabled=ansi), paint(project, BOLD, enabled=ansi)]
     if branch:
-        l1.append(f"{MAGENTA}{branch}{R}")
-    line1 = f" {SEP} ".join(l1)
+        l1.append(paint(branch, MAGENTA, enabled=ansi))
+    line1 = f" {sep} ".join(l1)
 
     ctx_tok = last_ctx_tokens(transcript)
-    used_pct = int(round(ctx_tok * 100 / CTX_WINDOW)) if CTX_WINDOW else 0
-    left_pct = max(0, COMPACT_PCT - used_pct)
-    ctx_c = color_for(left_pct, invert=True)
-    line2 = (f"{DIM}ctx{R} {ctx_c}{left_pct}%{R} {DIM}to compact{R} {SEP} "
-             f"{DIM}{fmt_tokens(ctx_tok)} tok{R}")
+    compact_window = int(CTX_WINDOW * (COMPACT_PCT / 100.0)) if CTX_WINDOW and COMPACT_PCT else 0
+    used_pct = int(round(ctx_tok * 100 / compact_window)) if compact_window else 0
+    used_pct = max(0, min(100, used_pct))
+    # ctx % semantics:
+    # - ctx % = how far into this session's compaction window has been consumed.
+    # - depends on COMPACT_PCT (or CLAUDE_AUTOCOMPACT_PCT_OVERRIDE) and effective context size.
+    # - different sessions can show different % with different absolute tokens; this is expected.
+    bar = progress_bar(used_pct, width=10)
+    bar_c = color_for(used_pct)
+    cost = None
+    p_cost = (payload.get("cost") or {}).get("total_cost_usd")
+    if p_cost is not None:
+        try:
+            cost = float(p_cost)
+        except Exception:
+            cost = None
+    line2_parts = [
+        f"{paint('ctx', DIM, enabled=ansi)} {paint(bar, bar_c, enabled=ansi)} {paint(f'{used_pct}%', bar_c, enabled=ansi)}",
+        f"{paint(f'{fmt_tokens(ctx_tok)} tok used', DIM, enabled=ansi)}",
+    ]
+    if cost is not None:
+        line2_parts.append(paint(fmt_cost(cost), DIM, enabled=ansi))
+    line2 = f" {sep} ".join(line2_parts)
 
-    s_str, s_reset, s_pct = session_info()
-    w_str, w_reset, w_pct = week_info()
-    line3 = (f"{DIM}session{R} {color_for(s_pct)}{s_str}{R} {DIM}reset {s_reset}{R} "
-             f"{SEP} "
-             f"{DIM}week{R} {color_for(w_pct)}{w_str}{R} {DIM}reset {w_reset}{R}")
+    s_str, s_reset, s_pct, s_cost = session_info()
+    if cost is None:
+        cost = s_cost
+        if cost is not None:
+            line2 += f" {sep} {paint(fmt_cost(cost), DIM, enabled=ansi)}"
+
+    w_tok, w_reset, w_pct = week_info()
+    line3 = (f"{paint('session', DIM, enabled=ansi)} {paint(s_str, color_for(s_pct), enabled=ansi)} "
+             f"{paint(f'reset {s_reset}', DIM, enabled=ansi)} "
+             f"{sep} "
+             f"{paint('week', DIM, enabled=ansi)} {paint(w_tok, color_for(w_pct), enabled=ansi)} "
+             f"{paint(f'({w_pct}%)', color_for(w_pct), enabled=ansi)} "
+             f"{paint(f'reset {w_reset}', DIM, enabled=ansi)}")
 
     sys.stdout.write(f"{line1}\n{line2}\n{line3}")
     return 0

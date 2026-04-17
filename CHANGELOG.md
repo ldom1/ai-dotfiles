@@ -4,7 +4,7 @@
 
 ### Added
 
-- **Custom Claude Code statusline** (`.claude/statusline.py`) replacing `ccstatusline@latest`. Three lines: model + project + git branch (with dirty marker) · context % until auto-compact + live token count (from transcript) · session % / reset + weekly % / reset (via cached `ccusage blocks`/`daily --json`). Configurable via env vars `COMPACT_PCT`, `CTX_WINDOW`, `WEEK_TOKEN_CAP`, `CCUSAGE_TOKEN_LIMIT`, `STATUSLINE_CACHE_TTL`. Wired into `.claude/settings.json`, `.claude/settings.json.tpl`, and `scripts/install.sh`.
+- **Custom Claude Code statusline** (`.claude/statusline.py`) replacing `ccstatusline@latest`. Three lines: model + project + git branch (with dirty marker) · context compaction progress bar (`[████░░░░░░] NN%`) + `tok used` + cost · session % / reset + weekly tokens with `(NN%)` / reset (via cached `ccusage blocks`/`daily --json`). Configurable via env vars `COMPACT_PCT`, `CTX_WINDOW`, `CLAUDE_WEEKLY_LIMIT_TOK`, `CCUSAGE_TOKEN_LIMIT`, `STATUSLINE_CACHE_TTL`. Wired into `.claude/settings.json`, `.claude/settings.json.tpl`, and `scripts/install.sh`.
 
 - **finops-audit**: JSON export capability with `--json`, `--both`, `--quiet` flags
   - Structured JSON reports with token aggregates (year/month/week/day)
