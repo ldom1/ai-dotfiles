@@ -1,5 +1,5 @@
 {
-  "model": "haiku",
+  "model": "opusplan",
   "hooks": {
     "SessionStart": [
       {
@@ -50,5 +50,10 @@
       }
     }
   },
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "statusLine": {
+    "type": "command",
+    "command": "/home/lgiron/.claude/statusline.py",
+    "padding": 0
+  }
 }

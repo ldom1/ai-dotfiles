@@ -39,5 +39,10 @@
     "frontend-design@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true
   },
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "statusLine": {
+    "type": "command",
+    "command": "__HOME__/.claude/statusline.py",
+    "padding": 0
+  }
 }
