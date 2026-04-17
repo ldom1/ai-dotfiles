@@ -107,8 +107,9 @@ header "Setting hook permissions"
 chmod +x \
   "$DOTFILES/.claude/hooks/rtk-rewrite.sh" \
   "$DOTFILES/.claude/hooks/brain-session-start.sh" \
-  "$DOTFILES/.claude/hooks/brain-session-end.sh"
-log "hook scripts are executable"
+  "$DOTFILES/.claude/hooks/brain-session-end.sh" \
+  "$DOTFILES/.claude/statusline.py"
+log "hook and statusline scripts are executable"
 
 # ── Done ───────────────────────────────────────────────────────────────────────
 echo -e "\n${BOLD}Done.${RESET} Reload your shell or restart Claude Code.\n"
