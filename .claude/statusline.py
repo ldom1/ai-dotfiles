@@ -6,17 +6,22 @@
   L3  session N% reset Hh Mm | week N% reset Dd Hh
 
 Reads JSON payload on stdin (as per Claude Code's statusLine hook).
-Uses `ccusage blocks --json` and `ccusage daily --json` for session and
-weekly usage, cached on disk to keep invocations cheap.
+Session % and reset come from a direct walk over Claude Code's own
+transcript JSONL files under ~/.claude/projects (no subprocess, no
+network). Weekly % still uses `ccusage daily --json` when available,
+cached on disk to keep invocations cheap.
+
+Calibrate the denominators to what Claude Code itself shows in /status:
+  - Block-total / session% = your real 5h limit  (set CLAUDE_SESSION_LIMIT_TOK)
+  - Week-total / week%     = your real 7d limit  (set CLAUDE_WEEKLY_LIMIT_TOK)
+The numerators are measured from transcripts; only denominators are tunable.
 
 Env overrides:
   COMPACT_PCT                auto-compact threshold (default 95)
   CTX_WINDOW                 context window size    (default 200000)
-  CLAUDE_WEEKLY_LIMIT_TOK    weekly baseline for % (default 100000000)
-                              Pro-style ~5M/week: set CLAUDE_WEEKLY_LIMIT_TOK=5000000
-  CLAUDE_SESSION_LIMIT_TOK   fixed session denominator override (default 0 = auto)
-  CCUSAGE_TOKEN_LIMIT        ccusage --token-limit override (default "max")
-  STATUSLINE_CACHE_TTL       seconds for the blocks cache (default 30)
+  CLAUDE_SESSION_LIMIT_TOK   session (5h block) denominator (default 17000000)
+  CLAUDE_WEEKLY_LIMIT_TOK    weekly (7d) denominator (default 500000000)
+  STATUSLINE_CACHE_TTL       seconds for the disk cache (default 30)
 """
 from __future__ import annotations
 
@@ -31,14 +36,22 @@ from pathlib import Path
 CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "claude-statusline"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-CACHE_TTL = int(os.environ.get("STATUSLINE_CACHE_TTL", "30"))
-COMPACT_PCT = int(os.environ.get("COMPACT_PCT", "95"))
-CTX_WINDOW = int(os.environ.get("CTX_WINDOW", "200000"))
-# Weekly baseline for `week N%`: default 100M matches Max / heavy-usage tiers (~7M used → ~7%).
-# For Pro-style weekly caps, set CLAUDE_WEEKLY_LIMIT_TOK=5000000 (or your real limit).
-WEEKLY_LIMIT_TOK = int(os.environ.get("CLAUDE_WEEKLY_LIMIT_TOK", "100000000"))
-SESSION_LIMIT_TOK = int(os.environ.get("CLAUDE_SESSION_LIMIT_TOK", "0"))
-CCUSAGE_TOKEN_LIMIT = os.environ.get("CCUSAGE_TOKEN_LIMIT", "max").strip()
+def _int_env(name: str, default: int) -> int:
+    try:
+        return int(os.environ.get(name, str(default)))
+    except ValueError:
+        return default
+
+
+CACHE_TTL = _int_env("STATUSLINE_CACHE_TTL", 30)
+COMPACT_PCT = _int_env("COMPACT_PCT", 95)
+CTX_WINDOW = _int_env("CTX_WINDOW", 200000)
+WEEKLY_LIMIT_TOK = _int_env("CLAUDE_WEEKLY_LIMIT_TOK", 580_000_000)
+SESSION_LIMIT_TOK = _int_env("CLAUDE_SESSION_LIMIT_TOK", 19_000_000)
+# Weekly reset: 0=Mon .. 6=Sun; hour is local 24h. Default Fri 10:00.
+WEEKLY_RESET_DAY = _int_env("CLAUDE_WEEKLY_RESET_DAY", 4)
+WEEKLY_RESET_HOUR = _int_env("CLAUDE_WEEKLY_RESET_HOUR", 10)
+STATUSLINE_DEBUG = os.environ.get("STATUSLINE_DEBUG") == "1"
 
 R = "\033[0m"
 DIM = "\033[2m"; BOLD = "\033[1m"
@@ -83,7 +96,12 @@ def fmt_weekly_reset(target: datetime, now: datetime) -> str:
     if seconds <= 0:
         return "resets now (0 days)"
     days = (seconds + 86399) // 86400
-    return f"resets {target.strftime('%a %I:%M %p')} ({days} days)"
+    # %-I drops leading zero on Linux/macOS; fall back to %I if unsupported.
+    try:
+        ts = target.strftime("%a %-I:%M %p")
+    except ValueError:
+        ts = target.strftime("%a %I:%M %p")
+    return f"resets {ts} ({days} days)"
 
 
 def progress_bar(pct: int, width: int = 10) -> str:
@@ -102,40 +120,20 @@ def should_use_color() -> bool:
     return True
 
 
-def run(cmd: list[str], timeout: float = 3.0) -> str | None:
+def _git_run(cwd: str, *args: str, timeout: float = 1.0) -> str | None:
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, check=False)
+        r = subprocess.run(["git", "-C", cwd, *args], capture_output=True,
+                           text=True, timeout=timeout, check=False)
         return r.stdout if r.returncode == 0 else None
-    except Exception:
+    except Exception as exc:
+        if STATUSLINE_DEBUG:
+            sys.stderr.write(f"[statusline] git {args[0] if args else ''} raised: {exc}\n")
         return None
-
-
-def cached_json(key: str, cmd: list[str], ttl: int) -> dict | None:
-    f = CACHE_DIR / f"{key}.json"
-    if f.exists() and time.time() - f.stat().st_mtime < ttl:
-        try:
-            return json.loads(f.read_text())
-        except Exception:
-            pass
-    out = run(cmd)
-    if out:
-        try:
-            data = json.loads(out)
-            f.write_text(out)
-            return data
-        except Exception:
-            pass
-    if f.exists():  # stale fallback
-        try:
-            return json.loads(f.read_text())
-        except Exception:
-            pass
-    return None
 
 
 def git_info(cwd: str) -> tuple[str, str]:
     def g(*args: str) -> str | None:
-        r = run(["git", "-C", cwd, *args], timeout=1.0)
+        r = _git_run(cwd, *args)
         return r.strip() if r is not None else None
 
     top = g("rev-parse", "--show-toplevel")
@@ -193,119 +191,159 @@ def _parse_iso(ts: str) -> datetime | None:
         return None
 
 
+SESSION_BLOCK = timedelta(hours=5)
+TRANSCRIPTS_ROOT = Path.home() / ".claude" / "projects"
+SESSION_TAIL_BYTES = 2_000_000
+
+
+def _iter_assistant_usage(path: Path, since: datetime):
+    try:
+        with open(path, "rb") as fh:
+            fh.seek(0, os.SEEK_END)
+            size = fh.tell()
+            fh.seek(max(0, size - SESSION_TAIL_BYTES))
+            blob = fh.read().decode("utf-8", errors="ignore")
+    except OSError:
+        return
+    for line in blob.splitlines():
+        line = line.strip()
+        if not line or '"usage"' not in line or '"assistant"' not in line:
+            continue
+        try:
+            obj = json.loads(line)
+        except Exception:
+            continue
+        if obj.get("type") != "assistant":
+            continue
+        ts = _parse_iso(obj.get("timestamp") or "")
+        if ts is None or ts < since:
+            continue
+        usage = (obj.get("message") or {}).get("usage") or {}
+        tokens = (int(usage.get("input_tokens") or 0)
+                  + int(usage.get("output_tokens") or 0)
+                  + int(usage.get("cache_creation_input_tokens") or 0)
+                  + int(usage.get("cache_read_input_tokens") or 0))
+        if tokens > 0:
+            yield ts, tokens
+
+
+def _collect_recent_usage(lookback: datetime) -> list[tuple[datetime, int]]:
+    if not TRANSCRIPTS_ROOT.is_dir():
+        return []
+    mtime_cutoff = lookback.timestamp()
+    entries: list[tuple[datetime, int]] = []
+    for path in TRANSCRIPTS_ROOT.rglob("*.jsonl"):
+        try:
+            if path.stat().st_mtime < mtime_cutoff:
+                continue
+        except OSError:
+            continue
+        entries.extend(_iter_assistant_usage(path, lookback))
+    entries.sort(key=lambda p: p[0])
+    return entries
+
+
+def _active_block_start(entries: list[tuple[datetime, int]]) -> datetime:
+    # A block is a fixed 5h wall clock from its first message. Walk forward;
+    # whenever a message lands after (start + 5h) it opens a new block,
+    # regardless of whether there was a gap in activity.
+    start = entries[0][0]
+    for ts, _ in entries[1:]:
+        if ts > start + SESSION_BLOCK:
+            start = ts
+    return start
+
+
 def session_info() -> tuple[str, str, int, float | None, dict]:
-    cmd = ["ccusage", "blocks", "--json"]
-    if CCUSAGE_TOKEN_LIMIT:
-        cmd += ["--token-limit", CCUSAGE_TOKEN_LIMIT]
-    data = cached_json("blocks", cmd, ttl=CACHE_TTL)
-    if not data:
-        return ("-", "-", 0, None, {"source": "none"})
-    active = next((b for b in data.get("blocks", []) if b.get("isActive")), None)
-    if not active:
-        return ("-", "-", 0, None, {"source": "none"})
-    total = int(active.get("totalTokens") or 0)
-    tls = active.get("tokenLimitStatus") or {}
-    end = active.get("endTime")
-    reset = "-"
-    if end:
-        dt = _parse_iso(end)
-        if dt:
-            reset = fmt_hm(int((dt - datetime.now(timezone.utc)).total_seconds()))
-    limit = tls.get("limit")
-    # Prefer explicit user override for deterministic % (useful for Pro plan tuning).
-    if SESSION_LIMIT_TOK > 0:
-        limit = SESSION_LIMIT_TOK
-    if limit:
-        # ccusage tokenLimitStatus.percentUsed is projected usage (% at end of block),
-        # not current usage. For statusline "session %", use current total/limit.
-        limit_i = int(limit)
-        pct_float = (total * 100.0 / limit_i) if limit_i > 0 else 0.0
-        pct = int(round(pct_float))
-        return (
-            f"{pct}%",
-            reset,
-            pct,
-            float(active.get("costUSD")) if active.get("costUSD") is not None else None,
-            {
-                "source": "current_total_over_limit",
-                "totalTokens": total,
-                "limit": limit_i,
-                "limitFromOverride": SESSION_LIMIT_TOK > 0,
-                "projectedPercentUsed": tls.get("percentUsed"),
-                "projectedUsage": tls.get("projectedUsage"),
-                "computed": {
-                    "formula": "round(totalTokens * 100 / limit)",
-                    "percentRaw": round(pct_float, 6),
-                    "percentRounded": pct,
-                    "remainingTokens": max(0, limit_i - total),
-                },
-            },
-        )
-    if "percentUsed" in tls:
-        pct = int(round(float(tls["percentUsed"])))
-        return (
-            f"{pct}%",
-            reset,
-            pct,
-            float(active.get("costUSD")) if active.get("costUSD") is not None else None,
-            {
-                "source": "projected_percent_used_fallback",
-                "totalTokens": total,
-                "limit": tls.get("limit"),
-                "projectedPercentUsed": tls.get("percentUsed"),
-                "projectedUsage": tls.get("projectedUsage"),
-                "computed": {
-                    "formula": "round(projectedPercentUsed)",
-                    "percentRaw": float(tls.get("percentUsed")),
-                    "percentRounded": pct,
-                },
-            },
-        )
-    # no tier/limit known → show raw tokens
-    return (
-        fmt_tokens(total),
-        reset,
-        0,
-        float(active.get("costUSD")) if active.get("costUSD") is not None else None,
-        {
-            "source": "raw_tokens_only",
-            "totalTokens": total,
-            "limit": None,
-            "computed": {"formula": "no limit available; display raw tokens"},
-        },
-    )
+    now = datetime.now(timezone.utc)
+    # 10h lookback: enough to detect a block start that's up to 5h old while
+    # tolerating a few hours of prior inactivity. Bounded to keep disk scan cheap.
+    lookback = now - timedelta(hours=10)
+    entries = _collect_recent_usage(lookback)
+    if not entries:
+        return ("-", "-", 0, None, {"source": "transcripts_empty"})
+
+    block_start = _active_block_start(entries)
+    block_end = block_start + SESSION_BLOCK
+    in_block = [(ts, tok) for ts, tok in entries if block_start <= ts <= block_end]
+    total = sum(tok for _, tok in in_block)
+
+    reset_sec = int((block_end - now).total_seconds())
+    reset = fmt_hm(reset_sec) if reset_sec > 0 else "now"
+
+    dbg: dict = {
+        "source": "transcripts_direct",
+        "blockStart": block_start.isoformat(),
+        "blockEnd": block_end.isoformat(),
+        "messageCount": len(in_block),
+        "totalTokens": total,
+        "limit": SESSION_LIMIT_TOK or None,
+    }
+    limit = SESSION_LIMIT_TOK if SESSION_LIMIT_TOK > 0 else 1
+    pct_float = total * 100.0 / limit
+    pct = int(round(pct_float))
+    dbg["computed"] = {
+        "formula": "round(totalTokens * 100 / SESSION_LIMIT_TOK)",
+        "percentRaw": round(pct_float, 6),
+        "percentRounded": pct,
+        "remainingTokens": max(0, limit - total),
+    }
+    return (f"{pct}%", reset, pct, None, dbg)
+
+
+WEEK_CACHE = CACHE_DIR / "week_sum.json"
+WEEK_CACHE_TTL = 300
+
+
+def _week_total_from_transcripts(since: datetime) -> int:
+    cached = None
+    if WEEK_CACHE.exists() and time.time() - WEEK_CACHE.stat().st_mtime < WEEK_CACHE_TTL:
+        try:
+            cached = json.loads(WEEK_CACHE.read_text())
+        except Exception:
+            cached = None
+    if cached and cached.get("since") == since.isoformat():
+        return int(cached.get("total") or 0)
+    if not TRANSCRIPTS_ROOT.is_dir():
+        return 0
+    mtime_cutoff = since.timestamp()
+    total = 0
+    for path in TRANSCRIPTS_ROOT.rglob("*.jsonl"):
+        try:
+            if path.stat().st_mtime < mtime_cutoff:
+                continue
+        except OSError:
+            continue
+        for _ts, tok in _iter_assistant_usage(path, since):
+            total += tok
+    try:
+        WEEK_CACHE.write_text(json.dumps({"since": since.isoformat(), "total": total}))
+    except OSError:
+        pass
+    return total
 
 
 def week_info() -> tuple[int, str, dict]:
     now = datetime.now()
-    # Weekly reset label target in local time: Friday 10:00 AM.
-    reset = now.replace(hour=10, minute=0, second=0, microsecond=0)
-    days_until_friday = (4 - now.weekday()) % 7
-    reset = reset + timedelta(days=days_until_friday)
+    # Anthropic's weekly limit is tied to an account anchor we don't know; best
+    # proxy is a rolling 7-day window ending now. Reset display uses the
+    # configured anchor (CLAUDE_WEEKLY_RESET_DAY / _HOUR) for a human ETA.
+    reset = now.replace(hour=WEEKLY_RESET_HOUR, minute=0, second=0, microsecond=0)
+    days_until = (WEEKLY_RESET_DAY - now.weekday()) % 7
+    reset = reset + timedelta(days=days_until)
     if reset <= now:
         reset = reset + timedelta(days=7)
-    data = cached_json("daily", ["ccusage", "daily", "--json"], ttl=300)
-    total = 0
-    if data:
-        since = (reset - timedelta(days=7)).date().isoformat()
-        for d in data.get("daily", []):
-            date_s = str(d.get("date", ""))
-            if date_s < since:
-                continue
-            t = d.get("totalTokens")
-            if t is None:
-                t = ((d.get("inputTokens") or 0) + (d.get("outputTokens") or 0)
-                     + (d.get("cacheCreationTokens") or 0) + (d.get("cacheReadTokens") or 0))
-            total += int(t)
+    since_dt = datetime.now(timezone.utc) - timedelta(days=7)
+    total = _week_total_from_transcripts(since_dt)
     pct_float = (total * 100.0 / WEEKLY_LIMIT_TOK) if WEEKLY_LIMIT_TOK > 0 else 0.0
     pct = int(round(pct_float)) if WEEKLY_LIMIT_TOK > 0 else 0
     return (
         pct,
         fmt_weekly_reset(reset, now),
         {
-            "source": "rolling_window_sum_over_weekly_limit",
-            "windowStart": since,
-            "windowEnd": reset.date().isoformat(),
+            "source": "transcripts_direct",
+            "windowStart": since_dt.isoformat(),
+            "windowEnd": reset.astimezone(timezone.utc).isoformat(),
             "weeklyTotalTokens": total,
             "weeklyLimitTokens": WEEKLY_LIMIT_TOK,
             "computed": {
@@ -392,8 +430,8 @@ def main() -> int:
                 "CTX_WINDOW": CTX_WINDOW,
                 "CLAUDE_WEEKLY_LIMIT_TOK": WEEKLY_LIMIT_TOK,
                 "CLAUDE_SESSION_LIMIT_TOK": SESSION_LIMIT_TOK,
-                "CCUSAGE_TOKEN_LIMIT": CCUSAGE_TOKEN_LIMIT or None,
             },
+            "rendered": [line1, line2, line3],
         }
         sys.stdout.write(json.dumps(debug_payload, indent=2))
         return 0

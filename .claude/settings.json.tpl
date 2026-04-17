@@ -1,5 +1,15 @@
 {
-  "model": "opusplan",
+  "model": "opus[1m]",
+  "permissions": {
+    "deny": [
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)",
+      "Bash(git checkout . *)",
+      "Bash(git checkout -- *)",
+      "Bash(git clean -f *)",
+      "Bash(rm -rf *)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       {
@@ -34,15 +44,16 @@
       }
     ]
   },
-  "enabledPlugins": {
-    "superpowers@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true,
-    "code-simplifier@claude-plugins-official": true
-  },
-  "skipDangerousModePermissionPrompt": true,
   "statusLine": {
     "type": "command",
     "command": "__HOME__/.claude/statusline.py",
     "padding": 0
-  }
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true
+  },
+  "skipDangerousModePermissionPrompt": true
 }

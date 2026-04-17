@@ -22,9 +22,13 @@
 .claude/stats-cache.json
 .claude/mcp-needs-auth-cache.json
 .claude/.credentials.json
+.claude/policy-limits.json
 
 # Local permissions — machine-specific, do not track
 .claude/settings.local.json
+
+# Runtime reports from finops-audit / token-watch
+.claude/reports/
 
 # Cursor — runtime files
 .cursor/projects/
