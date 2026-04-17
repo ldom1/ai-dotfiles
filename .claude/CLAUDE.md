@@ -5,6 +5,7 @@ BRAIN_PATH: `grep BRAIN_PATH ~/ai-dotfiles/config/brain.env`
 Vault root (WSL): `/mnt/c/Users/lgiron/Documents/developer-brain/`
 Deep knowledge: `$BRAIN_PATH/resources/knowledge/`
 Skills index: `~/ai-dotfiles/.claude/SKILLS_INDEX.md` (load when using / commands)
+Reference: `~/ai-dotfiles/.claude/LocalBrain.md` (vault layout), `~/ai-dotfiles/.claude/RTK.md` (token proxy)
 
 ## Pitfalls
 Before any substantive implementation or debugging: read `$BRAIN_PATH/resources/knowledge/operational/claude-pitfalls.md`. Treat entries as hard constraints. When the user corrects a mistake, prepend a bullet: context → what was wrong → what to do instead.
@@ -57,15 +58,12 @@ Brain system runs automatically at session start:
 - View latest digest: `ls -lt $BRAIN_PATH/meta/digest-*.md | head -1`
 ## Remote Server Work
 
-When working on remote servers via SSH, always verify the fix actually works from the user's perspective (e.g., curl the endpoint, check browser response) before declaring success. Never assume a config change resolved the issue without end-to-end verification.
+- End-to-end verification: after any fix on a remote host, confirm from the user's perspective (`curl` the endpoint, check the browser response). Never claim success on config change alone.
+- When debugging infrastructure (nginx, Docker, Tailscale, Authelia), identify ALL config file locations and which one is actually active before editing. Run `nginx -T` or equivalent to confirm the live config.
 
 ## Git Conventions
 
 For git operations (rm --cached, .gitignore changes, resets): always check for nested .gitignore files that may override rules, and verify the change persists after a full `git status` check. Prefer a clean single-commit approach over incremental fixes.
-
-## Remote Server Work 
-
-When debugging infrastructure (nginx, Docker, Tailscale, Authelia), identify ALL config file locations and which one is actually active before making changes. Run `nginx -T` or equivalent to confirm the live config.
 
 ## Documentation Hygiene
 
@@ -76,20 +74,4 @@ When behavior, workflow, setup, commands, or visible outputs change:
 
 ## Graphify
 
-### Project context (`graphify-out*`)
-
-At the **start of substantive work** in a project repo, check the **repository root** for Graphify output:
-
-- `graphify-out.md`, `graphify-out.json`, or any **file** whose name starts with `graphify-out`
-- If there is a **`graphify-out/`** directory at the root (common CLI layout), treat **`graphify-out/graph.json`** as the canonical graph when present; otherwise read the clearest summary **`.md` or `.json`** in that directory (not the whole folder blindly)
-
-**If found:** read enough to ground architecture, modules, dependencies, entry points, data flow, naming, and stated constraints. **Prefer this over inferring structure from raw file trees** when it does not contradict the task. Proceed **silently** after loading unless something conflicts with the request or needs clarification.
-
-**If not found:** work as usual; context may be incomplete. You may suggest generating output via [Graphify](https://graphify.net/).
-
-**Never** modify, overwrite, or delete `graphify-out*` artifacts.
-
-### Skill (`/graphify`)
-
-- **graphify** (`~/.claude/skills/graphify/SKILL.md` → `~/ai-dotfiles/skills/graphify/SKILL.md`) — corpus → knowledge graph. Trigger: `/graphify`.
-- When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` before doing anything else.
+At the start of substantive work in a repo, look for `graphify-out*` artifacts at the root (`graphify-out.md`/`.json`, or `graphify-out/graph.json`). If present, read for architecture/modules/flow before inferring from the file tree. Never modify these artifacts. If absent, proceed and optionally suggest generating via https://graphify.net/.
