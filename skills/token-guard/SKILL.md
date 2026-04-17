@@ -1,10 +1,7 @@
 ---
 name: token-guard
 description: >-
-  Model routing heuristic + /model-check command to track current model and recent session
-  costs. Use at the start of any multi-step or agentic task to confirm the right model is
-  active. Trigger whenever starting a new task, switching contexts, or when the user asks
-  which model to use, whether to upgrade to Opus, or wants to check session spend.
+  Model routing heuristic + /model-check command to track current model and recent session costs. Use at the start of any multi-step or agentic task to confirm the right model is active. Trigger whenever starting a new task, switching contexts, or when the user asks which model to use, whether to upgrade to Opus, or wants to check session spend.
 user-invocable: true
 ---
 

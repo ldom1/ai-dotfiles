@@ -1,10 +1,7 @@
 ---
 name: token-watch
 description: >-
-  Snapshot current token burn rate — active window, daily breakdown, and session history
-  via ccusage. Use whenever the user wants to check token usage, monitor spend, review
-  Claude costs, or asks how many tokens were used. Trigger on: "how much have I spent?",
-  "check my token usage", "am I burning too many tokens?", or before a /compact decision.
+  Snapshot current token burn rate — active window, daily breakdown, and session history via ccusage. Use whenever the user wants to check token usage, monitor spend, review Claude costs, or asks how many tokens were used. Trigger on: "how much have I spent?", "check my token usage", "am I burning too many tokens?", or before a /compact decision.
 user-invocable: true
 ---
 
