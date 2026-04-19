@@ -1,0 +1,15 @@
+---
+description: Write brainstorming specs and design documents to Local Brain inbox/daily/specs by project.
+alwaysApply: true
+---
+
+# Specs / Design Docs (Local Brain)
+
+When writing a brainstorming spec or design document:
+
+1. Resolve **`$BRAIN_PATH`** from `~/ai-dotfiles/config/brain.env` if unset.
+2. Write the spec to:
+
+   `$BRAIN_PATH/inbox/daily/specs/<project-name>/YYYY-MM-DD-<topic>-design.md`
+
+3. Do **not** write specs inside the project repo (e.g. `docs/superpowers/specs/`).

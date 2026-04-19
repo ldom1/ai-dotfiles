@@ -20,6 +20,10 @@ Occam's razor: fewest assumptions, smallest surface area. Structured, simple, re
 
 For every substantive session on a project: write to **`$BRAIN_PATH/inbox/daily/implementation/<project-name>/YYYY-MM-DD-topic.md`** (resolve `BRAIN_PATH` from `~/ai-dotfiles/config/brain.env`). Continue the same day's file if the thread continues. Include goal, changes, commands/tests, and follow-ups. **Do not** use `index/implementation/` — that path does not exist in the vault.
 
+## Specs / Design Docs (Local Brain)
+
+Write brainstorming specs and design documents to **`$BRAIN_PATH/inbox/daily/specs/<project-name>/YYYY-MM-DD-<topic>-design.md`**. Do not use `docs/superpowers/specs/` inside the project repo.
+
 ## Compaction focus
 When compacting, preserve: files in scope, open decisions, failing tests/errors, next command to run, explicit user constraints.
 

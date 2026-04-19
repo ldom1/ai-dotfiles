@@ -6,10 +6,9 @@
   L3  session N% reset Hh Mm | week N% reset Dd Hh
 
 Reads JSON payload on stdin (as per Claude Code's statusLine hook).
-Session % and reset come from a direct walk over Claude Code's own
-transcript JSONL files under ~/.claude/projects (no subprocess, no
-network). Weekly % still uses `ccusage daily --json` when available,
-cached on disk to keep invocations cheap.
+Session % / reset and weekly token totals walk transcript JSONL files under
+~/.claude/projects (no network). Assistant rows with the same API message id
+(streaming chunks) are counted once per id so totals match real usage.
 
 Calibrate the denominators to what Claude Code itself shows in /status:
   - Block-total / session% = your real 5h limit  (set CLAUDE_SESSION_LIMIT_TOK)
@@ -22,6 +21,7 @@ Env overrides:
   CLAUDE_SESSION_LIMIT_TOK   session (5h block) denominator (default 17000000)
   CLAUDE_WEEKLY_LIMIT_TOK    weekly (7d) denominator (default 500000000)
   STATUSLINE_CACHE_TTL       seconds for the disk cache (default 30)
+  STATUSLINE_SESSION_TAIL_BYTES  bytes read from end of each transcript (default 2000000)
 """
 from __future__ import annotations
 
@@ -173,7 +173,7 @@ def last_ctx_tokens(transcript: str | None) -> int:
             continue
         try:
             obj = json.loads(line)
-        except Exception:
+        except json.JSONDecodeError:
             continue
         for u in _find_usage(obj):
             last = u
@@ -187,13 +187,13 @@ def last_ctx_tokens(transcript: str | None) -> int:
 def _parse_iso(ts: str) -> datetime | None:
     try:
         return datetime.fromisoformat(ts.replace("Z", "+00:00"))
-    except Exception:
+    except (ValueError, TypeError, OSError):
         return None
 
 
 SESSION_BLOCK = timedelta(hours=5)
 TRANSCRIPTS_ROOT = Path.home() / ".claude" / "projects"
-SESSION_TAIL_BYTES = 2_000_000
+SESSION_TAIL_BYTES = _int_env("STATUSLINE_SESSION_TAIL_BYTES", 2_000_000)
 
 
 def _iter_assistant_usage(path: Path, since: datetime):
@@ -205,26 +205,41 @@ def _iter_assistant_usage(path: Path, since: datetime):
             blob = fh.read().decode("utf-8", errors="ignore")
     except OSError:
         return
+    pending: list[tuple[datetime, int, str | None]] = []
     for line in blob.splitlines():
         line = line.strip()
         if not line or '"usage"' not in line or '"assistant"' not in line:
             continue
         try:
             obj = json.loads(line)
-        except Exception:
+        except json.JSONDecodeError:
             continue
         if obj.get("type") != "assistant":
             continue
         ts = _parse_iso(obj.get("timestamp") or "")
         if ts is None or ts < since:
             continue
-        usage = (obj.get("message") or {}).get("usage") or {}
+        msg = obj.get("message") or {}
+        usage = msg.get("usage") or {}
         tokens = (int(usage.get("input_tokens") or 0)
                   + int(usage.get("output_tokens") or 0)
                   + int(usage.get("cache_creation_input_tokens") or 0)
                   + int(usage.get("cache_read_input_tokens") or 0))
-        if tokens > 0:
-            yield ts, tokens
+        if tokens <= 0:
+            continue
+        mid = msg.get("id")
+        pending.append((ts, tokens, str(mid) if mid else None))
+
+    if not pending:
+        return
+    last_idx: dict[str, int] = {}
+    for i, (_, _, mid) in enumerate(pending):
+        if mid:
+            last_idx[mid] = i
+    for i, (ts, tokens, mid) in enumerate(pending):
+        if mid and last_idx.get(mid) != i:
+            continue
+        yield ts, tokens
 
 
 def _collect_recent_usage(lookback: datetime) -> list[tuple[datetime, int]]:
