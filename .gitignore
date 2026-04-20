@@ -58,5 +58,10 @@ skills/coe-*
 .claude/skills/coe-*
 .cursor/skills/coe-*
 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
 # Temporary files
 tmp/
