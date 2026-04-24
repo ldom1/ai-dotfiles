@@ -1,0 +1,42 @@
+{
+  "version": 3,
+  "lines": [
+    [
+      { "id": "1", "type": "model", "color": "cyan" },
+      { "id": "2", "type": "git-root-dir", "color": "white", "bold": true }
+    ],
+    [
+      { "id": "c0", "type": "custom-text", "customText": "ctx ", "color": "brightBlack", "merge": "no-padding" },
+      { "id": "c1", "type": "context-bar", "color": "blue", "metadata": { "display": "progress-short" } },
+      { "id": "c2", "type": "tokens-total", "color": "cyan", "merge": "no-padding" },
+      { "id": "c3", "type": "custom-text", "customText": " tok used", "color": "brightBlack" },
+      { "id": "c4", "type": "session-cost", "color": "green" }
+    ],
+    [
+      { "id": "s0", "type": "custom-text", "customText": "session ", "color": "brightBlack", "merge": "no-padding" },
+      { "id": "s1", "type": "session-usage", "color": "brightBlue", "merge": "no-padding" },
+      { "id": "s2", "type": "custom-text", "customText": " reset ", "color": "brightBlack", "merge": "no-padding" },
+      { "id": "s3", "type": "reset-timer", "color": "brightBlue", "metadata": { "compact": "true" } },
+      { "id": "s4", "type": "custom-text", "customText": "week ", "color": "brightBlack", "merge": "no-padding" },
+      { "id": "s5", "type": "weekly-usage", "color": "brightBlue", "merge": "no-padding" },
+      { "id": "s6", "type": "custom-text", "customText": "resets ", "color": "brightBlack", "merge": "no-padding" },
+      { "id": "s7", "type": "weekly-reset-timer", "color": "brightBlue", "metadata": { "compact": "true" } }
+    ]
+  ],
+  "flexMode": "full-minus-40",
+  "compactThreshold": 60,
+  "colorLevel": 2,
+  "defaultSeparator": " | ",
+  "inheritSeparatorColors": false,
+  "globalBold": false,
+  "minimalistMode": true,
+  "powerline": {
+    "enabled": false,
+    "separators": [""],
+    "separatorInvertBackground": [false],
+    "startCaps": [],
+    "endCaps": [],
+    "autoAlign": false,
+    "continueThemeAcrossLines": false
+  }
+}

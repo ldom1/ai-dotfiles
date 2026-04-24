@@ -16,3 +16,4 @@ User-owned skills shipped in `~/ai-dotfiles/skills/`. Plugin skills (simplify, f
 | /graphify | Corpus → knowledge graph (HTML, JSON, Obsidian, queries) |
 | /coe-artelys-pptx | Artelys-branded PowerPoint deck generator |
 | /notion-brain-sync | Mirror Local Brain pages to Notion |
+| /website-to-hyperframes-core | Brand profile + source → HyperFrames promo video (reusable across projects) |

@@ -45,8 +45,8 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "/home/lgiron/.claude/statusline.py",
-    "padding": 0
+    "command": "npx -y ccstatusline@latest --config /home/lgiron/.claude/ccstatusline-settings.json",
+    "padding": 2
   },
   "enabledPlugins": {
     "superpowers@claude-plugins-official": true,
