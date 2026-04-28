@@ -1,0 +1,6 @@
+---
+pid: 334160
+cwd: /home/lgiron/lab_perso/politics
+---
+➜  politics 
+➜  politics git:(fix/display)

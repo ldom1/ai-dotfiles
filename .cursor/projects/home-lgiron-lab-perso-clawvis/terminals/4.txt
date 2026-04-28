@@ -1,0 +1,32 @@
+---
+pid: 397167
+cwd: /home/lgiron/lab_perso/clawvis
+active_command: make down && make up
+last_command: cd /mnt/c/Users/lgiron/Documents/developer-brain
+---
+➜  clawvis git:(feat/agent_telegram_cron) ✗ cd /mnt/c/Users/lgiron/Documents/developer-brain
+➜  clawvis git:(feat/agent_telegram_cron) ✗ make down && make up
+docker compose down -v
+docker compose up -d --build
+[+] Building 246.4s (26/36)                                                                                                                                                                                              docker:default
+ => [agent-service internal] load metadata for ghcr.io/astral-sh/uv:0.10.0                                                                                                                                                         2.7s
+ => [hub-memory-api stage-0  6/13] COPY uv.lock ./                                                                                                                                                                                 0.1s
+ => [hub-memory-api stage-0  7/13] COPY hub-core/ ./hub-core/                                                                                                                                                                     10.8s
+ => [hub-memory-api stage-0  8/13] COPY services/kanban/ ./services/kanban/                                                                                                                                                        0.3s
+ => [hub-memory-api stage-0  9/13] COPY skills/project-init/templates/ ./skills/project-init/templates/                                                                                                                            0.3s
+ => [hub-memory-api stage-0 10/13] COPY scripts/ ./scripts/                                                                                                                                                                        0.3s
+ => [kanban-api stage-0 11/13] RUN chmod +x scripts/build-quartz.sh                                                                                                                                                                0.7s
+ => [hub-memory-api stage-0 12/13] WORKDIR /clawvis                                                                                                                                                                                0.6s
+ => [kanban-api stage-0 13/13] RUN UV_HTTP_TIMEOUT=120 UV_HTTP_RETRIES=8 uv sync --frozen --no-dev --package kanban-api     && chmod -R a+rwX .venv /clawvis                                                                      87.5s
+ => [kanban-api] exporting to image                                                                                                                                                                                                8.6s
+ => => exporting layers                                                                                                                                                                                                            8.4s
+ => => writing image sha256:4fffc3b4d9feb07134f746e7fb8ce6b3deebf96bdf70839ad7346ad1016d8462                                                                                                                                       0.0s
+ => => naming to docker.io/library/clawvis-kanban-api                                                                                                                                                                              0.1s
+ => [hub-memory-api] exporting to image                                                                                                                                                                                            8.7s
+ => => exporting layers                                                                                                                                                                                                            8.4s
+ => => writing image sha256:d6c6be66f4dbc47a7322111ae43ce7e6b0845ab37383b85ae63578d03644481b                                                                                                                                       0.0s
+ => => naming to docker.io/library/clawvis-hub-memory-api                                                                                                                                                                          0.1s
+ => [kanban-api] resolving provenance for metadata file                                                                                                                                                                            0.0s
+ => [hub-memory-api] resolving provenance for metadata file                                                                                                                                                                        0.0s
+ => [agent-service internal] load build definition from Dockerfile                                                                                                                                                                 0.1s
+ => => transferring dockerfile: 1.42kB                                                                                                                                                                                             0.0s

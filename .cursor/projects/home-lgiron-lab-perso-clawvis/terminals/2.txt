@@ -1,9 +1,0 @@
----
-pid: 235800
-cwd: /home/lgiron/lab_perso/clawvis
-last_command: git pull
-last_exit_code: 0
----
-➜  clawvis git:(feat/agent_telegram_cron) ✗ git pull
-Already up to date.
-➜  clawvis git:(feat/agent_telegram_cron) ✗

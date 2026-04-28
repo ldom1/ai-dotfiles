@@ -1,0 +1,6 @@
+---
+pid: 333520
+cwd: /home/lgiron/lab_perso/politics
+---
+. "\home\lgiron\.cursor-server\bin\e9ee1339915a927dfb2df4a836dd9c8337e17cc0/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh"
+^L
