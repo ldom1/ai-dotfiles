@@ -1,5 +1,0 @@
----
-pid: 295725
-cwd: /home/lgiron/lab_perso/clawvis
----
-➜  clawvis git:(feat/agent_telegram_cron) ✗

@@ -1,0 +1,541 @@
+
+CHANGELOG.md                                       | 48 +++++++++++
+ README.md                                          |  2 +-
+ docker-compose.yml                                 |  6 +-
+ hub/src/main.js                                    | 31 ++++++-
+ hub/src/style.css                                  |  5 ++
+ logs/message-trajectory.jsonl                      | 94 ++++++++++++++++++++++
+ quartz                                             |  2 +-
+ services/kanban/kanban_api/core.py                 | 16 +++-
+ services/kanban/kanban_api/memory_api.py           |  3 +-
+ services/scheduler/core/definitions/README.md      | 10 ++-
+ services/scheduler/core/definitions/example.yaml   |  5 --
+ services/scheduler/core/scheduler.py               | 63 ++++++++++-----
+ .../knowledge-consolidator-collect.yaml            | 21 -----
+ .../knowledge-consolidator-consolidate.yaml        | 17 ----
+ .../definitions/proactive-innovation.yaml          | 29 -------
+ services/scheduler/tests/test_scheduler.py         | 12 ++-
+ services/telegram/core/bot.py                      | 35 ++++++++
+ services/telegram/core/config.py                   |  4 +
+ services/telegram/tests/test_telegram.py           | 29 +++++++
+ 19 files changed, 329 insertions(+), 103 deletions(-)
+
+--- Changes ---
+
+CHANGELOG.md
+  @@ -2,6 +2,54 @@
+  +## [Unreleased]
+  +
+  +### Brain + Telegram — Quartz source alignment and strict notification checks (2026-04-28)
+  +- `hub-memory-api` now uses `MEMORY_ROOT=${BRAIN_PATH}` in Docker so the Brain/Quartz API tracks the same external Obsidian vault path as the rest of the stack.
+  +- `hub-memory-api` now mounts `BRAIN_PATH` as `rw` (not `ro`) because `hub_settings.json` is written under `MEMORY_ROOT/kanban`.
+  +- Quartz fallback page lookup now checks `BRAIN_PATH/projects` when local instance memory has no generated HTML pages.
+  +- Telegram `/send` and `/test` now reject real-mode delivery when `TELEGRAM_CHAT_ID` is missing (`412 missing chat_id`).
+  +- Scheduler now validates Telegram notify HTTP responses (`raise_for_status` + JSON `ok`) before logging `job.notified`, avoiding false “success” when delivery failed.
+  +
+  +### Docker — kanban-api startup permission fix (2026-04-28)
+  +- **Root cause**: `kanban-api` bind-mounted the full repo at `/clawvis`, reusing host `.venv` files owned by `nobody:nogroup`; `uv run` failed with `Permission denied` while replacing `bin/kanban-api`, so the container exited on boot.
+  +- **Fix**: `docker-compose.yml` now mounts an anonymous volume at `/clawvis/.venv` for `kanban-api`, keeping a container-local writable virtualenv while preserving the host repo bind mount.
+  +- **Result**: `kanban-api` reaches healthy state and full `docker compose up -d` stack starts successfully.
+  +
+  +### Hub UI — spacing between communication and automation cards (2026-04-28)
+  +- Added `.settings-page-body` vertical layout spacing in `hub/src/style.css` so cards no longer touch each other.
+  +- This fixes missing spacing between `Telegram` / `Discord` cards and between `Jobs` / `Workflows` cards.
+  +
+  +### Hub UI — edit cron schedule from Jobs table (2026-04-28)
+  +- Added an `Edit` action on each scheduled job row in Communication → Jobs.
+  +- The action prompts for a new cron expression and sends `PATCH /api/hub/agent/cron/jobs/{name}` with `{ cron }`.
+  +
+  +### Telegram service — health/test endpoints for Hub page (2026-04-28)
+  +- Added `GET /health` and `POST /test` routes in `services/telegram/core/bot.py`.
+  +- `/health` now returns JSON expected by Hub communication page (`stub_mode`, `token_configured`, `chat_id`).
+  +- `/test` sends a test message in real mode and returns `{ ok: true, stub: true }` in stub mode.
+  +
+  +### Scheduler — new jobs and knowledge workflow (2026-04-28)
+  +- Added cron job definitions in `services/scheduler/definitions/`:
+  +  - `morning-briefing` (`0 9 * * *`)
+  +  - `hub-refresh` (`0 * * * *`)
+  +  - `self-improvement` (`0 0 * * *`)
+  +  - `brain-maintenance` (`30 0 * * *`)
+  +- Added workflow `knowledge-and-innovation` in `services/scheduler/definitions/workflows/` chaining:
+  +  `knowledge-consolidator-collect` → `knowledge-consolidator-consolidate` → `proactive-innovation` → `self-improvement`.
+  +
+  +### Scheduler — definitions split into jobs/workflows folders (2026-04-28)
+  +- Moved job YAML files to `services/scheduler/definitions/jobs/`.
+  +- Kept workflow YAML files in `services/scheduler/definitions/workflows/`.
+  +- Updated scheduler loader and CRUD paths to read/write jobs from `jobs/` and workflows from `workflows/`.
+  +- Updated Hub/README references to the new folder layout.
+  +
+  +### Scheduler docs — job/workflow examples (2026-04-28)
+  +- Updated `services/scheduler/core/definitions/README.md` to reference the live `jobs/` and `workflows/` folders.
+  +- Replaced single `example.yaml` with:
+  +  - `example-job.yaml`
+  +  - `example-workflow.yaml`
+  +
+   ## [v1.0.0] - 2026-04-17
+   
+   ### MCP server — auto-install deps from setup wizard (2026-04-12)
+  +48 -0
+
+README.md
+  @@ -121,7 +121,7 @@ clawvis restart     # stop + start
+  -**Cron + Telegram:** `docker compose up` (and `clawvis restart` in Docker mode) start `telegram` and `scheduler` with the rest of the stack. Without `TELEGRAM_BOT_TOKEN`, the telegram service runs in **stub mode** (HTTP `/send` only — logs deliveries, no Telegram API). Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in `.env` for a real bot. Cron definitions: `services/scheduler/definitions/*.yaml`.
+  +**Cron + Telegram:** `docker compose up` (and `clawvis restart` in Docker mode) start `telegram` and `scheduler` with the rest of the stack. Without `TELEGRAM_BOT_TOKEN`, the telegram service runs in **stub mode** (HTTP `/send` only — logs deliveries, no Telegram API). Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in `.env` for a real bot. `TELEGRAM_CHAT_ID` must be the target chat/channel id (not the bot id), otherwise `/test` and scheduler notifications are rejected. Cron definitions: `services/scheduler/definitions/jobs/*.yaml` and workflows in `services/scheduler/definitions/workflows/*.yaml`.
+   
+   ---
+   
+  +1 -1
+
+docker-compose.yml
+  @@ -47,6 +47,8 @@ services:
+  +      # Keep a container-local virtualenv writable by the runtime user.
+  +      - /clawvis/.venv
+         - ./logs:/logs:rw
+         # Kanban scans PROJECTS_ROOT from .env — bind the host folder at the same path.
+         # RW: POST /hub/projects mkdir + git init + template files (RO mount → 500, Hub alert "Creation impossible").
+  @@ -93,10 +95,10 @@ services:
+  -      - "${BRAIN_PATH}:${BRAIN_PATH}:ro"
+  +      - "${BRAIN_PATH}:${BRAIN_PATH}:rw"
+       environment:
+         - UV_CACHE_DIR=/tmp/uv-cache
+  -      - MEMORY_ROOT=/clawvis/instances/${INSTANCE_NAME:-example}/workspace
+  +      - MEMORY_ROOT=${BRAIN_PATH}
+       user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+       labels:
+         - "app=clawvis"
+  +4 -2
+
+hub/src/main.js
+  @@ -4167,8 +4167,8 @@ function renderSchedulePage() {
+  -              ? "Jobs planifiés. Définitions YAML dans <code>services/scheduler/definitions/</code>. Chaque job envoie le prompt à l'agent puis poste le résultat sur Telegram."
+  -              : "Scheduled jobs. YAML definitions in <code>services/scheduler/definitions/</code>. Each job sends the prompt to the agent and posts the result to Telegram."
+  +              ? "Jobs planifiés. Définitions YAML dans <code>services/scheduler/definitions/jobs/</code>. Chaque job envoie le prompt à l'agent puis poste le résultat sur Telegram."
+  +              : "Scheduled jobs. YAML definitions in <code>services/scheduler/definitions/jobs/</code>. Each job sends the prompt to the agent and posts the result to Telegram."
+             }</div>
+             <div id="cron-table-wrap"></div>
+             <div id="cron-add-form" class="cron-add-form" style="display:none">
+  @@ -4262,6 +4262,7 @@ async function wireSchedulePage() {
+  +            <button class="btn btn-compact cron-edit-btn" data-name="${name}" data-schedule="${escapeHtml(j.schedule || "")}" type="button" style="font-size:11px;margin-left:4px" ${isManual ? "disabled title=\"Manual job\"" : ""}>${fr ? "Éditer" : "Edit"}</button>
+               <button class="btn btn-compact cron-toggle-btn" data-name="${name}" data-enabled="${enabled}" type="button" style="font-size:11px;margin-left:4px">${toggleLabel}</button>
+               <button class="btn btn-compact cron-delete-btn" data-name="${name}" type="button" style="font-size:11px;color:#ef4444;border-color:#ef4444;margin-left:4px">${fr ? "Suppr." : "Delete"}</button>
+             </td>
+  @@ -4321,6 +4322,32 @@ async function wireSchedulePage() {
+  +      wrap.querySelectorAll(".cron-edit-btn").forEach((btn) => {
+  +        btn.addEventListener("click", async () => {
+  +          const name = btn.getAttribute("data-name");
+  +          const currentSchedule = (btn.getAttribute("data-schedule") || "").trim();
+  +          const nextCron = prompt(fr ? `Nouvelle expression cron pour "${name}"` : `New cron expression for "${name}"`, currentSchedule);
+  +          if (nextCron == null) return;
+  +          const cron = nextCron.trim();
+  +          if (!cron || cron.toLowerCase() === "manual") {
+  +            alert(fr ? "Expression cron invalide." : "Invalid cron expression.");
+  +            return;
+  +          }
+  +          btn.disabled = true;
+  +          const res = await fetch(`/api/hub/agent/cron/jobs/${encodeURIComponent(name)}`, {
+  +            method: "PATCH",
+  +            headers: { "Content-Type": "application/json" },
+  +            body: JSON.stringify({ cron }),
+  +          });
+  +          if (res.ok) {
+  +            await loadCronJobs();
+  +          } else {
+  +            btn.disabled = false;
+  +            const data = await res.json().catch(() => ({}));
+  +            alert(data.error || (fr ? "Erreur." : "Update failed."));
+  +          }
+  +        });
+  +      });
+       } catch (_) {
+         if (status) { status.className = "ai-runtime-status-badge warn"; status.textContent = fr ? "Erreur" : "Error"; }
+         wrap.innerHTML = `<p class="muted" style="font-size:12px">${fr ? "Erreur de chargement" : "Load error"}</p>`;
+  +29 -2
+
+hub/src/style.css
+  @@ -2108,6 +2108,11 @@ select {
+  +.settings-page-body {
+  +  display: flex;
+  +  flex-direction: column;
+  +  gap: 1.5rem;
+  +}
+   .settings-section.card {
+     margin: 0;
+     padding: 1.25rem 1.35rem;
+  +5 -0
+
+logs/message-trajectory.jsonl
+  @@ -89,3 +89,97 @@
+  +{"ts": "2026-04-28T14:28:16.535284Z", "component": "scheduler.main", "event": "scheduler.start", "trace_id": "5b069d36a95e4aeda191bf49c24d675e", "registered": 3, "skills_dir": "/skills", "level": "INFO"}
+  +{"ts": "2026-04-28T14:28:17.056139Z", "component": "scheduler.main", "event": "scheduler.running", "trace_id": "cc76d20ed25c4e84ad47cc44a16aaed3", "level": "INFO"}
+  +{"ts": "2026-04-28T14:28:17.124809Z", "component": "scheduler.api", "event": "scheduler.api.listen", "trace_id": "7af27a352e694d8eab3bb3e18b8acb0e", "port": 8095, "level": "INFO"}
+  +{"ts": "2026-04-28T14:48:14.876255Z", "component": "scheduler.main", "event": "scheduler.start", "trace_id": "b4a87a013546435bbc7063174097799c", "registered": 7, "skills_dir": "/skills", "level": "INFO"}
+  +{"ts": "2026-04-28T14:48:14.898914Z", "component": "scheduler.main", "event": "scheduler.running", "trace_id": "ed7c8c59a7b2411c93f3a3514e4251f2", "level": "INFO"}
+  +{"ts": "2026-04-28T14:48:14.900691Z", "component": "scheduler.api", "event": "scheduler.api.listen", "trace_id": "09155939b2be4a1eb3c88823b7515a3f", "port": 8095, "level": "INFO"}
+  +{"ts": "2026-04-28T14:56:05.581273Z", "component": "scheduler.main", "event": "scheduler.start", "trace_id": "ff8bcdb2a20143c690827d2bf3ee3d9d", "registered": 0, "skills_dir": "/skills", "level": "INFO"}
+  +{"ts": "2026-04-28T14:56:05.596813Z", "component": "scheduler.main", "event": "scheduler.running", "trace_id": "a266dd2b59e64e188f5a665e5807f51a", "level": "INFO"}
+  +{"ts": "2026-04-28T14:56:05.601868Z", "component": "scheduler.api", "event": "scheduler.api.listen", "trace_id": "089b3b457b5b4fd3adc8fc8b5f2242df", "port": 8095, "level": "INFO"}
+  +{"ts": "2026-04-28T14:57:09.595485Z", "component": "scheduler.main", "event": "scheduler.start", "trace_id": "0b19c1f445484a05acf86d87b7c165ea", "registered": 7, "skills_dir": "/skills", "level": "INFO"}
+  +{"ts": "2026-04-28T14:57:09.676227Z", "component": "scheduler.main", "event": "scheduler.running", "trace_id": "dd9e74859448425891ed58f54510e9c1", "level": "INFO"}
+  +{"ts": "2026-04-28T14:57:09.679438Z", "component": "scheduler.api", "event": "scheduler.api.listen", "trace_id": "0e127da5a77a4a6684e0a7cad35357a6", "port": 8095, "level": "INFO"}
+  +{"ts": "2026-04-28T15:00:00.067851Z", "component": "scheduler.job", "event": "job.trigger", "trace_id": "6938a6817b494b628cd42514da53de93", "name": "hub-refresh", "level": "INFO"}
+  +{"ts": "2026-04-28T15:00:00.310896Z", "component": "scheduler.job", "event": "agent.request.start", "trace_id": "6938a6817b494b628cd42514da53de93", "name": "hub-refresh", "level": "INFO"}
+  +{"ts": "2026-04-28T15:00:00.334745Z", "component": "agent.router", "event": "chat.received", "trace_id": "667386171b9e4af5aebd9d37fb94ea12", "message_chars": 140, "history_len": 0, "level": "INFO"}
+  +{"ts": "2026-04-28T15:00:11.990888Z", "component": "agent.router", "event": "chat.cli.reply", "trace_id": "c36f6b6c05fa44afa498531cc438cc14", "response_chars": 720, "level": "INFO"}
+  +{"ts": "2026-04-28T15:00:11.996646Z", "component": "scheduler.job", "event": "agent.request.ok", "trace_id": "6938a6817b494b628cd42514da53de93", "name": "hub-refresh", "result_chars": 720, "level": "INFO"}
+  +{"ts": "2026-04-28T15:00:12.025963Z", "component": "scheduler.job", "event": "telegram.notify.start", "trace_id": "6938a6817b494b628cd42514da53de93", "name": "hub-refresh", "level": "INFO"}
+  +{"ts": "2026-04-28T15:00:12.149555Z", "component": "scheduler.job", "event": "telegram.notify.ok", "trace_id": "6938a6817b494b628cd42514da53de93", "name": "hub-refresh", "level": "INFO"}
+  +{"ts": "2026-04-28T15:11:58.578812Z", "component": "scheduler.main", "event": "scheduler.start", "trace_id": "d2830b8bf5e6409fb94e815174520118", "registered": 7, "skills_dir": "/skills", "level": "INFO"}
+  +{"ts": "2026-04-28T15:11:58.807286Z", "component": "scheduler.main", "event": "scheduler.running", "trace_id": "d22907ed58834ce8bf338de9a4b0d2b3", "level": "INFO"}
+  +{"ts": "2026-04-28T15:11:58.812214Z", "component": "scheduler.api", "event": "scheduler.api.listen", "trace_id": "4bf29e4ed53b4f238c64c4ac3b178aa7", "port": 8095, "level": "INFO"}
+  +{"ts": "2026-04-28T15:13:31.536279Z", "component": "telegram.bot", "event": "command.received", "trace_id": "c5094dfbb6db404aad7c978899e3f656", "command": "tasks", "prompt_chars": 312, "level": "INFO"}
+  +{"message": "agent.error command=%s", "level": "ERROR", "ts": "2026-04-28T15:13:31.606039+00:00Z"}
+  +{"ts": "2026-04-28T15:13:31.596042Z", "component": "telegram.bot", "event": "command.agent_error", "trace_id": "c5094dfbb6db404aad7c978899e3f656", "command": "tasks", "level": "INFO"}
+  +{"ts": "2026-04-28T15:13:31.618913Z", "component": "telegram.bot", "event": "command.received", "trace_id": "e720c14c32c044bca325bd4515644fde", "command": "tasks", "prompt_chars": 328, "level": "INFO"}
+  +{"message": "command.replied command=%s chars=%d", "level": "INFO", "ts": "2026-04-28T15:13:31.631753+00:00Z"}
+  +{"ts": "2026-04-28T15:13:31.623137Z", "component": "telegram.bot", "event": "command.replied", "trace_id": "e720c14c32c044bca325bd4515644fde", "command": "tasks", "response_chars": 30, "level": "INFO"}
+  +{"message": "message.received from=%s", "level": "INFO", "ts": "2026-04-28T15:13:31.643107+00:00Z"}
+  +{"ts": "2026-04-28T15:13:31.642507Z", "component": "telegram.bot", "event": "message.received", "trace_id": "d6a0f3e801f8424ea07e2a7ae45b2333", "user_id": "1", "text_chars": 5, "level": "INFO"}
+  +{"message": "message.replied chars=%d", "level": "INFO", "ts": "2026-04-28T15:13:31.651680+00:00Z"}
+  +{"ts": "2026-04-28T15:13:31.650323Z", "component": "telegram.bot", "event": "message.replied", "trace_id": "d6a0f3e801f8424ea07e2a7ae45b2333", "user_id": "1", "response_chars": 31, "level": "INFO"}
+  +{"message": "message.received from=%s", "level": "INFO", "ts": "2026-04-28T15:13:31.668796+00:00Z"}
+  +{"ts": "2026-04-28T15:13:31.668034Z", "component": "telegram.bot", "event": "message.received", "trace_id": "02c7c5ea4e8f40298e572bbbc8d19bea", "user_id": "42", "text_chars": 25, "level": "INFO"}
+  +{"message": "message.replied chars=%d", "level": "INFO", "ts": "2026-04-28T15:13:31.687927+00:00Z"}
+  +{"ts": "2026-04-28T15:13:31.678630Z", "component": "telegram.bot", "event": "message.replied", "trace_id": "02c7c5ea4e8f40298e572bbbc8d19bea", "user_id": "42", "response_chars": 30, "level": "INFO"}
+  +{"ts": "2026-04-28T15:13:31.703335Z", "component": "telegram.bridge", "event": "agent.request.start", "trace_id": "76e5a83e49f441afa1c61483ac532835", "prompt_chars": 5, "history_len": 0, "level": "INFO"}
+  +{"ts": "2026-04-28T15:13:31.708491Z", "component": "telegram.bridge", "event": "agent.request.network_error", "trace_id": "90c5d87acb50405f8cca898d3d243154", "error": "refused", "level": "INFO"}
+  +{"ts": "2026-04-28T15:13:31.727346Z", "component": "telegram.bridge", "event": "agent.request.start", "trace_id": "1a11475eccc5438dafe41eeef895a105", "prompt_chars": 5, "history_len": 0, "level": "INFO"}
+  +{"ts": "2026-04-28T15:13:31.728719Z", "component": "telegram.bridge", "event": "agent.request.http_error", "trace_id": "021deefc0628438798a0a5db89b70987", "status_code": 500, "level": "INFO"}
+  +{"ts": "2026-04-28T15:13:31.745286Z", "component": "telegram.bridge", "event": "agent.request.start", "trace_id": "7d76de0f870748e0bc9a89fc2cd479a7", "prompt_chars": 5, "history_len": 0, "level": "INFO"}
+  +{"message": "send.stub chars=%d (set TELEGRAM_BOT_TOKEN for real delivery)", "level": "INFO", "ts": "2026-04-28T15:13:31.820358+00:00Z"}
+  +{"message": "test.stub (set TELEGRAM_BOT_TOKEN for real delivery)", "level": "INFO", "ts": "2026-04-28T15:13:31.848032+00:00Z"}
+  +{"ts": "2026-04-28T15:24:31.212971Z", "component": "telegram.bot", "event": "message.received", "trace_id": "27f82d4d5d0540ec802248c12287209a", "user_id": "5689694685", "text_chars": 4, "level": "INFO"}
+  +{"ts": "2026-04-28T15:24:31.259437Z", "component": "telegram.bridge", "event": "agent.request.start", "trace_id": "27f82d4d5d0540ec802248c12287209a", "prompt_chars": 4, "history_len": 0, "level": "INFO"}
+  +{"ts": "2026-04-28T15:24:31.300645Z", "component": "agent.router", "event": "chat.received", "trace_id": "27f82d4d5d0540ec802248c12287209a", "message_chars": 4, "history_len": 0, "level": "INFO"}
+  +{"ts": "2026-04-28T15:24:32.018944Z", "component": "agent.router", "event": "chat.openrouter.chunk", "trace_id": "27f82d4d5d0540ec802248c12287209a", "chunk_chars": 9, "level": "INFO"}
+  +{"ts": "2026-04-28T15:24:32.043543Z", "component": "agent.router", "event": "chat.openrouter.chunk", "trace_id": "27f82d4d5d0540ec802248c12287209a", "chunk_chars": 33, "level": "INFO"}
+  +{"ts": "2026-04-28T15:24:32.176851Z", "component": "telegram.bridge", "event": "agent.request.ok", "trace_id": "27f82d4d5d0540ec802248c12287209a", "status_code": 200, "response_chars": 42, "level": "INFO"}
+  +{"message": "message.replied chars=%d", "level": "INFO", "ts": "2026-04-28T15:24:32.299216+00:00Z"}
+  +{"ts": "2026-04-28T15:24:32.297364Z", "component": "telegram.bot", "event": "message.replied", "trace_id": "27f82d4d5d0540ec802248c12287209a", "user_id": "5689694685", "response_chars": 42, "level": "INFO"}
+  +{"message": "test.telegram_error chat_id=%s", "level": "ERROR", "ts": "2026-04-28T15:25:37.948338+00:00Z"}
+  +{"ts": "2026-04-28T15:27:01.815044Z", "component": "scheduler.job", "event": "job.trigger", "trace_id": "95827f3e02204dddb2ee9a81fce70ff5", "name": "hub-refresh", "level": "INFO"}
+  +{"ts": "2026-04-28T15:27:02.124324Z", "component": "scheduler.job", "event": "agent.request.start", "trace_id": "95827f3e02204dddb2ee9a81fce70ff5", "name": "hub-refresh", "level": "INFO"}
+  +{"ts": "2026-04-28T15:27:02.201817Z", "component": "agent.router", "event": "chat.received", "trace_id": "f4ea22f171c64c30b1a967bfef1f8d07", "message_chars": 140, "history_len": 0, "level": "INFO"}
+  +{"ts": "2026-04-28T15:27:17.187154Z", "component": "agent.router", "event": "chat.cli.reply", "trace_id": "e42aa2ac12f644dc9ed90e9804cda89e", "response_chars": 848, "level": "INFO"}
+  +{"ts": "2026-04-28T15:27:17.190559Z", "component": "scheduler.job", "event": "agent.request.ok", "trace_id": "95827f3e02204dddb2ee9a81fce70ff5", "name": "hub-refresh", "result_chars": 848, "level": "INFO"}
+  +{"ts": "2026-04-28T15:27:17.198304Z", "component": "scheduler.job", "event": "telegram.notify.start", "trace_id": "95827f3e02204dddb2ee9a81fce70ff5", "name": "hub-refresh", "level": "INFO"}
+  +{"message": "send.telegram_error chat_id=%s", "level": "ERROR", "ts": "2026-04-28T15:27:17.416145+00:00Z"}
+  +{"ts": "2026-04-28T15:27:17.417764Z", "component": "scheduler.job", "event": "telegram.notify.ok", "trace_id": "95827f3e02204dddb2ee9a81fce70ff5", "name": "hub-refresh", "level": "INFO"}
+  +{"ts": "2026-04-28T15:36:12.440534Z", "component": "scheduler.main", "event": "scheduler.start", "trace_id": "becac6dbccd5470789aa08a0fce08523", "registered": 7, "skills_dir": "/skills", "level": "INFO"}
+  +{"ts": "2026-04-28T15:36:12.576759Z", "component": "scheduler.main", "event": "scheduler.running", "trace_id": "57a74509083e41359fe9a29dd9ee5887", "level": "INFO"}
+  +{"ts": "2026-04-28T15:36:12.583682Z", "component": "scheduler.api", "event": "scheduler.api.listen", "trace_id": "26ac476626854aab96d9cbb0b9f43667", "port": 8095, "level": "INFO"}
+  +{"ts": "2026-04-28T15:38:56.007321Z", "component": "scheduler.job", "event": "job.trigger", "trace_id": "8a3a2f7623454f39aaf0ac1a30c9809d", "name": "hub-refresh", "level": "INFO"}
+  +{"ts": "2026-04-28T15:38:56.492703Z", "component": "scheduler.job", "event": "agent.request.start", "trace_id": "8a3a2f7623454f39aaf0ac1a30c9809d", "name": "hub-refresh", "level": "INFO"}
+  +{"ts": "2026-04-28T15:38:56.592593Z", "component": "agent.router", "event": "chat.received", "trace_id": "c640d97275964afda1b3eb8fcdb93dcc", "message_chars": 140, "history_len": 0, "level": "INFO"}
+  +{"ts": "2026-04-28T15:39:08.031884Z", "component": "agent.router", "event": "chat.cli.reply", "trace_id": "7ba49f14cd7b4a55a9e3d12245cde9e1", "response_chars": 767, "level": "INFO"}
+  +{"ts": "2026-04-28T15:39:08.034512Z", "component": "scheduler.job", "event": "agent.request.ok", "trace_id": "8a3a2f7623454f39aaf0ac1a30c9809d", "name": "hub-refresh", "result_chars": 767, "level": "INFO"}
+  +{"ts": "2026-04-28T15:39:08.043000Z", "component": "scheduler.job", "event": "telegram.notify.start", "trace_id": "8a3a2f7623454f39aaf0ac1a30c9809d", "name": "hub-refresh", "level": "INFO"}
+  +{"ts": "2026-04-28T15:39:08.225530Z", "component": "scheduler.job", "event": "telegram.notify.error", "trace_id": "8a3a2f7623454f39aaf0ac1a30c9809d", "name": "hub-refresh", "error": "Server error '500 Internal Server Error' for url 'http://telegram:8094/send'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500", "telegram_response": {"ok": false, "error": "internal error"}, "level": "ERROR"}
+  +{"ts": "2026-04-28T15:44:30.978770Z", "component": "telegram.bot", "event": "message.received", "trace_id": "e629379fea7c4f6d9acc4fdd529eed99", "user_id": "5689694685", "text_chars": 32, "level": "INFO"}
+  +{"ts": "2026-04-28T15:44:31.012644Z", "component": "telegram.bridge", "event": "agent.request.start", "trace_id": "e629379fea7c4f6d9acc4fdd529eed99", "prompt_chars": 32, "history_len": 0, "level": "INFO"}
+  +{"ts": "2026-04-28T15:44:31.041980Z", "component": "agent.router", "event": "chat.received", "trace_id": "e629379fea7c4f6d9acc4fdd529eed99", "message_chars": 32, "history_len": 0, "level": "INFO"}
+  +{"ts": "2026-04-28T15:44:31.679027Z", "component": "agent.router", "event": "chat.openrouter.chunk", "trace_id": "e629379fea7c4f6d9acc4fdd529eed99", "chunk_chars": 2, "level": "INFO"}
+  +{"ts": "2026-04-28T15:44:31.683055Z", "component": "agent.router", "event": "chat.openrouter.chunk", "trace_id": "e629379fea7c4f6d9acc4fdd529eed99", "chunk_chars": 25, "level": "INFO"}
+  +{"ts": "2026-04-28T15:44:31.733527Z", "component": "agent.router", "event": "chat.openrouter.chunk", "trace_id": "e629379fea7c4f6d9acc4fdd529eed99", "chunk_chars": 87, "level": "INFO"}
+  +{"ts": "2026-04-28T15:44:31.768346Z", "component": "agent.router", "event": "chat.openrouter.chunk", "trace_id": "e629379fea7c4f6d9acc4fdd529eed99", "chunk_chars": 61, "level": "INFO"}
+  +{"ts": "2026-04-28T15:44:31.822180Z", "component": "agent.router", "event": "chat.openrouter.chunk", "trace_id": "e629379fea7c4f6d9acc4fdd529eed99", "chunk_chars": 48, "level": "INFO"}
+  +{"ts": "2026-04-28T15:44:31.879760Z", "component": "telegram.bridge", "event": "agent.request.ok", "trace_id": "e629379fea7c4f6d9acc4fdd529eed99", "status_code": 200, "response_chars": 223, "level": "INFO"}
+  +{"message": "message.replied chars=%d", "level": "INFO", "ts": "2026-04-28T15:44:32.064191+00:00Z"}
+  +{"ts": "2026-04-28T15:44:32.061799Z", "component": "telegram.bot", "event": "message.replied", "trace_id": "e629379fea7c4f6d9acc4fdd529eed99", "user_id": "5689694685", "response_chars": 223, "level": "INFO"}
+  +{"ts": "2026-04-28T15:49:30.710635Z", "component": "scheduler.main", "event": "scheduler.start", "trace_id": "ce0d8a5996bf4803b30225b147c01bb2", "registered": 7, "skills_dir": "/skills", "level": "INFO"}
+  +{"ts": "2026-04-28T15:49:30.838335Z", "component": "scheduler.main", "event": "scheduler.running", "trace_id": "b4db614104ca4eeb9a127acf1098c4c2", "level": "INFO"}
+  +{"ts": "2026-04-28T15:49:30.843018Z", "component": "scheduler.api", "event": "scheduler.api.listen", "trace_id": "65576916acac47c89d4667b8e6867441", "port": 8095, "level": "INFO"}
+  +{"ts": "2026-04-28T15:49:31.253530Z", "component": "telegram.bot", "event": "message.received", "trace_id": "8aa3bb662f4845d898761a97e12c37ef", "user_id": "5689694685", "text_chars": 23, "level": "INFO"}
+  +{"ts": "2026-04-28T15:49:31.288105Z", "component": "telegram.bridge", "event": "agent.request.start", "trace_id": "8aa3bb662f4845d898761a97e12c37ef", "prompt_chars": 23, "history_len": 0, "level": "INFO"}
+  +{"ts": "2026-04-28T15:49:31.319461Z", "component": "agent.router", "event": "chat.received", "trace_id": "8aa3bb662f4845d898761a97e12c37ef", "message_chars": 23, "history_len": 0, "level": "INFO"}
+  +{"ts": "2026-04-28T15:49:32.094879Z", "component": "agent.router", "event": "chat.openrouter.chunk", "trace_id": "8aa3bb662f4845d898761a97e12c37ef", "chunk_chars": 2, "level": "INFO"}
+  +{"ts": "2026-04-28T15:49:32.096511Z", "component": "agent.router", "event": "chat.openrouter.chunk", "trace_id": "8aa3bb662f4845d898761a97e12c37ef", "chunk_chars": 8, "level": "INFO"}
+  +{"ts": "2026-04-28T15:49:32.119985Z", "component": "agent.router", "event": "chat.openrouter.chunk", "trace_id": "8aa3bb662f4845d898761a97e12c37ef", "chunk_chars": 52, "level": "INFO"}
+  +{"ts": "2026-04-28T15:49:32.156564Z", "component": "telegram.bridge", "event": "agent.request.ok", "trace_id": "8aa3bb662f4845d898761a97e12c37ef", "status_code": 200, "response_chars": 62, "level": "INFO"}
+  +{"message": "message.replied chars=%d", "level": "INFO", "ts": "2026-04-28T15:49:32.207531+00:00Z"}
+  +{"ts": "2026-04-28T15:49:32.206645Z", "component": "telegram.bot", "event": "message.replied", "trace_id": "8aa3bb662f4845d898761a97e12c37ef", "user_id": "5689694685", "response_chars": 62, "level": "INFO"}
+  +{"message": "test.ok", "level": "INFO", "ts": "2026-04-28T15:50:08.429023+00:00Z"}
+  +94 -0
+
+quartz
+  @@ -1 +1 @@
+  -Subproject commit d25a6eabf96751ffca56f8a8139272def7a65041
+  +Subproject commit 59b58076016c5e5f09f16ab0395fed02e2ebb72e-dirty
+  +1 -1
+
+services/kanban/kanban_api/core.py
+  @@ -1957,6 +1957,18 @@ def _quartz_public_dir() -> Path | None:
+  +def _fallback_projects_dir() -> Path:
+  +    primary = active_brain_memory_root() / "projects"
+  +    if any(primary.glob("*.html")):
+  +        return primary
+  +    bp = os.environ.get("BRAIN_PATH", "").strip()
+  +    if bp:
+  +        external = Path(bp).expanduser() / "projects"
+  +        if external.is_dir() and any(external.glob("*.html")):
+  +            return external
+  +    return primary
+  +
+  +
+   def list_memory_quartz_pages() -> dict:
+       quartz_dir = _quartz_public_dir()
+       if quartz_dir is not None:
+  @@ -1968,7 +1980,7 @@ def list_memory_quartz_pages() -> dict:
+  -    projects_dir = active_brain_memory_root() / "projects"
+  +    projects_dir = _fallback_projects_dir()
+       projects_dir.mkdir(parents=True, exist_ok=True)
+       files = sorted(p.name for p in projects_dir.glob("*.html"))
+       return {"files": files, "source": "fallback"}
+  @@ -1982,7 +1994,7 @@ def read_memory_quartz_page(filename: str) -> dict:
+  -        path = active_brain_memory_root() / "projects" / safe
+  +        path = _fallback_projects_dir() / safe
+       if not path.exists():
+           raise KeyError("Quartz page not found")
+       return {
+  +14 -2
+
+services/kanban/kanban_api/memory_api.py
+  @@ -24,6 +24,7 @@ from kanban_api.core import (  # reuse implementation; separate service boundary
+  +    _fallback_projects_dir,
+   )
+   from kanban_api.models import HubSettingsUpdate, InstanceLinkRequest, MemoryFileSave
+   
+  @@ -122,7 +123,7 @@ def _resolve_quartz_static_file(safe: Path) -> tuple[Path | None, Path | None]:
+  -    projects_root = active_brain_memory_root(get_hub_settings()) / "projects"
+  +    projects_root = _fallback_projects_dir()
+       if not projects_root.is_dir():
+           return None, None
+       t2 = (projects_root / safe).resolve()
+  +2 -1
+
+services/scheduler/core/definitions/README.md
+  @@ -1 +1,9 @@
+  -Drop `*.yaml` cron definitions here (see `../scheduler.py`). Example file is disabled by default; set `enabled: true` when ready.
+  +Scheduler definition examples (reference only).
+  +
+  +Live definitions are loaded from:
+  +- `services/scheduler/definitions/jobs/*.yaml`
+  +- `services/scheduler/definitions/workflows/*.yaml`
+  +
+  +Use these examples as copy/paste starters:
+  +- `example-job.yaml`
+  +- `example-workflow.yaml`
+  +9 -1
+
+services/scheduler/core/definitions/example.yaml
+  @@ -1,5 +0,0 @@
+  -name: example
+  -cron: "0 9 * * *"
+  -prompt: "Say hello from Clawvis scheduler."
+  -timezone: UTC
+  -enabled: false
+  +0 -5
+
+services/scheduler/core/scheduler.py
+  @@ -10,6 +10,7 @@ from __future__ import annotations
+  +import json
+   from pathlib import Path
+   
+   import httpx
+  @@ -33,6 +34,18 @@ _scheduler: AsyncIOScheduler | None = None
+  +def _jobs_dir(base_dir: Path) -> Path:
+  +    jobs_dir = base_dir / "jobs"
+  +    jobs_dir.mkdir(exist_ok=True)
+  +    return jobs_dir
+  +
+  +
+  +def _workflows_dir(base_dir: Path) -> Path:
+  +    workflows_dir = base_dir / "workflows"
+  +    workflows_dir.mkdir(exist_ok=True)
+  +    return workflows_dir
+  +
+  +
+   async def _run_skill(skill_data: dict) -> str:
+       trace_id = new_trace_id()
+       try:
+  @@ -85,14 +98,24 @@ async def _run_skill(skill_data: dict) -> str:
+  -            await client.post(
+  +            notify_resp = await client.post(
+                   f"{settings.telegram_url}/send",
+                   json=TelegramSendRequest(text=f"[{skill.name}]\n{result}").model_dump(),
+               )
+  +            notify_resp.raise_for_status()
+  +            payload = notify_resp.json()
+  +            if not payload.get("ok", False):
+  +                raise RuntimeError(f"telegram send rejected: {payload}")
+           log.info("job.notified name=%s", skill.name)
+           trace_event("scheduler.job", "telegram.notify.ok", trace_id=trace_id, name=skill.name)
+       except Exception as exc:
+           log.error("job.notify_error name=%s error=%s", skill.name, exc)
+  +        extra = {}
+  +        if isinstance(exc, httpx.HTTPStatusError) and exc.response is not None:
+  +            try:
+  +                extra["telegram_response"] = exc.response.json()
+  +            except json.JSONDecodeError:
+  +                extra["telegram_response"] = exc.response.text
+           trace_event(
+               "scheduler.job",
+               "telegram.notify.error",
+  @@ -100,6 +123,7 @@ async def _run_skill(skill_data: dict) -> str:
+  +            **extra,
+           )
+   
+       return result
+  @@ -125,8 +149,9 @@ async def _run_workflow(workflow_data: dict) -> None:
+  +    jobs_dir = _jobs_dir(sd)
+       for job_name in workflow.jobs:
+  -        job_path = sd / f"{job_name}.yaml"
+  +        job_path = jobs_dir / f"{job_name}.yaml"
+           if not job_path.exists():
+               log.error("workflow.job_not_found workflow=%s job=%s", workflow.name, job_name)
+               trace_event(
+  @@ -168,7 +193,7 @@ async def _run_workflow(workflow_data: dict) -> None:
+  -    for path in sorted(skills_dir.glob("*.yaml")):
+  +    for path in sorted(_jobs_dir(skills_dir).glob("*.yaml")):
+           try:
+               data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+               skill = SkillDefinition.model_validate(data)
+  @@ -274,26 +299,28 @@ def _register_workflow(scheduler: AsyncIOScheduler, wf: WorkflowDefinition) -> N
+  +    jobs_dir = _jobs_dir(sd)
+       jobs = []
+  -    for path in sorted(sd.glob("*.yaml")):
+  +    for path in sorted(jobs_dir.glob("*.yaml")):
+           try:
+               data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+               skill = SkillDefinition.model_validate(data)
+               jobs.append(_skill_to_job_dict(skill))
+           except Exception as exc:
+               log.warning("jobs.list_skip path=%s error=%s", path.name, exc)
+  -    return web.json_response({"jobs": jobs, "path": str(sd)})
+  +    return web.json_response({"jobs": jobs, "path": str(jobs_dir)})
+   
+   
+   async def _http_create_job(request: web.Request) -> web.Response:
+       sd = _skills_dir or get_settings().skills_dir
+  +    jobs_dir = _jobs_dir(sd)
+       try:
+           data = await request.json()
+           skill = SkillDefinition.model_validate(data)
+       except (ValidationError, ValueError) as exc:
+           return web.json_response({"ok": False, "error": str(exc)}, status=400)
+   
+  -    path = sd / f"{skill.name}.yaml"
+  +    path = jobs_dir / f"{skill.name}.yaml"
+       if path.exists():
+           return web.json_response({"ok": False, "error": "job already exists"}, status=409)
+   
+  @@ -311,8 +338,9 @@ async def _http_create_job(request: web.Request) -> web.Response:
+  +    jobs_dir = _jobs_dir(sd)
+       name = request.match_info["name"]
+  -    path = sd / f"{name}.yaml"
+  +    path = jobs_dir / f"{name}.yaml"
+   
+       if not path.exists():
+           return web.json_response({"ok": False, "error": "not found"}, status=404)
+  @@ -328,8 +356,9 @@ async def _http_delete_job(request: web.Request) -> web.Response:
+  +    jobs_dir = _jobs_dir(sd)
+       name = request.match_info["name"]
+  -    path = sd / f"{name}.yaml"
+  +    path = jobs_dir / f"{name}.yaml"
+   
+       if not path.exists():
+           return web.json_response({"ok": False, "error": "not found"}, status=404)
+  @@ -362,8 +391,9 @@ async def _http_patch_job(request: web.Request) -> web.Response:
+  +    jobs_dir = _jobs_dir(sd)
+       name = request.match_info["name"]
+  -    path = sd / f"{name}.yaml"
+  +    path = jobs_dir / f"{name}.yaml"
+   
+       if not path.exists():
+           return web.json_response({"ok": False, "error": "not found"}, status=404)
+  @@ -381,8 +411,7 @@ async def _http_trigger_job(request: web.Request) -> web.Response:
+  -    wf_dir = sd / "workflows"
+  -    wf_dir.mkdir(exist_ok=True)
+  +    wf_dir = _workflows_dir(sd)
+       workflows = []
+       for path in sorted(wf_dir.glob("*.yaml")):
+           try:
+  @@ -396,8 +425,7 @@ async def _http_list_workflows(request: web.Request) -> web.Response:
+  -    wf_dir = sd / "workflows"
+  -    wf_dir.mkdir(exist_ok=True)
+  +    wf_dir = _workflows_dir(sd)
+       try:
+           data = await request.json()
+           wf = WorkflowDefinition.model_validate(data)
+  @@ -423,7 +451,7 @@ async def _http_create_workflow(request: web.Request) -> web.Response:
+  -    path = (sd / "workflows") / f"{name}.yaml"
+  +    path = _workflows_dir(sd) / f"{name}.yaml"
+   
+       if not path.exists():
+           return web.json_response({"ok": False, "error": "not found"}, status=404)
+  @@ -440,7 +468,7 @@ async def _http_delete_workflow(request: web.Request) -> web.Response:
+  -    path = (sd / "workflows") / f"{name}.yaml"
+  +    path = _workflows_dir(sd) / f"{name}.yaml"
+   
+       if not path.exists():
+           return web.json_response({"ok": False, "error": "not found"}, status=404)
+  @@ -474,7 +502,7 @@ async def _http_patch_workflow(request: web.Request) -> web.Response:
+  -    path = (sd / "workflows") / f"{name}.yaml"
+  +    path = _workflows_dir(sd) / f"{name}.yaml"
+   
+       if not path.exists():
+           return web.json_response({"ok": False, "error": "not found"}, status=404)
+  @@ -540,8 +568,7 @@ async def main() -> None:
+  -    wf_dir = settings.skills_dir / "workflows"
+  -    wf_dir.mkdir(exist_ok=True)
+  +    wf_dir = _workflows_dir(settings.skills_dir)
+       for wf_path in sorted(wf_dir.glob("*.yaml")):
+           try:
+               data = yaml.safe_load(wf_path.read_text(encoding="utf-8")) or {}
+  +45 -18
+
+services/scheduler/definitions/knowledge-consolidator-collect.yaml
+  @@ -1,21 +0,0 @@
+  -cron: 0 23 * * *
+  -enabled: true
+  -name: knowledge-consolidator-collect
+  -prompt: |
+  -  You are running the Knowledge Consolidator — Phase 1: Collect.
+  -
+  -  BRAIN_PATH is available as $BRAIN_PATH env var (e.g. /mnt/c/Users/louis/Documents/Local Brain).
+  -
+  -  For each knowledge domain (tech, geopolitics, culture, community, latest, tech_news):
+  -  1. Determine the output directory: $BRAIN_PATH/resources/knowledge/curiosity/<domain>/
+  -  2. Create the directory if it does not exist.
+  -  3. Write a curiosity note to: $BRAIN_PATH/resources/knowledge/curiosity/<domain>/$(date +%Y-%m-%d)-knowledge_<domain>.md
+  -  4. Record key trends, discoveries and insights for that domain — concise, max 400 words per file.
+  -
+  -  Rules:
+  -  - SILENT phase — do NOT send any Telegram message
+  -  - Do NOT modify any MEMORY.md file (perennial index)
+  -  - Write ONLY into $BRAIN_PATH/resources/knowledge/curiosity/<domain>/
+  -  - One file per domain, named YYYY-MM-DD-knowledge_<domain>.md
+  -  - Use the Write tool to create each file
+  -timezone: Europe/Paris
+  +0 -21
+
+services/scheduler/definitions/knowledge-consolidator-consolidate.yaml
+  @@ -1,17 +0,0 @@
+  -cron: 30 23 * * *
+  -enabled: true
+  -name: knowledge-consolidator-consolidate
+  -prompt: "You are running the Knowledge Consolidator — Phase 2: Consolidate.\n\nSteps:\n\
+  -  1. SCAN: read all files under <memory_root>/daily/ and <memory_root>/resources/curiosity/\
+  -  \ modified in the last 24h (use bash: find ... -mtime -1). Extract facts, decisions,\
+  -  \ learnings.\n2. SYNTHESIZE: deduplicate, group by theme, extract only durable knowledge.\n\
+  -  3. WRITE synthesis to <memory_root>/consolidation/$(date +%Y-%m-%d).md\n4. UPDATE\
+  -  \ MEMORY.md ONLY if a truly new durable pattern or reference emerges — max ~2000\
+  -  \ chars total, no dated content.\n5. CLEANUP: if MEMORY.md exceeds target size or\
+  -  \ contains dated entries, move them to daily/consolidation refs.\n6. SEND a Telegram\
+  -  \ report (POST to $TELEGRAM_URL/send if available) following this exact template:\n\
+  -  \   1. Contexte — Memory Consolidation — [date]\n   2. Souvenirs consolidés — N\n\
+  -  \   3. Thèmes principaux — [short list]\n   4. Statut QMD — [ok / en cours / erreur]\n\
+  -  \   5. Insight du jour — [one sentence: most notable fact learned today]\n\nMemory\
+
+... (more changes truncated)
+  +0 -15
+[full diff: rtk git diff --no-compact]

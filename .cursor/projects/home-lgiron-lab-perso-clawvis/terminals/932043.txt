@@ -1,0 +1,89 @@
+---
+pid: 473563
+cwd: "/home/lgiron/lab_perso/clawvis"
+command: "bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh start"
+started_at: 2026-04-28T15:09:36.522Z
+running_for_ms: 35329    
+---
+[brain-sync] Session start — pulling repos...
+[brain] Dirty working tree — stashing before pull.
+Saved working directory and index state On main: brain-sync: pre-pull stash 2026-04-28T17:09:46
+From https://github.com/ldom1/developer-brain
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   inbox/daily/implementation/clawvis/2026-04-28-kanban-api-startup-fix.md
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Dropped refs/stash@{0} (2268e48931f2a21e379c10bc5d7329a7001ef215)
+[brain] Up to date.
+[dotfiles] Dirty working tree — stashing before pull.
+Saved working directory and index state On main: brain-sync: pre-pull stash 2026-04-28T17:10:08
+From https://github.com/ldom1/ai-dotfiles
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+Removing .cursor/projects/home-lgiron-lab-perso-clawvis/terminals/4.txt
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add/rm <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	deleted:    .cursor/projects/home-lgiron-lab-perso-clawvis/terminals/4.txt
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.cursor/projects/home-lgiron-lab-perso-clawvis/agent-transcripts/7d6cc203-9f65-473e-ba8b-db146e1c3731/
+	.cursor/projects/home-lgiron-lab-perso-clawvis/terminals/9.txt
+	.cursor/projects/home-lgiron-lab-perso-clawvis/terminals/932043.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Dropped refs/stash@{0} (a93f3cc346db81afcf37f0aa15b104bbd8d1b810)
+[dotfiles] Up to date.
+[clawvis] WARNING: /home/lgiron/lab/clawvis is not a git repo, skipping pull.
+[brain-sync] Calling brain-route for session mode decision...
+[0;34m[brain-route][0m Session routing at 2026-04-28 17:10:08
+[0;34m[brain-route][0m Mode: [0;32mMAINTENANCE[0m
+[0;34m[brain-route][0m Reason: Last maintenance was >7 days ago
+
+[1;33m[brain-route][0m Routing to brain-audit...
+
+================================
+[audit] Starting Brain-Audit Pipeline
+================================
+
+[audit] [INFO] BRAIN_PATH: /mnt/c/Users/lgiron/Documents/developer-brain
+[audit] [INFO] Start time: 2026-04-28T15:10:09Z
+
+[audit] === Creating Required Directories ===
+
+[audit] [INFO] All required directories verified
+
+[audit] === Phase 1: Compile (Raw Data → Drafts) ===
+
+[phase-1] [INFO] Setting up directories...
+[phase-1] [INFO] Found 1 raw file(s) in /mnt/c/Users/lgiron/Documents/developer-brain/raw
+[phase-1] [RESULT] Phase 1 complete: 0 files processed, 0 drafts created
+[audit] [RESULT] Phase 1 successful: 2 draft(s) created
+
+[audit] === Phase 2: Connect (Orphan Detection & Suggestions) ===
+
+[phase-2] [INFO] Setting up directories...
+[phase-2] [INFO] Scanning vault for markdown files...
+[phase-2] [INFO] Found 72 markdown file(s)
+[phase-2] [INFO] Analyzing connections...
+comm: file 1 is not in sorted order
+comm: file 2 is not in sorted order
+comm: input is not in sorted order
+[audit] [ERROR] Phase 2 failed
+
+---
+exit_code: 1
+elapsed_ms: 36741
+ended_at: 2026-04-28T15:10:13.263Z
+---

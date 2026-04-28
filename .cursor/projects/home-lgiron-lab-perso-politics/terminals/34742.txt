@@ -1,0 +1,13 @@
+---
+pid: 528639
+cwd: "/home/lgiron/lab_perso/politics"
+command: "pkill -f \"next dev|vercel dev|yarn dev\" || true && rm -rf \"/home/lgiron/lab_perso/politics/.next\" && yarn dev"
+started_at: 2026-04-28T15:51:58.760Z
+running_for_ms: 14       
+---
+
+---
+exit_code: unknown
+elapsed_ms: 3527
+ended_at: 2026-04-28T15:52:02.287Z
+---

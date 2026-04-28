@@ -1,0 +1,514 @@
+---
+pid: 495060
+cwd: "/home/lgiron/lab_perso/clawvis"
+command: "if command -v rtk >/dev/null 2>&1; then rtk docker compose up -d --build hub-memory-api telegram scheduler && rtk docker compose ps; else docker compose up -d --build hub-memory-api telegram scheduler && docker compose ps; fi"
+started_at: 2026-04-28T15:27:42.527Z
+running_for_ms: 503918   
+---
+#0 building with "default" instance using docker driver
+
+#1 [hub-memory-api internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.17kB done
+#1 DONE 0.1s
+
+#2 [kanban-api internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.17kB done
+#2 DONE 0.1s
+
+#3 [kanban-api internal] load metadata for docker.io/library/python:3.11-slim
+#3 DONE 0.0s
+
+#4 [kanban-api internal] load metadata for ghcr.io/astral-sh/uv:0.10.0
+#4 DONE 0.6s
+
+#5 [kanban-api internal] load .dockerignore
+#5 transferring context: 2B done
+#5 DONE 0.1s
+
+#6 [hub-memory-api internal] load .dockerignore
+#6 transferring context: 2B done
+#6 DONE 0.1s
+
+#7 [hub-memory-api stage-0  1/13] FROM docker.io/library/python:3.11-slim
+#7 DONE 0.0s
+
+#8 [hub-memory-api] FROM ghcr.io/astral-sh/uv:0.10.0@sha256:78a7ff97cd27b7124a5f3c2aefe146170793c56a1e03321dd31a289f6d82a04f
+#8 DONE 0.0s
+
+#9 [kanban-api internal] load build context
+#9 ...
+
+#10 [hub-memory-api internal] load build context
+#10 transferring context: 1.36MB 1.6s done
+#10 DONE 2.0s
+
+#9 [kanban-api internal] load build context
+#9 transferring context: 1.41MB 1.9s done
+#9 DONE 2.1s
+
+#11 [hub-memory-api stage-0  2/13] COPY --from=ghcr.io/astral-sh/uv:0.10.0 /uv /uvx /usr/local/bin/
+#11 CACHED
+
+#12 [hub-memory-api stage-0  3/13] RUN apt-get update && apt-get install -y --no-install-recommends     bash     ca-certificates     nodejs     npm   && rm -rf /var/lib/apt/lists/*
+#12 CACHED
+
+#13 [hub-memory-api stage-0  4/13] WORKDIR /clawvis
+#13 CACHED
+
+#14 [hub-memory-api stage-0  5/13] COPY pyproject.toml ./
+#14 CACHED
+
+#15 [hub-memory-api stage-0  6/13] COPY uv.lock ./
+#15 CACHED
+
+#16 [hub-memory-api stage-0  7/13] COPY hub-core/ ./hub-core/
+#16 ...
+
+#15 [kanban-api stage-0  6/13] COPY uv.lock ./
+#15 CACHED
+
+#16 [kanban-api stage-0  7/13] COPY hub-core/ ./hub-core/
+#16 DONE 15.0s
+
+#17 [hub-memory-api stage-0  8/13] COPY services/kanban/ ./services/kanban/
+#17 DONE 0.1s
+
+#18 [hub-memory-api stage-0  9/13] COPY skills/project-init/templates/ ./skills/project-init/templates/
+#18 DONE 0.2s
+
+#19 [hub-memory-api stage-0 10/13] COPY scripts/ ./scripts/
+#19 DONE 0.2s
+
+#20 [hub-memory-api stage-0 11/13] RUN chmod +x scripts/build-quartz.sh
+#20 DONE 0.6s
+
+#21 [hub-memory-api stage-0 12/13] WORKDIR /clawvis
+#21 DONE 0.1s
+
+#22 [hub-memory-api stage-0 13/13] RUN UV_HTTP_TIMEOUT=120 UV_HTTP_RETRIES=8 uv sync --frozen --no-dev --package kanban-api     && chmod -R a+rwX .venv /clawvis
+#22 0.664 Using CPython 3.11.15 interpreter at: /usr/local/bin/python3
+#22 0.664 Creating virtual environment at: .venv
+#22 0.693    Building hub-core @ file:///clawvis/hub-core
+#22 0.696    Building kanban-api @ file:///clawvis/services/kanban
+#22 0.792 Downloading pydantic-core (2.0MiB)
+#22 0.815 Downloading pygments (1.2MiB)
+#22 0.822 Downloading uvloop (3.6MiB)
+#22 2.121  Downloaded pygments
+#22 2.337  Downloaded pydantic-core
+#22 2.795  Downloaded uvloop
+#22 3.705       Built kanban-api @ file:///clawvis/services/kanban
+#22 3.723       Built hub-core @ file:///clawvis/hub-core
+#22 3.732 Prepared 35 packages in 3.04s
+#22 3.800 Installed 35 packages in 66ms
+#22 3.800  + annotated-doc==0.0.4
+#22 3.800  + annotated-types==0.7.0
+#22 3.800  + anyio==4.13.0
+#22 3.800  + certifi==2026.2.25
+#22 3.800  + charset-normalizer==3.4.7
+#22 3.800  + click==8.3.1
+#22 3.800  + fastapi==0.135.3
+#22 3.800  + h11==0.16.0
+#22 3.800  + httpcore==1.0.9
+#22 3.800  + httptools==0.7.1
+#22 3.800  + httpx==0.28.1
+#22 3.800  + hub-core==0.1.0 (from file:///clawvis/hub-core)
+#22 3.800  + idna==3.11
+#22 3.800  + iniconfig==2.3.0
+#22 3.800  + kanban-api==0.1.0 (from file:///clawvis/services/kanban)
+#22 3.801  + loguru==0.7.2
+#22 3.801  + packaging==26.0
+#22 3.801  + pluggy==1.6.0
+#22 3.801  + pydantic==2.12.5
+#22 3.801  + pydantic-core==2.41.5
+#22 3.801  + pygments==2.20.0
+#22 3.801  + pytest==9.0.3
+#22 3.801  + pytest-asyncio==1.3.0
+#22 3.801  + python-dotenv==1.2.2
+#22 3.801  + python-multipart==0.0.22
+#22 3.801  + pyyaml==6.0.2
+#22 3.801  + requests==2.33.1
+#22 3.801  + starlette==1.0.0
+#22 3.801  + typing-extensions==4.15.0
+#22 3.801  + typing-inspection==0.4.2
+#22 3.801  + urllib3==2.6.3
+#22 3.801  + uvicorn==0.42.0
+#22 3.801  + uvloop==0.22.1
+#22 3.801  + watchfiles==1.1.1
+#22 3.801  + websockets==16.0
+#22 DONE 196.9s
+
+#23 [hub-memory-api] exporting to image
+#23 exporting layers
+#23 ...
+
+#24 [kanban-api] exporting to image
+#24 exporting layers 21.7s done
+#24 writing image sha256:ef1977bb0d7d59babf08ac79bf0bcdde02e8e1e7acc956246c7dc9fd75e42143 0.0s done
+#24 naming to docker.io/library/clawvis-kanban-api 0.0s done
+#24 DONE 21.8s
+
+#23 [hub-memory-api] exporting to image
+#23 exporting layers 21.7s done
+#23 writing image sha256:3019b7bee482c23b0770f8a286f22b42cabaa7884b39691e02510e66114b36a3 0.0s done
+#23 naming to docker.io/library/clawvis-hub-memory-api 0.0s done
+#23 DONE 21.7s
+
+#25 [hub-memory-api] resolving provenance for metadata file
+#25 DONE 0.1s
+
+#26 [kanban-api] resolving provenance for metadata file
+#26 DONE 0.0s
+
+#27 [agent-service internal] load build definition from Dockerfile
+#27 transferring dockerfile: 1.42kB done
+#27 DONE 0.1s
+
+#3 [agent-service internal] load metadata for docker.io/library/python:3.11-slim
+#3 DONE 0.0s
+
+#4 [agent-service internal] load metadata for ghcr.io/astral-sh/uv:0.10.0
+#4 DONE 1.2s
+
+#28 [agent-service internal] load .dockerignore
+#28 transferring context: 2B done
+#28 DONE 0.1s
+
+#8 [agent-service] FROM ghcr.io/astral-sh/uv:0.10.0@sha256:78a7ff97cd27b7124a5f3c2aefe146170793c56a1e03321dd31a289f6d82a04f
+#8 DONE 0.0s
+
+#7 [agent-service stage-0  1/13] FROM docker.io/library/python:3.11-slim
+#7 DONE 0.0s
+
+#29 [agent-service internal] load build context
+#29 transferring context: 1.39MB 2.7s done
+#29 DONE 2.8s
+
+#30 [agent-service stage-0  6/13] COPY pyproject.toml ./
+#30 CACHED
+
+#31 [agent-service stage-0  2/13] RUN apt-get update &&     apt-get install -y curl gnupg &&     curl -fsSL https://deb.nodesource.com/setup_22.x | bash - &&     apt-get install -y nodejs &&     apt-get clean && rm -rf /var/lib/apt/lists/*
+#31 CACHED
+
+#32 [agent-service stage-0  3/13] COPY --from=ghcr.io/astral-sh/uv:0.10.0 /uv /uvx /usr/local/bin/
+#32 CACHED
+
+#33 [agent-service stage-0  4/13] RUN mkdir -p /home/lgiron && chmod 1777 /home/lgiron
+#33 CACHED
+
+#34 [agent-service stage-0  5/13] WORKDIR /clawvis
+#34 CACHED
+
+#35 [agent-service stage-0  7/13] COPY uv.lock ./
+#35 CACHED
+
+#36 [agent-service stage-0  8/13] COPY hub-core/ ./hub-core/
+#36 DONE 30.6s
+
+#37 [agent-service stage-0  9/13] COPY services/kanban/ ./services/kanban/
+#37 DONE 0.2s
+
+#38 [agent-service stage-0 10/13] COPY services/agent/ ./services/agent/
+#38 DONE 0.2s
+
+#39 [agent-service stage-0 11/13] RUN uv sync --frozen --no-dev --package agent-service     && chmod -R a+rwX .venv /clawvis
+#39 2.139 Using CPython 3.11.15 interpreter at: /usr/local/bin/python3
+#39 2.139 Creating virtual environment at: .venv
+#39 2.241    Building hub-core @ file:///clawvis/hub-core
+#39 2.254    Building agent-service @ file:///clawvis/services/agent
+#39 2.433 Downloading uvloop (3.6MiB)
+#39 2.434 Downloading pydantic-core (2.0MiB)
+#39 3.530  Downloaded pydantic-core
+#39 3.984  Downloaded uvloop
+#39 5.815       Built hub-core @ file:///clawvis/hub-core
+#39 5.832       Built agent-service @ file:///clawvis/services/agent
+#39 5.846 Prepared 28 packages in 3.64s
+#39 6.028 Installed 28 packages in 178ms
+#39 6.033  + agent-service==0.1.0 (from file:///clawvis/services/agent)
+#39 6.034  + annotated-doc==0.0.4
+#39 6.034  + annotated-types==0.7.0
+#39 6.034  + anyio==4.13.0
+#39 6.034  + certifi==2026.2.25
+#39 6.034  + charset-normalizer==3.4.7
+#39 6.034  + click==8.3.1
+#39 6.034  + fastapi==0.135.3
+#39 6.034  + h11==0.16.0
+#39 6.034  + httpcore==1.0.9
+#39 6.034  + httptools==0.7.1
+#39 6.034  + httpx==0.28.1
+#39 6.034  + hub-core==0.1.0 (from file:///clawvis/hub-core)
+#39 6.034  + idna==3.11
+#39 6.034  + loguru==0.7.2
+#39 6.034  + pydantic==2.12.5
+#39 6.034  + pydantic-core==2.41.5
+#39 6.035  + python-dotenv==1.2.2
+#39 6.035  + pyyaml==6.0.2
+#39 6.035  + requests==2.33.1
+#39 6.038  + starlette==1.0.0
+#39 6.038  + typing-extensions==4.15.0
+#39 6.038  + typing-inspection==0.4.2
+#39 6.038  + urllib3==2.6.3
+#39 6.038  + uvicorn==0.42.0
+#39 6.038  + uvloop==0.22.1
+#39 6.038  + watchfiles==1.1.1
+#39 6.038  + websockets==16.0
+#39 DONE 104.1s
+
+#40 [agent-service stage-0 12/13] COPY services/agent/docker-entrypoint.sh /docker-entrypoint.sh
+#40 DONE 0.3s
+
+#41 [agent-service stage-0 13/13] RUN chmod +x /docker-entrypoint.sh
+#41 DONE 2.5s
+
+#42 [agent-service] exporting to image
+#42 exporting layers
+#42 exporting layers 10.1s done
+#42 writing image sha256:02886d4e9c90a6895e61e26d6640bfa51e7ea7523c4ea43c022a1c1712d3ae26 0.0s done
+#42 naming to docker.io/library/clawvis-agent-service 0.0s done
+#42 DONE 10.2s
+
+#43 [agent-service] resolving provenance for metadata file
+#43 DONE 0.0s
+
+#44 [telegram internal] load build definition from Dockerfile
+#44 transferring dockerfile: 727B done
+#44 DONE 0.1s
+
+#3 [telegram internal] load metadata for docker.io/library/python:3.11-slim
+#3 DONE 0.0s
+
+#4 [telegram internal] load metadata for ghcr.io/astral-sh/uv:0.10.0
+#4 DONE 1.7s
+
+#45 [telegram internal] load .dockerignore
+#45 transferring context: 2B done
+#45 DONE 0.1s
+
+#8 [telegram] FROM ghcr.io/astral-sh/uv:0.10.0@sha256:78a7ff97cd27b7124a5f3c2aefe146170793c56a1e03321dd31a289f6d82a04f
+#8 DONE 0.0s
+
+#7 [telegram stage-0 1/9] FROM docker.io/library/python:3.11-slim
+#7 DONE 0.0s
+
+#46 [telegram internal] load build context
+#46 transferring context: 1.46MB 1.7s done
+#46 DONE 1.8s
+
+#11 [telegram stage-0 2/9] COPY --from=ghcr.io/astral-sh/uv:0.10.0 /uv /uvx /usr/local/bin/
+#11 CACHED
+
+#47 [telegram stage-0 3/9] WORKDIR /app
+#47 CACHED
+
+#48 [telegram stage-0 4/9] COPY pyproject.toml uv.lock ./
+#48 CACHED
+
+#49 [telegram stage-0 5/9] COPY hub-core/ ./hub-core/
+#49 DONE 19.1s
+
+#50 [telegram stage-0 6/9] COPY services/kanban/ ./services/kanban/
+#50 DONE 0.7s
+
+#51 [telegram stage-0 7/9] COPY services/telegram/ ./services/telegram/
+#51 DONE 0.4s
+
+#52 [telegram stage-0 8/9] RUN uv sync --frozen --no-dev --package clawvis-telegram     && mkdir -p /app/.uv-cache     && chmod -R a+rwX /app/.venv /app/.uv-cache /app/uv.lock /app/pyproject.toml
+#52 3.277 Using CPython 3.11.15 interpreter at: /usr/local/bin/python3
+#52 3.277 Creating virtual environment at: .venv
+#52 3.332    Building hub-core @ file:///app/hub-core
+#52 3.594 Downloading aiohttp (1.2MiB)
+#52 3.596 Downloading pydantic-core (2.0MiB)
+#52 4.482  Downloaded aiohttp
+#52 4.535  Downloaded pydantic-core
+#52 5.953       Built hub-core @ file:///app/hub-core
+#52 5.965 Prepared 26 packages in 2.66s
+#52 6.099 Installed 26 packages in 122ms
+#52 6.099  + aiohappyeyeballs==2.6.1
+#52 6.099  + aiohttp==3.10.10
+#52 6.099  + aiosignal==1.4.0
+#52 6.099  + annotated-types==0.7.0
+#52 6.099  + anyio==4.13.0
+#52 6.099  + attrs==26.1.0
+#52 6.099  + certifi==2026.2.25
+#52 6.099  + charset-normalizer==3.4.7
+#52 6.099  + frozenlist==1.8.0
+#52 6.099  + h11==0.16.0
+#52 6.099  + httpcore==1.0.9
+#52 6.099  + httpx==0.28.1
+#52 6.099  + hub-core==0.1.0 (from file:///app/hub-core)
+#52 6.099  + idna==3.11
+#52 6.099  + loguru==0.7.2
+#52 6.099  + multidict==6.7.1
+#52 6.099  + propcache==0.4.1
+#52 6.099  + pydantic==2.12.5
+#52 6.099  + pydantic-core==2.41.5
+#52 6.099  + python-dotenv==1.2.2
+#52 6.099  + python-telegram-bot==21.6
+#52 6.099  + requests==2.33.1
+#52 6.099  + typing-extensions==4.15.0
+#52 6.099  + typing-inspection==0.4.2
+#52 6.099  + urllib3==2.6.3
+#52 6.099  + yarl==1.23.0
+#52 DONE 6.8s
+
+#53 [telegram stage-0 9/9] COPY services/telegram/core/ ./core/
+#53 DONE 0.4s
+
+#54 [telegram] exporting to image
+#54 exporting layers
+#54 exporting layers 5.9s done
+#54 writing image sha256:c6e85ee6be57957f426014e40fcbc765ea4f15a419bac3d638f05eef04495153 0.0s done
+#54 naming to docker.io/library/clawvis-telegram done
+#54 DONE 5.9s
+
+#55 [telegram] resolving provenance for metadata file
+#55 DONE 0.0s
+
+#56 [scheduler internal] load build definition from Dockerfile
+#56 transferring dockerfile: 721B done
+#56 DONE 0.1s
+
+#3 [scheduler internal] load metadata for docker.io/library/python:3.11-slim
+#3 DONE 0.0s
+
+#4 [scheduler internal] load metadata for ghcr.io/astral-sh/uv:0.10.0
+#4 DONE 2.1s
+
+#57 [scheduler internal] load .dockerignore
+#57 transferring context: 2B done
+#57 DONE 0.1s
+
+#8 [scheduler] FROM ghcr.io/astral-sh/uv:0.10.0@sha256:78a7ff97cd27b7124a5f3c2aefe146170793c56a1e03321dd31a289f6d82a04f
+#8 DONE 0.0s
+
+#7 [scheduler stage-0 1/9] FROM docker.io/library/python:3.11-slim
+#7 DONE 0.0s
+
+#58 [scheduler internal] load build context
+#58 transferring context: 1.48MB 1.7s done
+#58 DONE 1.8s
+
+#59 [scheduler stage-0 4/9] COPY pyproject.toml uv.lock ./
+#59 CACHED
+
+#60 [scheduler stage-0 5/9] COPY hub-core/ ./hub-core/
+#60 CACHED
+
+#11 [scheduler stage-0 2/9] COPY --from=ghcr.io/astral-sh/uv:0.10.0 /uv /uvx /usr/local/bin/
+#11 CACHED
+
+#47 [scheduler stage-0 3/9] WORKDIR /app
+#47 CACHED
+
+#61 [scheduler stage-0 6/9] COPY services/kanban/ ./services/kanban/
+#61 CACHED
+
+#62 [scheduler stage-0 7/9] COPY services/scheduler/ ./services/scheduler/
+#62 DONE 0.2s
+
+#63 [scheduler stage-0 8/9] RUN uv sync --frozen --no-dev --package clawvis-scheduler     && mkdir -p /app/.uv-cache     && chmod -R a+rwX /app/.venv /app/.uv-cache /app/uv.lock /app/pyproject.toml
+#63 1.082 Using CPython 3.11.15 interpreter at: /usr/local/bin/python3
+#63 1.082 Creating virtual environment at: .venv
+#63 1.133    Building hub-core @ file:///app/hub-core
+#63 1.276 Downloading pydantic-core (2.0MiB)
+#63 1.294 Downloading aiohttp (1.2MiB)
+#63 2.127  Downloaded pydantic-core
+#63 2.135  Downloaded aiohttp
+#63 3.986       Built hub-core @ file:///app/hub-core
+#63 3.991 Prepared 30 packages in 2.88s
+#63 4.097 Installed 30 packages in 94ms
+#63 4.115  + aiohappyeyeballs==2.6.1
+#63 4.115  + aiohttp==3.10.10
+#63 4.115  + aiosignal==1.4.0
+#63 4.115  + annotated-types==0.7.0
+#63 4.115  + anyio==4.13.0
+#63 4.115  + apscheduler==3.10.4
+#63 4.115  + attrs==26.1.0
+#63 4.115  + certifi==2026.2.25
+#63 4.115  + charset-normalizer==3.4.7
+#63 4.115  + frozenlist==1.8.0
+#63 4.115  + h11==0.16.0
+#63 4.115  + httpcore==1.0.9
+#63 4.115  + httpx==0.28.1
+#63 4.115  + hub-core==0.1.0 (from file:///app/hub-core)
+#63 4.115  + idna==3.11
+#63 4.115  + loguru==0.7.2
+#63 4.115  + multidict==6.7.1
+#63 4.115  + propcache==0.4.1
+#63 4.115  + pydantic==2.12.5
+#63 4.115  + pydantic-core==2.41.5
+#63 4.115  + python-dotenv==1.2.2
+#63 4.115  + pytz==2026.1.post1
+#63 4.115  + pyyaml==6.0.2
+#63 4.115  + requests==2.33.1
+#63 4.115  + six==1.17.0
+#63 4.115  + typing-extensions==4.15.0
+#63 4.115  + typing-inspection==0.4.2
+#63 4.115  + tzlocal==5.3.1
+#63 4.115  + urllib3==2.6.3
+#63 4.115  + yarl==1.23.0
+#63 DONE 4.6s
+
+#64 [scheduler stage-0 9/9] COPY services/scheduler/core/ ./core/
+#64 DONE 0.2s
+
+#65 [scheduler] exporting to image
+#65 exporting layers
+#65 exporting layers 1.0s done
+#65 writing image sha256:4c361d295d5c0ea0a7d637d396a01a853e3287faedce9ef9fe70a2f372253158 done
+#65 naming to docker.io/library/clawvis-scheduler 0.0s done
+#65 DONE 1.1s
+
+#66 [scheduler] resolving provenance for metadata file
+#66 DONE 0.0s
+ agent-service  Built
+ hub-memory-api  Built
+ kanban-api  Built
+ scheduler  Built
+ telegram  Built
+ Container clawvis-lgiron-hub-memory-api  Recreate
+ Container clawvis-lgiron-agent-service  Stopping
+ Container clawvis-lgiron-agent-service  Stopped
+ Container clawvis-lgiron-kanban-api  Recreate
+ Container clawvis-lgiron-hub-memory-api  Recreated
+ Container clawvis-lgiron-kanban-api  Recreated
+ Container clawvis-lgiron-scheduler  Stopping
+ Container clawvis-lgiron-scheduler  Stopped
+ Container clawvis-lgiron-telegram  Stopping
+ Container clawvis-lgiron-telegram  Stopped
+ Container clawvis-lgiron-agent-service  Recreate
+ Container clawvis-lgiron-agent-service  Recreated
+ Container clawvis-lgiron-scheduler  Stopping
+ Container clawvis-lgiron-scheduler  Stopped
+ Container clawvis-lgiron-telegram  Recreate
+ Container clawvis-lgiron-telegram  Recreated
+ Container clawvis-lgiron-scheduler  Recreate
+ Container clawvis-lgiron-scheduler  Recreated
+ Container clawvis-lgiron-hub-memory-api  Starting
+ Container clawvis-lgiron-kanban-api  Starting
+ Container clawvis-lgiron-hub-memory-api  Started
+ Container clawvis-lgiron-kanban-api  Started
+ Container clawvis-lgiron-kanban-api  Waiting
+ Container clawvis-lgiron-kanban-api  Healthy
+ Container clawvis-lgiron-agent-service  Starting
+ Container clawvis-lgiron-agent-service  Started
+ Container clawvis-lgiron-agent-service  Waiting
+ Container clawvis-lgiron-agent-service  Healthy
+ Container clawvis-lgiron-telegram  Starting
+ Container clawvis-lgiron-telegram  Started
+ Container clawvis-lgiron-agent-service  Waiting
+ Container clawvis-lgiron-agent-service  Healthy
+ Container clawvis-lgiron-scheduler  Starting
+ Container clawvis-lgiron-scheduler  Started
+[compose] 6 services:
+  clawvis-lgiron-agent-service (clawvis-agent-service) Up 16 seconds (healthy) [8092]
+  clawvis-lgiron-hub (clawvis-hub) Up 24 minutes (healthy) [8088]
+  clawvis-lgiron-hub-memory-api (clawvis-hub-memory-api) Up 23 seconds (healthy) [8090/tcp, 8091]
+  clawvis-lgiron-kanban-api (clawvis-kanban-api) Up 23 seconds (healthy) [8090]
+  clawvis-lgiron-scheduler (clawvis-scheduler) Up 2 seconds
+  clawvis-lgiron-telegram (clawvis-telegram) Up 4 seconds [8094]
+
+---
+exit_code: 0
+elapsed_ms: 505718
+ended_at: 2026-04-28T15:36:08.245Z
+---

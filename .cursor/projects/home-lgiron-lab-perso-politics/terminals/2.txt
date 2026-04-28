@@ -1,120 +1,988 @@
 ---
 pid: 335460
 cwd: /home/lgiron/lab_perso/politics
-last_command: yarn format
-last_exit_code: 0
+last_command: rm -rf .next && yarn format && yarn build && yarn dev
+last_exit_code: 129
 ---
-➜  politics git:(fix/display) openssl rand -base64 48 
-
-SynJfChVB2vMPjsZYDp5/8kNpLsp2oG65qAxQRD7HCWEnUocfl0Hlun2GPZuqdjf
-➜  politics git:(fix/display) yarn format
-.yarnrc.yml 181ms (unchanged)
-CHANGELOG.md 217ms (unchanged)
-eslint.config.js 153ms (unchanged)
-eslint.config.mjs 24ms (unchanged)
-jest.config.ts 181ms (unchanged)
-next.config.ts 14ms (unchanged)
-package.json 19ms (unchanged)
-postcss.config.mjs 9ms (unchanged)
-public/google53dc5f3502fce666.html 63ms (unchanged)
-public/manifest.json 19ms (unchanged)
-README.md 67ms (unchanged)
-src/app/admin/page.tsx 45ms (unchanged)
-src/app/api/answer/route.ts 235ms (unchanged)
-src/app/api/auth/[...nextauth]/route.ts 84ms (unchanged)
-src/app/api/aws/s3/delete_file/route.ts 27ms (unchanged)
-src/app/api/aws/s3/get_file/route.ts 17ms (unchanged)
-src/app/api/aws/s3/upload_file/route.ts 20ms (unchanged)
-src/app/api/badge_create/route.ts 33ms (unchanged)
-src/app/api/badge/route.ts 13ms (unchanged)
-src/app/api/notifications/broadcast/route.ts 37ms (unchanged)
-src/app/api/notifications/count/route.ts 15ms (unchanged)
-src/app/api/notifications/list/route.ts 49ms (unchanged)
-src/app/api/notifications/mark-read/route.ts 19ms (unchanged)
-src/app/api/notifications/route.ts 24ms
-src/app/api/password-reset/route.ts 38ms (unchanged)
-src/app/api/profile/route.ts 39ms (unchanged)
-src/app/api/question/route.ts 134ms (unchanged)
-src/app/api/reset-password/route.ts 21ms (unchanged)
-src/app/api/user_create/route.ts 22ms (unchanged)
-src/app/api/user/route.ts 33ms (unchanged)
-src/app/error/page.tsx 45ms (unchanged)
-src/app/layout.tsx 48ms (unchanged)
-src/app/login/page.tsx 41ms (unchanged)
-src/app/login/password_reset/password_reset.tsx 37ms (unchanged)
-src/app/login/register/page.tsx 77ms (unchanged)
-src/app/login/reset-password/page.tsx 5ms (unchanged)
-src/app/not-found.tsx 16ms
-src/app/notifications/page.tsx 16ms (unchanged)
-src/app/page.tsx 34ms (unchanged)
-src/app/profile/page.tsx 14ms (unchanged)
-src/app/question_archive/page.tsx 5ms (unchanged)
-src/app/question/[questionId]/[answerId]/page.tsx 28ms (unchanged)
-src/app/question/[questionId]/page.tsx 36ms (unchanged)
-src/app/robots.ts 2ms (unchanged)
-src/app/settings/page.tsx 14ms (unchanged)
-src/app/sitemap.ts 30ms
-src/components/Admin/Admin.tsx 10ms (unchanged)
-src/components/Admin/AdminBadge.tsx 73ms (unchanged)
-src/components/Admin/AdminQuestion.tsx 253ms (unchanged)
-src/components/Admin/TestNotification.tsx 33ms (unchanged)
-src/components/Archive.tsx 17ms (unchanged)
-src/components/Badge/BadgeDisplay.tsx 25ms (unchanged)
-src/components/CookieConsent.tsx 25ms (unchanged)
-src/components/Home.tsx 174ms
-src/components/HomeEntryClient.tsx 29ms (unchanged)
-src/components/HomeNotConnected.tsx 109ms
-src/components/IntroductionPopup.tsx 203ms
-src/components/Notifications/NotificationDropdown.tsx 59ms
-src/components/Notifications/Notifications.tsx 149ms (unchanged)
-src/components/Notifications/NotificationStatus.tsx 43ms (unchanged)
-src/components/Profile/Profile.tsx 785ms (unchanged)
-src/components/PWA.tsx 241ms (unchanged)
-src/components/Question/AnswerContent.tsx 381ms (unchanged)
-src/components/Question/ArchiveContent.tsx 109ms (unchanged)
-src/components/Question/InformationContent.tsx 77ms (unchanged)
-src/components/Question/QuestionContent.tsx 56ms (unchanged)
-src/components/Question/QuestionDisplay.tsx 66ms (unchanged)
-src/components/Question/QuestionPageClient.tsx 9ms (unchanged)
-src/components/ResetPassword.tsx 29ms (unchanged)
-src/data/data.tsx 31ms (unchanged)
-src/interface/interface.ts 77ms (unchanged)
-src/layouts/Footer.tsx 19ms (unchanged)
-src/layouts/Loading.tsx 16ms (unchanged)
-src/layouts/LoadingContent.tsx 6ms (unchanged)
-src/layouts/MobileNavBar.tsx 30ms (unchanged)
-src/layouts/NavBarSessionHandler.tsx 6ms (unchanged)
-src/layouts/WebNavbar.tsx 131ms (unchanged)
-src/models/Answer.ts 17ms (unchanged)
-src/models/Badge.ts 12ms (unchanged)
-src/models/Notification.ts 29ms (unchanged)
-src/models/Question.ts 21ms (unchanged)
-src/models/User.ts 27ms (unchanged)
-src/models/UserAnswerLogs.ts 15ms (unchanged)
-src/models/UserProfile.ts 32ms (unchanged)
+src/components/CookieConsent.tsx 30ms (unchanged)
+src/components/Home.tsx 95ms (unchanged)
+src/components/HomeEntryClient.tsx 5ms (unchanged)
+src/components/HomeNotConnected.tsx 41ms (unchanged)
+src/components/IntroductionPopup.tsx 63ms (unchanged)
+src/components/Notifications/NotificationDropdown.tsx 140ms (unchanged)
+src/components/Notifications/Notifications.tsx 133ms (unchanged)
+src/components/Notifications/NotificationStatus.tsx 40ms (unchanged)
+src/components/Profile/Profile.tsx 91ms (unchanged)
+src/components/PWA.tsx 20ms (unchanged)
+src/components/Question/AnswerContent.tsx 155ms (unchanged)
+src/components/Question/ArchiveContent.tsx 104ms (unchanged)
+src/components/Question/InformationContent.tsx 27ms (unchanged)
+src/components/Question/QuestionContent.tsx 37ms (unchanged)
+src/components/Question/QuestionDisplay.tsx 58ms (unchanged)
+src/components/Question/QuestionPageClient.tsx 17ms (unchanged)
+src/components/ResetPassword.tsx 20ms (unchanged)
+src/data/data.tsx 21ms (unchanged)
+src/interface/interface.ts 40ms (unchanged)
+src/layouts/Footer.tsx 31ms (unchanged)
+src/layouts/Loading.tsx 6ms (unchanged)
+src/layouts/LoadingContent.tsx 15ms (unchanged)
+src/layouts/MobileNavBar.tsx 34ms (unchanged)
+src/layouts/NavBarSessionHandler.tsx 18ms (unchanged)
+src/layouts/WebNavbar.tsx 93ms (unchanged)
+src/models/Answer.ts 19ms (unchanged)
+src/models/Badge.ts 19ms (unchanged)
+src/models/Notification.ts 30ms (unchanged)
+src/models/Question.ts 27ms (unchanged)
+src/models/User.ts 20ms (unchanged)
+src/models/UserAnswerLogs.ts 17ms (unchanged)
+src/models/UserProfile.ts 43ms (unchanged)
 src/providers/AppProviders.tsx 27ms (unchanged)
-src/providers/BadgeProvider.tsx 75ms (unchanged)
-src/providers/ImageProvider.tsx 44ms (unchanged)
-src/providers/NotificationCountProvider.tsx 48ms (unchanged)
-src/providers/QuestionProvider.tsx 34ms (unchanged)
+src/providers/BadgeProvider.tsx 95ms (unchanged)
+src/providers/ImageProvider.tsx 63ms (unchanged)
+src/providers/NotificationCountProvider.tsx 63ms (unchanged)
+src/providers/QuestionProvider.tsx 49ms (unchanged)
+src/providers/SessionProvider.tsx 15ms (unchanged)
+src/providers/UserProfileProvider.tsx 78ms (unchanged)
+src/styles/globals.css 428ms (unchanged)
+src/styles/Home.module.css 54ms (unchanged)
+src/styles/tailwind.scss 12ms (unchanged)
+src/utils/__test__/UserProfile.test.ts 31ms (unchanged)
+src/utils/__test__/Utils.test.ts 8ms (unchanged)
+src/utils/Admin.ts 3ms (unchanged)
+src/utils/Badge.ts 14ms (unchanged)
+src/utils/DBConnection.ts 11ms (unchanged)
+src/utils/EmailPassword.tsx 3ms (unchanged)
+src/utils/EmailSender.tsx 30ms (unchanged)
+src/utils/Home.ts 5ms (unchanged)
+src/utils/Question.ts 14ms (unchanged)
+src/utils/S3Storage.ts 34ms (unchanged)
+src/utils/UserProfile.ts 26ms (unchanged)
+src/utils/Utils.ts 16ms (unchanged)
+tailwind.config.ts 3ms (unchanged)
+tsconfig.json 15ms (unchanged)
+worker/index.js 10ms (unchanged)
+   ▲ Next.js 15.1.5
+   - Environments: .env
+
+   Creating an optimized production build ...
+> [PWA] Compile server
+> [PWA] Compile server
+> [PWA] Compile client (static)
+> [PWA] Custom worker found: /home/lgiron/lab_perso/politics/worker/index.js
+> [PWA] Build custom worker: /home/lgiron/lab_perso/politics/public/worker-VHFesh3Az9gb7AyYYUFyi.js
+> [PWA] Auto register service worker with: /home/lgiron/lab_perso/politics/node_modules/next-pwa/register.js
+> [PWA] Service worker: /home/lgiron/lab_perso/politics/public/sw.js
+> [PWA]   url: /sw.js
+> [PWA]   scope: /
+Browserslist: browsers data (caniuse-lite) is 15 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled successfully
+   Linting and checking validity of types  ...
+ ⚠ The Next.js plugin was not detected in your ESLint configuration. See https://nextjs.org/docs/app/api-reference/config/eslint#migrating-existing-config
+ ✓ Linting and checking validity of types    
+   Collecting page data  ...TypeError: Cannot read properties of undefined (reading 'prototype')
+    at 24653 (.next/server/chunks/3008.js:1:391)
+    at t (.next/server/webpack-runtime.js:1:143)
+    at 92786 (.next/server/chunks/3008.js:1:5098)
+    at t (.next/server/webpack-runtime.js:1:143)
+    at 97520 (.next/server/chunks/3008.js:1:8848)
+    at t (.next/server/webpack-runtime.js:1:143)
+    at 89484 (.next/server/chunks/3008.js:1:7798)
+    at t (.next/server/webpack-runtime.js:1:143)
+    at 22924 (.next/server/chunks/3008.js:1:2537)
+    at t (.next/server/webpack-runtime.js:1:143)
+
+> Build error occurred
+[Error: Failed to collect page data for /api/password-reset] {
+  type: 'Error'
+}
+➜  politics git:(fix/display) ✗ piled successfully
+   Linting and checking validity of types  ...
+ ⚠ The Next.js plugin was not detected in your ESLint configuration. See https://nextjs.org/docs/app/api-reference/config/eslint\#migrating
+-existing-config
+ ✓ Linting and checking validity of types    
+   Collecting page data  ...TypeError: Cannot read properties of undefined (reading 'prototype')
+    at 24653 (.next/server/chunks/3008.js:1:391)
+    at t (.next/server/webpack-runtime.js:1:143)
+    at 92786 (.next/server/chunks/3008.js:1:5098)
+    at t (.next/server/webpack-runtime.js:1:143)
+    at 97520 (.next/server/chunks/3008.js:1:8848)
+    at t (.next/server/webpack-runtime.js:1:143)
+    at 89484 (.next/server/chunks/3008.js:1:7798)
+    at t (.next/server/webpack-runtime.js:1:143)
+    at 22924 (.next/server/chunks/3008.js:1:2537)
+    at t (.next/server/webpack-runtime.js:1:143)
+
+> Build error occurred
+[Error: Failed to collect page data for /api/password-reset] {
+  type: 'Error'
+}
+➜  politics git:(fix/display) ✗ rm -rf .next && yarn build
+   ▲ Next.js 15.1.5
+   - Environments: .env
+
+   Creating an optimized production build ...
+> [PWA] Compile server
+> [PWA] Compile server
+> [PWA] Compile client (static)
+> [PWA] Custom worker found: /home/lgiron/lab_perso/politics/worker/index.js
+> [PWA] Build custom worker: /home/lgiron/lab_perso/politics/public/worker-gjxK6tPf4tVhY460-rydu.js
+> [PWA] Auto register service worker with: /home/lgiron/lab_perso/politics/node_modules/next-pwa/register.js
+> [PWA] Service worker: /home/lgiron/lab_perso/politics/public/sw.js
+> [PWA]   url: /sw.js
+> [PWA]   scope: /
+request to https://fonts.googleapis.com/css2?family=Special+Elite:wght@400&display=swap failed, reason: 
+
+Retrying 1/3...
+Browserslist: browsers data (caniuse-lite) is 15 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled successfully
+   Linting and checking validity of types  ...
+ ⚠ The Next.js plugin was not detected in your ESLint configuration. See https://nextjs.org/docs/app/api-reference/config/eslint#migrating-existing-config
+ ✓ Linting and checking validity of types    
+   Collecting page data  ..TypeError: Cannot read properties of undefined (reading 'prototype')
+    at 24653 (.next/server/chunks/3008.js:1:391)
+    at t (.next/server/webpack-runtime.js:1:143)
+    at 92786 (.next/server/chunks/3008.js:1:5098)
+    at t (.next/server/webpack-runtime.js:1:143)
+    at 97520 (.next/server/chunks/3008.js:1:8848)
+    at t (.next/server/webpack-runtime.js:1:143)
+    at 89484 (.next/server/chunks/3008.js:1:7798)
+    at t (.next/server/webpack-runtime.js:1:143)
+    at 22924 (.next/server/chunks/3008.js:1:2537)
+    at t (.next/server/webpack-runtime.js:1:143)
+TypeError: Cannot read properties of undefined (reading 'prototype')
+    at 24653 (.next/server/chunks/3008.js:1:391)
+    at t (.next/server/webpack-runtime.js:1:143)
+    at 92786 (.next/server/chunks/3008.js:1:5098)
+    at t (.next/server/webpack-runtime.js:1:143)
+    at 97520 (.next/server/chunks/3008.js:1:8848)
+    at t (.next/server/webpack-runtime.js:1:143)
+    at 89484 (.next/server/chunks/3008.js:1:7798)
+    at t (.next/server/webpack-runtime.js:1:143)
+    at 22924 (.next/server/chunks/3008.js:1:2537)
+    at t (.next/server/webpack-runtime.js:1:143)
+
+> Build error occurred
+[Error: Failed to collect page data for /api/password-reset] {
+  type: 'Error'
+}
+➜  politics git:(fix/display) ✗ rm -rf .next && yarn format && yarn build && yarn dev
+.yarnrc.yml 135ms (unchanged)
+CHANGELOG.md 33ms (unchanged)
+eslint.config.js 69ms (unchanged)
+eslint.config.mjs 14ms (unchanged)
+jest.config.ts 116ms (unchanged)
+next.config.ts 16ms (unchanged)
+package.json 11ms (unchanged)
+postcss.config.mjs 2ms (unchanged)
+public/google53dc5f3502fce666.html 31ms (unchanged)
+public/manifest.json 8ms (unchanged)
+README.md 18ms (unchanged)
+src/app/admin/page.tsx 18ms (unchanged)
+src/app/api/answer/route.ts 88ms (unchanged)
+src/app/api/auth/[...nextauth]/route.ts 42ms (unchanged)
+src/app/api/aws/s3/delete_file/route.ts 15ms (unchanged)
+src/app/api/aws/s3/get_file/route.ts 23ms (unchanged)
+src/app/api/aws/s3/upload_file/route.ts 38ms (unchanged)
+src/app/api/badge_create/route.ts 20ms (unchanged)
+src/app/api/badge/route.ts 48ms (unchanged)
+src/app/api/notifications/broadcast/route.ts 20ms (unchanged)
+src/app/api/notifications/count/route.ts 6ms (unchanged)
+src/app/api/notifications/list/route.ts 36ms (unchanged)
+src/app/api/notifications/mark-read/route.ts 10ms (unchanged)
+src/app/api/notifications/route.ts 19ms (unchanged)
+src/app/api/password-reset/route.ts 31ms (unchanged)
+src/app/api/profile/route.ts 119ms (unchanged)
+src/app/api/question/route.ts 49ms (unchanged)
+src/app/api/reset-password/route.ts 22ms (unchanged)
+src/app/api/user_create/route.ts 14ms (unchanged)
+src/app/api/user/route.ts 13ms (unchanged)
+src/app/error/page.tsx 23ms (unchanged)
+src/app/layout.tsx 27ms (unchanged)
+src/app/login/page.tsx 26ms (unchanged)
+src/app/login/password_reset/password_reset.tsx 19ms (unchanged)
+src/app/login/register/page.tsx 44ms (unchanged)
+src/app/login/reset-password/page.tsx 12ms (unchanged)
+src/app/not-found.tsx 12ms (unchanged)
+src/app/notifications/page.tsx 8ms (unchanged)
+src/app/page.tsx 22ms (unchanged)
+src/app/profile/page.tsx 4ms (unchanged)
+src/app/question_archive/page.tsx 6ms (unchanged)
+src/app/question/[questionId]/[answerId]/page.tsx 12ms (unchanged)
+src/app/question/[questionId]/page.tsx 12ms (unchanged)
+src/app/robots.ts 11ms (unchanged)
+src/app/settings/page.tsx 19ms (unchanged)
+src/app/sitemap.ts 16ms (unchanged)
+src/components/Admin/Admin.tsx 17ms (unchanged)
+src/components/Admin/AdminBadge.tsx 31ms (unchanged)
+src/components/Admin/AdminQuestion.tsx 173ms (unchanged)
+src/components/Admin/TestNotification.tsx 61ms (unchanged)
+src/components/Archive.tsx 5ms (unchanged)
+src/components/Badge/BadgeDisplay.tsx 74ms (unchanged)
+src/components/CookieConsent.tsx 68ms (unchanged)
+src/components/Home.tsx 115ms (unchanged)
+src/components/HomeEntryClient.tsx 17ms (unchanged)
+src/components/HomeNotConnected.tsx 20ms (unchanged)
+src/components/IntroductionPopup.tsx 48ms (unchanged)
+src/components/Notifications/NotificationDropdown.tsx 72ms (unchanged)
+src/components/Notifications/Notifications.tsx 73ms (unchanged)
+src/components/Notifications/NotificationStatus.tsx 30ms (unchanged)
+src/components/Profile/Profile.tsx 47ms (unchanged)
+src/components/PWA.tsx 7ms (unchanged)
+src/components/Question/AnswerContent.tsx 85ms (unchanged)
+src/components/Question/ArchiveContent.tsx 44ms (unchanged)
+src/components/Question/InformationContent.tsx 25ms (unchanged)
+src/components/Question/QuestionContent.tsx 31ms (unchanged)
+src/components/Question/QuestionDisplay.tsx 34ms (unchanged)
+src/components/Question/QuestionPageClient.tsx 5ms (unchanged)
+src/components/ResetPassword.tsx 20ms (unchanged)
+src/data/data.tsx 8ms (unchanged)
+src/interface/interface.ts 36ms (unchanged)
+src/layouts/Footer.tsx 16ms (unchanged)
+src/layouts/Loading.tsx 12ms (unchanged)
+src/layouts/LoadingContent.tsx 6ms (unchanged)
+src/layouts/MobileNavBar.tsx 13ms (unchanged)
+src/layouts/NavBarSessionHandler.tsx 12ms (unchanged)
+src/layouts/WebNavbar.tsx 29ms (unchanged)
+src/models/Answer.ts 12ms (unchanged)
+src/models/Badge.ts 8ms (unchanged)
+src/models/Notification.ts 10ms (unchanged)
+src/models/Question.ts 15ms (unchanged)
+src/models/User.ts 12ms (unchanged)
+src/models/UserAnswerLogs.ts 6ms (unchanged)
+src/models/UserProfile.ts 10ms (unchanged)
+src/providers/AppProviders.tsx 12ms (unchanged)
+src/providers/BadgeProvider.tsx 45ms (unchanged)
+src/providers/ImageProvider.tsx 22ms (unchanged)
+src/providers/NotificationCountProvider.tsx 22ms (unchanged)
+src/providers/QuestionProvider.tsx 19ms (unchanged)
+src/providers/SessionProvider.tsx 8ms (unchanged)
+src/providers/UserProfileProvider.tsx 35ms (unchanged)
+src/styles/globals.css 96ms (unchanged)
+src/styles/Home.module.css 27ms (unchanged)
+src/styles/tailwind.scss 8ms (unchanged)
+src/utils/__test__/UserProfile.test.ts 25ms (unchanged)
+src/utils/__test__/Utils.test.ts 13ms (unchanged)
+src/utils/Admin.ts 5ms (unchanged)
+src/utils/Badge.ts 10ms (unchanged)
+src/utils/DBConnection.ts 10ms (unchanged)
+src/utils/EmailPassword.tsx 7ms (unchanged)
+src/utils/EmailSender.tsx 16ms (unchanged)
+src/utils/Home.ts 6ms (unchanged)
+src/utils/PasswordResetToken.ts 14ms (unchanged)
+src/utils/Question.ts 15ms (unchanged)
+src/utils/S3Storage.ts 12ms (unchanged)
+src/utils/UserProfile.ts 12ms (unchanged)
+src/utils/Utils.ts 5ms (unchanged)
+tailwind.config.ts 6ms (unchanged)
+tsconfig.json 8ms (unchanged)
+worker/index.js 3ms (unchanged)
+   ▲ Next.js 15.1.5
+   - Environments: .env
+
+   Creating an optimized production build ...
+> [PWA] Compile server
+> [PWA] Compile server
+> [PWA] Compile client (static)
+> [PWA] Custom worker found: /home/lgiron/lab_perso/politics/worker/index.js
+> [PWA] Build custom worker: /home/lgiron/lab_perso/politics/public/worker-BJjRN_Auy_OrBZWLE0FIe.js
+> [PWA] Auto register service worker with: /home/lgiron/lab_perso/politics/node_modules/next-pwa/register.js
+> [PWA] Service worker: /home/lgiron/lab_perso/politics/public/sw.js
+> [PWA]   url: /sw.js
+> [PWA]   scope: /
+request to https://fonts.googleapis.com/css2?family=Special+Elite:wght@400&display=swap failed, reason: 
+
+Retrying 1/3...
+ ✓ Compiled successfully
+   Linting and checking validity of types  ..
+ ⚠ The Next.js plugin was not detected in your ESLint configuration. See https://nextjs.org/docs/app/api-reference/config/eslint#migrating-existing-config
+ ✓ Linting and checking validity of types    
+   Collecting page data  .MongoDB Connection is on (1:yes/0:no): 1
+ ✓ Collecting page data    
+MongoDB Connection is on (1:yes/0:no): 1
+ ✓ Generating static pages (33/33)
+ ✓ Collecting build traces    
+ ✓ Finalizing page optimization    
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    4.12 kB         123 kB
+├ ○ /_not-found                          197 B           106 kB
+├ ○ /admin                               37.3 kB         168 kB
+├ ƒ /api/answer                          197 B           106 kB
+├ ƒ /api/auth/[...nextauth]              197 B           106 kB
+├ ƒ /api/aws/s3/delete_file              197 B           106 kB
+├ ƒ /api/aws/s3/get_file                 197 B           106 kB
+├ ƒ /api/aws/s3/upload_file              197 B           106 kB
+├ ƒ /api/badge                           197 B           106 kB
+├ ƒ /api/badge_create                    197 B           106 kB
+├ ƒ /api/notifications                   197 B           106 kB
+├ ƒ /api/notifications/broadcast         197 B           106 kB
+├ ƒ /api/notifications/count             197 B           106 kB
+├ ƒ /api/notifications/list              197 B           106 kB
+├ ƒ /api/notifications/mark-read         197 B           106 kB
+├ ƒ /api/password-reset                  197 B           106 kB
+├ ƒ /api/profile                         197 B           106 kB
+├ ƒ /api/question                        197 B           106 kB
+├ ƒ /api/reset-password                  197 B           106 kB
+├ ƒ /api/user                            197 B           106 kB
+├ ƒ /api/user_create                     197 B           106 kB
+├ ○ /error                               197 B           106 kB
+├ ○ /login                               1.61 kB         126 kB
+├ ○ /login/register                      2 kB            122 kB
+├ ○ /login/reset-password                983 B           106 kB
+├ ○ /notifications                       4.89 kB         123 kB
+├ ○ /profile                             4.01 kB         119 kB
+├ ○ /question_archive                    4.52 kB         135 kB
+├ ƒ /question/[questionId]               2.82 kB         126 kB
+├ ƒ /question/[questionId]/[answerId]    69.5 kB         193 kB
+├ ○ /robots.txt                          0 B                0 B
+├ ○ /settings                            634 B           106 kB
+└ ○ /sitemap.xml                         0 B                0 B
++ First Load JS shared by all            105 kB
+  ├ chunks/1517-ec1f212c7bc2cae9.js      50.5 kB
+  ├ chunks/4bd1b696-5cbe4d352c62a2cd.js  52.9 kB
+  └ other shared chunks (total)          2.06 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+   ▲ Next.js 15.1.5
+   - Local:        http://localhost:3000
+   - Network:      http://10.255.255.254:3000
+   - Environments: .env
+
+ ✓ Starting...
+> [PWA] Compile server
+> [PWA] Compile server
+> [PWA] Compile client (static)
+> [PWA] Custom worker found: /home/lgiron/lab_perso/politics/worker/index.js
+> [PWA] Build custom worker: /home/lgiron/lab_perso/politics/public/worker-development.js
+> [PWA] Auto register service worker with: /home/lgiron/lab_perso/politics/node_modules/next-pwa/register.js
+> [PWA] Service worker: /home/lgiron/lab_perso/politics/public/sw.js
+> [PWA]   url: /sw.js
+> [PWA]   scope: /
+> [PWA] Build in develop mode, cache and precache are mostly disabled. This means offline support is disabled, but you can continue developing other functions in service worker.
+ ✓ Ready in 8.6s
+ ○ Compiling / ...
+ ⚠ GenerateSW has been called multiple times, perhaps due to running webpack in --watch mode. The precache manifest generated after the first call may be inaccurate! Please see https://github.com/GoogleChrome/workbox/issues/1790 for more information.
+ GET / 200 in 16304ms
+ ⚠ GenerateSW has been called multiple times, perhaps due to running webpack in --watch mode. The precache manifest generated after the first call may be inaccurate! Please see https://github.com/GoogleChrome/workbox/issues/1790 for more information.
+MongoDB Connection is on (1:yes/0:no): 2
+Already connected to MongoDB.
+ GET / 200 in 1944ms
+MongoDB Connection is on (1:yes/0:no): 1
+ GET /api/badge 200 in 8747ms
+ ⚠ GenerateSW has been called multiple times, perhaps due to running webpack in --watch mode. The precache manifest generated after the first call may be inaccurate! Please see https://github.com/GoogleChrome/workbox/issues/1790 for more information.
+ GET /api/question 200 in 8940ms
+[next-auth][warn][NEXTAUTH_URL] 
+https://next-auth.js.org/warnings#nextauth_url
+ GET /api/auth/session 200 in 9271ms
+MongoDB Connection is on (1:yes/0:no): 1
+ ⚠ GenerateSW has been called multiple times, perhaps due to running webpack in --watch mode. The precache manifest generated after the first call may be inaccurate! Please see https://github.com/GoogleChrome/workbox/issues/1790 for more information.
+ POST /api/aws/s3/get_file 200 in 3359ms
+ POST /api/aws/s3/get_file 200 in 3358ms
+ POST /api/aws/s3/get_file 200 in 3355ms
+ POST /api/aws/s3/get_file 200 in 3153ms
+ POST /api/aws/s3/get_file 200 in 2749ms
+ POST /api/aws/s3/get_file 200 in 3363ms
+ POST /api/aws/s3/get_file 200 in 31ms
+ POST /api/aws/s3/get_file 200 in 89ms
+ POST /api/aws/s3/get_file 200 in 89ms
+ POST /api/aws/s3/get_file 200 in 89ms
+ POST /api/aws/s3/get_file 200 in 88ms
+ POST /api/aws/s3/get_file 200 in 87ms
+ POST /api/aws/s3/get_file 200 in 96ms
+ POST /api/aws/s3/get_file 200 in 63ms
+ POST /api/aws/s3/get_file 200 in 103ms
+ POST /api/aws/s3/get_file 200 in 102ms
+ POST /api/aws/s3/get_file 200 in 102ms
+ POST /api/aws/s3/get_file 200 in 103ms
+ POST /api/aws/s3/get_file 200 in 91ms
+ POST /api/aws/s3/get_file 200 in 84ms
+ POST /api/aws/s3/get_file 200 in 57ms
+ POST /api/aws/s3/get_file 200 in 57ms
+ POST /api/aws/s3/get_file 200 in 57ms
+ POST /api/aws/s3/get_file 200 in 57ms
+ POST /api/aws/s3/get_file 200 in 75ms
+ POST /api/aws/s3/get_file 200 in 86ms
+ POST /api/aws/s3/get_file 200 in 75ms
+ POST /api/aws/s3/get_file 200 in 98ms
+ POST /api/aws/s3/get_file 200 in 98ms
+ POST /api/aws/s3/get_file 200 in 97ms
+ POST /api/aws/s3/get_file 200 in 114ms
+ POST /api/aws/s3/get_file 200 in 101ms
+ POST /api/aws/s3/get_file 200 in 109ms
+ POST /api/aws/s3/get_file 200 in 71ms
+ POST /api/aws/s3/get_file 200 in 70ms
+ POST /api/aws/s3/get_file 200 in 70ms
+ POST /api/aws/s3/get_file 200 in 59ms
+ POST /api/aws/s3/get_file 200 in 101ms
+ POST /api/aws/s3/get_file 200 in 58ms
+ POST /api/aws/s3/get_file 200 in 56ms
+ POST /api/aws/s3/get_file 200 in 56ms
+ POST /api/aws/s3/get_file 200 in 56ms
+ POST /api/aws/s3/get_file 200 in 57ms
+ POST /api/aws/s3/get_file 200 in 122ms
+ POST /api/aws/s3/get_file 200 in 139ms
+MongoDB Connection is on (1:yes/0:no): 1
+ GET /api/badge 200 in 674ms
+ POST /api/aws/s3/get_file 200 in 23ms
+ POST /api/aws/s3/get_file 200 in 41ms
+ POST /api/aws/s3/get_file 200 in 41ms
+ POST /api/aws/s3/get_file 200 in 41ms
+ POST /api/aws/s3/get_file 200 in 41ms
+ ⚠ GenerateSW has been called multiple times, perhaps due to running webpack in --watch mode. The precache manifest generated after the first call may be inaccurate! Please see https://github.com/GoogleChrome/workbox/issues/1790 for more information.
+ ⚠ GenerateSW has been called multiple times, perhaps due to running webpack in --watch mode. The precache manifest generated after the first call may be inaccurate! Please see https://github.com/GoogleChrome/workbox/issues/1790 for more information.
+ GET /login 200 in 1786ms
+ ⚠ GenerateSW has been called multiple times, perhaps due to running webpack in --watch mode. The precache manifest generated after the first call may be inaccurate! Please see https://github.com/GoogleChrome/workbox/issues/1790 for more information.
+ GET /login 200 in 140ms
+ ⚠ GenerateSW has been called multiple times, perhaps due to running webpack in --watch mode. The precache manifest generated after the first call may be inaccurate! Please see https://github.com/GoogleChrome/workbox/issues/1790 for more information.
+ GET /login 200 in 216ms
+ ⨯ Error: Cannot find module './638.js'
+Require stack:
+- /home/lgiron/lab_perso/politics/.next/server/webpack-runtime.js
+- /home/lgiron/lab_perso/politics/.next/server/app/login/page.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/server/require.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/server/load-components.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/build/utils.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/build/swc/options.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/build/swc/index.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/server/config.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/server/next.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/server/lib/start-server.js
+    at __webpack_require__.f.require (.next/server/webpack-runtime.js:203:28)
+    at <unknown> (.next/server/webpack-runtime.js:116:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (.next/server/webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (.next/server/webpack-runtime.js:167:22)
+    at <unknown> (.next/server/app/api/auth/[...nextauth]/route.js:34:88781)
+    at Object.<anonymous> (.next/server/app/api/auth/[...nextauth]/route.js:34:88827) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/api/auth/providers'
+}
+ ⚠ GenerateSW has been called multiple times, perhaps due to running webpack in --watch mode. The precache manifest generated after the first call may be inaccurate! Please see https://github.com/GoogleChrome/workbox/issues/1790 for more information.
+ ⚠ GenerateSW has been called multiple times, perhaps due to running webpack in --watch mode. The precache manifest generated after the first call may be inaccurate! Please see https://github.com/GoogleChrome/workbox/issues/1790 for more information.
+ ⚠ GenerateSW has been called multiple times, perhaps due to running webpack in --watch mode. The precache manifest generated after the first call may be inaccurate! Please see https://github.com/GoogleChrome/workbox/issues/1790 for more information.
+ ⚠ GenerateSW has been called multiple times, perhaps due to running webpack in --watch mode. The precache manifest generated after the first call may be inaccurate! Please see https://github.com/GoogleChrome/workbox/issues/1790 for more information.
+ GET /login 200 in 1418ms
+ GET /login 200 in 46ms
+ ⚠ GenerateSW has been called multiple times, perhaps due to running webpack in --watch mode. The precache manifest generated after the first call may be inaccurate! Please see https://github.com/GoogleChrome/workbox/issues/1790 for more information.
+ GET /api/auth/providers 500 in 8011ms
+ ⚠ GenerateSW has been called multiple times, perhaps due to running webpack in --watch mode. The precache manifest generated after the first call may be inaccurate! Please see https://github.com/GoogleChrome/workbox/issues/1790 for more information.
+ ⨯ Error: Cannot find module './638.js'
+Require stack:
+- /home/lgiron/lab_perso/politics/.next/server/webpack-runtime.js
+- /home/lgiron/lab_perso/politics/.next/server/app/api/auth/[...nextauth]/route.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/server/require.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/server/load-components.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/build/utils.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/build/swc/options.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/build/swc/index.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/server/config.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/server/next.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/server/lib/start-server.js
+    at __webpack_require__.f.require (.next/server/webpack-runtime.js:198:28)
+    at <unknown> (.next/server/webpack-runtime.js:111:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+    at <unknown> (.next/server/app/api/auth/[...nextauth]/route.js:34:88781)
+    at Object.<anonymous> (.next/server/app/api/auth/[...nextauth]/route.js:34:88827) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/api/auth/error'
+}
+ ⨯ Error: Cannot find module './638.js'
+Require stack:
+- /home/lgiron/lab_perso/politics/.next/server/webpack-runtime.js
+- /home/lgiron/lab_perso/politics/.next/server/app/api/auth/[...nextauth]/route.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/server/require.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/server/load-components.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/build/utils.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/build/swc/options.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/build/swc/index.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/server/config.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/server/next.js
+- /home/lgiron/lab_perso/politics/node_modules/next/dist/server/lib/start-server.js
+    at __webpack_require__.f.require (.next/server/webpack-runtime.js:198:28)
+    at <unknown> (.next/server/webpack-runtime.js:111:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+    at <unknown> (.next/server/app/api/auth/[...nextauth]/route.js:34:88781)
+    at Object.<anonymous> (.next/server/app/api/auth/[...nextauth]/route.js:34:88827) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/api/auth/_log'
+}
+ GET /_next/static/css/app/layout.css?v=1777390681691 404 in 3855ms
+ GET /_next/static/css/app/layout.css?v=1777390684986 404 in 82ms
+ GET /api/auth/error 500 in 3756ms
+ POST /api/auth/_log 500 in 3789ms
+ GET /_next/static/css/app/layout.css?v=1777390685649 404 in 127ms
+ GET /worker-development.js 404 in 561ms
+ GET / 200 in 144ms
+ GET /_next/static/css/app/layout.css?v=1777390688302 404 in 66ms
+ GET /_next/static/css/app/layout.css?v=1777390688560 404 in 63ms
+ GET /_next/static/css/app/layout.css?v=1777390688656 404 in 56ms
+ GET /_next/static/css/app/layout.css?v=1777390688741 404 in 72ms
+ GET /_next/static/css/app/layout.css?v=1777390688799 404 in 52ms
+ GET /_next/static/css/app/layout.css?v=1777390688875 404 in 43ms
+ GET /_next/static/css/app/layout.css?v=1777390688933 404 in 39ms
+ GET /_next/static/css/app/layout.css?v=1777390688980 404 in 76ms
+ GET /_next/static/css/app/layout.css?v=1777390689049 404 in 88ms
+ GET /_next/static/css/app/layout.css?v=1777390689186 404 in 90ms
+ GET /_next/static/css/app/layout.css?v=1777390689297 404 in 95ms
+ GET /_next/static/css/app/layout.css?v=1777390689402 404 in 98ms
+ GET /_next/static/css/app/layout.css?v=1777390689544 404 in 70ms
+ GET /_next/static/css/app/layout.css?v=1777390689627 404 in 92ms
+ GET /_next/static/css/app/layout.css?v=1777390689715 404 in 107ms
+ GET /_next/static/css/app/layout.css?v=1777390689821 404 in 47ms
+ GET /_next/static/css/app/layout.css?v=1777390689967 404 in 50ms
+ GET /_next/static/css/app/layout.css?v=1777390690046 404 in 46ms
+ GET /_next/static/css/app/layout.css?v=1777390690116 404 in 71ms
+ GET /_next/static/css/app/layout.css?v=1777390690205 404 in 59ms
+ GET /_next/static/css/app/layout.css?v=1777390690279 404 in 93ms
+ GET /_next/static/css/app/layout.css?v=1777390690377 404 in 91ms
+ GET /_next/static/css/app/layout.css?v=1777390690484 404 in 58ms
+ GET /_next/static/css/app/layout.css?v=1777390690601 404 in 41ms
+ GET /_next/static/css/app/layout.css?v=1777390690689 404 in 73ms
+ GET /_next/static/css/app/layout.css?v=1777390690779 404 in 61ms
+ GET /_next/static/css/app/layout.css?v=1777390690862 404 in 64ms
+ GET /_next/static/css/app/layout.css?v=1777390690957 404 in 49ms
+ GET /_next/static/css/app/layout.css?v=1777390691029 404 in 63ms
+ GET /_next/static/css/app/layout.css?v=1777390691077 404 in 45ms
+ GET /_next/static/css/app/layout.css?v=1777390691152 404 in 41ms
+ GET /_next/static/css/app/layout.css?v=1777390691232 404 in 45ms
+ GET /_next/static/css/app/layout.css?v=1777390691282 404 in 46ms
+ GET /_next/static/css/app/layout.css?v=1777390691342 404 in 53ms
+ GET /_next/static/css/app/layout.css?v=1777390691408 404 in 46ms
+ GET /_next/static/css/app/layout.css?v=1777390691480 404 in 52ms
+ GET /_next/static/css/app/layout.css?v=1777390691537 404 in 35ms
+ GET /_next/static/css/app/layout.css?v=1777390691611 404 in 50ms
+ GET /_next/static/css/app/layout.css?v=1777390691664 404 in 59ms
+ GET /_next/static/css/app/layout.css?v=1777390691735 404 in 76ms
+ GET /_next/static/css/app/layout.css?v=1777390691828 404 in 85ms
+ GET /_next/static/css/app/layout.css?v=1777390691935 404 in 43ms
+ GET /_next/static/css/app/layout.css?v=1777390692024 404 in 53ms
+ GET /_next/static/css/app/layout.css?v=1777390692109 404 in 41ms
+ GET /_next/static/css/app/layout.css?v=1777390692176 404 in 38ms
+ GET /_next/static/css/app/layout.css?v=1777390692233 404 in 41ms
+ GET /_next/static/css/app/layout.css?v=1777390692291 404 in 47ms
+ GET /_next/static/css/app/layout.css?v=1777390692357 404 in 41ms
+ GET /_next/static/css/app/layout.css?v=1777390692579 404 in 36ms
+ GET /_next/static/css/app/layout.css?v=1777390692637 404 in 38ms
+ GET /_next/static/css/app/layout.css?v=1777390692699 404 in 36ms
+ GET /_next/static/css/app/layout.css?v=1777390692759 404 in 48ms
+ GET /_next/static/css/app/layout.css?v=1777390692818 404 in 63ms
+ GET /_next/static/css/app/layout.css?v=1777390692881 404 in 56ms
+ GET /_next/static/css/app/layout.css?v=1777390692967 404 in 55ms
+ GET /_next/static/css/app/layout.css?v=1777390693047 404 in 46ms
+ GET /_next/static/css/app/layout.css?v=1777390693110 404 in 71ms
+ GET /_next/static/css/app/layout.css?v=1777390693184 404 in 52ms
+ GET /_next/static/css/app/layout.css?v=1777390693280 404 in 76ms
+ GET /_next/static/css/app/layout.css?v=1777390693356 404 in 60ms
+ GET /_next/static/css/app/layout.css?v=1777390693447 404 in 71ms
+ GET /_next/static/css/app/layout.css?v=1777390693540 404 in 62ms
+ GET /_next/static/css/app/layout.css?v=1777390693629 404 in 51ms
+ GET /_next/static/css/app/layout.css?v=1777390693705 404 in 44ms
+ GET /_next/static/css/app/layout.css?v=1777390693767 404 in 40ms
+ GET /_next/static/css/app/layout.css?v=1777390693821 404 in 42ms
+ GET /_next/static/css/app/layout.css?v=1777390693881 404 in 48ms
+ GET /_next/static/css/app/layout.css?v=1777390693941 404 in 37ms
+ GET /_next/static/css/app/layout.css?v=1777390693993 404 in 32ms
+ GET /_next/static/css/app/layout.css?v=1777390694036 404 in 44ms
+ GET /_next/static/css/app/layout.css?v=1777390694092 404 in 40ms
+ GET /_next/static/css/app/layout.css?v=1777390694156 404 in 33ms
+ GET /_next/static/css/app/layout.css?v=1777390694223 404 in 46ms
+ GET /_next/static/css/app/layout.css?v=1777390694277 404 in 51ms
+ GET /_next/static/css/app/layout.css?v=1777390694344 404 in 47ms
+ GET /_next/static/css/app/layout.css?v=1777390694421 404 in 49ms
+ GET /_next/static/css/app/layout.css?v=1777390694478 404 in 54ms
+ GET /_next/static/css/app/layout.css?v=1777390694543 404 in 39ms
+ GET /_next/static/css/app/layout.css?v=1777390694608 404 in 46ms
+ GET /_next/static/css/app/layout.css?v=1777390694668 404 in 40ms
+ GET /_next/static/css/app/layout.css?v=1777390694729 404 in 96ms
+ GET /_next/static/css/app/layout.css?v=1777390694876 404 in 27ms
+ GET /_next/static/css/app/layout.css?v=1777390694926 404 in 55ms
+ GET /_next/static/css/app/layout.css?v=1777390694968 404 in 94ms
+ GET /_next/static/css/app/layout.css?v=1777390695071 404 in 46ms
+ GET /_next/static/css/app/layout.css?v=1777390695169 404 in 67ms
+ GET /_next/static/css/app/layout.css?v=1777390695248 404 in 62ms
+ GET /_next/static/css/app/layout.css?v=1777390695342 404 in 49ms
+ GET /_next/static/css/app/layout.css?v=1777390695408 404 in 75ms
+ GET /_next/static/css/app/layout.css?v=1777390695505 404 in 48ms
+ GET /_next/static/css/app/layout.css?v=1777390695595 404 in 46ms
+ GET /_next/static/css/app/layout.css?v=1777390695655 404 in 46ms
+ GET /_next/static/css/app/layout.css?v=1777390695720 404 in 33ms
+ GET /_next/static/css/app/layout.css?v=1777390695771 404 in 43ms
+ GET /_next/static/css/app/layout.css?v=1777390695823 404 in 32ms
+ GET /_next/static/css/app/layout.css?v=1777390695885 404 in 30ms
+ GET /_next/static/css/app/layout.css?v=1777390695923 404 in 42ms
+ GET /_next/static/css/app/layout.css?v=1777390695963 404 in 55ms
+ GET /_next/static/css/app/layout.css?v=1777390696036 404 in 44ms
+ GET /_next/static/css/app/layout.css?v=1777390696111 404 in 31ms
+ GET /_next/static/css/app/layout.css?v=1777390696158 404 in 30ms
+ GET /_next/static/css/app/layout.css?v=1777390696200 404 in 33ms
+ GET /_next/static/css/app/layout.css?v=1777390696243 404 in 30ms
+ GET /_next/static/css/app/layout.css?v=1777390696289 404 in 31ms
+ GET /_next/static/css/app/layout.css?v=1777390696330 404 in 32ms
+ GET /_next/static/css/app/layout.css?v=1777390696373 404 in 34ms
+ GET /_next/static/css/app/layout.css?v=1777390696411 404 in 54ms
+ GET /_next/static/css/app/layout.css?v=1777390696483 404 in 32ms
+ GET /_next/static/css/app/layout.css?v=1777390696530 404 in 48ms
+ GET /_next/static/css/app/layout.css?v=1777390696581 404 in 34ms
+ GET /_next/static/css/app/layout.css?v=1777390696635 404 in 37ms
+ GET /_next/static/css/app/layout.css?v=1777390696683 404 in 36ms
+ GET /_next/static/css/app/layout.css?v=1777390696736 404 in 36ms
+ GET /_next/static/css/app/layout.css?v=1777390696784 404 in 41ms
+ GET /_next/static/css/app/layout.css?v=1777390696835 404 in 42ms
+ GET /_next/static/css/app/layout.css?v=1777390696887 404 in 29ms
+ GET /_next/static/css/app/layout.css?v=1777390696942 404 in 33ms
+ GET /_next/static/css/app/layout.css?v=1777390696985 404 in 38ms
+ GET /_next/static/css/app/layout.css?v=1777390697041 404 in 34ms
+ GET /_next/static/css/app/layout.css?v=1777390697105 404 in 41ms
+ GET /_next/static/css/app/layout.css?v=1777390697170 404 in 33ms
+ GET /_next/static/css/app/layout.css?v=1777390697215 404 in 40ms
+ GET /_next/static/css/app/layout.css?v=1777390697263 404 in 36ms
+ GET /_next/static/css/app/layout.css?v=1777390697319 404 in 31ms
+ GET /_next/static/css/app/layout.css?v=1777390697375 404 in 34ms
+ GET /_next/static/css/app/layout.css?v=1777390697426 404 in 30ms
+ GET /_next/static/css/app/layout.css?v=1777390697469 404 in 32ms
+ GET /_next/static/css/app/layout.css?v=1777390697515 404 in 24ms
+ GET /_next/static/css/app/layout.css?v=1777390697559 404 in 44ms
+ GET /_next/static/css/app/layout.css?v=1777390697596 404 in 33ms
+ GET /_next/static/css/app/layout.css?v=1777390697658 404 in 27ms
+ GET /_next/static/css/app/layout.css?v=1777390697697 404 in 25ms
+ GET /_next/static/css/app/layout.css?v=1777390697733 404 in 25ms
+ GET /_next/static/css/app/layout.css?v=1777390697774 404 in 24ms
+ GET /_next/static/css/app/layout.css?v=1777390697810 404 in 27ms
+ GET /_next/static/css/app/layout.css?v=1777390697849 404 in 30ms
+ GET /_next/static/css/app/layout.css?v=1777390697887 404 in 23ms
+ GET /_next/static/css/app/layout.css?v=1777390697927 404 in 24ms
+ GET /_next/static/css/app/layout.css?v=1777390697960 404 in 50ms
+ GET /_next/static/css/app/layout.css?v=1777390698002 404 in 111ms
+ GET /_next/static/css/app/layout.css?v=1777390698075 404 in 106ms
+ GET /_next/static/css/app/layout.css?v=1777390698217 404 in 173ms
+ GET /_next/static/css/app/layout.css?v=1777390698348 404 in 56ms
+ GET /_next/static/css/app/layout.css?v=1777390698526 404 in 38ms
+ GET /_next/static/css/app/layout.css?v=1777390698591 404 in 48ms
+ GET /_next/static/css/app/layout.css?v=1777390698650 404 in 28ms
+ GET /_next/static/css/app/layout.css?v=1777390698704 404 in 40ms
+ GET /_next/static/css/app/layout.css?v=1777390698746 404 in 39ms
+ GET /_next/static/css/app/layout.css?v=1777390698799 404 in 36ms
+ GET /_next/static/css/app/layout.css?v=1777390698852 404 in 42ms
+ GET /_next/static/css/app/layout.css?v=1777390698907 404 in 34ms
+ GET /_next/static/css/app/layout.css?v=1777390698957 404 in 33ms
+ GET /_next/static/css/app/layout.css?v=1777390699006 404 in 35ms
+ GET /_next/static/css/app/layout.css?v=1777390699053 404 in 32ms
+ GET /_next/static/css/app/layout.css?v=1777390699117 404 in 46ms
+ GET /_next/static/css/app/layout.css?v=1777390699175 404 in 29ms
+ GET /_next/static/css/app/layout.css?v=1777390699218 404 in 40ms
+ GET /_next/static/css/app/layout.css?v=1777390699263 404 in 39ms
+ GET /_next/static/css/app/layout.css?v=1777390699317 404 in 33ms
+ GET /_next/static/css/app/layout.css?v=1777390699366 404 in 30ms
+ GET /_next/static/css/app/layout.css?v=1777390699417 404 in 41ms
+ GET /_next/static/css/app/layout.css?v=1777390699459 404 in 35ms
+ GET /_next/static/css/app/layout.css?v=1777390699516 404 in 45ms
+ GET /_next/static/css/app/layout.css?v=1777390699560 404 in 51ms
+ GET /_next/static/css/app/layout.css?v=1777390699616 404 in 47ms
+ GET /_next/static/css/app/layout.css?v=1777390699679 404 in 66ms
+ GET /_next/static/css/app/layout.css?v=1777390699731 404 in 28ms
+ GET /_next/static/css/app/layout.css?v=1777390699809 404 in 29ms
+ GET /_next/static/css/app/layout.css?v=1777390699847 404 in 40ms
+ GET /_next/static/css/app/layout.css?v=1777390699895 404 in 30ms
+ GET /_next/static/css/app/layout.css?v=1777390699942 404 in 41ms
+ GET /_next/static/css/app/layout.css?v=1777390699987 404 in 42ms
+ GET /_next/static/css/app/layout.css?v=1777390700041 404 in 35ms
+ GET /_next/static/css/app/layout.css?v=1777390700104 404 in 39ms
+ GET /_next/static/css/app/layout.css?v=1777390700156 404 in 25ms
+ GET /_next/static/css/app/layout.css?v=1777390700203 404 in 29ms
+ GET /_next/static/css/app/layout.css?v=1777390700245 404 in 26ms
+ GET /_next/static/css/app/layout.css?v=1777390700287 404 in 25ms
+ GET /_next/static/css/app/layout.css?v=1777390700328 404 in 32ms
+ GET /_next/static/css/app/layout.css?v=1777390700373 404 in 32ms
+ GET /_next/static/css/app/layout.css?v=1777390700409 404 in 44ms
+ GET /_next/static/css/app/layout.css?v=1777390700458 404 in 34ms
+ GET /_next/static/css/app/layout.css?v=1777390700516 404 in 25ms
+ GET /_next/static/css/app/layout.css?v=1777390700562 404 in 26ms
+ GET /_next/static/css/app/layout.css?v=1777390700599 404 in 26ms
+ GET /_next/static/css/app/layout.css?v=1777390700635 404 in 28ms
+ GET /_next/static/css/app/layout.css?v=1777390700672 404 in 29ms
+ GET /_next/static/css/app/layout.css?v=1777390700720 404 in 31ms
+ GET /_next/static/css/app/layout.css?v=1777390700761 404 in 47ms
+ GET /_next/static/css/app/layout.css?v=1777390700817 404 in 27ms
+ GET /_next/static/css/app/layout.css?v=1777390700858 404 in 29ms
+ GET /_next/static/css/app/layout.css?v=1777390700896 404 in 33ms
+ GET /_next/static/css/app/layout.css?v=1777390700936 404 in 30ms
+ GET /_next/static/css/app/layout.css?v=1777390700978 404 in 28ms
+ GET /_next/static/css/app/layout.css?v=1777390701019 404 in 27ms
+ GET /_next/static/css/app/layout.css?v=1777390701062 404 in 35ms
+ GET /_next/static/css/app/layout.css?v=1777390701107 404 in 48ms
+ GET /_next/static/css/app/layout.css?v=1777390701160 404 in 33ms
+ GET /_next/static/css/app/layout.css?v=1777390701220 404 in 26ms
+ GET /_next/static/css/app/layout.css?v=1777390701266 404 in 31ms
+ GET /_next/static/css/app/layout.css?v=1777390701308 404 in 55ms
+ GET /_next/static/css/app/layout.css?v=1777390701353 404 in 45ms
+ GET /_next/static/css/app/layout.css?v=1777390701435 404 in 44ms
+ GET /_next/static/css/app/layout.css?v=1777390701508 404 in 36ms
+ GET /_next/static/css/app/layout.css?v=1777390701570 404 in 31ms
+ GET /_next/static/css/app/layout.css?v=1777390701623 404 in 39ms
+ GET /_next/static/css/app/layout.css?v=1777390701668 404 in 37ms
+ GET /_next/static/css/app/layout.css?v=1777390701721 404 in 37ms
+ GET /_next/static/css/app/layout.css?v=1777390701775 404 in 48ms
+ GET /_next/static/css/app/layout.css?v=1777390701820 404 in 57ms
+ GET /_next/static/css/app/layout.css?v=1777390701949 404 in 165ms
+ GET /_next/static/css/app/layout.css?v=1777390702099 404 in 58ms
+ GET /_next/static/css/app/layout.css?v=1777390702381 404 in 41ms
+ GET /_next/static/css/app/layout.css?v=1777390702457 404 in 37ms
+ GET /_next/static/css/app/layout.css?v=1777390702524 404 in 38ms
+ GET /_next/static/css/app/layout.css?v=1777390702576 404 in 40ms
+ GET /_next/static/css/app/layout.css?v=1777390702645 404 in 30ms
+ GET /_next/static/css/app/layout.css?v=1777390702698 404 in 30ms
+ GET /_next/static/css/app/layout.css?v=1777390702745 404 in 27ms
+ GET /_next/static/css/app/layout.css?v=1777390702787 404 in 27ms
+ GET /_next/static/css/app/layout.css?v=1777390702825 404 in 28ms
+ GET /_next/static/css/app/layout.css?v=1777390702860 404 in 29ms
+ GET /_next/static/css/app/layout.css?v=1777390702891 404 in 35ms
+ GET /_next/static/css/app/layout.css?v=1777390702935 404 in 25ms
+ GET /_next/static/css/app/layout.css?v=1777390702972 404 in 45ms
+ GET /_next/static/css/app/layout.css?v=1777390703025 404 in 22ms
+ GET /_next/static/css/app/layout.css?v=1777390703059 404 in 25ms
+ GET /_next/static/css/app/layout.css?v=1777390703093 404 in 26ms
+ GET /_next/static/css/app/layout.css?v=1777390703133 404 in 32ms
+ GET /_next/static/css/app/layout.css?v=1777390703171 404 in 24ms
+ GET /_next/static/css/app/layout.css?v=1777390703211 404 in 22ms
+ GET /_next/static/css/app/layout.css?v=1777390703247 404 in 23ms
+ GET /_next/static/css/app/layout.css?v=1777390703290 404 in 22ms
+ GET /_next/static/css/app/layout.css?v=1777390703321 404 in 33ms
+ GET /_next/static/css/app/layout.css?v=1777390703349 404 in 29ms
+ GET /_next/static/css/app/layout.css?v=1777390703397 404 in 25ms
+ GET /_next/static/css/app/layout.css?v=1777390703431 404 in 25ms
+ GET /_next/static/css/app/layout.css?v=1777390703464 404 in 25ms
+ GET /_next/static/css/app/layout.css?v=1777390703500 404 in 22ms
+ GET /_next/static/css/app/layout.css?v=1777390703532 404 in 26ms
+ GET /_next/static/css/app/layout.css?v=1777390703570 404 in 30ms
+ GET /_next/static/css/app/layout.css?v=1777390703603 404 in 26ms
+ GET /_next/static/css/app/layout.css?v=1777390703646 404 in 23ms
+ GET /_next/static/css/app/layout.css?v=1777390703674 404 in 30ms
+ GET /_next/static/css/app/layout.css?v=1777390703709 404 in 24ms
+ GET /_next/static/css/app/layout.css?v=1777390703746 404 in 30ms
+ GET /_next/static/css/app/layout.css?v=1777390703777 404 in 23ms
+ GET /_next/static/css/app/layout.css?v=1777390703818 404 in 24ms
+ GET /_next/static/css/app/layout.css?v=1777390703853 404 in 35ms
+ GET /_next/static/css/app/layout.css?v=1777390703888 404 in 27ms
+ GET /_next/static/css/app/layout.css?v=1777390703934 404 in 32ms
+ GET /_next/static/css/app/layout.css?v=1777390703971 404 in 26ms
+ GET /_next/static/css/app/layout.css?v=1777390704017 404 in 22ms
+ GET /_next/static/css/app/layout.css?v=1777390704054 404 in 23ms
+ GET /_next/static/css/app/layout.css?v=1777390704087 404 in 24ms
+ GET /_next/static/css/app/layout.css?v=1777390704116 404 in 23ms
+ GET /_next/static/css/app/layout.css?v=1777390704156 404 in 22ms
+ GET /_next/static/css/app/layout.css?v=1777390704189 404 in 33ms
+ GET /_next/static/css/app/layout.css?v=1777390704230 404 in 26ms
+ GET /_next/static/css/app/layout.css?v=1777390704262 404 in 30ms
+ GET /_next/static/css/app/layout.css?v=1777390704309 404 in 22ms
+ GET /_next/static/css/app/layout.css?v=1777390704345 404 in 21ms
+ GET /_next/static/css/app/layout.css?v=1777390704381 404 in 23ms
+ GET /_next/static/css/app/layout.css?v=1777390704411 404 in 23ms
+ GET /_next/static/css/app/layout.css?v=1777390704446 404 in 21ms
+ GET /_next/static/css/app/layout.css?v=1777390704482 404 in 19ms
+ GET /_next/static/css/app/layout.css?v=1777390704516 404 in 24ms
+ GET /_next/static/css/app/layout.css?v=1777390704546 404 in 21ms
+ GET /_next/static/css/app/layout.css?v=1777390704587 404 in 28ms
+ GET /_next/static/css/app/layout.css?v=1777390704617 404 in 23ms
+ GET /_next/static/css/app/layout.css?v=1777390704652 404 in 24ms
+ GET /_next/static/css/app/layout.css?v=1777390704689 404 in 22ms
+ GET /_next/static/css/app/layout.css?v=1777390704727 404 in 24ms
+ GET /_next/static/css/app/layout.css?v=1777390704761 404 in 23ms
+ GET /_next/static/css/app/layout.css?v=1777390704794 404 in 23ms
+ GET /_next/static/css/app/layout.css?v=1777390704826 404 in 21ms
+ GET /_next/static/css/app/layout.css?v=1777390704857 404 in 23ms
+ GET /_next/static/css/app/layout.css?v=1777390704888 404 in 29ms
+ GET /_next/static/css/app/layout.css?v=1777390704921 404 in 38ms
+ GET /_next/static/css/app/layout.css?v=1777390704957 404 in 17ms
+ GET /_next/static/css/app/layout.css?v=1777390704999 404 in 29ms
+ GET /_next/static/css/app/layout.css?v=1777390705026 404 in 19ms
+ GET /_next/static/css/app/layout.css?v=1777390705062 404 in 18ms
+ GET /_next/static/css/app/layout.css?v=1777390705096 404 in 18ms
+ GET /_next/static/css/app/layout.css?v=1777390705122 404 in 20ms
+ GET /_next/static/css/app/layout.css?v=1777390705148 404 in 20ms
+ GET /_next/static/css/app/layout.css?v=1777390705181 404 in 23ms
+ GET /_next/static/css/app/layout.css?v=1777390705212 404 in 20ms
+ GET /_next/static/css/app/layout.css?v=1777390705250 404 in 19ms
+ GET /_next/static/css/app/layout.css?v=1777390705280 404 in 32ms
+ GET /_next/static/css/app/layout.css?v=1777390705317 404 in 24ms
+ GET /_next/static/css/app/layout.css?v=1777390705350 404 in 22ms
+ GET /_next/static/css/app/layout.css?v=1777390705390 404 in 23ms
+ GET /_next/static/css/app/layout.css?v=1777390705425 404 in 24ms
+ GET /_next/static/css/app/layout.css?v=1777390705461 404 in 24ms
+ GET /_next/static/css/app/layout.css?v=1777390705496 404 in 30ms
+ GET /_next/static/css/app/layout.css?v=1777390705527 404 in 20ms
+ GET /_next/static/css/app/layout.css?v=1777390705566 404 in 26ms
+ GET /_next/static/css/app/layout.css?v=1777390705598 404 in 27ms
+ GET /_next/static/css/app/layout.css?v=1777390705633 404 in 20ms
+ GET /_next/static/css/app/layout.css?v=1777390705666 404 in 18ms
+ GET /_next/static/css/app/layout.css?v=1777390705694 404 in 25ms
+ GET /_next/static/css/app/layout.css?v=1777390705729 404 in 19ms
+ GET /_next/static/css/app/layout.css?v=1777390705759 404 in 32ms
+ GET /_next/static/css/app/layout.css?v=1777390705785 404 in 15ms
+ GET /_next/static/css/app/layout.css?v=1777390705830 404 in 18ms
+ GET /_next/static/css/app/layout.css?v=1777390705856 404 in 22ms
+ GET /_next/static/css/app/layout.css?v=1777390705884 404 in 22ms
+ GET /_next/static/css/app/layout.css?v=1777390705919 404 in 18ms
+ GET /_next/static/css/app/layout.css?v=1777390705947 404 in 23ms
+ GET /_next/static/css/app/layout.css?v=1777390705976 404 in 23ms
+ GET /_next/static/css/app/layout.css?v=1777390706009 404 in 18ms
+ GET /_next/static/css/app/layout.css?v=1777390706042 404 in 21ms
+ GET /_next/static/css/app/layout.css?v=1777390706073 404 in 21ms
+ GET /_next/static/css/app/layout.css?v=1777390706102 404 in 22ms
+ GET /_next/static/css/app/layout.css?v=1777390706130 404 in 19ms
+ GET /_next/static/css/app/layout.css?v=1777390706162 404 in 19ms
+ GET /_next/static/css/app/layout.css?v=1777390706190 404 in 20ms
+ GET /_next/static/css/app/layout.css?v=1777390706219 404 in 25ms
+ GET /_next/static/css/app/layout.css?v=1777390706256 404 in 32ms
+ GET /_next/static/css/app/layout.css?v=1777390706289 404 in 19ms
+ GET /_next/static/css/app/layout.css?v=1777390706326 404 in 22ms
+ GET /_next/static/css/app/layout.css?v=1777390706354 404 in 20ms
+ GET /_next/static/css/app/layout.css?v=1777390706386 404 in 28ms
+ GET /_next/static/css/app/layout.css?v=1777390706419 404 in 32ms
+ GET /_next/static/css/app/layout.css?v=1777390706457 404 in 20ms
+ GET /_next/static/css/app/layout.css?v=1777390706500 404 in 28ms
+ GET /_next/static/css/app/layout.css?v=1777390706528 404 in 23ms
+ GET /_next/static/css/app/layout.css?v=1777390706570 404 in 22ms
+ GET /_next/static/css/app/layout.css?v=1777390706602 404 in 28ms
+ GET /_next/static/css/app/layout.css?v=1777390706637 404 in 19ms
+ GET /_next/static/css/app/layout.css?v=1777390706674 404 in 19ms
+ GET /_next/static/css/app/layout.css?v=1777390706702 404 in 22ms
+ GET /_next/static/css/app/layout.css?v=1777390706732 404 in 20ms
+ GET /_next/static/css/app/layout.css?v=1777390706759 404 in 18ms
+ GET /_next/static/css/app/layout.css?v=1777390706790 404 in 27ms
+ GET /_next/static/css/app/layout.css?v=1777390706818 404 in 38ms
+ GET /_next/static/css/app/layout.css?v=1777390706857 404 in 89ms
+^C
+➜  politics git:(fix/display) ✗ 
+➜  politics git:(fix/display) ✗ rm -rf .next && yarn format && yarn build && yarn dev
+.yarnrc.yml 17ms (unchanged)
+CHANGELOG.md 25ms (unchanged)
+eslint.config.js 30ms (unchanged)
+eslint.config.mjs 7ms (unchanged)
+jest.config.ts 53ms (unchanged)
+next.config.ts 7ms (unchanged)
+package.json 7ms (unchanged)
+postcss.config.mjs 2ms (unchanged)
+public/google53dc5f3502fce666.html 10ms (unchanged)
+public/manifest.json 7ms (unchanged)
+README.md 10ms (unchanged)
+src/app/admin/page.tsx 10ms (unchanged)
+src/app/api/answer/route.ts 49ms (unchanged)
+src/app/api/auth/[...nextauth]/route.ts 14ms (unchanged)
+src/app/api/aws/s3/delete_file/route.ts 9ms (unchanged)
+src/app/api/aws/s3/get_file/route.ts 6ms (unchanged)
+src/app/api/aws/s3/upload_file/route.ts 8ms (unchanged)
+src/app/api/badge_create/route.ts 7ms (unchanged)
+src/app/api/badge/route.ts 9ms (unchanged)
+src/app/api/notifications/broadcast/route.ts 10ms (unchanged)
+src/app/api/notifications/count/route.ts 5ms (unchanged)
+src/app/api/notifications/list/route.ts 16ms (unchanged)
+src/app/api/notifications/mark-read/route.ts 4ms (unchanged)
+src/app/api/notifications/route.ts 8ms (unchanged)
+src/app/api/password-reset/route.ts 9ms (unchanged)
+src/app/api/profile/route.ts 11ms (unchanged)
+src/app/api/question/route.ts 16ms (unchanged)
+src/app/api/reset-password/route.ts 4ms (unchanged)
+src/app/api/user_create/route.ts 5ms (unchanged)
+src/app/api/user/route.ts 6ms (unchanged)
+src/app/error/page.tsx 7ms (unchanged)
+src/app/layout.tsx 11ms (unchanged)
+src/app/login/page.tsx 16ms (unchanged)
+src/app/login/password_reset/password_reset.tsx 7ms (unchanged)
+src/app/login/register/page.tsx 15ms (unchanged)
+src/app/login/reset-password/page.tsx 3ms (unchanged)
+src/app/not-found.tsx 5ms (unchanged)
+src/app/notifications/page.tsx 3ms (unchanged)
+src/app/page.tsx 12ms (unchanged)
+src/app/profile/page.tsx 2ms (unchanged)
+src/app/question_archive/page.tsx 2ms (unchanged)
+src/app/question/[questionId]/[answerId]/page.tsx 5ms (unchanged)
+src/app/question/[questionId]/page.tsx 5ms (unchanged)
+src/app/robots.ts 2ms (unchanged)
+src/app/settings/page.tsx 8ms (unchanged)
+src/app/sitemap.ts 5ms (unchanged)
+src/components/Admin/Admin.tsx 6ms (unchanged)
+src/components/Admin/AdminBadge.tsx 10ms (unchanged)
+src/components/Admin/AdminQuestion.tsx 41ms (unchanged)
+src/components/Admin/TestNotification.tsx 4ms (unchanged)
+src/components/Archive.tsx 2ms (unchanged)
+src/components/Badge/BadgeDisplay.tsx 8ms (unchanged)
+src/components/CookieConsent.tsx 5ms
+src/components/Home.tsx 29ms (unchanged)
+src/components/HomeEntryClient.tsx 6ms (unchanged)
+src/components/HomeNotConnected.tsx 9ms (unchanged)
+src/components/IntroductionPopup.tsx 18ms (unchanged)
+src/components/Notifications/NotificationDropdown.tsx 29ms (unchanged)
+src/components/Notifications/Notifications.tsx 21ms (unchanged)
+src/components/Notifications/NotificationStatus.tsx 10ms (unchanged)
+src/components/Profile/Profile.tsx 42ms (unchanged)
+src/components/PWA.tsx 19ms (unchanged)
+src/components/Question/AnswerContent.tsx 128ms (unchanged)
+src/components/Question/ArchiveContent.tsx 58ms (unchanged)
+src/components/Question/InformationContent.tsx 25ms (unchanged)
+src/components/Question/QuestionContent.tsx 28ms (unchanged)
+src/components/Question/QuestionDisplay.tsx 31ms (unchanged)
+src/components/Question/QuestionPageClient.tsx 6ms (unchanged)
+src/components/ResetPassword.tsx 17ms (unchanged)
+src/data/data.tsx 13ms (unchanged)
+src/interface/interface.ts 29ms (unchanged)
+src/layouts/Footer.tsx 8ms (unchanged)
+src/layouts/Loading.tsx 4ms (unchanged)
+src/layouts/LoadingContent.tsx 10ms (unchanged)
+src/layouts/MobileNavBar.tsx 11ms (unchanged)
+src/layouts/NavBarSessionHandler.tsx 7ms (unchanged)
+src/layouts/WebNavbar.tsx 14ms (unchanged)
+src/models/Answer.ts 6ms (unchanged)
+src/models/Badge.ts 8ms (unchanged)
+src/models/Notification.ts 9ms (unchanged)
+src/models/Question.ts 11ms (unchanged)
+src/models/User.ts 9ms (unchanged)
+src/models/UserAnswerLogs.ts 6ms (unchanged)
+src/models/UserProfile.ts 9ms (unchanged)
+src/providers/AppProviders.tsx 8ms (unchanged)
+src/providers/BadgeProvider.tsx 18ms (unchanged)
+src/providers/ImageProvider.tsx 15ms (unchanged)
+src/providers/NotificationCountProvider.tsx 17ms (unchanged)
+src/providers/QuestionProvider.tsx 10ms (unchanged)
 src/providers/SessionProvider.tsx 4ms (unchanged)
-src/providers/UserProfileProvider.tsx 19ms (unchanged)
-src/styles/globals.css 383ms
-src/styles/Home.module.css 68ms (unchanged)
-src/styles/tailwind.scss 2ms (unchanged)
-src/utils/__test__/UserProfile.test.ts 27ms (unchanged)
-src/utils/__test__/Utils.test.ts 22ms (unchanged)
-src/utils/Admin.ts 15ms (unchanged)
-src/utils/Badge.ts 28ms (unchanged)
-src/utils/DBConnection.ts 30ms (unchanged)
-src/utils/EmailPassword.tsx 27ms (unchanged)
-src/utils/EmailSender.tsx 49ms (unchanged)
-src/utils/Home.ts 22ms (unchanged)
-src/utils/Question.ts 30ms (unchanged)
-src/utils/S3Storage.ts 58ms (unchanged)
-src/utils/UserProfile.ts 25ms (unchanged)
-src/utils/Utils.ts 20ms (unchanged)
-tailwind.config.ts 17ms (unchanged)
-tsconfig.json 7ms (unchanged)
-worker/index.js 1ms (unchanged)
+src/providers/UserProfileProvider.tsx 20ms (unchanged)
+src/styles/globals.css 94ms (unchanged)
+src/styles/Home.module.css 24ms (unchanged)
+src/styles/tailwind.scss 6ms (unchanged)
+src/utils/__test__/UserProfile.test.ts 28ms (unchanged)
+src/utils/__test__/Utils.test.ts 20ms (unchanged)
+src/utils/Admin.ts 7ms (unchanged)
+src/utils/Badge.ts 8ms (unchanged)
+src/utils/DBConnection.ts 5ms (unchanged)
+src/utils/EmailPassword.tsx 12ms (unchanged)
+src/utils/EmailSender.tsx 13ms (unchanged)
+src/utils/Home.ts 8ms (unchanged)
+src/utils/PasswordResetToken.ts 7ms (unchanged)
+src/utils/Question.ts 11ms (unchanged)
+src/utils/S3Storage.ts 15ms (unchanged)
+src/utils/UserProfile.ts 13ms (unchanged)
+src/utils/Utils.ts 8ms (unchanged)
+tailwind.config.ts 4ms (unchanged)
+tsconfig.json 4ms (unchanged)
+worker/index.js 2ms (unchanged)
+^C%                                                                                                                                        
 ➜  politics git:(fix/display) ✗
