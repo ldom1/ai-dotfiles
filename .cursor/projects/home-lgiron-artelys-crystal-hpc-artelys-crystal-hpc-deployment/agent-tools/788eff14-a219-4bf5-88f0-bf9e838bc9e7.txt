@@ -1,0 +1,894 @@
+Downloading cryptography (4.5MiB)
+Downloading black (1.7MiB)
+Downloading ansible-core (2.3MiB)
+ Downloading black
+ Downloading cryptography
+ Downloading ansible-core
+Installed 30 packages in 1.09s
+WARNING  Another version of 'community.general' 12.6.0 was found installed in /home/lgiron/artelys_crystal_hpc/artelys-crystal-hpc-deployment/.venv/lib/python3.13/site-packages/ansible_collections, only the first one will be used, 11.2.0 (/home/lgiron/.ansible/collections/ansible_collections).
+WARNING  Another version of 'community.mysql' 4.2.0 was found installed in /home/lgiron/artelys_crystal_hpc/artelys-crystal-hpc-deployment/.venv/lib/python3.13/site-packages/ansible_collections, only the first one will be used, 3.14.0 (/home/lgiron/.ansible/collections/ansible_collections).
+[DEPRECATION WARNING]: Importing 'to_text' from 'ansible.module_utils._text' is deprecated. This feature will be removed from ansible-core version 2.24. Use ansible.module_utils.common.text.converters instead.
+[DEPRECATION WARNING]: Importing 'to_native' from 'ansible.module_utils._text' is deprecated. This feature will be removed from ansible-core version 2.24. Use ansible.module_utils.common.text.converters instead.
+WARNING  /tmp/cursor-sandbox-cache/961e2b448adee2024c4e7695cef9c58c/uv/archive-v0/AWB6OIH0Yq4XGVRl4Q1IU/lib/python3.13/site-packages/ansible/utils/display.py:719 AnsibleWarning Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+WARNING  /tmp/cursor-sandbox-cache/961e2b448adee2024c4e7695cef9c58c/uv/archive-v0/AWB6OIH0Yq4XGVRl4Q1IU/lib/python3.13/site-packages/ansible/utils/display.py:719 AnsibleWarning Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+WARNING  /tmp/cursor-sandbox-cache/961e2b448adee2024c4e7695cef9c58c/uv/archive-v0/AWB6OIH0Yq4XGVRl4Q1IU/lib/python3.13/site-packages/ansible/utils/display.py:719 AnsibleWarning Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+WARNING  /tmp/cursor-sandbox-cache/961e2b448adee2024c4e7695cef9c58c/uv/archive-v0/AWB6OIH0Yq4XGVRl4Q1IU/lib/python3.13/site-packages/ansible/utils/display.py:719 AnsibleWarning Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+WARNING  /tmp/cursor-sandbox-cache/961e2b448adee2024c4e7695cef9c58c/uv/archive-v0/AWB6OIH0Yq4XGVRl4Q1IU/lib/python3.13/site-packages/ansible/utils/display.py:719 AnsibleWarning Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+WARNING  /tmp/cursor-sandbox-cache/961e2b448adee2024c4e7695cef9c58c/uv/archive-v0/AWB6OIH0Yq4XGVRl4Q1IU/lib/python3.13/site-packages/ansible/utils/display.py:719 AnsibleWarning Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+WARNING  /tmp/cursor-sandbox-cache/961e2b448adee2024c4e7695cef9c58c/uv/archive-v0/AWB6OIH0Yq4XGVRl4Q1IU/lib/python3.13/site-packages/ansible/utils/display.py:719 AnsibleWarning Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+WARNING  /tmp/cursor-sandbox-cache/961e2b448adee2024c4e7695cef9c58c/uv/archive-v0/AWB6OIH0Yq4XGVRl4Q1IU/lib/python3.13/site-packages/ansible/utils/display.py:719 AnsibleWarning Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+WARNING  Listing 284 violation(s) that are fatal
+fqcn[action-core]: Use FQCN for builtin module actions (hostname).
+bootstrap.yml:12:7 Use `ansible.builtin.hostname` or `ansible.legacy.hostname` instead.
+
+fqcn[action]: Use FQCN for module actions, such `community.general.timezone`.
+bootstrap.yml:16:7 Action `timezone` is not FQCN.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+bootstrap.yml:20:7 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+bootstrap.yml:30:7 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+fqcn[action]: Use FQCN for module actions, such `ansible.posix.firewalld`.
+bootstrap.yml:36:7 Action `firewalld` is not FQCN.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/common/tasks/main.yml:3:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/common/tasks/main.yml:8:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/common/tasks/main.yml:17:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+fqcn[action]: Use FQCN for module actions, such `community.general.timezone`.
+roles/common/tasks/main.yml:24:3 Action `timezone` is not FQCN.
+
+name[casing]: All names should start with an uppercase letter.
+roles/css_theme/handlers/main.yml:2:9 Task/Handler: run ood-portal-generator
+
+no-changed-when: Commands should not change things if nothing needs doing.
+roles/css_theme/handlers/main.yml:2 Task/Handler: run ood-portal-generator
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/css_theme/handlers/main.yml:3:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+name[casing]: All names should start with an uppercase letter.
+roles/css_theme/handlers/main.yml:6:9 Task/Handler: restart httpd
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/css_theme/handlers/main.yml:7:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+name[casing]: All names should start with an uppercase letter.
+roles/css_theme/handlers/main.yml:11:9 Task/Handler: restart ondemand-dex
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/css_theme/handlers/main.yml:12:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (git).
+roles/css_theme/tasks/main.yml:3:3 Use `ansible.builtin.git` or `ansible.legacy.git` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/css_theme/tasks/main.yml:10:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/css_theme/tasks/main.yml:17:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/css_theme/tasks/main.yml:27:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+risky-file-permissions: File permissions unset or incorrect.
+roles/css_theme/tasks/main.yml:33 Task/Handler: Configure OOD dashboard branding env
+
+fqcn[action-core]: Use FQCN for builtin module actions (blockinfile).
+roles/css_theme/tasks/main.yml:34:3 Use `ansible.builtin.blockinfile` or `ansible.legacy.blockinfile` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/css_theme/tasks/main.yml:46:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/css_theme/tasks/main.yml:52:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+risky-file-permissions: File permissions unset or incorrect.
+roles/css_theme/tasks/main.yml:58 Task/Handler: Configure myjobs branding env
+
+fqcn[action-core]: Use FQCN for builtin module actions (blockinfile).
+roles/css_theme/tasks/main.yml:59:3 Use `ansible.builtin.blockinfile` or `ansible.legacy.blockinfile` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/css_theme/tasks/main.yml:68:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/css_theme/tasks/main.yml:74:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/css_theme/tasks/main.yml:87:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/css_theme/tasks/main.yml:96:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+var-naming[no-role-prefix]: Variables names from within roles should use desktop_vnc_ as a prefix. (vars: websockify_version)
+roles/desktop_vnc/defaults/main.yml:2:1
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/desktop_vnc/tasks/main.yml:5:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (get_url).
+roles/desktop_vnc/tasks/main.yml:10:3 Use `ansible.builtin.get_url` or `ansible.legacy.get_url` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/desktop_vnc/tasks/main.yml:16:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action]: Use FQCN for module actions, such `ansible.posix.firewalld`.
+roles/desktop_vnc/tasks/main.yml:21:3 Action `firewalld` is not FQCN.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/desktop_vnc/tasks/main.yml:33:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/desktop_vnc/tasks/main.yml:38:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (get_url).
+roles/desktop_vnc/tasks/main.yml:43:3 Use `ansible.builtin.get_url` or `ansible.legacy.get_url` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (unarchive).
+roles/desktop_vnc/tasks/main.yml:49:3 Use `ansible.builtin.unarchive` or `ansible.legacy.unarchive` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (pip).
+roles/desktop_vnc/tasks/main.yml:56:3 Use `ansible.builtin.pip` or `ansible.legacy.pip` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/desktop_vnc/tasks/main.yml:62:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+package-latest: Package installs should not use latest.
+roles/dnf_update/tasks/main.yml:10 Task/Handler: Update security-related packages only
+
+name[casing]: All names should start with an uppercase letter.
+roles/docker/handlers/main.yml:3:9 Task/Handler: restart container runtime
+
+var-naming[no-role-prefix]: Variables names from within roles should use grafana_ as a prefix. (vars: prometheus_version)
+roles/grafana/defaults/main.yml:2:1
+
+var-naming[no-role-prefix]: Variables names from within roles should use grafana_ as a prefix. (vars: prometheus_arch)
+roles/grafana/defaults/main.yml:3:1
+
+yaml[new-line-at-end-of-file]: No new line character at the end of file
+roles/grafana/files/dashboards_slurm.yml:24
+
+yaml[comments]: Missing starting space in comment
+roles/grafana/files/datasource_prometheus_slurm.yml:4
+
+yaml[comments]: Missing starting space in comment
+roles/grafana/files/datasource_prometheus_slurm.yml:18
+
+yaml[colons]: Too many spaces after colon
+roles/grafana/files/prometheus.yml:37
+
+yaml[colons]: Too many spaces after colon
+roles/grafana/files/prometheus.yml:38
+
+name[casing]: All names should start with an uppercase letter.
+roles/grafana/handlers/main.yml:2:9 Task/Handler: reload systemd
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/grafana/handlers/main.yml:3:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+name[casing]: All names should start with an uppercase letter.
+roles/grafana/handlers/main.yml:6:9 Task/Handler: restart prometheus
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/grafana/handlers/main.yml:7:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+name[casing]: All names should start with an uppercase letter.
+roles/grafana/handlers/main.yml:11:9 Task/Handler: restart slurm-exporter
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/grafana/handlers/main.yml:12:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+name[casing]: All names should start with an uppercase letter.
+roles/grafana/handlers/main.yml:16:9 Task/Handler: restart grafana
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/grafana/handlers/main.yml:17:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+name[casing]: All names should start with an uppercase letter.
+roles/grafana/handlers/main.yml:21:9 Task/Handler: restart httpd
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/grafana/handlers/main.yml:22:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (user).
+roles/grafana/tasks/main.yml:5:3 Use `ansible.builtin.user` or `ansible.legacy.user` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/grafana/tasks/main.yml:12:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+var-naming[no-role-prefix]: Variables names from within roles should use grafana_ as a prefix. (register: prometheus_bin)
+roles/grafana/tasks/main.yml:22:13 Task/Handler: Check if prometheus binary exists
+
+fqcn[action-core]: Use FQCN for builtin module actions (stat).
+roles/grafana/tasks/main.yml:23:3 Use `ansible.builtin.stat` or `ansible.legacy.stat` instead.
+
+risky-file-permissions: File permissions unset or incorrect.
+roles/grafana/tasks/main.yml:27 Task/Handler: Download prometheus archive
+
+fqcn[action-core]: Use FQCN for builtin module actions (get_url).
+roles/grafana/tasks/main.yml:28:3 Use `ansible.builtin.get_url` or `ansible.legacy.get_url` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (unarchive).
+roles/grafana/tasks/main.yml:34:3 Use `ansible.builtin.unarchive` or `ansible.legacy.unarchive` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/grafana/tasks/main.yml:41:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/grafana/tasks/main.yml:52:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/grafana/tasks/main.yml:61:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/grafana/tasks/main.yml:86:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/grafana/tasks/main.yml:94:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/grafana/tasks/main.yml:100:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+var-naming[no-role-prefix]: Variables names from within roles should use grafana_ as a prefix. (register: slurm_exporter_bin)
+roles/grafana/tasks/main.yml:107:13 Task/Handler: Check if prometheus-slurm-exporter binary exists
+
+fqcn[action-core]: Use FQCN for builtin module actions (stat).
+roles/grafana/tasks/main.yml:108:3 Use `ansible.builtin.stat` or `ansible.legacy.stat` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/grafana/tasks/main.yml:113:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+latest[git]: Result of the command may vary on subsequent runs.
+roles/grafana/tasks/main.yml:118 Task/Handler: Clone prometheus-slurm-exporter
+
+fqcn[action-core]: Use FQCN for builtin module actions (git).
+roles/grafana/tasks/main.yml:119:3 Use `ansible.builtin.git` or `ansible.legacy.git` instead.
+
+fqcn[action]: Use FQCN for module actions, such `community.general.make`.
+roles/grafana/tasks/main.yml:126:3 Action `make` is not FQCN.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/grafana/tasks/main.yml:131:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/grafana/tasks/main.yml:139:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/grafana/tasks/main.yml:158:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (template).
+roles/grafana/tasks/main.yml:166:3 Use `ansible.builtin.template` or `ansible.legacy.template` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/grafana/tasks/main.yml:175:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/grafana/tasks/main.yml:182:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/grafana/tasks/main.yml:189:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+fqcn[action]: Use FQCN for module actions, such `community.general.ini_file`.
+roles/grafana/tasks/main.yml:196:3 Action `ini_file` is not FQCN.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/grafana/tasks/main.yml:205:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/grafana/tasks/main.yml:212:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/grafana/tasks/main.yml:219:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/grafana/tasks/main.yml:228:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/grafana/tasks/main.yml:235:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/grafana/tasks/main.yml:242:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/grafana/tasks/main.yml:250:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/grafana/tasks/main.yml:260:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (template).
+roles/grafana/tasks/main.yml:266:3 Use `ansible.builtin.template` or `ansible.legacy.template` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/grafana/tasks/main.yml:274:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/jupyter/tasks/main.yml:3:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/jupyter/tasks/main.yml:8:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/jupyter/tasks/main.yml:14:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (pip).
+roles/jupyter/tasks/main.yml:19:3 Use `ansible.builtin.pip` or `ansible.legacy.pip` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (replace).
+roles/jupyter/tasks/main.yml:34:3 Use `ansible.builtin.replace` or `ansible.legacy.replace` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (replace).
+roles/jupyter/tasks/main.yml:40:3 Use `ansible.builtin.replace` or `ansible.legacy.replace` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/jupyter/tasks/main.yml:46:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/jupyter/tasks/main.yml:52:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action]: Use FQCN for module actions, such `ansible.posix.firewalld`.
+roles/jupyter/tasks/main.yml:59:3 Action `firewalld` is not FQCN.
+
+var-naming[no-role-prefix]: Variables names from within roles should use jupyter_python313_ as a prefix. (vars: python313_version)
+roles/jupyter_python313/defaults/main.yml:2:1
+
+var-naming[no-role-prefix]: Variables names from within roles should use jupyter_python313_ as a prefix. (vars: jupyter313_version)
+roles/jupyter_python313/defaults/main.yml:3:1
+
+var-naming[no-role-prefix]: Variables names from within roles should use jupyter_python313_ as a prefix. (vars: jupyter_base_venv)
+roles/jupyter_python313/defaults/main.yml:5:1
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/jupyter_python313/tasks/main.yml:5:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/jupyter_python313/tasks/main.yml:10:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/jupyter_python313/tasks/main.yml:16:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/jupyter_python313/tasks/main.yml:24:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+package-latest: Package installs should not use latest.
+roles/jupyter_python313/tasks/main.yml:30 Task/Handler: Upgrade pip in venv
+
+partial-become[task]: ``become_user`` should have a corresponding ``become`` at the same level as itself.
+roles/jupyter_python313/tasks/main.yml:30 Task/Handler: Upgrade pip in venv
+
+fqcn[action-core]: Use FQCN for builtin module actions (pip).
+roles/jupyter_python313/tasks/main.yml:31:3 Use `ansible.builtin.pip` or `ansible.legacy.pip` instead.
+
+partial-become[task]: ``become_user`` should have a corresponding ``become`` at the same level as itself.
+roles/jupyter_python313/tasks/main.yml:37 Task/Handler: Install Jupyter and scientific packages
+
+fqcn[action-core]: Use FQCN for builtin module actions (pip).
+roles/jupyter_python313/tasks/main.yml:38:3 Use `ansible.builtin.pip` or `ansible.legacy.pip` instead.
+
+command-instead-of-module: rsync used in place of synchronize module
+roles/jupyter_python313/tasks/main.yml:51 Task/Handler: Copy base Jupyter OOD app for Python {{ python313_version }}
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/jupyter_python313/tasks/main.yml:52:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/jupyter_python313/tasks/main.yml:60:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/jupyter_python313/tasks/main.yml:66:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (replace).
+roles/jupyter_python313/tasks/main.yml:72:3 Use `ansible.builtin.replace` or `ansible.legacy.replace` instead.
+
+name[casing]: All names should start with an uppercase letter.
+roles/ldap/handlers/main.yml:2:9 Task/Handler: restart dirsrv
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/ldap/handlers/main.yml:3:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/ldap/tasks/main.yml:3:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action]: Use FQCN for module actions, such `ansible.posix.firewalld`.
+roles/ldap/tasks/main.yml:10:3 Action `firewalld` is not FQCN.
+
+var-naming[no-role-prefix]: Variables names from within roles should use ldap_ as a prefix. (register: ds_instance)
+roles/ldap/tasks/main.yml:26:17 Task/Handler: Check if 389-ds instance already exists
+
+fqcn[action-core]: Use FQCN for builtin module actions (stat).
+roles/ldap/tasks/main.yml:27:7 Use `ansible.builtin.stat` or `ansible.legacy.stat` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (template).
+roles/ldap/tasks/main.yml:32:7 Use `ansible.builtin.template` or `ansible.legacy.template` instead.
+
+no-changed-when: Commands should not change things if nothing needs doing.
+roles/ldap/tasks/main.yml:38 Task/Handler: Create 389-ds instance
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/ldap/tasks/main.yml:39:7 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/ldap/tasks/main.yml:44:7 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/ldap/tasks/main.yml:49:7 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/ldap/tasks/main.yml:55:7 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (template).
+roles/ldap/tasks/main.yml:66:7 Use `ansible.builtin.template` or `ansible.legacy.template` instead.
+
+no-changed-when: Commands should not change things if nothing needs doing.
+roles/ldap/tasks/main.yml:72 Task/Handler: Load base LDAP structure
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/ldap/tasks/main.yml:73:7 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/ldap/tasks/main.yml:81:7 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/ldap/tasks/main.yml:86:7 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (template).
+roles/ldap/tasks/main.yml:97:7 Use `ansible.builtin.template` or `ansible.legacy.template` instead.
+
+no-changed-when: Commands should not change things if nothing needs doing.
+roles/ldap/tasks/main.yml:103 Task/Handler: Load utilisateurs group
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/ldap/tasks/main.yml:104:7 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/ldap/tasks/main.yml:112:7 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/ldap/tasks/main.yml:117:7 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (template).
+roles/ldap/tasks/main.yml:128:7 Use `ansible.builtin.template` or `ansible.legacy.template` instead.
+
+no-changed-when: Commands should not change things if nothing needs doing.
+roles/ldap/tasks/main.yml:134 Task/Handler: Load sssd bind account
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/ldap/tasks/main.yml:135:7 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/ldap/tasks/main.yml:143:7 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/network/tasks/main.yml:4:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+name[casing]: All names should start with an uppercase letter.
+roles/ood_ssl/handlers/main.yml:2:9 Task/Handler: update ca-trust
+
+no-changed-when: Commands should not change things if nothing needs doing.
+roles/ood_ssl/handlers/main.yml:2 Task/Handler: update ca-trust
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/ood_ssl/handlers/main.yml:3:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/ood_ssl/tasks/main.yml:6:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/ood_ssl/tasks/main.yml:12:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/ood_ssl/tasks/main.yml:18:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/ood_ssl/tasks/main.yml:29:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/ood_ssl/tasks/main.yml:35:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/ood_ssl/tasks/main.yml:45:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/ood_ssl/tasks/main.yml:57:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/ood_ssl/tasks/main.yml:71:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/ood_ssl/tasks/main.yml:81:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/ood_ssl/tasks/main.yml:88:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+name[casing]: All names should start with an uppercase letter.
+roles/open_on_demand/handlers/main.yml:2:9 Task/Handler: run ood-portal-generator
+
+no-changed-when: Commands should not change things if nothing needs doing.
+roles/open_on_demand/handlers/main.yml:2 Task/Handler: run ood-portal-generator
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/open_on_demand/handlers/main.yml:3:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+name[casing]: All names should start with an uppercase letter.
+roles/open_on_demand/handlers/main.yml:8:9 Task/Handler: restart apache
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/open_on_demand/handlers/main.yml:9:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+name[casing]: All names should start with an uppercase letter.
+roles/open_on_demand/handlers/main.yml:13:9 Task/Handler: restart ondemand-dex
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/open_on_demand/handlers/main.yml:14:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/open_on_demand/tasks/main.yml:6:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/open_on_demand/tasks/main.yml:10:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/open_on_demand/tasks/main.yml:14:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action]: Use FQCN for module actions, such `community.general.gem`.
+roles/open_on_demand/tasks/main.yml:19:3 Action `gem` is not FQCN.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/open_on_demand/tasks/main.yml:26:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/open_on_demand/tasks/main.yml:32:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/open_on_demand/tasks/main.yml:41:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/open_on_demand/tasks/main.yml:55:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (git).
+roles/open_on_demand/tasks/main.yml:67:3 Use `ansible.builtin.git` or `ansible.legacy.git` instead.
+
+command-instead-of-module: rsync used in place of synchronize module
+roles/open_on_demand/tasks/main.yml:73 Task/Handler: Deploy OOD app configs
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/open_on_demand/tasks/main.yml:74:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+command-instead-of-module: rsync used in place of synchronize module
+roles/open_on_demand/tasks/main.yml:80 Task/Handler: Deploy OOD etc config
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/open_on_demand/tasks/main.yml:81:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+command-instead-of-module: rsync used in place of synchronize module
+roles/open_on_demand/tasks/main.yml:87 Task/Handler: Deploy Dex config
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/open_on_demand/tasks/main.yml:88:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (template).
+roles/open_on_demand/tasks/main.yml:96:3 Use `ansible.builtin.template` or `ansible.legacy.template` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (template).
+roles/open_on_demand/tasks/main.yml:104:3 Use `ansible.builtin.template` or `ansible.legacy.template` instead.
+
+command-instead-of-module: rsync used in place of synchronize module
+roles/open_on_demand/tasks/main.yml:112 Task/Handler: Deploy notebook_data to /data
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/open_on_demand/tasks/main.yml:113:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/open_on_demand/tasks/main.yml:122:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/open_on_demand/tasks/main.yml:127:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/open_on_demand/tasks/main.yml:133:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/open_on_demand/tasks/main.yml:139:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+fqcn[action]: Use FQCN for module actions, such `ansible.posix.firewalld`.
+roles/open_on_demand/tasks/main.yml:149:3 Action `firewalld` is not FQCN.
+
+name[casing]: All names should start with an uppercase letter.
+roles/s3_explorer/handlers/main.yml:8:9 Task/Handler: restart httpd
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/selinux/tasks/main.yml:5:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action]: Use FQCN for module actions, such `ansible.posix.seboolean`.
+roles/selinux/tasks/main.yml:10:3 Action `seboolean` is not FQCN.
+
+fqcn[action]: Use FQCN for module actions, such `ansible.posix.seboolean`.
+roles/selinux/tasks/main.yml:16:3 Action `seboolean` is not FQCN.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/selinux/tasks/main.yml:22:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/selinux/tasks/main.yml:26:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+name[casing]: All names should start with an uppercase letter.
+roles/slurm/handlers/main.yml:2:9 Task/Handler: restart slurm services
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/slurm/handlers/main.yml:3:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/slurm/tasks/main.yml:9:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/slurm/tasks/main.yml:31:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/slurm/tasks/main.yml:35:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+var-naming[no-role-prefix]: Variables names from within roles should use slurm_ as a prefix. (register: munge_rpm)
+roles/slurm/tasks/main.yml:41:13 Task/Handler: Check if munge RPM already built
+
+fqcn[action-core]: Use FQCN for builtin module actions (stat).
+roles/slurm/tasks/main.yml:42:3 Use `ansible.builtin.stat` or `ansible.legacy.stat` instead.
+
+risky-file-permissions: File permissions unset or incorrect.
+roles/slurm/tasks/main.yml:46 Task/Handler: Download munge source
+
+fqcn[action-core]: Use FQCN for builtin module actions (get_url).
+roles/slurm/tasks/main.yml:47:3 Use `ansible.builtin.get_url` or `ansible.legacy.get_url` instead.
+
+no-changed-when: Commands should not change things if nothing needs doing.
+roles/slurm/tasks/main.yml:52 Task/Handler: Build munge RPMs
+
+partial-become[task]: ``become_user`` should have a corresponding ``become`` at the same level as itself.
+roles/slurm/tasks/main.yml:52 Task/Handler: Build munge RPMs
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/slurm/tasks/main.yml:53:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+command-instead-of-module: rpm used in place of yum or rpm_key module
+roles/slurm/tasks/main.yml:57 Task/Handler: Check if munge already installed
+
+var-naming[no-role-prefix]: Variables names from within roles should use slurm_ as a prefix. (register: munge_installed)
+roles/slurm/tasks/main.yml:57:13 Task/Handler: Check if munge already installed
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/slurm/tasks/main.yml:58:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/slurm/tasks/main.yml:64:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/slurm/tasks/main.yml:73:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/slurm/tasks/main.yml:78:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (stat).
+roles/slurm/tasks/main.yml:86:3 Use `ansible.builtin.stat` or `ansible.legacy.stat` instead.
+
+risky-file-permissions: File permissions unset or incorrect.
+roles/slurm/tasks/main.yml:90 Task/Handler: Download slurm source
+
+fqcn[action-core]: Use FQCN for builtin module actions (get_url).
+roles/slurm/tasks/main.yml:91:3 Use `ansible.builtin.get_url` or `ansible.legacy.get_url` instead.
+
+no-changed-when: Commands should not change things if nothing needs doing.
+roles/slurm/tasks/main.yml:96 Task/Handler: Build slurm RPMs
+
+partial-become[task]: ``become_user`` should have a corresponding ``become`` at the same level as itself.
+roles/slurm/tasks/main.yml:96 Task/Handler: Build slurm RPMs
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/slurm/tasks/main.yml:97:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+command-instead-of-module: rpm used in place of yum or rpm_key module
+roles/slurm/tasks/main.yml:101 Task/Handler: Check if slurm already installed
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/slurm/tasks/main.yml:102:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/slurm/tasks/main.yml:108:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (group).
+roles/slurm/tasks/main.yml:120:3 Use `ansible.builtin.group` or `ansible.legacy.group` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (user).
+roles/slurm/tasks/main.yml:126:3 Use `ansible.builtin.user` or `ansible.legacy.user` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/slurm/tasks/main.yml:135:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+yaml[commas]: Too many spaces after comma
+roles/slurm/tasks/main.yml:142
+
+yaml[commas]: Too many spaces after comma
+roles/slurm/tasks/main.yml:144
+
+yaml[commas]: Too many spaces after comma
+roles/slurm/tasks/main.yml:145
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/slurm/tasks/main.yml:148:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (git).
+roles/slurm/tasks/main.yml:159:3 Use `ansible.builtin.git` or `ansible.legacy.git` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/slurm/tasks/main.yml:166:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/slurm/tasks/main.yml:176:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/slurm/tasks/main.yml:183:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (copy).
+roles/slurm/tasks/main.yml:193:3 Use `ansible.builtin.copy` or `ansible.legacy.copy` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/slurm/tasks/main.yml:204:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/slurm/tasks/main.yml:211:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+fqcn[action]: Use FQCN for module actions, such `ansible.posix.firewalld`.
+roles/slurm/tasks/main.yml:243:3 Action `firewalld` is not FQCN.
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/slurm/tasks/main.yml:257:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+var-naming[no-role-prefix]: Variables names from within roles should use slurm_ as a prefix. (register: sacct_cluster)
+roles/slurm/tasks/main.yml:268:13 Task/Handler: Create sacctmgr cluster entry
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/slurm/tasks/main.yml:269:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+var-naming[no-role-prefix]: Variables names from within roles should use slurm_ as a prefix. (register: sacct_account)
+roles/slurm/tasks/main.yml:274:13 Task/Handler: Create sacctmgr hpc account
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/slurm/tasks/main.yml:275:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+risky-file-permissions: File permissions unset or incorrect.
+roles/slurm/tasks/main.yml:280 Task/Handler: Add squeue alias for root
+
+fqcn[action-core]: Use FQCN for builtin module actions (blockinfile).
+roles/slurm/tasks/main.yml:281:3 Use `ansible.builtin.blockinfile` or `ansible.legacy.blockinfile` instead.
+
+yaml[line-length]: Line too long (208 > 160 characters)
+roles/slurm/tasks/main.yml:286
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/slurm/tasks/main.yml:289:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+name[casing]: All names should start with an uppercase letter.
+roles/sssd/handlers/main.yml:2:9 Task/Handler: restart sssd
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/sssd/handlers/main.yml:3:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/sssd/tasks/main.yml:3:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (template).
+roles/sssd/tasks/main.yml:13:3 Use `ansible.builtin.template` or `ansible.legacy.template` instead.
+
+var-naming[no-role-prefix]: Variables names from within roles should use sssd_ as a prefix. (register: authselect_current)
+roles/sssd/tasks/main.yml:21:13 Task/Handler: Check current authselect profile
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/sssd/tasks/main.yml:22:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/sssd/tasks/main.yml:29:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/sssd/tasks/main.yml:39:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/sssd/tasks/main.yml:45:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+Read documentation for instructions on how to ignore specific rule violations.
+
+# Rule Violation Summary
+
+  8 command-instead-of-module profile:basic tags:command-shell,idiom
+  4 partial-become profile:basic tags:unpredictability
+  1 name profile:basic tags:idiom
+ 14 var-naming profile:basic tags:idiom
+  2 yaml profile:basic tags:formatting,yaml
+  3 yaml profile:basic tags:formatting,yaml
+  2 yaml profile:basic tags:formatting,yaml
+  1 yaml profile:basic tags:formatting,yaml
+  1 yaml profile:basic tags:formatting,yaml
+ 18 name profile:basic tags:idiom
+  1 latest profile:basic tags:idempotency
+  2 package-latest profile:basic tags:idempotency
+  6 risky-file-permissions profile:basic tags:unpredictability
+ 10 no-changed-when profile:basic tags:command-shell,idempotency
+198 fqcn profile:basic tags:formatting
+ 13 fqcn profile:basic tags:formatting
+
+Failed: 284 failure(s), 0 warning(s) in 61 files processed of 63 encountered. Last profile that met the validation criteria was 'min'.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/sssd/tasks/main.yml:51:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/sssd/tasks/main.yml:57:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/sssd/tasks/main.yml:63:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/sssd/tasks/main.yml:69:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/sssd/tasks/main.yml:75:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (systemd).
+roles/sssd/tasks/main.yml:82:3 Use `ansible.builtin.systemd` or `ansible.legacy.systemd` instead.
+
+command-instead-of-module: systemctl used in place of systemd module
+roles/storage/handlers/main.yml:2 Task/Handler: reload systemd and mount
+
+name[casing]: All names should start with an uppercase letter.
+roles/storage/handlers/main.yml:2:9 Task/Handler: reload systemd and mount
+
+no-changed-when: Commands should not change things if nothing needs doing.
+roles/storage/handlers/main.yml:2 Task/Handler: reload systemd and mount
+
+fqcn[action-core]: Use FQCN for builtin module actions (shell).
+roles/storage/handlers/main.yml:3:3 Use `ansible.builtin.shell` or `ansible.legacy.shell` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (dnf).
+roles/storage/tasks/main.yml:6:3 Use `ansible.builtin.dnf` or `ansible.legacy.dnf` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/storage/tasks/main.yml:14:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/storage/tasks/main.yml:24:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/storage/tasks/main.yml:32:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (shell).
+roles/storage/tasks/main.yml:42:3 Use `ansible.builtin.shell` or `ansible.legacy.shell` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (command).
+roles/storage/tasks/main.yml:48:3 Use `ansible.builtin.command` or `ansible.legacy.command` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (lineinfile).
+roles/storage/tasks/main.yml:54:3 Use `ansible.builtin.lineinfile` or `ansible.legacy.lineinfile` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/storage/tasks/main.yml:63:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/storage/tasks/main.yml:69:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (file).
+roles/storage/tasks/main.yml:75:3 Use `ansible.builtin.file` or `ansible.legacy.file` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (template).
+roles/user_tools/tasks/main.yml:3:3 Use `ansible.builtin.template` or `ansible.legacy.template` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (template).
+roles/user_tools/tasks/main.yml:11:3 Use `ansible.builtin.template` or `ansible.legacy.template` instead.
+
+fqcn[action-core]: Use FQCN for builtin module actions (template).
+roles/user_tools/tasks/main.yml:19:3 Use `ansible.builtin.template` or `ansible.legacy.template` instead.
+
+name[play]: All plays should be named.
+site.yml:3:3
+
