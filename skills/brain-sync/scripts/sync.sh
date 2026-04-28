@@ -93,6 +93,7 @@ pull_repo() {
 commit_push_repo() {
   local label="$1"
   local path="$2"
+  local commit_msg="${3:-"$label: session sync $(date '+%Y-%m-%dT%H:%M:%S')"}"
 
   if [[ ! -d "$path/.git" ]]; then
     echo "[$label] WARNING: $path is not a git repo, skipping."
@@ -105,7 +106,7 @@ commit_push_repo() {
     echo "[$label] No changes to commit."
   else
     git -C "$path" add -A
-    git -C "$path" commit -m "$label: session sync $(date '+%Y-%m-%dT%H:%M:%S')"
+    git -C "$path" commit -m "$commit_msg"
     echo "[$label] Committed."
   fi
 
@@ -142,9 +143,12 @@ cmd_start() {
 cmd_end() {
   echo "[brain-sync] Session end — committing and pushing repos..."
 
-  commit_push_repo "brain"    "$BRAIN_PATH"
-  commit_push_repo "dotfiles" "$AI_DOTFILES_PATH"
-  commit_push_repo "clawvis"  "$CLAWVIS_PATH"
+  local ts
+  ts="$(date '+%Y-%m-%dT%H:%M:%S')"
+
+  commit_push_repo "brain"    "$BRAIN_PATH"      "brain: session sync $ts"
+  commit_push_repo "dotfiles" "$AI_DOTFILES_PATH" "dotfiles: session sync $ts"
+  commit_push_repo "clawvis"  "$CLAWVIS_PATH"    "update(sync): session sync $ts"
 }
 
 # ── Dispatch ─────────────────────────────────────────────────────────────────

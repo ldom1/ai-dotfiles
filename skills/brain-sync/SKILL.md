@@ -1,12 +1,12 @@
 ---
 name: brain-sync
-description: Sync the Local Brain Obsidian vault (git repo) at the start and end of every Claude Code session. Pulls at session start, commits and pushes at session end.
+description: Sync the Local Brain Obsidian vault (git repo) at the start and end of every Claude Code session. Pulls at session start, commits and pushes at session end. Also syncs ai-dotfiles and clawvis repos.
 user-invocable: true
 ---
 
 # brain-sync
 
-Keep the Local Brain vault (a git-backed Obsidian vault) in sync across every session. On session start, pull the latest remote changes. On session end, commit all new notes and push.
+Keep the Local Brain vault, ai-dotfiles, and clawvis repos in sync across every session. On session start, pull latest changes for all repos. On session end, commit any unstaged files and push for each repo.
 
 ## Quick start
 
@@ -20,16 +20,33 @@ cp config/brain.env.example config/brain.env   # full ai-dotfiles install
 Run manually:
 
 ```bash
-bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh start   # pull
-bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh end     # commit + push
+bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh start   # pull all repos
+bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh end     # commit + push all repos
 ```
 
 ## What it does
 
-| Event | Steps |
-|---|---|
-| **start** | Stash dirty tree → `git pull --rebase` → pop stash |
-| **end** | `git add -A` → `git commit -m "brain: session sync <timestamp>"` → `git push` |
+| Event | Repos | Steps |
+|---|---|---|
+| **start** | brain, dotfiles, clawvis | Stash dirty tree → `git pull --rebase` → pop stash |
+| **end** | brain, dotfiles, clawvis | `git add -A` → `git commit` → `git push` on current branch |
+
+Commit messages per repo:
+- **brain**: `brain: session sync <timestamp>`
+- **dotfiles**: `dotfiles: session sync <timestamp>`
+- **clawvis**: `update(sync): session sync <timestamp>` (follows clawvis commit convention)
+
+## Configuration
+
+`BRAIN_PATH` must be the **absolute path** to a **git repository** (your Obsidian vault). The script loads it from the **first match**:
+
+1. `BRAIN_ENV_FILE` — environment variable pointing to an env file with `BRAIN_PATH=…`
+2. `brain.env` beside `scripts/sync.sh` — for standalone usage
+3. `config/brain.env` at the ai-dotfiles root — default when using the full install
+
+Additional repo paths (defaults, override via env vars):
+- `AI_DOTFILES_PATH` — auto-derived from script location (`$SCRIPT_DIR/../../..`)
+- `CLAWVIS_PATH` — defaults to `$HOME/lab/clawvis`
 
 ## Configuration
 
