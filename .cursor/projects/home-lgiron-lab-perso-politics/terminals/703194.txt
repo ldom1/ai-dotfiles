@@ -3,5 +3,11 @@ pid: 433485
 cwd: "/home/lgiron/lab_perso/politics"
 command: "( yarn install && yarn build ) 2>&1 | tail -n 120"
 started_at: 2026-04-28T14:24:42.472Z
-running_for_ms: 356146   
+running_for_ms: 361148   
+---
+
+---
+exit_code: unknown
+elapsed_ms: 361377
+ended_at: 2026-04-28T14:30:43.850Z
 ---

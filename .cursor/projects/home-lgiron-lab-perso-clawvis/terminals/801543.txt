@@ -1,0 +1,364 @@
+---
+pid: 442224
+cwd: "/home/lgiron/lab_perso/clawvis"
+command: "docker compose up -d --build telegram"
+started_at: 2026-04-28T14:33:47.846Z
+running_for_ms: 367988   
+---
+#0 building with "default" instance using docker driver
+
+#1 [kanban-api internal] load build definition from Dockerfile
+#1 transferring dockerfile:
+#1 transferring dockerfile: 1.17kB 0.0s done
+#1 DONE 0.2s
+
+#2 [kanban-api internal] load metadata for docker.io/library/python:3.11-slim
+#2 DONE 0.0s
+
+#3 [kanban-api internal] load metadata for ghcr.io/astral-sh/uv:0.10.0
+#3 DONE 1.2s
+
+#4 [kanban-api internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [kanban-api] FROM ghcr.io/astral-sh/uv:0.10.0@sha256:78a7ff97cd27b7124a5f3c2aefe146170793c56a1e03321dd31a289f6d82a04f
+#5 DONE 0.0s
+
+#6 [kanban-api stage-0  1/13] FROM docker.io/library/python:3.11-slim
+#6 DONE 0.0s
+
+#7 [kanban-api internal] load build context
+#7 transferring context: 1.47MB 2.4s done
+#7 DONE 3.1s
+
+#8 [kanban-api stage-0  4/13] WORKDIR /clawvis
+#8 CACHED
+
+#9 [kanban-api stage-0  5/13] COPY pyproject.toml ./
+#9 CACHED
+
+#10 [kanban-api stage-0  2/13] COPY --from=ghcr.io/astral-sh/uv:0.10.0 /uv /uvx /usr/local/bin/
+#10 CACHED
+
+#11 [kanban-api stage-0  3/13] RUN apt-get update && apt-get install -y --no-install-recommends     bash     ca-certificates     nodejs     npm   && rm -rf /var/lib/apt/lists/*
+#11 CACHED
+
+#12 [kanban-api stage-0  6/13] COPY uv.lock ./
+#12 CACHED
+
+#13 [kanban-api stage-0  7/13] COPY hub-core/ ./hub-core/
+#13 DONE 19.4s
+
+#14 [kanban-api stage-0  8/13] COPY services/kanban/ ./services/kanban/
+#14 DONE 0.2s
+
+#15 [kanban-api stage-0  9/13] COPY skills/project-init/templates/ ./skills/project-init/templates/
+#15 DONE 0.1s
+
+#16 [kanban-api stage-0 10/13] COPY scripts/ ./scripts/
+#16 DONE 0.1s
+
+#17 [kanban-api stage-0 11/13] RUN chmod +x scripts/build-quartz.sh
+#17 DONE 0.8s
+
+#18 [kanban-api stage-0 12/13] WORKDIR /clawvis
+#18 DONE 0.2s
+
+#19 [kanban-api stage-0 13/13] RUN UV_HTTP_TIMEOUT=120 UV_HTTP_RETRIES=8 uv sync --frozen --no-dev --package kanban-api     && chmod -R a+rwX .venv /clawvis
+#19 1.080 Using CPython 3.11.15 interpreter at: /usr/local/bin/python3
+#19 1.080 Creating virtual environment at: .venv
+#19 1.124    Building hub-core @ file:///clawvis/hub-core
+#19 1.125    Building kanban-api @ file:///clawvis/services/kanban
+#19 1.217 Downloading pygments (1.2MiB)
+#19 1.221 Downloading uvloop (3.6MiB)
+#19 1.227 Downloading pydantic-core (2.0MiB)
+#19 2.614  Downloaded pygments
+#19 2.616  Downloaded pydantic-core
+#19 2.857  Downloaded uvloop
+#19 4.319       Built kanban-api @ file:///clawvis/services/kanban
+#19 4.329       Built hub-core @ file:///clawvis/hub-core
+#19 4.334 Prepared 35 packages in 3.23s
+#19 4.423 Installed 35 packages in 88ms
+#19 4.424  + annotated-doc==0.0.4
+#19 4.424  + annotated-types==0.7.0
+#19 4.424  + anyio==4.13.0
+#19 4.424  + certifi==2026.2.25
+#19 4.424  + charset-normalizer==3.4.7
+#19 4.424  + click==8.3.1
+#19 4.424  + fastapi==0.135.3
+#19 4.424  + h11==0.16.0
+#19 4.424  + httpcore==1.0.9
+#19 4.424  + httptools==0.7.1
+#19 4.424  + httpx==0.28.1
+#19 4.424  + hub-core==0.1.0 (from file:///clawvis/hub-core)
+#19 4.424  + idna==3.11
+#19 4.424  + iniconfig==2.3.0
+#19 4.424  + kanban-api==0.1.0 (from file:///clawvis/services/kanban)
+#19 4.424  + loguru==0.7.2
+#19 4.424  + packaging==26.0
+#19 4.424  + pluggy==1.6.0
+#19 4.424  + pydantic==2.12.5
+#19 4.424  + pydantic-core==2.41.5
+#19 4.424  + pygments==2.20.0
+#19 4.424  + pytest==9.0.3
+#19 4.424  + pytest-asyncio==1.3.0
+#19 4.424  + python-dotenv==1.2.2
+#19 4.424  + python-multipart==0.0.22
+#19 4.424  + pyyaml==6.0.2
+#19 4.424  + requests==2.33.1
+#19 4.424  + starlette==1.0.0
+#19 4.424  + typing-extensions==4.15.0
+#19 4.424  + typing-inspection==0.4.2
+#19 4.424  + urllib3==2.6.3
+#19 4.424  + uvicorn==0.42.0
+#19 4.424  + uvloop==0.22.1
+#19 4.424  + watchfiles==1.1.1
+#19 4.424  + websockets==16.0
+#19 DONE 84.7s
+
+#20 [kanban-api] exporting to image
+#20 exporting layers
+#20 exporting layers 7.6s done
+#20 writing image sha256:243fdae6a66755dd088123fec918a79c369516e4e7a9f8293299833e71a02692 done
+#20 naming to docker.io/library/clawvis-kanban-api 0.0s done
+#20 DONE 7.7s
+
+#21 [kanban-api] resolving provenance for metadata file
+#21 DONE 0.0s
+
+#22 [agent-service internal] load build definition from Dockerfile
+#22 transferring dockerfile: 1.42kB done
+#22 DONE 0.2s
+
+#2 [agent-service internal] load metadata for docker.io/library/python:3.11-slim
+#2 DONE 0.0s
+
+#3 [agent-service internal] load metadata for ghcr.io/astral-sh/uv:0.10.0
+#3 DONE 1.7s
+
+#23 [agent-service internal] load .dockerignore
+#23 transferring context: 2B done
+#23 DONE 0.1s
+
+#6 [agent-service stage-0  1/13] FROM docker.io/library/python:3.11-slim
+#6 DONE 0.0s
+
+#5 [agent-service] FROM ghcr.io/astral-sh/uv:0.10.0@sha256:78a7ff97cd27b7124a5f3c2aefe146170793c56a1e03321dd31a289f6d82a04f
+#5 DONE 0.0s
+
+#24 [agent-service internal] load build context
+#24 transferring context: 1.39MB 1.9s done
+#24 DONE 2.0s
+
+#25 [agent-service stage-0  3/13] COPY --from=ghcr.io/astral-sh/uv:0.10.0 /uv /uvx /usr/local/bin/
+#25 CACHED
+
+#26 [agent-service stage-0  4/13] RUN mkdir -p /home/lgiron && chmod 1777 /home/lgiron
+#26 CACHED
+
+#27 [agent-service stage-0  5/13] WORKDIR /clawvis
+#27 CACHED
+
+#28 [agent-service stage-0  6/13] COPY pyproject.toml ./
+#28 CACHED
+
+#29 [agent-service stage-0  2/13] RUN apt-get update &&     apt-get install -y curl gnupg &&     curl -fsSL https://deb.nodesource.com/setup_22.x | bash - &&     apt-get install -y nodejs &&     apt-get clean && rm -rf /var/lib/apt/lists/*
+#29 CACHED
+
+#30 [agent-service stage-0  7/13] COPY uv.lock ./
+#30 CACHED
+
+#31 [agent-service stage-0  8/13] COPY hub-core/ ./hub-core/
+#31 DONE 20.0s
+
+#32 [agent-service stage-0  9/13] COPY services/kanban/ ./services/kanban/
+#32 DONE 0.6s
+
+#33 [agent-service stage-0 10/13] COPY services/agent/ ./services/agent/
+#33 DONE 0.3s
+
+#34 [agent-service stage-0 11/13] RUN uv sync --frozen --no-dev --package agent-service     && chmod -R a+rwX .venv /clawvis
+#34 3.494 Using CPython 3.11.15 interpreter at: /usr/local/bin/python3
+#34 3.494 Creating virtual environment at: .venv
+#34 3.602    Building agent-service @ file:///clawvis/services/agent
+#34 3.602    Building hub-core @ file:///clawvis/hub-core
+#34 3.799 Downloading uvloop (3.6MiB)
+#34 3.801 Downloading pydantic-core (2.0MiB)
+#34 4.576  Downloaded pydantic-core
+#34 4.964  Downloaded uvloop
+#34 7.442       Built agent-service @ file:///clawvis/services/agent
+#34 7.473       Built hub-core @ file:///clawvis/hub-core
+#34 7.489 Prepared 28 packages in 3.92s
+#34 7.684 Installed 28 packages in 192ms
+#34 7.694  + agent-service==0.1.0 (from file:///clawvis/services/agent)
+#34 7.694  + annotated-doc==0.0.4
+#34 7.694  + annotated-types==0.7.0
+#34 7.694  + anyio==4.13.0
+#34 7.694  + certifi==2026.2.25
+#34 7.694  + charset-normalizer==3.4.7
+#34 7.694  + click==8.3.1
+#34 7.694  + fastapi==0.135.3
+#34 7.694  + h11==0.16.0
+#34 7.694  + httpcore==1.0.9
+#34 7.694  + httptools==0.7.1
+#34 7.694  + httpx==0.28.1
+#34 7.694  + hub-core==0.1.0 (from file:///clawvis/hub-core)
+#34 7.694  + idna==3.11
+#34 7.694  + loguru==0.7.2
+#34 7.694  + pydantic==2.12.5
+#34 7.694  + pydantic-core==2.41.5
+#34 7.694  + python-dotenv==1.2.2
+#34 7.694  + pyyaml==6.0.2
+#34 7.694  + requests==2.33.1
+#34 7.694  + starlette==1.0.0
+#34 7.694  + typing-extensions==4.15.0
+#34 7.694  + typing-inspection==0.4.2
+#34 7.694  + urllib3==2.6.3
+#34 7.694  + uvicorn==0.42.0
+#34 7.694  + uvloop==0.22.1
+#34 7.694  + watchfiles==1.1.1
+#34 7.694  + websockets==16.0
+#34 DONE 106.0s
+
+#35 [agent-service stage-0 12/13] COPY services/agent/docker-entrypoint.sh /docker-entrypoint.sh
+#35 DONE 0.2s
+
+#36 [agent-service stage-0 13/13] RUN chmod +x /docker-entrypoint.sh
+#36 DONE 0.6s
+
+#37 [agent-service] exporting to image
+#37 exporting layers
+#37 exporting layers 13.3s done
+#37 writing image sha256:6098f878afe78aa11b912d72356eb1d42ce5ccba9e34f872dd50e9ab3bb26c25 done
+#37 naming to docker.io/library/clawvis-agent-service 0.0s done
+#37 DONE 13.3s
+
+#38 [agent-service] resolving provenance for metadata file
+#38 DONE 0.0s
+
+#39 [telegram internal] load build definition from Dockerfile
+#39 DONE 0.0s
+
+#39 [telegram internal] load build definition from Dockerfile
+#39 transferring dockerfile: 727B done
+#39 DONE 0.1s
+
+#2 [telegram internal] load metadata for docker.io/library/python:3.11-slim
+#2 DONE 0.0s
+
+#3 [telegram internal] load metadata for ghcr.io/astral-sh/uv:0.10.0
+#3 DONE 2.2s
+
+#40 [telegram internal] load .dockerignore
+#40 transferring context: 2B done
+#40 DONE 0.1s
+
+#5 [telegram] FROM ghcr.io/astral-sh/uv:0.10.0@sha256:78a7ff97cd27b7124a5f3c2aefe146170793c56a1e03321dd31a289f6d82a04f
+#5 DONE 0.0s
+
+#6 [telegram stage-0 1/9] FROM docker.io/library/python:3.11-slim
+#6 DONE 0.0s
+
+#41 [telegram internal] load build context
+#41 transferring context: 1.43MB 3.2s done
+#41 DONE 3.4s
+
+#10 [telegram stage-0 2/9] COPY --from=ghcr.io/astral-sh/uv:0.10.0 /uv /uvx /usr/local/bin/
+#10 CACHED
+
+#42 [telegram stage-0 3/9] WORKDIR /app
+#42 CACHED
+
+#43 [telegram stage-0 4/9] COPY pyproject.toml uv.lock ./
+#43 CACHED
+
+#44 [telegram stage-0 5/9] COPY hub-core/ ./hub-core/
+#44 DONE 10.6s
+
+#45 [telegram stage-0 6/9] COPY services/kanban/ ./services/kanban/
+#45 DONE 0.2s
+
+#46 [telegram stage-0 7/9] COPY services/telegram/ ./services/telegram/
+#46 DONE 0.2s
+
+#47 [telegram stage-0 8/9] RUN uv sync --frozen --no-dev --package clawvis-telegram     && mkdir -p /app/.uv-cache     && chmod -R a+rwX /app/.venv /app/.uv-cache /app/uv.lock /app/pyproject.toml
+#47 1.629 Using CPython 3.11.15 interpreter at: /usr/local/bin/python3
+#47 1.629 Creating virtual environment at: .venv
+#47 1.741    Building hub-core @ file:///app/hub-core
+#47 2.110 Downloading aiohttp (1.2MiB)
+#47 2.111 Downloading pydantic-core (2.0MiB)
+#47 2.725  Downloaded pydantic-core
+#47 2.935  Downloaded aiohttp
+#47 5.789       Built hub-core @ file:///app/hub-core
+#47 5.802 Prepared 26 packages in 4.11s
+#47 5.993 Installed 26 packages in 190ms
+#47 6.003  + aiohappyeyeballs==2.6.1
+#47 6.003  + aiohttp==3.10.10
+#47 6.003  + aiosignal==1.4.0
+#47 6.003  + annotated-types==0.7.0
+#47 6.003  + anyio==4.13.0
+#47 6.003  + attrs==26.1.0
+#47 6.003  + certifi==2026.2.25
+#47 6.003  + charset-normalizer==3.4.7
+#47 6.003  + frozenlist==1.8.0
+#47 6.003  + h11==0.16.0
+#47 6.003  + httpcore==1.0.9
+#47 6.004  + httpx==0.28.1
+#47 6.004  + hub-core==0.1.0 (from file:///app/hub-core)
+#47 6.004  + idna==3.11
+#47 6.004  + loguru==0.7.2
+#47 6.004  + multidict==6.7.1
+#47 6.004  + propcache==0.4.1
+#47 6.004  + pydantic==2.12.5
+#47 6.004  + pydantic-core==2.41.5
+#47 6.004  + python-dotenv==1.2.2
+#47 6.004  + python-telegram-bot==21.6
+#47 6.004  + requests==2.33.1
+#47 6.004  + typing-extensions==4.15.0
+#47 6.004  + typing-inspection==0.4.2
+#47 6.004  + urllib3==2.6.3
+#47 6.004  + yarl==1.23.0
+#47 DONE 7.2s
+
+#48 [telegram stage-0 9/9] COPY services/telegram/core/ ./core/
+#48 DONE 0.4s
+
+#49 [telegram] exporting to image
+#49 exporting layers
+#49 exporting layers 6.7s done
+#49 writing image sha256:afc05d7464234f1f6747bf5ee64fa0a5dafeefa944333addc5f94839348d33ae 0.0s done
+#49 naming to docker.io/library/clawvis-telegram 0.0s done
+#49 DONE 6.8s
+
+#50 [telegram] resolving provenance for metadata file
+#50 DONE 0.0s
+ agent-service  Built
+ kanban-api  Built
+ telegram  Built
+ Container clawvis-lgiron-agent-service  Stopping
+ Container clawvis-lgiron-agent-service  Stopped
+ Container clawvis-lgiron-kanban-api  Recreate
+ Container clawvis-lgiron-kanban-api  Recreated
+ Container clawvis-lgiron-telegram  Stopping
+ Container clawvis-lgiron-telegram  Stopped
+ Container clawvis-lgiron-agent-service  Recreate
+ Container clawvis-lgiron-agent-service  Recreated
+ Container clawvis-lgiron-telegram  Recreate
+ Container clawvis-lgiron-telegram  Recreated
+ Container clawvis-lgiron-kanban-api  Starting
+ Container clawvis-lgiron-kanban-api  Started
+ Container clawvis-lgiron-kanban-api  Waiting
+ Container clawvis-lgiron-kanban-api  Healthy
+ Container clawvis-lgiron-agent-service  Starting
+ Container clawvis-lgiron-agent-service  Started
+ Container clawvis-lgiron-agent-service  Waiting
+ Container clawvis-lgiron-agent-service  Healthy
+ Container clawvis-lgiron-telegram  Starting
+ Container clawvis-lgiron-telegram  Started
+
+---
+exit_code: 0
+elapsed_ms: 369202
+ended_at: 2026-04-28T14:39:57.048Z
+---
