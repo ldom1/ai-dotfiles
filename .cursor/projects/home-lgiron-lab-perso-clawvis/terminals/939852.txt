@@ -1,0 +1,35 @@
+---
+pid: 434671
+cwd: "/home/lgiron/lab_perso/clawvis"
+command: "docker compose up -d"
+started_at: 2026-04-28T14:21:51.096Z
+running_for_ms: 376221   
+---
+ Container clawvis-lgiron-hub-memory-api  Running
+ Container clawvis-lgiron-kanban-api  Running
+ Container clawvis-lgiron-kanban-api  Waiting
+ Container clawvis-lgiron-kanban-api  Healthy
+ Container clawvis-lgiron-agent-service  Starting
+ Container clawvis-lgiron-agent-service  Started
+ Container clawvis-lgiron-agent-service  Waiting
+ Container clawvis-lgiron-agent-service  Healthy
+ Container clawvis-lgiron-telegram  Starting
+ Container clawvis-lgiron-telegram  Started
+ Container clawvis-lgiron-agent-service  Waiting
+ Container clawvis-lgiron-agent-service  Healthy
+ Container clawvis-lgiron-scheduler  Starting
+ Container clawvis-lgiron-scheduler  Started
+ Container clawvis-lgiron-agent-service  Waiting
+ Container clawvis-lgiron-kanban-api  Waiting
+ Container clawvis-lgiron-hub-memory-api  Waiting
+ Container clawvis-lgiron-agent-service  Healthy
+ Container clawvis-lgiron-hub-memory-api  Healthy
+ Container clawvis-lgiron-kanban-api  Healthy
+ Container clawvis-lgiron-hub  Starting
+ Container clawvis-lgiron-hub  Started
+
+---
+exit_code: 0
+elapsed_ms: 376701
+ended_at: 2026-04-28T14:28:07.797Z
+---
