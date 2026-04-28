@@ -7,6 +7,10 @@
       "Bash(git checkout -- *)",
       "Bash(git clean -f *)",
       "Bash(rm -rf *)"
+    ],
+    "allow": [
+      "Write(/mnt/c/Users/louis/Documents/Local Brain/*)",
+      "Bash(mkdir -p /mnt/c/Users/louis/Documents/Local Brain/*)"
     ]
   },
   "hooks": {
@@ -54,6 +58,7 @@
     "code-simplifier@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true
   },
+  "effortLevel": "medium",
   "pluginConfigs": {
     "finops-audit": {
       "options": {
