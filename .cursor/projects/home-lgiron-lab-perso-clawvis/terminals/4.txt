@@ -8,12 +8,7 @@ last_command: cd /mnt/c/Users/lgiron/Documents/developer-brain
 ➜  clawvis git:(feat/agent_telegram_cron) ✗ make down && make up
 docker compose down -v
 docker compose up -d --build
-[+] Building 248.1s (27/36)                                                                                                                                                                                              docker:default
- => [hub-memory-api stage-0  5/13] COPY pyproject.toml ./                                                                                                                                                                          0.1s
- => [hub-memory-api stage-0  6/13] COPY uv.lock ./                                                                                                                                                                                 0.1s
- => [hub-memory-api stage-0  7/13] COPY hub-core/ ./hub-core/                                                                                                                                                                     10.8s
- => [hub-memory-api stage-0  8/13] COPY services/kanban/ ./services/kanban/                                                                                                                                                        0.3s
- => [hub-memory-api stage-0  9/13] COPY skills/project-init/templates/ ./skills/project-init/templates/                                                                                                                            0.3s
+[+] Building 249.3s (28/50)                                                                                                                                                                                              docker:default
  => [hub-memory-api stage-0 10/13] COPY scripts/ ./scripts/                                                                                                                                                                        0.3s
  => [kanban-api stage-0 11/13] RUN chmod +x scripts/build-quartz.sh                                                                                                                                                                0.7s
  => [hub-memory-api stage-0 12/13] WORKDIR /clawvis                                                                                                                                                                                0.6s
@@ -30,3 +25,8 @@ docker compose up -d --build
  => [hub-memory-api] resolving provenance for metadata file                                                                                                                                                                        0.0s
  => [agent-service internal] load build definition from Dockerfile                                                                                                                                                                 0.1s
  => => transferring dockerfile: 1.42kB                                                                                                                                                                                             0.0s
+ => [agent-service internal] load .dockerignore                                                                                                                                                                                    0.1s
+ => => transferring context: 2B                                                                                                                                                                                                    0.0s
+ => [agent-service internal] load build context                                                                                                                                                                                    1.0s
+ => => transferring context: 655.13kB                                                                                                                                                                                              1.0s
+ => [agent-service stage-0  2/13] RUN apt-get update &&     apt-get install -y curl gnupg &&     curl -fsSL https://deb.nodesource.com/setup_22.x | bash - &&     apt-get install -y nodejs &&     apt-get clean && rm -rf /var/l  1.0s
