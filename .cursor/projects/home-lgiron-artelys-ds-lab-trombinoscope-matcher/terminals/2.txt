@@ -1,5 +1,8 @@
 ---
-pid: 56886
+pid: 58786
 cwd: /home/lgiron/artelys_ds_lab/trombinoscope_matcher
+last_command: source /home/lgiron/artelys_ds_lab/trombinoscope_matcher/.venv/bin/activate
+last_exit_code: 0
 ---
-➜  trombinoscope_matcher git:(main) ✗
+➜  trombinoscope_matcher git:(main) ✗ source /home/lgiron/artelys_ds_lab/trombinoscope_matcher/.venv/bin/activate
+(trombinoscope-matcher) ➜  trombinoscope_matcher git:(main) ✗
