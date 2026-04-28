@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# brain-sync/sync.sh — sync Local Brain git repo
+# brain-sync/sync.sh — sync Local Brain, ai-dotfiles, and clawvis git repos
 # Usage: sync.sh start | end
 set -euo pipefail
 
 # ── Load config ──────────────────────────────────────────────────────────────
-# Priority: $BRAIN_ENV_FILE → ./brain.env next to this script → ai-dotfiles config/brain.env
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE=""
 if [[ -n "${BRAIN_ENV_FILE:-}" ]]; then
@@ -34,91 +33,118 @@ if [[ ! -d "$BRAIN_PATH/.git" ]]; then
   exit 1
 fi
 
-cd "$BRAIN_PATH"
+AI_DOTFILES_PATH="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+CLAWVIS_PATH="${CLAWVIS_PATH:-$HOME/lab/clawvis}"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-has_remote() {
-  git remote | grep -q .
+repo_has_remote() {
+  git -C "$1" remote | grep -q .
+}
+
+pull_repo() {
+  local label="$1"
+  local path="$2"
+
+  if [[ ! -d "$path/.git" ]]; then
+    echo "[$label] WARNING: $path is not a git repo, skipping pull."
+    return 0
+  fi
+
+  if ! repo_has_remote "$path"; then
+    echo "[$label] WARNING: no remote configured, skipping pull."
+    return 0
+  fi
+
+  local stashed=false
+  if ! git -C "$path" diff --quiet || ! git -C "$path" diff --cached --quiet; then
+    echo "[$label] Dirty working tree — stashing before pull."
+    git -C "$path" stash push -m "brain-sync: pre-pull stash $(date '+%Y-%m-%dT%H:%M:%S')"
+    stashed=true
+  fi
+
+  local branch
+  branch="$(git -C "$path" rev-parse --abbrev-ref HEAD)"
+
+  if ! git -C "$path" pull --rebase origin "$branch" 2>&1; then
+    if git -C "$path" rev-parse --verify -q REBASE_HEAD &>/dev/null \
+        || [[ -d "$path/.git/rebase-merge" ]] \
+        || [[ -d "$path/.git/rebase-apply" ]]; then
+      echo "[$label] ERROR: rebase conflict detected." >&2
+      git -C "$path" rebase --abort 2>/dev/null || true
+    else
+      echo "[$label] ERROR: git pull failed." >&2
+    fi
+    if $stashed; then
+      git -C "$path" stash pop || true
+    fi
+    echo "[$label] Fix access to $path or run git pull manually." >&2
+    return 1
+  fi
+
+  if $stashed; then
+    if ! git -C "$path" stash pop; then
+      echo "[$label] WARNING: stash pop had conflicts — changes are in git stash." >&2
+    fi
+  fi
+
+  echo "[$label] Up to date."
+}
+
+commit_push_repo() {
+  local label="$1"
+  local path="$2"
+
+  if [[ ! -d "$path/.git" ]]; then
+    echo "[$label] WARNING: $path is not a git repo, skipping."
+    return 0
+  fi
+
+  if git -C "$path" diff --quiet \
+      && git -C "$path" diff --cached --quiet \
+      && [[ -z "$(git -C "$path" ls-files --others --exclude-standard)" ]]; then
+    echo "[$label] No changes to commit."
+  else
+    git -C "$path" add -A
+    git -C "$path" commit -m "$label: session sync $(date '+%Y-%m-%dT%H:%M:%S')"
+    echo "[$label] Committed."
+  fi
+
+  if ! repo_has_remote "$path"; then
+    echo "[$label] WARNING: no remote configured, skipping push."
+    return 0
+  fi
+
+  local branch
+  branch="$(git -C "$path" rev-parse --abbrev-ref HEAD)"
+
+  if ! git -C "$path" push origin "$branch" 2>&1; then
+    echo "[$label] ERROR: push failed (remote rejected or no network)." >&2
+    echo "[$label] Your commit is local — run 'git push' in $path when ready." >&2
+    return 1
+  fi
+
+  echo "[$label] Pushed successfully."
 }
 
 # ── Commands ──────────────────────────────────────────────────────────────────
 cmd_start() {
-  echo "[brain-sync] Session start — pulling brain..."
+  echo "[brain-sync] Session start — pulling repos..."
 
-  if ! has_remote; then
-    echo "[brain-sync] WARNING: no remote configured, skipping pull."
-    return 0
-  fi
+  pull_repo "brain"      "$BRAIN_PATH"
+  pull_repo "dotfiles"   "$AI_DOTFILES_PATH"
+  pull_repo "clawvis"    "$CLAWVIS_PATH"
 
-  # Stash any uncommitted changes so pull can proceed cleanly
-  local stashed=false
-  if ! git diff --quiet || ! git diff --cached --quiet; then
-    echo "[brain-sync] Dirty working tree detected — stashing before pull."
-    git stash push -m "brain-sync: pre-pull stash $(date '+%Y-%m-%dT%H:%M:%S')"
-    stashed=true
-  fi
-
-  # Pull with rebase
-  if ! git pull --rebase origin "$(git rev-parse --abbrev-ref HEAD)" 2>&1; then
-    if git rev-parse --verify -q REBASE_HEAD &>/dev/null || [[ -d .git/rebase-merge ]] || [[ -d .git/rebase-apply ]]; then
-      echo "[brain-sync] ERROR: rebase conflict detected." >&2
-      git rebase --abort 2>/dev/null || true
-      if $stashed; then
-        git stash pop || true
-      fi
-      echo "[brain-sync] Rebase aborted. Brain is at its last clean state." >&2
-      echo "[brain-sync] ACTION REQUIRED: resolve conflicts in $BRAIN_PATH manually." >&2
-    else
-      echo "[brain-sync] ERROR: git pull failed (network, permissions on .git, or remote)." >&2
-      if $stashed; then
-        git stash pop || true
-      fi
-      echo "[brain-sync] Fix access to $BRAIN_PATH or run git pull manually, then retry." >&2
-    fi
-    return 1
-  fi
-
-  # Re-apply stash if we stashed
-  if $stashed; then
-    if ! git stash pop; then
-      echo "[brain-sync] WARNING: stash pop had conflicts — your changes are in git stash." >&2
-    fi
-  fi
-
-  echo "[brain-sync] Brain is up to date."
-
-  # After successful git pull, call brain-route to decide session mode
+  # After successful brain pull, call brain-route for session mode decision
   echo "[brain-sync] Calling brain-route for session mode decision..."
   bash ~/ai-dotfiles/skills/brain-route/scripts/route.sh
-
-  # brain-route will invoke either brain-audit (maintenance) or brain-load (normal)
-  # and print session mode to stdout
 }
 
 cmd_end() {
-  echo "[brain-sync] Session end — committing and pushing brain..."
+  echo "[brain-sync] Session end — committing and pushing repos..."
 
-  # Nothing to commit?
-  if git diff --quiet && git diff --cached --quiet && [[ -z "$(git ls-files --others --exclude-standard)" ]]; then
-    echo "[brain-sync] No changes to commit."
-  else
-    git add -A
-    git commit -m "brain: session sync $(date '+%Y-%m-%dT%H:%M:%S')"
-    echo "[brain-sync] Committed."
-  fi
-
-  if ! has_remote; then
-    echo "[brain-sync] WARNING: no remote configured, skipping push."
-    return 0
-  fi
-
-  if ! git push origin "$(git rev-parse --abbrev-ref HEAD)" 2>&1; then
-    echo "[brain-sync] ERROR: push failed (remote rejected or no network)." >&2
-    echo "[brain-sync] Your commit is local — run 'git push' in $BRAIN_PATH when ready." >&2
-    return 1
-  fi
-
-  echo "[brain-sync] Brain pushed successfully."
+  commit_push_repo "brain"    "$BRAIN_PATH"
+  commit_push_repo "dotfiles" "$AI_DOTFILES_PATH"
+  commit_push_repo "clawvis"  "$CLAWVIS_PATH"
 }
 
 # ── Dispatch ─────────────────────────────────────────────────────────────────
