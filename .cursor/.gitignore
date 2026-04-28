@@ -1,0 +1,26 @@
+# >>> CURSOR MANAGED BLOCK >>>
+# Ignore everything in .cursor
+*
+# projects/ intentionally NOT un-ignored — contains agent transcripts with secrets
+# Plugin cache (rules, skills, agents)
+!plugins/
+!plugins/**
+# Built-in Cursor skills
+!skills-cursor/
+!skills-cursor/**
+# User's personal skills
+!skills/
+!skills/**
+# User's personal slash commands
+!commands/
+!commands/**
+# User's plan files
+!plans/
+!plans/**
+# Subagent state/transcripts
+!subagents/
+!subagents/**
+# User-level cursor rules
+!rules/
+!rules/**
+# <<< CURSOR MANAGED BLOCK <<<
