@@ -13,3 +13,8 @@ When writing a brainstorming spec or design document:
    `$BRAIN_PATH/inbox/daily/specs/<project-name>/YYYY-MM-DD-<topic>-design.md`
 
 3. Do **not** write specs inside the project repo (e.g. `docs/superpowers/specs/`).
+4. Do **not** write specs or plans in `projects/*.md` pages (those files are only for project tracking notes).
+5. If a spec/plan is written in the wrong location, immediately:
+   - copy/move it to `inbox/daily/specs/<project-name>/...`
+   - remove the misplaced spec/plan content from the wrong file
+   - explicitly report both actions to the user.
