@@ -1,0 +1,10 @@
+{
+  "name": "website-to-hyperframes-core",
+  "version": "1.0.0",
+  "description": "Reusable workflow for generating promotional HyperFrames videos from a brand profile + source HTML/URL. Trigger: /website-to-hyperframes-core",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles"
+}
