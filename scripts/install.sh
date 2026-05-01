@@ -107,8 +107,14 @@ header "Setting hook permissions"
 chmod +x \
   "$DOTFILES/.claude/hooks/rtk-rewrite.sh" \
   "$DOTFILES/.claude/hooks/brain-session-start.sh" \
-  "$DOTFILES/.claude/hooks/brain-session-end.sh"
+  "$DOTFILES/.claude/hooks/brain-session-end.sh" \
+  "$DOTFILES/git-hooks/pre-commit"
 log "hook scripts are executable"
+
+if git -C "$DOTFILES" rev-parse --git-dir >/dev/null 2>&1; then
+  git -C "$DOTFILES" config core.hooksPath git-hooks
+  log "git core.hooksPath → git-hooks (pre-commit: secrets + Cursor runtime dirs)"
+fi
 
 # ── Done ───────────────────────────────────────────────────────────────────────
 echo -e "\n${BOLD}Done.${RESET} Reload your shell or restart Claude Code.\n"

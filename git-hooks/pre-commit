@@ -1,0 +1,25 @@
+#!/bin/sh
+# ── 1. Block Cursor runtime dirs ─────────────────────────────────────────────
+FORBIDDEN=".cursor/plugins .cursor/projects .cursor/skills-cursor .cursor/plans"
+
+for dir in $FORBIDDEN; do
+  if git diff --cached --name-only --diff-filter=AM | grep "^${dir}/" | grep -qv '\.gitignore$'; then
+    echo "ERROR: refusing to commit files under ${dir}/"
+    echo "Run: git rm --cached -r ${dir}/"
+    exit 1
+  fi
+done
+
+# ── 2. Scan staged content for secrets ───────────────────────────────────────
+# Patterns: GitHub PAT, generic API keys, AWS, private keys, bearer tokens
+SECRET_PATTERNS='ghp_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{80,}|AKIA[0-9A-Z]{16}|-----BEGIN (RSA|EC|DSA|OPENSSH) PRIVATE KEY|sk-[A-Za-z0-9]{40,}|[Aa][Pp][Ii][_-]?[Kk][Ee][Yy]\s*[:=]\s*["\x27]?[A-Za-z0-9_\-]{20,}|[Bb]earer [A-Za-z0-9_\-\.]{20,}'
+
+MATCHES=$(git diff --cached --diff-filter=AM | grep '^\+' | grep -v '^\+\+\+' | grep -oE "$SECRET_PATTERNS" | head -5)
+
+if [ -n "$MATCHES" ]; then
+  echo "ERROR: possible secret(s) detected in staged changes:"
+  echo "$MATCHES" | sed 's/./*/g' | head -5
+  echo ""
+  echo "If this is a false positive, use: git commit --no-verify"
+  exit 1
+fi
