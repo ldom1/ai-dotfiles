@@ -65,19 +65,32 @@ pull_repo() {
   local branch
   branch="$(git -C "$path" rev-parse --abbrev-ref HEAD)"
 
-  if ! git -C "$path" pull --rebase origin "$branch" 2>&1; then
+  # Retry up to 3 times to handle transient Windows file locks (e.g. GitKraken background fetch)
+  local pull_ok=false
+  local attempt
+  for attempt in 1 2 3; do
+    if git -C "$path" pull --rebase origin "$branch" 2>&1; then
+      pull_ok=true
+      break
+    fi
     if git -C "$path" rev-parse --verify -q REBASE_HEAD &>/dev/null \
         || [[ -d "$path/.git/rebase-merge" ]] \
         || [[ -d "$path/.git/rebase-apply" ]]; then
       echo "[$label] ERROR: rebase conflict detected." >&2
       git -C "$path" rebase --abort 2>/dev/null || true
-    else
-      echo "[$label] ERROR: git pull failed." >&2
+      break
     fi
+    if [[ $attempt -lt 3 ]]; then
+      echo "[$label] Pull attempt $attempt failed (transient lock?), retrying in 3s..."
+      sleep 3
+    fi
+  done
+
+  if ! $pull_ok; then
     if $stashed; then
       git -C "$path" stash pop || true
     fi
-    echo "[$label] Fix access to $path or run git pull manually." >&2
+    echo "[$label] ERROR: git pull failed after 3 attempts. Fix access to $path or run git pull manually." >&2
     return 1
   fi
 
@@ -131,11 +144,11 @@ commit_push_repo() {
 cmd_start() {
   echo "[brain-sync] Session start — pulling repos..."
 
-  pull_repo "brain"      "$BRAIN_PATH"
-  pull_repo "dotfiles"   "$AI_DOTFILES_PATH"
-  pull_repo "clawvis"    "$CLAWVIS_PATH"
+  pull_repo "brain"      "$BRAIN_PATH"    || echo "[brain-sync] WARNING: brain pull failed — continuing with local state."
+  pull_repo "dotfiles"   "$AI_DOTFILES_PATH" || true
+  pull_repo "clawvis"    "$CLAWVIS_PATH"  || true
 
-  # After successful brain pull, call brain-route for session mode decision
+  # Always run brain-route regardless of pull outcome
   echo "[brain-sync] Calling brain-route for session mode decision..."
   bash ~/ai-dotfiles/skills/brain-route/scripts/route.sh
 }
