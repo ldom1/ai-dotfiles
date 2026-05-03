@@ -8,7 +8,7 @@ Skills index: `~/ai-dotfiles/.claude/SKILLS_INDEX.md` (load when using / command
 Reference: `~/ai-dotfiles/.claude/LocalBrain.md` (vault layout), `~/ai-dotfiles/.claude/RTK.md` (token proxy)
 
 ## Pitfalls
-Before any substantive implementation or debugging: read `$BRAIN_PATH/resources/knowledge/operational/claude-pitfalls.md`. Treat entries as hard constraints. When the user corrects a mistake, prepend a bullet: context → what was wrong → what to do instead.
+Before any substantive implementation or debugging: read `$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md`. Treat entries as hard constraints. When the user corrects a mistake, prepend a bullet: context → what was wrong → what to do instead.
 
 ## Development
 Occam's razor: fewest assumptions, smallest surface area. Structured, simple, readable code. No speculative abstractions. No backwards-compat shims for removed code.
@@ -32,7 +32,7 @@ Before any multi-step task: state which model you're using and why.
 - Sonnet: default for 80% of tasks (feature impl, tests, PRs, code review)
 - Opus: architecture, multi-file refactor, gnarly debug only
 - Haiku: grep, rename, format, README edits, quick lookups
-Full ref: `$BRAIN_PATH/resources/knowledge/operational/claude-finops.md`
+Full ref: `$BRAIN_PATH/resources/operational/ai-agents/claude-finops.md`
 
 ## Hooks
 SessionStart: brain-load stdout → context + git pull on startup/resume.
@@ -43,6 +43,13 @@ Manual fallback:
 bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh [start|end]
 bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh
 ```
+
+## No-hooks fallback (VSCode / IDE)
+Hooks do not fire in the VSCode extension. At the start of every session, read these files manually:
+1. `$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md` — hard constraints, treat as immutable rules
+2. `$BRAIN_PATH/resources/operational/ai-agents/lessons-learned.md` — last 3 entries only
+3. `$BRAIN_PATH/resources/operational/ai-agents/claude-finops.md` — apply model routing immediately
+BRAIN_PATH resolves to: `/mnt/c/Users/louis/Documents/Local Brain`
 
 ## Brain System Integration
 
