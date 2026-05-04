@@ -4,7 +4,7 @@
 
 ### Added
 
-- **Versioned Git hooks**: `git-hooks/pre-commit` (same behavior as local `.git/hooks/pre-commit`: block commits under `.cursor/plans|projects|plugins|skills-cursor` except tracked `.gitignore`, secret scan on staged diffs). `scripts/install.sh` sets `core.hooksPath` to `git-hooks`; `scripts/install-git-hooks.sh` does only that for fresh clones. `core.hooksPath` is per-clone local config — not stored in commits — so each machine runs install once.
+- **Versioned Git hooks**: `git-hooks/pre-commit` (block commits under `.cursor/plans|projects|plugins|skills-cursor` except tracked `.gitignore`; secret scan via `git show :file` on each staged file — RTK-proof, avoids diff-format assumptions). `scripts/install-git-hooks.sh` sets `core.hooksPath` to absolute path; run once per clone. `core.hooksPath` is per-clone local config — not stored in commits.
 - **Custom Claude Code statusline** (`.claude/statusline.py`) replacing `ccstatusline@latest`. Three lines: model + project + git branch (with dirty marker) · context compaction progress bar (`[████░░░░░░] NN%`) + `tok used` + cost · session % / reset + weekly % + `resets Fri … (N days)` (via cached `ccusage blocks`/`daily --json`). `CLAUDE_WEEKLY_LIMIT_TOK` defaults to 100M (Max-style); set `5000000` for Pro-style caps. Also `COMPACT_PCT`, `CTX_WINDOW`, `CCUSAGE_TOKEN_LIMIT`, `STATUSLINE_CACHE_TTL`. Wired into `.claude/settings.json`, `.claude/settings.json.tpl`, and `scripts/install.sh`.
 - **Statusline fixes**: session `%` now defaults to current usage from `totalTokens/limit` without forcing `--token-limit max` (uses `CCUSAGE_TOKEN_LIMIT` only when explicitly set), and `.claude/statusline.py --debug` now prints a JSON diagnostic block with chosen session/week sources and raw denominators.
 
