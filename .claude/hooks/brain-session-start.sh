@@ -45,3 +45,26 @@ fi
 
 # Run load.sh; cap context injection at 30 lines; redirect verbose stderr to log
 "$LOAD" 2>>"$LOG_FILE" | head -30 || true
+
+# Inject operational constraints from ai-agents knowledge base
+AI_AGENTS_DIR="${BRAIN_PATH}/resources/operational/ai-agents"
+
+if [[ -f "$AI_AGENTS_DIR/pitfalls.md" ]]; then
+  echo "--- AI-AGENTS PITFALLS (hard constraints) ---"
+  cat "$AI_AGENTS_DIR/pitfalls.md"
+  echo "--- END PITFALLS ---"
+fi
+
+if [[ -f "$AI_AGENTS_DIR/lessons-learned.md" ]]; then
+  echo "--- AI-AGENTS LESSONS LEARNED (last 3 entries) ---"
+  # Extract last 3 dated entries (## YYYY-MM-DD sections), cap at 45 lines
+  python3 - "$AI_AGENTS_DIR/lessons-learned.md" <<'EOF' 2>/dev/null | head -45 || tail -45 "$AI_AGENTS_DIR/lessons-learned.md" | head -45
+import sys, re
+content = open(sys.argv[1]).read()
+entries = [e.strip() for e in re.split(r'^---$', content, flags=re.MULTILINE) if re.match(r'^## \d{4}-\d{2}-\d{2}', e.strip())]
+for e in entries[-3:]:
+    print(e)
+    print('---')
+EOF
+  echo "--- END LESSONS ---"
+fi
