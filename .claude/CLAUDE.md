@@ -24,6 +24,10 @@ For every substantive session on a project: write to **`$BRAIN_PATH/inbox/daily/
 
 Write brainstorming specs and design documents to **`$BRAIN_PATH/inbox/daily/specs/<project-name>/YYYY-MM-DD-<topic>-design.md`**. Do not use `docs/superpowers/specs/` inside the project repo.
 
+## Implementation Plans (Local Brain)
+
+Write implementation plans to **`$BRAIN_PATH/inbox/daily/plans/<project-name>/YYYY-MM-DD-<feature>.md`**. Do not use `docs/superpowers/plans/` inside the project repo. This overrides the `writing-plans` skill default.
+
 ## Compaction focus
 When compacting, preserve: files in scope, open decisions, failing tests/errors, next command to run, explicit user constraints.
 
