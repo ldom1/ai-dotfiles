@@ -103,7 +103,8 @@ log_info "Analyzing connections..."
                 keywords_b=$(extract_keywords "$file_b")
 
                 # Count matching keywords (simple similarity)
-                matches=$(comm -12 <(echo "$keywords_a") <(echo "$keywords_b") | wc -l | tr -d '[:space:]')
+                # comm requires lexicographically sorted lines
+                matches=$(comm -12 <(echo "$keywords_a" | sort -u) <(echo "$keywords_b" | sort -u) | wc -l | tr -d '[:space:]')
 
                 if [[ $matches -gt 2 ]]; then
                     rel_path_b="${file_b#$BRAIN_PATH/}"
