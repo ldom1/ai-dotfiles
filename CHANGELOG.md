@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-20
+
 ### Added
 
 - **Per-project MCP wiring**: `ai-dotfiles init` and `ai-dotfiles upgrade` now configure both `code-index-mcp` (AST code search) and `qmd` (semantic vault search) in `<project>/.claude/settings.json`. Only brain-initialized projects get these MCPs.
