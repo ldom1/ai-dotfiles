@@ -1,6 +1,6 @@
 # ai-dotfiles
 
-[![CI](https://github.com/ldom1/ai-dotfiles/actions/workflows/ci.yml/badge.svg)](https://github.com/ldom1/ai-dotfiles/actions/workflows/ci.yml)
+[![CI](https://github.com/ldom1/ai-dotfiles/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ldom1/ai-dotfiles/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/ldom1/ai-dotfiles?sort=semver)](https://github.com/ldom1/ai-dotfiles/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Wiki](https://img.shields.io/badge/docs-wiki-blue)](https://github.com/ldom1/ai-dotfiles/wiki)
