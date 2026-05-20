@@ -31,6 +31,14 @@ if [[ "$INPUT" =~ \"source\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
 fi
 
 if [[ "$SOURCE" == "startup" || "$SOURCE" == "resume" ]]; then
+  # Show last exit log before pulling (so user sees what happened on /exit)
+  EXIT_LOG="$HOME/.claude/logs/brain-sync-end.log"
+  if [[ -f "$EXIT_LOG" ]]; then
+    echo "--- LAST EXIT (brain-sync) ---"
+    tail -20 "$EXIT_LOG"
+    echo "--- END LAST EXIT ---"
+    rm -f "$EXIT_LOG"
+  fi
   "$SYNC" start >>"$LOG_FILE" 2>&1 || true
 fi
 

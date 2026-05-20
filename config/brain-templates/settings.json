@@ -1,0 +1,12 @@
+{
+  "description": "Project brain — persistent knowledge synced with Local Brain vault",
+  "read_on_session_start": ["OBJECTIVES.md", "CONTEXT.md"],
+  "files": {
+    "OBJECTIVES.md": "Project goals, scope, non-goals. Read at session start.",
+    "ARCHITECTURE.md": "Stack decisions, key modules. Update when architecture changes.",
+    "DECISIONS.md": "ADR log. Append new decisions, never delete.",
+    "CONTEXT.md": "Current state snapshot. Update at session end.",
+    "ROADMAP.md": "Feature backlog and priorities.",
+    "API.md": "External contracts and endpoints."
+  }
+}

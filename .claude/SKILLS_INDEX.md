@@ -6,6 +6,7 @@ User-owned skills shipped in `~/ai-dotfiles/skills/`. Plugin skills (simplify, f
 |---------|---------|
 | /brain-sync | Vault sync (git pull/push via sync.sh) |
 | /brain-load | Load project note into context; CAP flow for new projects |
+| /brain-init-project | Interactive project brain setup — reads vault + project, asks questions, writes knowledge files |
 | /brain-route | Decide session mode: normal (brain-load) or maintenance (brain-audit) |
 | /brain-audit | Compile raw data, find connections, run Q&A, generate digest |
 | /create-pr | GitHub PR with branch prefix + conventional commit conventions |

@@ -94,9 +94,44 @@ if [[ "$NOTE_MODE" == "para" || "$NOTE_MODE" == "legacy" ]]; then
   echo "--- PROJECT NOTE: $SLUG ---"
   cat "$NOTE_PATH"
   echo "--- END NOTE ---"
-  exit 0
 fi
 
-echo "[brain-load] MISSING: no project note for slug **$SLUG** (mode=$NOTE_MODE)" >&2
-echo "[brain-load] PROJECT_NOTE_MISSING mode=$NOTE_MODE slug=$SLUG note=$NOTE_PATH template_vault=$TEMPLATE_VAULT template_skill=$SKILL_BRIEF_TEMPLATE caps_dir=$CAPS_DIR" >&2
-exit 2
+# ── Load .claude/brain session files (if present) ────────────────────────────
+if [[ -n "$REPO_ROOT" && -f "$REPO_ROOT/.claude/brain/settings.json" ]]; then
+  BRAIN_DIR="$REPO_ROOT/.claude/brain"
+  echo "[brain-load] Found project brain: $BRAIN_DIR" >&2
+
+  # Parse read_on_session_start from settings.json (requires python3 or jq)
+  SESSION_FILES=()
+  if command -v jq &>/dev/null; then
+    while IFS= read -r fname; do
+      SESSION_FILES+=("$fname")
+    done < <(jq -r '.read_on_session_start[]?' "$BRAIN_DIR/settings.json" 2>/dev/null)
+  elif command -v python3 &>/dev/null; then
+    while IFS= read -r fname; do
+      SESSION_FILES+=("$fname")
+    done < <(python3 -c "import json,sys; d=json.load(open('$BRAIN_DIR/settings.json')); [print(f) for f in d.get('read_on_session_start',[])]" 2>/dev/null)
+  fi
+
+  # Default if parsing failed or list is empty
+  if [[ ${#SESSION_FILES[@]} -eq 0 ]]; then
+    SESSION_FILES=("OBJECTIVES.md" "CONTEXT.md")
+  fi
+
+  echo "--- PROJECT BRAIN: $SLUG ---"
+  for fname in "${SESSION_FILES[@]}"; do
+    fpath="$BRAIN_DIR/$fname"
+    if [[ -f "$fpath" ]]; then
+      echo "### $fname"
+      cat "$fpath"
+      echo ""
+    fi
+  done
+  echo "--- END PROJECT BRAIN ---"
+fi
+
+if [[ "$NOTE_MODE" != "para" && "$NOTE_MODE" != "legacy" ]]; then
+  echo "[brain-load] MISSING: no project note for slug **$SLUG** (mode=$NOTE_MODE)" >&2
+  echo "[brain-load] PROJECT_NOTE_MISSING mode=$NOTE_MODE slug=$SLUG note=$NOTE_PATH template_vault=$TEMPLATE_VAULT template_skill=$SKILL_BRIEF_TEMPLATE caps_dir=$CAPS_DIR" >&2
+  exit 2
+fi

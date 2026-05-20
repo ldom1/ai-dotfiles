@@ -26,7 +26,7 @@ Write brainstorming specs and design documents to **`$BRAIN_PATH/inbox/daily/spe
 
 ## Implementation Plans (Local Brain)
 
-Write implementation plans to **`$BRAIN_PATH/inbox/daily/plans/<project-name>/YYYY-MM-DD-<feature>.md`**. Do not use `docs/superpowers/plans/` inside the project repo. This overrides the `writing-plans` skill default.
+Write implementation plans to **`$BRAIN_PATH/inbox/daily/plans/<project-name>/YYYY-MM-DD-<topic>-plan.md`**. Never write plans to `specs/` — specs are design docs only. Plans are step-by-step task lists for execution.
 
 ## Compaction focus
 When compacting, preserve: files in scope, open decisions, failing tests/errors, next command to run, explicit user constraints.
@@ -53,7 +53,12 @@ Hooks do not fire in the VSCode extension. At the start of every session, read t
 1. `$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md` — hard constraints, treat as immutable rules
 2. `$BRAIN_PATH/resources/operational/ai-agents/lessons-learned.md` — last 3 entries only
 3. `$BRAIN_PATH/resources/operational/ai-agents/claude-finops.md` — apply model routing immediately
-BRAIN_PATH resolves to: `/mnt/c/Users/louis/Documents/Local Brain`
+4. If in a project repo with `.claude/brain/`: read the files listed in `.claude/brain/settings.json` → `read_on_session_start` (defaults: `OBJECTIVES.md`, `CONTEXT.md`)
+Resolve BRAIN_PATH with: `grep BRAIN_PATH ~/ai-dotfiles/config/brain.env | cut -d= -f2`
+
+## ai-dotfiles Workflows
+
+**`ai-dotfiles init <path>`** — the shell script has already been run by the user. Your only job is to invoke the `brain-init-project` skill with the path. **Never invoke the `init` skill** for this command — that skill creates CLAUDE.md files and is wrong here.
 
 ## Brain System Integration
 

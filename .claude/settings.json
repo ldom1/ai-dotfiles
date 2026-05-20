@@ -1,5 +1,9 @@
 {
   "permissions": {
+    "allow": [
+      "Write(/mnt/c/Users/louis/Documents/Local Brain/*)",
+      "Bash(mkdir -p /mnt/c/Users/louis/Documents/Local Brain/*)"
+    ],
     "deny": [
       "Bash(git push --force *)",
       "Bash(git reset --hard *)",
@@ -7,10 +11,6 @@
       "Bash(git checkout -- *)",
       "Bash(git clean -f *)",
       "Bash(rm -rf *)"
-    ],
-    "allow": [
-      "Write(/mnt/c/Users/louis/Documents/Local Brain/*)",
-      "Bash(mkdir -p /mnt/c/Users/louis/Documents/Local Brain/*)"
     ]
   },
   "hooks": {

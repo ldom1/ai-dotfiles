@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+# upgrade-project.sh — add missing template files to an existing project brain
+# Usage: upgrade-project.sh <project-path>
+#        upgrade-project.sh --all
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AI_DOTFILES="$(cd "$SCRIPT_DIR/.." && pwd)"
+ENV_FILE="${BRAIN_ENV_FILE:-$AI_DOTFILES/config/brain.env}"
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "[upgrade-project] ERROR: brain.env not found at $ENV_FILE" >&2
+  exit 1
+fi
+source "$ENV_FILE"
+if [[ -z "${BRAIN_PATH:-}" ]]; then
+  echo "[upgrade-project] ERROR: BRAIN_PATH not set in $ENV_FILE" >&2
+  exit 1
+fi
+
+# shellcheck source=lib-mcp.sh
+source "$SCRIPT_DIR/lib-mcp.sh"
+
+TEMPLATE_DIR="$AI_DOTFILES/config/brain-templates"
+REGISTRY="$AI_DOTFILES/config/brain-projects.tsv"
+
+upgrade_one() {
+  local project_path="$1"
+
+  if [[ ! -d "$project_path" ]]; then
+    echo "[upgrade-project] WARNING: $project_path does not exist, skipping."
+    return 0
+  fi
+
+  project_path="$(realpath "$project_path")"
+
+  local brain_project="$project_path/.brain-project"
+  if [[ ! -f "$brain_project" ]]; then
+    echo "[upgrade-project] WARNING: no .brain-project in $project_path, skipping."
+    return 0
+  fi
+
+  local slug
+  slug="$(grep -m1 '[^[:space:]]' "$brain_project" | tr -d '[:space:]')"
+
+  local project_brain="$project_path/.claude/brain"
+  local vault_brain="$BRAIN_PATH/projects/$slug"
+
+  mkdir -p "$project_brain" "$vault_brain"
+
+  local added=0
+  for f in "$TEMPLATE_DIR"/*; do
+    [[ "$f" == *.tpl ]] && continue
+    fname="$(basename "$f")"
+    for dest in "$project_brain/$fname" "$vault_brain/$fname"; do
+      if [[ ! -f "$dest" ]]; then
+        cp "$f" "$dest"
+        echo "[upgrade-project] Added: $dest"
+        (( added++ )) || true
+      elif [[ "$fname" == "settings.json" ]]; then
+        # Merge: template provides defaults, existing values win
+        merged="$(python3 -c "
+import json, sys
+t = json.load(open('$f'))
+e = json.load(open('$dest'))
+def deep_merge(base, override):
+    result = dict(base)
+    for k, v in override.items():
+        if k in result and isinstance(result[k], dict) and isinstance(v, dict):
+            result[k] = deep_merge(result[k], v)
+        else:
+            result[k] = v
+    return result
+print(json.dumps(deep_merge(t, e), indent=2))
+" 2>/dev/null)"
+        if [[ -n "$merged" ]]; then
+          if [[ "$merged" != "$(cat "$dest")" ]]; then
+            echo "$merged" > "$dest"
+            echo "[upgrade-project] Merged: $dest"
+            (( added++ )) || true
+          fi
+        fi
+      fi
+    done
+  done
+
+  # Ensure registration
+  if [[ -f "$REGISTRY" ]] && grep -qP "^${slug}\t" "$REGISTRY" 2>/dev/null; then
+    : # already registered
+  else
+    if [[ ! -f "$REGISTRY" ]]; then
+      printf 'name\tabs_path\tregistered_at\n' > "$REGISTRY"
+    fi
+    printf '%s\t%s\t%s\n' "$slug" "$project_path" "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >> "$REGISTRY"
+    echo "[upgrade-project] Registered: $slug → $project_path"
+  fi
+
+  if [[ $added -eq 0 ]]; then
+    echo "[upgrade-project] $slug: nothing to add."
+  else
+    echo "[upgrade-project] $slug: added $added file(s)."
+  fi
+
+  # Generate .claude/CLAUDE.md if missing (VSCode / IDE fallback for brain-load)
+  local claude_md_tpl="$TEMPLATE_DIR/CLAUDE.md.tpl"
+  local claude_md_dest="$project_path/.claude/CLAUDE.md"
+  if [[ -f "$claude_md_tpl" && ! -f "$claude_md_dest" ]]; then
+    local session_files=()
+    local brain_settings="$project_path/.claude/brain/settings.json"
+    if [[ -f "$brain_settings" ]] && command -v python3 &>/dev/null; then
+      while IFS= read -r fname; do
+        session_files+=("$fname")
+      done < <(python3 -c "import json; d=json.load(open('$brain_settings')); [print(f) for f in d.get('read_on_session_start',[])]" 2>/dev/null)
+    fi
+    [[ ${#session_files[@]} -eq 0 ]] && session_files=("OBJECTIVES.md" "CONTEXT.md")
+    {
+      cat "$claude_md_tpl"
+      for fname in "${session_files[@]}"; do
+        echo "@brain/$fname"
+      done
+    } > "$claude_md_dest"
+    echo "[upgrade-project] Created $claude_md_dest"
+    (( added++ )) || true
+  fi
+
+  setup_project_mcp "$project_path"
+}
+
+if [[ "${1:-}" == "--all" ]]; then
+  if [[ ! -f "$REGISTRY" ]]; then
+    echo "[upgrade-project] No registry at $REGISTRY — nothing to upgrade."
+    exit 0
+  fi
+  # Skip header line
+  while IFS=$'\t' read -r name abs_path _rest; do
+    [[ "$name" == "name" ]] && continue
+    [[ -z "$name" ]] && continue
+    upgrade_one "$abs_path"
+  done < "$REGISTRY"
+else
+  if [[ -z "${1:-}" ]]; then
+    echo "Usage: $(basename "$0") <project-path> | --all" >&2
+    exit 1
+  fi
+  upgrade_one "$1"
+fi
