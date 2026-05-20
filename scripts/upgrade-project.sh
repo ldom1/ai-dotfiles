@@ -11,6 +11,7 @@ if [[ ! -f "$ENV_FILE" ]]; then
   echo "[upgrade-project] ERROR: brain.env not found at $ENV_FILE" >&2
   exit 1
 fi
+# shellcheck source=/dev/null
 source "$ENV_FILE"
 if [[ -z "${BRAIN_PATH:-}" ]]; then
   echo "[upgrade-project] ERROR: BRAIN_PATH not set in $ENV_FILE" >&2

@@ -14,6 +14,10 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 ```
 /plugin install brain-sync@ldom1/ai-dotfiles
 /plugin install brain-load@ldom1/ai-dotfiles
+/plugin install brain-search@ldom1/ai-dotfiles
+/plugin install brain-route@ldom1/ai-dotfiles
+/plugin install brain-audit@ldom1/ai-dotfiles
+/plugin install brain-init-project@ldom1/ai-dotfiles
 /plugin install create-pr@ldom1/ai-dotfiles
 /plugin install server-audit@ldom1/ai-dotfiles
 /plugin install graphify@ldom1/ai-dotfiles
@@ -225,37 +229,6 @@ ai-dotfiles/
 > The symlink redirects to the real `SKILL.md` — no content is duplicated. **Do not delete it.**
 
 ---
-
-## Sync workflow
-
-```bash
-cd ~/ai-dotfiles && git add . && git commit -m "feat(core): short summary" && git push
-
-# On another machine:
-git pull && bash scripts/install.sh
-```
-
-## Server audit skill
-
-`server-audit` runs six checks in parallel and writes structured output:
-- Docker container health
-- nginx endpoint + buffering validation
-- Tailscale peer connectivity
-- Authelia auth-flow probes
-- cron registration + recency
-- git cleanliness + embedded-repo warnings
-
-```bash
-# Interactive (asks what to test)
-bash skills/server-audit/scripts/audit.sh
-
-# Config-driven (repeatable)
-bash skills/server-audit/scripts/audit.sh skills/server-audit/config/targets.json
-```
-
-Outputs:
-- `skills/server-audit/out/<timestamp>/checks/*.json`
-- `skills/server-audit/out/<timestamp>/report.json`
 
 ## Dependencies
 
