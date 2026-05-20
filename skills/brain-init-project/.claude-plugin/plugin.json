@@ -1,0 +1,7 @@
+{
+  "name": "brain-init-project",
+  "version": "1.0.0",
+  "description": "Interactively populate a project brain — read vault + project context, ask targeted questions, write OBJECTIVES/ARCHITECTURE/DECISIONS/CONTEXT/ROADMAP/API files.",
+  "author": "ldom1",
+  "source": "./skills/brain-init-project"
+}

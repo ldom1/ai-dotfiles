@@ -101,14 +101,28 @@ else
   log "config/graphify.env already exists, skipping"
 fi
 
-# ── 5. Hook permissions ────────────────────────────────────────────────────────
-header "Setting hook permissions"
+# ── 5. ai-dotfiles CLI ────────────────────────────────────────────────────────
+header "Installing ai-dotfiles CLI"
+
+CLI_SRC="$DOTFILES/bin/ai-dotfiles"
+CLI_DST="$HOME/.local/bin/ai-dotfiles"
+
+mkdir -p "$HOME/.local/bin"
+chmod +x "$CLI_SRC"
+ln -sfn "$CLI_SRC" "$CLI_DST"
+log "ai-dotfiles CLI → $CLI_DST (ensure ~/.local/bin is on PATH)"
+
+# ── 6. Hook permissions ────────────────────────────────────────────────────────
+header "Setting hook and script permissions"
 
 chmod +x \
   "$DOTFILES/.claude/hooks/rtk-rewrite.sh" \
   "$DOTFILES/.claude/hooks/brain-session-start.sh" \
   "$DOTFILES/.claude/hooks/brain-session-end.sh" \
-  "$DOTFILES/git-hooks/pre-commit"
+  "$DOTFILES/git-hooks/pre-commit" \
+  "$DOTFILES/scripts/init-project.sh" \
+  "$DOTFILES/scripts/upgrade-project.sh" \
+  "$DOTFILES/scripts/sync-project.sh"
 log "hook scripts are executable"
 
 if git -C "$DOTFILES" rev-parse --git-dir >/dev/null 2>&1; then

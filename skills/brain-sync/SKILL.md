@@ -1,12 +1,12 @@
 ---
 name: brain-sync
-description: Sync the Local Brain Obsidian vault (git repo) at the start and end of every Claude Code session. Pulls at session start, commits and pushes at session end. Also syncs ai-dotfiles and clawvis repos.
+description: Sync the Local Brain Obsidian vault (git repo) at the start and end of every Claude Code session. Pulls at session start, commits and pushes at session end. Also syncs ai-dotfiles repo.
 user-invocable: true
 ---
 
 # brain-sync
 
-Keep the Local Brain vault, ai-dotfiles, and clawvis repos in sync across every session. On session start, pull latest changes for all repos. On session end, commit any unstaged files and push for each repo.
+Keep the Local Brain vault and ai-dotfiles repo in sync across every session. On session start, pull latest changes for all repos. On session end, commit any unstaged files and push for each repo.
 
 ## Quick start
 
@@ -28,13 +28,12 @@ bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh end     # commit + push all
 
 | Event | Repos | Steps |
 |---|---|---|
-| **start** | brain, dotfiles, clawvis | Stash dirty tree → `git pull --rebase` → pop stash |
-| **end** | brain, dotfiles, clawvis | `git add -A` → `git commit` → `git push` on current branch |
+| **start** | brain, dotfiles | Stash dirty tree → `git pull --rebase` → pop stash |
+| **end** | brain, dotfiles | `git add -A` → `git commit` → `git push` on current branch |
 
 Commit messages per repo:
 - **brain**: `brain: session sync <timestamp>`
 - **dotfiles**: `dotfiles: session sync <timestamp>`
-- **clawvis**: `update(sync): session sync <timestamp>` (follows clawvis commit convention)
 
 ## Configuration
 
@@ -45,8 +44,7 @@ Commit messages per repo:
 3. `config/brain.env` at the ai-dotfiles root — default when using the full install
 
 Additional repo paths (defaults, override via env vars):
-- `AI_DOTFILES_PATH` — auto-derived from script location (`$SCRIPT_DIR/../../..`)
-- `CLAWVIS_PATH` — defaults to `$HOME/lab/clawvis`
+- `AI_DOTFILES_PATH` — auto-derived from script location (`$SCRIPT_DIR/../../..'`)
 
 ## Configuration
 

@@ -57,12 +57,12 @@ if [[ -z "$SLUG" ]]; then
   fi
 fi
 
-TEMPLATE_VAULT="$BRAIN_PATH/projects/_template.md"
+TEMPLATE_VAULT="${BRAIN_PATH}/_templates/project-template.md"
 OUT="$BRAIN_PATH/projects/$SLUG.md"
 CAP_WIKI="caps/$CAP"
 
 if [[ ! -f "$TEMPLATE_VAULT" ]]; then
-  echo "[instantiate] ERROR: vault template missing: $TEMPLATE_VAULT" >&2
+  echo "[instantiate] ERROR: vault template missing: $TEMPLATE_VAULT (expected at _templates/project-template.md)" >&2
   exit 1
 fi
 

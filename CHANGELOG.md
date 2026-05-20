@@ -4,7 +4,30 @@
 
 ### Added
 
-- **Versioned Git hooks**: `git-hooks/pre-commit` (block commits under `.cursor/plans|projects|plugins|skills-cursor` except tracked `.gitignore`; secret scan via `git show :file` on each staged file — RTK-proof, avoids diff-format assumptions). `scripts/install-git-hooks.sh` sets `core.hooksPath` to absolute path; run once per clone. `core.hooksPath` is per-clone local config — not stored in commits.
+- **Per-project MCP wiring**: `ai-dotfiles init` and `ai-dotfiles upgrade` now configure both `code-index-mcp` (AST code search) and `qmd` (semantic vault search) in `<project>/.claude/settings.json`. Only brain-initialized projects get these MCPs.
+- **Central QMD database**: vault indexed at `${HOME}/vault-qmd/index.sqlite` (controlled via `QMD_INDEX_PATH` in `brain.env`). One collection: `brain → $BRAIN_PATH`. Embeddings refresh automatically at session end via `brain-sync`.
+- `config/brain-templates/mcp-settings.json.tpl` — MCP config template with `__PROJECT_PATH__` and `__QMD_INDEX_PATH__` placeholders; excluded from brain template copy.
+- `scripts/lib-mcp.sh` — idempotent MCP config injection helper sourced by init + upgrade scripts.
+- `brain-sync` end hook now runs `qmd update` (re-index new/changed files) then `qmd embed` after vault push (non-blocking; skipped if qmd not installed or `QMD_INDEX_PATH` unset).
+- `brain.env` now exports `BRAIN_PATH` and `QMD_INDEX_PATH` so hooks and child processes inherit them without re-sourcing.
+- **`brain-search` skill**: semantic/keyword vault search via qmd. Claude invokes it mid-session to retrieve past decisions, specs, lessons learned, or any vault knowledge relevant to the current task.
+
+### Prerequisites (new)
+- `jq` — `apt install jq` / `brew install jq`
+- `uvx` — `pip install uv`
+- `qmd` — `npm install -g @tobilu/qmd` (one-time vault setup required, see README)
+
+- **Project Brain Sync**: per-project persistent knowledge layer synced bidirectionally between `<project>/.claude/brain/` and `$BRAIN_PATH/projects/<slug>/`.
+  - `ai-dotfiles init <path>` — creates `.claude/brain/` with template files, mirrors to vault, registers in `config/brain-projects.tsv`
+  - `ai-dotfiles upgrade <path|--all>` — adds missing template files without overwriting existing content
+  - `ai-dotfiles sync <path|--all>` — manual bidirectional rsync (mtime wins via `rsync --update`)
+  - Template files: `settings.json`, `OBJECTIVES.md`, `ARCHITECTURE.md`, `DECISIONS.md`, `CONTEXT.md`, `ROADMAP.md`, `API.md` under `config/brain-templates/`
+  - `brain-sync` start/end hooks now auto-sync all registered projects (vault→project on start, project→vault on end)
+  - `brain-load` now detects `.claude/brain/settings.json` and injects `read_on_session_start` files (default: OBJECTIVES.md, CONTEXT.md) into session context
+  - CLI entry point: `bin/ai-dotfiles` (symlinked to `~/.local/bin/` by `install.sh`)
+  - Registry: `config/brain-projects.tsv` (header-only on fresh install; append-only from scripts)
+
+- **Versioned Git hooks**: `git-hooks/pre-commit` (same behavior as local `.git/hooks/pre-commit`: block commits under `.cursor/plans|projects|plugins|skills-cursor` except tracked `.gitignore`, secret scan on staged diffs). `scripts/install.sh` sets `core.hooksPath` to `git-hooks`; `scripts/install-git-hooks.sh` does only that for fresh clones. `core.hooksPath` is per-clone local config — not stored in commits — so each machine runs install once.
 - **Custom Claude Code statusline** (`.claude/statusline.py`) replacing `ccstatusline@latest`. Three lines: model + project + git branch (with dirty marker) · context compaction progress bar (`[████░░░░░░] NN%`) + `tok used` + cost · session % / reset + weekly % + `resets Fri … (N days)` (via cached `ccusage blocks`/`daily --json`). `CLAUDE_WEEKLY_LIMIT_TOK` defaults to 100M (Max-style); set `5000000` for Pro-style caps. Also `COMPACT_PCT`, `CTX_WINDOW`, `CCUSAGE_TOKEN_LIMIT`, `STATUSLINE_CACHE_TTL`. Wired into `.claude/settings.json`, `.claude/settings.json.tpl`, and `scripts/install.sh`.
 - **Statusline fixes**: session `%` now defaults to current usage from `totalTokens/limit` without forcing `--token-limit max` (uses `CCUSAGE_TOKEN_LIMIT` only when explicitly set), and `.claude/statusline.py --debug` now prints a JSON diagnostic block with chosen session/week sources and raw denominators.
 
@@ -42,12 +65,18 @@
   - brain-sync pull → brain-route decision → brain-audit OR brain-load
   - Seamless session start with no user configuration needed
 
+### Removed
+
+- **`notion-brain-sync` skill**: removed (`skills/notion-brain-sync/`). Notion ingest is no longer part of the standard workflow.
+- **`token-watch` skill**: removed (`skills/token-watch/`).
+- **`token-guard` skill**: removed (`skills/token-guard/`).
+
 ### Changed
 
 - **Wiki source of truth**: switched from `docs/wiki/` stubs to direct `.wiki/` repository workflow. `scripts/update-wiki.sh` now commits/pushes local `.wiki/` changes.
 - **CI**: removed dedicated wiki publish job from `ci.yml`; wiki updates are now explicit/manual via `scripts/update-wiki.sh` when needed.
 - **Cleanup**: removed `docs/wiki/`, `.pre-commit-config.yaml`, and `requirements-dev.txt` from the wiki workflow path.
-- **README**: Skills table lists all 11 repo skills with wiki URLs under `wiki/Skills/…`; FinOps + token plugins added to install snippet; wiki process now points to local `.wiki/` + `scripts/update-wiki.sh`.
+- **README**: Skills table updated; wiki process now points to local `.wiki/` + `scripts/update-wiki.sh`.
 - **brain-sync**: Now calls brain-route after successful pull to determine session mode
 - **brain-route / brain-audit**: ShellCheck clean — `SC1090`/`SC2155`/`SC2034` fixes in `_brain_env.sh`, `route.sh`, and `connect.sh`
 - **finops-audit**: removed unused local variables in `skills/finops-audit/scripts/finops-audit.sh` to resolve ShellCheck `SC2034`.
