@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+- **SessionEnd implementation note enforcement**: `brain-session-end.sh` now scans `$BRAIN_PATH/inbox/daily/implementation/` for today's notes before syncing. If none found, emits a `systemMessage` JSON to stdout so Claude Code injects a reminder as a system message, giving Claude a final turn to write missing notes. A fallback warning is also appended to the end-session log (shown in `LAST EXIT` at next `SessionStart`).
+
+### Changed
+- **CLAUDE.md**: updated "Session implementation log" section — marked as enforced by the SessionEnd hook; added instruction to write note then call `sync.sh end` on receiving the systemMessage reminder.
+- **brain-sync SKILL.md**: documented two-step SessionEnd flow (note check → systemMessage → sync); fixed duplicate `## Configuration` section.
+
 ## [0.2.0] - 2026-05-20
 
 ### Added
