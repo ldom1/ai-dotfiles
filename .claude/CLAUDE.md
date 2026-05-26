@@ -20,7 +20,7 @@ Occam's razor: fewest assumptions, smallest surface area. Structured, simple, re
 
 **Enforced by the SessionEnd hook.** For every substantive session: write to **`$BRAIN_PATH/inbox/daily/implementation/<project-name>/YYYY-MM-DD-topic.md`** before the session ends. Continue the same day's file if the thread continues. Include goal, changes, commands/tests, and follow-ups. **Do not** use `index/implementation/` — that path does not exist in the vault.
 
-The hook detects missing notes and injects a `systemMessage` reminder. When you receive that reminder: write the note, then call `bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh end` to commit it.
+The hook detects missing notes and injects a `systemMessage` reminder. When you receive that reminder: write the note, then call `bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh end` to commit it. End sessions with `/capture` (not `/exit` — that is a Claude Code built-in that exits immediately).
 
 ## Specs / Design Docs (Local Brain)
 
