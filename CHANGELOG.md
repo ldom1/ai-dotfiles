@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Added
+- **`skills/capture/SKILL.md`**: added full skill content to `skills/` directory so Claude Code discovers `/capture` as a user-invocable skill. Previously the skill was only in the plugin marketplace stub and cache, not in the discoverable `skills/` tree.
+- **`/capture` skill** (`capture@ldom1-ai-dotfiles`): new user-invocable skill that runs the full end-of-session workflow — write implementation notes, check pitfalls/lessons, run `sync.sh end`, prompt user to close. This is the primary path for session documentation; the SessionEnd hook is now a fallback only. (Renamed from `/exit` then `/wrap` — both are reserved or conflict-prone names.)
+
+### Fixed
+- **`brain-session-end.sh`**: removed broken `systemMessage` emission. `SessionEnd` hooks do NOT give Claude a final turn — that is `Stop` hook behavior. The message was emitted but never received. Replaced with a log-only warning written after sync (so `tail -30` in SessionStart catches it).
+- **`brain-session-start.sh`**: `tail -20` → `tail -30` to ensure the 4-line missing-notes warning is visible (sync output is 23 lines; previous window cut the warning entirely).
+
+### Changed (prior unreleased)
+- **SessionEnd implementation note enforcement**: `brain-session-end.sh` now scans `$BRAIN_PATH/inbox/daily/implementation/` for today's notes before syncing. Fallback warning is appended to the end-session log (shown in `LAST EXIT` at next `SessionStart`).
+
 ## [0.2.0] - 2026-05-20
 
 ### Added

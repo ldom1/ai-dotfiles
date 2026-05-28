@@ -18,7 +18,9 @@ Occam's razor: fewest assumptions, smallest surface area. Structured, simple, re
 
 ## Session implementation log (Local Brain)
 
-For every substantive session on a project: write to **`$BRAIN_PATH/inbox/daily/implementation/<project-name>/YYYY-MM-DD-topic.md`** (resolve `BRAIN_PATH` from `~/ai-dotfiles/config/brain.env`). Continue the same day's file if the thread continues. Include goal, changes, commands/tests, and follow-ups. **Do not** use `index/implementation/` — that path does not exist in the vault.
+**Enforced by the SessionEnd hook.** For every substantive session: write to **`$BRAIN_PATH/inbox/daily/implementation/<project-name>/YYYY-MM-DD-topic.md`** before the session ends. Continue the same day's file if the thread continues. Include goal, changes, commands/tests, and follow-ups. **Do not** use `index/implementation/` — that path does not exist in the vault.
+
+The hook detects missing notes and injects a `systemMessage` reminder. When you receive that reminder: write the note, then call `bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh end` to commit it. End sessions with `/capture` (not `/exit` — that is a Claude Code built-in that exits immediately).
 
 ## Specs / Design Docs (Local Brain)
 
@@ -40,7 +42,7 @@ Full ref: `$BRAIN_PATH/resources/operational/ai-agents/claude-finops.md`
 
 ## Hooks
 SessionStart: brain-load stdout → context + git pull on startup/resume.
-SessionEnd: brain commit + push.
+SessionEnd: checks for missing implementation notes → injects `systemMessage` if none found → brain commit + push.
 PreToolUse/Bash: RTK rewrites commands for token efficiency (opt-out: `rtk proxy '<cmd>'`).
 Manual fallback:
 ```bash
