@@ -13,11 +13,13 @@ mkdir -p "$(dirname "$LOG")"
 
 # Load BRAIN_PATH
 ENV_FILE="${BRAIN_ENV_FILE:-$AI_DOTFILES/config/brain.env}"
+# shellcheck source=/dev/null
 [[ -f "$ENV_FILE" ]] && source "$ENV_FILE"
 BRAIN_PATH="${BRAIN_PATH:-}"
 TODAY=$(date +%Y-%m-%d)
 
 # Consume stdin (SessionEnd may provide hook JSON — not used here)
+# shellcheck disable=SC2034
 INPUT=$(cat || true)
 
 # ── Sync vault (commit + push whatever is on disk) ────────────────────────────
