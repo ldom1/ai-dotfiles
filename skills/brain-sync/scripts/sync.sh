@@ -195,13 +195,16 @@ cmd_end() {
 
   commit_push_repo "brain"    "$BRAIN_PATH"       "brain: session sync $ts"
 
+  LOG="${HOME}/.claude/logs/brain-sync.log"
+  mkdir -p "$(dirname "$LOG")"
+
   if command -v qmd &>/dev/null && [[ -n "${QMD_INDEX_PATH:-}" ]]; then
     _info "qmd" "updating brain index…"
-    INDEX_PATH="$QMD_INDEX_PATH" qmd update --collection brain 2>/dev/null || \
-      _warn "qmd" "update failed (non-blocking)"
+    INDEX_PATH="$QMD_INDEX_PATH" qmd update --collection brain 2>&1 | tee -a "$LOG" || \
+      _warn "qmd" "update failed — check $LOG"
     _info "qmd" "refreshing brain embeddings…"
-    INDEX_PATH="$QMD_INDEX_PATH" qmd embed --collection brain 2>/dev/null || \
-      _warn "qmd" "embed failed (non-blocking)"
+    INDEX_PATH="$QMD_INDEX_PATH" qmd embed --collection brain 2>&1 | tee -a "$LOG" || \
+      _warn "qmd" "embed failed — check $LOG"
   fi
 
   local elapsed=$(( $(date +%s) - _SYNC_START_TS ))

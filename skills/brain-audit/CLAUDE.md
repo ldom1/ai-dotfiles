@@ -1,9 +1,3 @@
----
-name: brain-audit
-description: Vault maintenance pipeline — compile inbox notes, connect via QMD semantic search, generate insights, sync QMD index, produce weekly digest.
-user-invocable: true
----
-
 # brain-audit — Context Routing
 
 Route to the appropriate subskill based on what the user is asking:
