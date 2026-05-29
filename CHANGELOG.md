@@ -3,15 +3,33 @@
 ## [Unreleased]
 
 ### Added
-- **`skills/capture/SKILL.md`**: added full skill content to `skills/` directory so Claude Code discovers `/capture` as a user-invocable skill. Previously the skill was only in the plugin marketplace stub and cache, not in the discoverable `skills/` tree.
-- **`/capture` skill** (`capture@ldom1-ai-dotfiles`): new user-invocable skill that runs the full end-of-session workflow — write implementation notes, check pitfalls/lessons, run `sync.sh end`, prompt user to close. This is the primary path for session documentation; the SessionEnd hook is now a fallback only. (Renamed from `/exit` then `/wrap` — both are reserved or conflict-prone names.)
+- `brain-audit` refactored as a plugin with 6 independent subskills (`compile`, `connect`, `insights`, `queries`, `qmd-sync`, `digest`) following the superpowers plugin pattern
+- `brain-audit:compile` — reads `inbox/daily/` (last 30 days), promotes cross-project pitfalls/lessons to `resources/operational/ai-agents/`, asks inline for ambiguous entries
+- `brain-audit:connect` — QMD `vsearch` per note → appends `[[wikilinks]]`, shows git diff for review
+- `brain-audit:insights` — QMD hybrid query per template → writes `inbox/insights/YYYY-MM-DD.md`
+- `brain-audit:qmd-sync` — `qmd update` with prune reporting, triggers re-embed if stale
+- `brain-audit:queries` — two structured vault analyses: knowledge-gaps (coverage survey vs. recent implementation notes) and roadmap (consolidated status from `projects/*/ROADMAP.md` + recent follow-ups); archives to `resources/queries/archive/`
+- `brain-audit:digest` — weekly summary to `meta/digest-YYYY-MM-DD.md`, resets maintenance clock
+- `qmd mcp` wired globally in `~/.claude/claude.json` (replaces broken `clawvis-skills`)
 
 ### Fixed
+- QMD embed/update failures in `brain-sync` now logged to `~/.claude/logs/brain-sync.log` instead of silenced with `2>/dev/null`
+
+### Fixed (prior unreleased)
 - **`brain-session-end.sh`**: removed broken `systemMessage` emission. `SessionEnd` hooks do NOT give Claude a final turn — that is `Stop` hook behavior. The message was emitted but never received. Replaced with a log-only warning written after sync (so `tail -30` in SessionStart catches it).
 - **`brain-session-start.sh`**: `tail -20` → `tail -30` to ensure the 4-line missing-notes warning is visible (sync output is 23 lines; previous window cut the warning entirely).
 
+### Added (prior unreleased)
+- **`skills/capture/SKILL.md`**: added full skill content to `skills/` directory so Claude Code discovers `/capture` as a user-invocable skill. Previously the skill was only in the plugin marketplace stub and cache, not in the discoverable `skills/` tree.
+- **`/capture` skill** (`capture@ldom1-ai-dotfiles`): new user-invocable skill that runs the full end-of-session workflow — write implementation notes, check pitfalls/lessons, run `sync.sh end`, prompt user to close. This is the primary path for session documentation; the SessionEnd hook is now a fallback only. (Renamed from `/exit` then `/wrap` — both are reserved or conflict-prone names.)
+
 ### Changed (prior unreleased)
 - **SessionEnd implementation note enforcement**: `brain-session-end.sh` now scans `$BRAIN_PATH/inbox/daily/implementation/` for today's notes before syncing. Fallback warning is appended to the end-session log (shown in `LAST EXIT` at next `SessionStart`).
+
+### Removed
+- `clawvis-skills` MCP reference (pointed to non-existent file)
+- `skills/brain-audit/scripts/compile.sh`, `connect.sh`, `qa.sh` (logic moved to SKILL.md)
+- `skills/brain-audit/.claude-plugin/plugin.json` (replaced by root `plugin.json`)
 
 ## [0.2.0] - 2026-05-20
 
