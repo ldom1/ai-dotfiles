@@ -49,8 +49,10 @@ log_info "All required directories verified"
 
 # Run Phase 1: Raw Data → Drafts
 log_section "Phase 1: Compile (Raw Data → Drafts)"
-if bash "$script_dir/compile.sh"; then
-    # Count created drafts
+draft_count=0
+if [[ ! -f "$script_dir/compile.sh" ]]; then
+    log_info "Phase 1 skipped: compile.sh not implemented"
+elif bash "$script_dir/compile.sh"; then
     draft_count=$(find "$BRAIN_PATH/inbox/drafts" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d '[:space:]')
     log_result "Phase 1 successful: $draft_count draft(s) created"
 else
@@ -60,15 +62,16 @@ fi
 
 # Run Phase 2: Connection Detection
 log_section "Phase 2: Connect (Orphan Detection & Suggestions)"
-if bash "$script_dir/connect.sh"; then
-    # Count connection suggestions
+suggestion_count=0
+if [[ ! -f "$script_dir/connect.sh" ]]; then
+    log_info "Phase 2 skipped: connect.sh not implemented"
+elif bash "$script_dir/connect.sh"; then
     connections_file="$BRAIN_PATH/inbox/connections/suggested-connections.md"
     if [[ -f "$connections_file" ]]; then
         suggestion_count=$(grep -c '^- \`' "$connections_file" 2>/dev/null) || true
         suggestion_count=${suggestion_count:-0}
         log_result "Phase 2 successful: ~$suggestion_count connection suggestion(s) generated"
     else
-        suggestion_count=0
         log_result "Phase 2 successful: no connections file generated"
     fi
 else
@@ -78,8 +81,10 @@ fi
 
 # Run Phase 3: Q&A Queries
 log_section "Phase 3: Query (Templated Q&A)"
-if bash "$script_dir/qa.sh"; then
-    # Count created Q&A files
+qa_count=0
+if [[ ! -f "$script_dir/qa.sh" ]]; then
+    log_info "Phase 3 skipped: qa.sh not implemented"
+elif bash "$script_dir/qa.sh"; then
     qa_count=$(find "$BRAIN_PATH/inbox/qa" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d '[:space:]')
     log_result "Phase 3 successful: $qa_count Q&A result(s) created"
 else
