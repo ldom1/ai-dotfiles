@@ -1,0 +1,10 @@
+{
+  "name": "review",
+  "version": "1.0.0",
+  "description": "Code review with auto-discovery of CONTRIBUTING.md and .claude/review/checklist.md",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles"
+}
