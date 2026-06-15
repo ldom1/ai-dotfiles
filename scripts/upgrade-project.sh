@@ -156,13 +156,15 @@ EOF
     (( added++ )) || true
   fi
 
-  # Generate .claude/CLAUDE.md if missing (VSCode / IDE fallback — loads AGENTS.md)
+  # Generate .claude/CLAUDE.md if missing or outdated (must contain @../AGENTS.md)
   local claude_md_tpl="$TEMPLATE_DIR/CLAUDE.md.tpl"
   local claude_md_dest="$project_path/.claude/CLAUDE.md"
-  if [[ -f "$claude_md_tpl" && ! -f "$claude_md_dest" ]]; then
-    cp "$claude_md_tpl" "$claude_md_dest"
-    echo "[upgrade-project] Created $claude_md_dest"
-    (( added++ )) || true
+  if [[ -f "$claude_md_tpl" ]]; then
+    if [[ ! -f "$claude_md_dest" ]] || ! grep -qF "@../AGENTS.md" "$claude_md_dest" 2>/dev/null; then
+      cp "$claude_md_tpl" "$claude_md_dest"
+      echo "[upgrade-project] Updated $claude_md_dest (VSCode fallback)"
+      (( added++ )) || true
+    fi
   fi
 
   setup_project_mcp "$project_path"
