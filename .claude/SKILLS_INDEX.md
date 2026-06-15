@@ -2,6 +2,20 @@
 
 User-owned skills shipped in `~/ai-dotfiles/skills/`. Plugin skills (simplify, frontend-design, skill-creator, etc.) are surfaced automatically by Claude Code and are not listed here.
 
+## Skill vs. Reference File
+
+A **skill** tells Claude how to *execute* a task — it has a trigger (`/name`) and execution steps.  
+A **reference `.md`** tells Claude what to *know* — it's a rule set or convention table loaded as context by a skill.  
+Skills load reference files; reference files never invoke anything.
+
+## General Reference Files (`~/.claude/general/`)
+
+Shared coding standards loaded on demand via `@~/.claude/general/<file>` in a project's `AGENTS.md`.
+
+| File | Content |
+|------|---------|
+| `general/python.md` | Comment style, naming, structure, type annotations, error handling |
+
 | Command | Purpose |
 |---------|---------|
 | /brain-sync | Vault sync (git pull/push via sync.sh) |
@@ -9,6 +23,7 @@ User-owned skills shipped in `~/ai-dotfiles/skills/`. Plugin skills (simplify, f
 | /brain-init-project | Interactive project brain setup — reads vault + project, asks questions, writes knowledge files |
 | /brain-route | Decide session mode: normal (brain-load) or maintenance (brain-audit) |
 | /brain-audit | Compile raw data, find connections, run Q&A, generate digest |
+| /review | Code review — auto-discovers `CONTRIBUTING.md` + `.claude/review/checklist.md` |
 | /create-pr | GitHub PR with branch prefix + conventional commit conventions |
 | /token-watch | Snapshot token burn rate via ccusage |
 | /token-guard | Model routing heuristic + /model-check |
