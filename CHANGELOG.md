@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- `grill-me` skill for stress-testing plans and designs through one-question-at-a-time interrogation with recommended answers
 - `brain-audit` refactored as a plugin with 6 independent subskills (`compile`, `connect`, `insights`, `queries`, `qmd-sync`, `digest`) following the superpowers plugin pattern
 - `brain-audit:compile` — reads `inbox/daily/` (last 30 days), promotes cross-project pitfalls/lessons to `resources/operational/ai-agents/`, asks inline for ambiguous entries
 - `brain-audit:connect` — QMD `vsearch` per note → appends `[[wikilinks]]`, shows git diff for review
@@ -11,6 +12,17 @@
 - `brain-audit:queries` — two structured vault analyses: knowledge-gaps (coverage survey vs. recent implementation notes) and roadmap (consolidated status from `projects/*/ROADMAP.md` + recent follow-ups); archives to `resources/queries/archive/`
 - `brain-audit:digest` — weekly summary to `meta/digest-YYYY-MM-DD.md`, resets maintenance clock
 - `qmd mcp` wired globally in `~/.claude/claude.json` (replaces broken `clawvis-skills`)
+
+### Changed
+- `/capture` now reviews project implementation notes against `ARCHITECTURE.md`, `DECISIONS.md`, `ROADMAP.md`, and `CONTEXT.md`, updating only relevant project-brain files and asking before breaking changes.
+- `grill-me` now explicitly forbids reflexive praise and requires skeptical challenge before approving an idea
+- Per-project memory directory renamed from `.claude/brain/` to `.claude/memory/` to align with pratique-ia standard
+- `config/brain-templates/` renamed to `config/memory-templates/`
+- `.claude/CLAUDE.md` VSCode fallback simplified to `@../AGENTS.md` (AGENTS.md contains memory @-imports)
+- AGENTS.md template now includes `## Memory` and `## Standards` sections with commented @-imports
+
+### Migration
+- Run `ai-dotfiles upgrade <project-path>` or `upgrade --all` on existing projects to auto-migrate `.claude/brain/` → `.claude/memory/`
 
 ### Fixed
 - QMD embed/update failures in `brain-sync` now logged to `~/.claude/logs/brain-sync.log` instead of silenced with `2>/dev/null`

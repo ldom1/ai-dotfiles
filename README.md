@@ -17,8 +17,10 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 /plugin install brain-search@ldom1/ai-dotfiles
 /plugin install brain-route@ldom1/ai-dotfiles
 /plugin install brain-audit@ldom1/ai-dotfiles
+/plugin install capture@ldom1/ai-dotfiles
 /plugin install brain-init-project@ldom1/ai-dotfiles
 /plugin install create-pr@ldom1/ai-dotfiles
+/plugin install grill-me@ldom1/ai-dotfiles
 /plugin install server-audit@ldom1/ai-dotfiles
 /plugin install graphify@ldom1/ai-dotfiles
 /plugin install finops-audit@ldom1/ai-dotfiles
@@ -31,7 +33,9 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 | [brain-search](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Search) | Semantic + keyword search over vault via qmd (`scripts/search.sh`) |
 | [brain-route](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Route) | Session router: maintenance vs normal (used after brain-sync pull) |
 | [brain-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Audit) | Four-phase vault maintenance (raw → digest) |
+| capture | End-of-session workflow: implementation notes, project-brain review, pitfalls/lessons, sync |
 | [create-pr](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Create-PR) | GitHub PR with branch + commit conventions |
+| grill-me | Stress-test plans through one-question-at-a-time design interrogation |
 | [server-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Server-Audit) | Infra audit: parallel checks and JSON reports |
 | [graphify](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Graphify) | `/graphify` — folder → knowledge graph; also [graphify.net](https://graphify.net/) |
 | [finops-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/FinOps-Audit) | Weekly token spend review → vault |
@@ -93,7 +97,7 @@ echo "my-project" > /path/to/project/.brain-project
 ai-dotfiles init /path/to/project
 ```
 
-This creates `<project>/.claude/brain/` with template files, mirrors them to `$BRAIN_PATH/projects/my-project/`, and registers the project in `config/brain-projects.tsv`. `brain-sync` then keeps both sides in sync automatically at session start/end.
+This creates `<project>/.claude/memory/` with template files, mirrors them to `$BRAIN_PATH/projects/my-project/`, and registers the project in `config/brain-projects.tsv`. `brain-sync` then keeps both sides in sync automatically at session start/end.
 
 ### Knowledge files
 
@@ -190,7 +194,7 @@ ai-dotfiles/
 ├── config/
 │   ├── brain.env.example            # Local Brain path template
 │   ├── brain.env                    # Your config (gitignored)
-│   ├── brain-projects.tsv           # Registry of projects with a .claude/brain/ folder
+│   ├── brain-projects.tsv           # Registry of projects with a .claude/memory/ folder
 │   ├── brain-templates/             # Template files copied on `ai-dotfiles init`
 │   │   ├── settings.json            # Agent instructions + read_on_session_start list
 │   │   ├── OBJECTIVES.md
