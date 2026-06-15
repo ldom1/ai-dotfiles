@@ -1,7 +1,7 @@
 {
   "name": "capture",
   "version": "1.0.0",
-  "description": "End-of-session workflow — write implementation notes, check pitfalls/lessons, sync brain vault",
+  "description": "End-of-session workflow — write implementation notes, review project brain, check pitfalls/lessons, sync brain vault",
   "author": {
     "name": "Louis Giron",
     "github": "ldom1"
