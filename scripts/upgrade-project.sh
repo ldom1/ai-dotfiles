@@ -21,7 +21,7 @@ fi
 # shellcheck source=lib-mcp.sh
 source "$SCRIPT_DIR/lib-mcp.sh"
 
-TEMPLATE_DIR="$AI_DOTFILES/config/brain-templates"
+TEMPLATE_DIR="$AI_DOTFILES/config/memory-templates"
 REGISTRY="$AI_DOTFILES/config/brain-projects.tsv"
 
 upgrade_one() {
@@ -43,7 +43,13 @@ upgrade_one() {
   local slug
   slug="$(grep -m1 '[^[:space:]]' "$brain_project" | tr -d '[:space:]')"
 
-  local project_brain="$project_path/.claude/brain"
+  local project_brain="$project_path/.claude/memory"
+  # Migrate existing .claude/brain/ → .claude/memory/ if not yet migrated
+  local old_brain="$project_path/.claude/brain"
+  if [[ -d "$old_brain" && ! -d "$project_brain" ]]; then
+    mv "$old_brain" "$project_brain"
+    echo "[upgrade-project] Migrated $old_brain → $project_brain"
+  fi
   local vault_brain="$BRAIN_PATH/projects/$slug"
 
   mkdir -p "$project_brain" "$vault_brain"
@@ -150,24 +156,11 @@ EOF
     (( added++ )) || true
   fi
 
-  # Generate .claude/CLAUDE.md if missing (VSCode / IDE fallback for brain-load)
+  # Generate .claude/CLAUDE.md if missing (VSCode / IDE fallback — loads AGENTS.md)
   local claude_md_tpl="$TEMPLATE_DIR/CLAUDE.md.tpl"
   local claude_md_dest="$project_path/.claude/CLAUDE.md"
   if [[ -f "$claude_md_tpl" && ! -f "$claude_md_dest" ]]; then
-    local session_files=()
-    local brain_settings="$project_path/.claude/brain/settings.json"
-    if [[ -f "$brain_settings" ]] && command -v python3 &>/dev/null; then
-      while IFS= read -r fname; do
-        session_files+=("$fname")
-      done < <(python3 -c "import json; d=json.load(open('$brain_settings')); [print(f) for f in d.get('read_on_session_start',[])]" 2>/dev/null)
-    fi
-    [[ ${#session_files[@]} -eq 0 ]] && session_files=("OBJECTIVES.md" "CONTEXT.md")
-    {
-      cat "$claude_md_tpl"
-      for fname in "${session_files[@]}"; do
-        echo "@brain/$fname"
-      done
-    } > "$claude_md_dest"
+    cp "$claude_md_tpl" "$claude_md_dest"
     echo "[upgrade-project] Created $claude_md_dest"
     (( added++ )) || true
   fi
