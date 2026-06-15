@@ -101,6 +101,55 @@ print(json.dumps(deep_merge(t, e), indent=2))
     echo "[upgrade-project] $slug: added $added file(s)."
   fi
 
+  # Create AGENTS.md + CLAUDE.md symlink if missing
+  local agents_md="$project_path/AGENTS.md"
+  local claude_symlink="$project_path/CLAUDE.md"
+  if [[ ! -f "$agents_md" && ! -L "$agents_md" ]]; then
+    cat > "$agents_md" << 'EOF'
+# AGENTS.md — Project instructions
+# Location : project root (canonical). CLAUDE.md is a symlink → AGENTS.md.
+# Scope    : all agents (Claude, Mistral, Codex, …). Claude Code loads it via the symlink.
+# Length   : keep under 60 lines — agents read this every session.
+
+---
+
+## Description
+<!-- One paragraph: what this project does, tech stack, deployment context. -->
+
+## Key Files
+<!-- 3–5 files an agent must know to orient itself. -->
+
+## Task-Specific Behaviors
+<!-- Commands to always run, files to read before touching a module, hard rules. -->
+
+## Constraints
+<!-- Protected files, dependency policy, hard limits. -->
+
+## Standards
+<!-- Reference shared coding standards. Uncomment the relevant line(s): -->
+<!-- @.claude/standards/python.md -->
+
+## Memory
+# CLI  : memory files loaded at session start declared in .claude/memory/settings.json
+# VSCode: uncomment the @-imports below as you create each file.
+<!--
+@.claude/memory/OBJECTIVES.md
+@.claude/memory/CONTEXT.md
+@.claude/memory/ARCHITECTURE.md
+@.claude/memory/DECISIONS.md
+@.claude/memory/ROADMAP.md
+@.claude/memory/API.md
+-->
+EOF
+    echo "[upgrade-project] Created $agents_md"
+    (( added++ )) || true
+  fi
+  if [[ ! -L "$claude_symlink" && ! -f "$claude_symlink" ]]; then
+    ln -s AGENTS.md "$claude_symlink"
+    echo "[upgrade-project] Created symlink $claude_symlink -> AGENTS.md"
+    (( added++ )) || true
+  fi
+
   # Generate .claude/CLAUDE.md if missing (VSCode / IDE fallback for brain-load)
   local claude_md_tpl="$TEMPLATE_DIR/CLAUDE.md.tpl"
   local claude_md_dest="$project_path/.claude/CLAUDE.md"
