@@ -52,7 +52,7 @@ PROJECT_BRAIN="$PROJECT_PATH/.claude/memory"
 VAULT_BRAIN="$BRAIN_PATH/projects/$SLUG"
 REGISTRY="$AI_DOTFILES/config/brain-projects.tsv"
 
-# ── Create project .claude/brain/ ─────────────────────────────────────────────
+# ── Create project .claude/memory/ ────────────────────────────────────────────
 mkdir -p "$PROJECT_BRAIN"
 for f in "$TEMPLATE_DIR"/*; do
   [[ "$f" == *.tpl ]] && continue
