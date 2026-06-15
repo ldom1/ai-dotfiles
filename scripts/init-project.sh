@@ -47,8 +47,8 @@ fi
 echo "[init-project] Slug: $SLUG"
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-TEMPLATE_DIR="$AI_DOTFILES/config/brain-templates"
-PROJECT_BRAIN="$PROJECT_PATH/.claude/brain"
+TEMPLATE_DIR="$AI_DOTFILES/config/memory-templates"
+PROJECT_BRAIN="$PROJECT_PATH/.claude/memory"
 VAULT_BRAIN="$BRAIN_PATH/projects/$SLUG"
 REGISTRY="$AI_DOTFILES/config/brain-projects.tsv"
 
@@ -149,23 +149,11 @@ if [[ ! -L "$CLAUDE_SYMLINK" && ! -f "$CLAUDE_SYMLINK" ]]; then
   echo "[init-project] Created symlink $CLAUDE_SYMLINK -> AGENTS.md"
 fi
 
-# ── Generate .claude/CLAUDE.md (VSCode / IDE fallback for brain-load) ────────
+# ── Generate .claude/CLAUDE.md (VSCode / IDE fallback — loads AGENTS.md) ─────
 CLAUDE_MD_TPL="$TEMPLATE_DIR/CLAUDE.md.tpl"
 CLAUDE_MD_DEST="$PROJECT_PATH/.claude/CLAUDE.md"
 if [[ -f "$CLAUDE_MD_TPL" && ! -f "$CLAUDE_MD_DEST" ]]; then
-  SESSION_FILES=()
-  if command -v python3 &>/dev/null; then
-    while IFS= read -r fname; do
-      SESSION_FILES+=("$fname")
-    done < <(python3 -c "import json; d=json.load(open('$PROJECT_BRAIN/settings.json')); [print(f) for f in d.get('read_on_session_start',[])]" 2>/dev/null)
-  fi
-  [[ ${#SESSION_FILES[@]} -eq 0 ]] && SESSION_FILES=("OBJECTIVES.md" "CONTEXT.md")
-  {
-    cat "$CLAUDE_MD_TPL"
-    for fname in "${SESSION_FILES[@]}"; do
-      echo "@brain/$fname"
-    done
-  } > "$CLAUDE_MD_DEST"
+  cp "$CLAUDE_MD_TPL" "$CLAUDE_MD_DEST"
   echo "[init-project] Created $CLAUDE_MD_DEST"
 fi
 
