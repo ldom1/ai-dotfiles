@@ -86,6 +86,13 @@ print(json.dumps(deep_merge(t, e), indent=2))
             (( added++ )) || true
           fi
         fi
+      elif [[ "$fname" == *.md ]]; then
+        # Backfill frontmatter and append any ## sections the template gained since this file was written
+        result="$(python3 "$SCRIPT_DIR/merge-memory-md.py" "$f" "$dest")"
+        if [[ "$result" == "changed" ]]; then
+          echo "[upgrade-project] Updated: $dest"
+          (( added++ )) || true
+        fi
       fi
     done
   done

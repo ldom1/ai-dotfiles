@@ -1,16 +1,16 @@
 ---
 name: brain-init-project
-description: Interactively initialise a project brain — read the vault note and project files, ask targeted questions, and write properly documented OBJECTIVES/ARCHITECTURE/DECISIONS/CONTEXT/ROADMAP/API files into .claude/brain/.
+description: Interactively initialise a project brain — read the vault note and project files, ask targeted questions, and write properly documented OBJECTIVES/ARCHITECTURE/DECISIONS/CONTEXT/ROADMAP/API files into .claude/memory/.
 user-invocable: true
 ---
 
 # brain-init-project
 
-Populate a project's `.claude/brain/` knowledge files by gathering context from the vault, the project itself, and targeted questions to the user. Never overwrites a non-template file without asking.
+Populate a project's `.claude/memory/` knowledge files by gathering context from the vault, the project itself, and targeted questions to the user. Never overwrites a non-template file without asking.
 
 ## When to use
 
-Run after `ai-dotfiles init <path>` has created the `.claude/brain/` folder structure. The init command creates template placeholders; this skill replaces them with real content.
+Run after `ai-dotfiles init <path>` has created the `.claude/memory/` folder structure. The init command creates template placeholders; this skill replaces them with real content.
 
 Also run when a project brain exists but the files still contain only template boilerplate.
 
@@ -25,7 +25,7 @@ If a path was given as an argument, use it. Otherwise use the current git root. 
 Read in this order — stop reading each source once you have enough signal:
 
 1. **Vault one-pager** `$BRAIN_PATH/projects/<slug>.md` — goals, status, caps, roadmap section
-2. **Existing brain files** `<project>/.claude/brain/*.md` — anything already written
+2. **Existing brain files** `<project>/.claude/memory/*.md` — anything already written
 3. **Project README** (root `README.md` or `docs/README.md`)
 4. **Package manifest** — first match of `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `pom.xml`
 5. **Top-level directory listing** — infer module structure
@@ -66,11 +66,13 @@ For each knowledge file, present a **short summary of what you already know** fr
 
 ### 4 — Write the files
 
-Write each file to `<project>/.claude/brain/<FILE>.md` using the gathered answers. Use the [template format](../../config/brain-templates/) as the base structure.
+Write each file to `<project>/.claude/memory/<FILE>.md` using the gathered answers. Use the [template format](../../config/memory-templates/) as the base structure.
 
 **Rules:**
 - Never overwrite a file that already has substantive content (not just template placeholders) without explicitly asking the user first.
-- Write concisely — these files are read by an agent at session start; brevity matters.
+- Write concisely — respect the `<!-- keep this file under ~N words -->` budget in each template; these files are read by an agent at session start.
+- Set the `updated:` frontmatter field to today's date whenever a file's content changes.
+- Cross-link related files with markdown links instead of repeating content: a DECISIONS.md entry's **Affects** line should link to the ARCHITECTURE.md/ROADMAP.md section it changes; ROADMAP.md items should link back to the OBJECTIVES.md scope they serve.
 - DECISIONS.md is append-only — if it already has entries, add new ones at the bottom, never delete.
 - If the user says "skip" for a file, leave the template placeholder unchanged.
 

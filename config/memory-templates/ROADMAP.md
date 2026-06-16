@@ -1,6 +1,13 @@
-# Roadmap
+---
+type: roadmap
+updated:
+---
 
-<!-- Feature backlog and priorities. Keep in sync with one-pager roadmap section. -->
+# Roadmap
+<!-- keep this file under ~150 words -->
+
+<!-- Feature backlog and priorities. Keep in sync with one-pager roadmap section.
+     Link items back to the OBJECTIVES.md scope they serve where useful. -->
 
 ## Now
 <!-- Current sprint / active work -->

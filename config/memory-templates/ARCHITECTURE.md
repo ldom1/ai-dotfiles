@@ -1,4 +1,10 @@
+---
+type: architecture
+updated:
+---
+
 # Architecture (live working log)
+<!-- keep this file under ~300 words -->
 
 <!-- This file is Claude's working memory for architecture decisions.
      The stable module map lives in AGENTS.md ## Architecture (human-visible, kept under 20 lines).
