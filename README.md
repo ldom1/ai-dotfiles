@@ -112,15 +112,28 @@ This creates `<project>/.claude/memory/` with template files, mirrors them to `$
 
 `settings.json` controls which files are injected by `brain-load` at session start (`read_on_session_start`, defaults to `OBJECTIVES.md` + `CONTEXT.md`). The rest are loaded on demand.
 
+### Memory format
+
+Each knowledge file follows [Open Knowledge Format](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing) conventions, adapted for agentic context (see also [Interpretable Context Methodology, 2025](https://arxiv.org/abs/2603.16021)):
+
+- **Typed frontmatter** — `type:` and `updated:` fields on every file, enabling version-aware tooling and graph-level queries across the vault
+- **Token budget** — a `<!-- keep this file under ~N words -->` comment per template guides Claude to keep context files lean for session injection
+- **Backward-compatible evolution** — `upgrade` backfills missing frontmatter and new `## sections` from the template into existing files without touching content (`scripts/merge-memory-md.py`)
+- **Cross-links over duplication** — `brain-init-project` instructs Claude to link related entries across files (e.g., `DECISIONS.md → ARCHITECTURE.md`) instead of repeating content
+
 ### Commands
 
 ```bash
-ai-dotfiles init <path>       # initialise + register
-ai-dotfiles upgrade <path>    # add missing template files (never overwrites)
-ai-dotfiles upgrade --all     # upgrade all registered projects
-ai-dotfiles sync <path>       # manual bidirectional rsync
-ai-dotfiles sync --all        # sync all registered projects
+ai-dotfiles init <path>              # initialise + register
+ai-dotfiles upgrade <path>           # add missing files, backfill frontmatter and sections
+ai-dotfiles upgrade --all            # upgrade all registered projects
+ai-dotfiles sync <path>              # manual bidirectional rsync
+ai-dotfiles sync --all               # sync all registered projects
+ai-dotfiles merge-memory <path>      # backfill OKF frontmatter + missing sections only (no file additions)
+ai-dotfiles merge-memory --all       # merge all registered projects
 ```
+
+`merge-memory` is the focused variant of `upgrade`: it runs only the structural backfill step (`merge-memory-md.py`) on existing files, without adding new files or touching MCP settings. Use it when you want to bring an older project's memory files up to the current template structure without triggering a full upgrade.
 
 ### Automatic sync (brain-sync)
 
@@ -195,14 +208,14 @@ ai-dotfiles/
 │   ├── brain.env.example            # Local Brain path template
 │   ├── brain.env                    # Your config (gitignored)
 │   ├── brain-projects.tsv           # Registry of projects with a .claude/memory/ folder
-│   ├── brain-templates/             # Template files copied on `ai-dotfiles init`
+│   ├── memory-templates/            # OKF-typed templates copied on `ai-dotfiles init`
 │   │   ├── settings.json            # Agent instructions + read_on_session_start list
-│   │   ├── OBJECTIVES.md
-│   │   ├── ARCHITECTURE.md
-│   │   ├── DECISIONS.md
-│   │   ├── CONTEXT.md
-│   │   ├── ROADMAP.md
-│   │   └── API.md
+│   │   ├── OBJECTIVES.md            # type: objectives — goals, scope, non-goals
+│   │   ├── ARCHITECTURE.md          # type: architecture — stack, modules, decisions log
+│   │   ├── DECISIONS.md             # type: decisions — append-only ADR entries
+│   │   ├── CONTEXT.md               # type: context — current state snapshot
+│   │   ├── ROADMAP.md               # type: roadmap — milestones and priorities
+│   │   └── API.md                   # type: api — external contracts and endpoints
 │   ├── graphify.env.example         # Optional: GRAPHIFY_PROJECT for uv-based graphify clone
 │   └── graphify.env                 # Your graphify clone path (gitignored)
 ├── .github/
@@ -214,11 +227,13 @@ ai-dotfiles/
 ├── CONTRIBUTING.md
 ├── prompts/
 ├── bin/
-│   └── ai-dotfiles                  # CLI: init / upgrade / sync project brains
+│   └── ai-dotfiles                  # CLI: init / upgrade / sync / merge-memory
 └── scripts/
     ├── install.sh                   # Setup script (symlinks, settings, hooks, CLI)
     ├── init-project.sh              # Initialise a project brain folder
-    ├── upgrade-project.sh           # Add missing template files to existing project
+    ├── upgrade-project.sh           # Add missing files, backfill frontmatter + sections
+    ├── merge-memory.sh              # Backfill OKF frontmatter + missing sections only
+    ├── merge-memory-md.py           # Per-file merge: adds frontmatter + ## headers non-destructively
     ├── sync-project.sh              # Bidirectional rsync for registered projects
     └── update-wiki.sh               # Commit/push local .wiki/ changes
 ```

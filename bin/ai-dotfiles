@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # ai-dotfiles — project brain CLI
 # Usage: ai-dotfiles <command> [args]
-#   init <project-path>        initialise project brain and register it
-#   upgrade <project-path>     add missing template files
-#   upgrade --all              upgrade all registered projects
-#   sync <project-path>        manual bidirectional rsync
-#   sync --all                 sync all registered projects
+#   init <project-path>           initialise project brain and register it
+#   upgrade <project-path>        add missing files, backfill frontmatter and sections
+#   upgrade --all                 upgrade all registered projects
+#   sync <project-path>           manual bidirectional rsync
+#   sync --all                    sync all registered projects
+#   merge-memory <project-path>   backfill OKF frontmatter + missing sections only
+#   merge-memory --all            merge all registered projects
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
@@ -15,11 +17,12 @@ CMD="${1:-}"
 shift || true
 
 case "$CMD" in
-  init)    bash "$AI_DOTFILES/scripts/init-project.sh"    "$@" ;;
-  upgrade) bash "$AI_DOTFILES/scripts/upgrade-project.sh" "$@" ;;
-  sync)    bash "$AI_DOTFILES/scripts/sync-project.sh"    "$@" ;;
+  init)         bash "$AI_DOTFILES/scripts/init-project.sh"    "$@" ;;
+  upgrade)      bash "$AI_DOTFILES/scripts/upgrade-project.sh" "$@" ;;
+  sync)         bash "$AI_DOTFILES/scripts/sync-project.sh"    "$@" ;;
+  merge-memory) bash "$AI_DOTFILES/scripts/merge-memory.sh"    "$@" ;;
   *)
-    echo "Usage: ai-dotfiles <init|upgrade|sync> [project-path|--all]" >&2
+    echo "Usage: ai-dotfiles <init|upgrade|sync|merge-memory> [project-path|--all]" >&2
     exit 1
     ;;
 esac

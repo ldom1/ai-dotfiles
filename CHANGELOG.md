@@ -24,6 +24,10 @@
 ### Migration
 - Run `ai-dotfiles upgrade <project-path>` or `upgrade --all` on existing projects to auto-migrate `.claude/brain/` → `.claude/memory/`
 
+### Added
+- `ai-dotfiles merge-memory <path|--all>` — new CLI subcommand that backfills OKF-style `type:` / `updated:` frontmatter and any missing `## sections` from current templates into existing project memory files, without adding new files or changing content (uses `scripts/merge-memory.sh` + `scripts/merge-memory-md.py`)
+- `scripts/merge-memory.sh` — focused backfill script; wraps `merge-memory-md.py` for a full project or all registered projects
+
 ### Fixed
 - `brain-audit/scripts/audit.sh`: phases now skip gracefully when `compile.sh`, `connect.sh`, or `qa.sh` are absent instead of exiting with an error — allows the orchestrator to run with only the implemented phase scripts
 - QMD embed/update failures in `brain-sync` now logged to `~/.claude/logs/brain-sync.log` instead of silenced with `2>/dev/null`
