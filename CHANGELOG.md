@@ -25,6 +25,7 @@
 - Run `ai-dotfiles upgrade <project-path>` or `upgrade --all` on existing projects to auto-migrate `.claude/brain/` → `.claude/memory/`
 
 ### Fixed
+- `brain-audit/scripts/audit.sh`: phases now skip gracefully when `compile.sh`, `connect.sh`, or `qa.sh` are absent instead of exiting with an error — allows the orchestrator to run with only the implemented phase scripts
 - QMD embed/update failures in `brain-sync` now logged to `~/.claude/logs/brain-sync.log` instead of silenced with `2>/dev/null`
 
 ### Fixed (prior unreleased)
