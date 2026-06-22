@@ -29,6 +29,13 @@
       "homepage": "https://github.com/ldom1/ai-dotfiles"
     },
     {
+      "name": "grill-me",
+      "description": "Stress-test a plan or design through relentless one-question-at-a-time interrogation until shared understanding is reached.",
+      "source": "./skills/grill-me",
+      "category": "productivity",
+      "homepage": "https://github.com/ldom1/ai-dotfiles"
+    },
+    {
       "name": "token-watch",
       "description": "Snapshot current token burn rate via ccusage — active 5h window, daily per-model breakdown, session history.",
       "source": "./skills/token-watch",

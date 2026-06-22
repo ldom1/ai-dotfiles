@@ -20,7 +20,7 @@ setup_project_mcp() {
   local project_path="$1"
   local ai_dotfiles
   ai_dotfiles="$(cd "$_LIB_MCP_DIR/.." && pwd)"
-  local tpl="$ai_dotfiles/config/brain-templates/mcp-settings.json.tpl"
+  local tpl="$ai_dotfiles/config/memory-templates/mcp-settings.json.tpl"
   local env_file="$ai_dotfiles/config/brain.env"
   local claude_dir="$project_path/.claude"
   local settings="$claude_dir/settings.json"

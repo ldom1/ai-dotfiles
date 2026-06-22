@@ -1,4 +1,10 @@
+---
+type: objectives
+updated:
+---
+
 # Objectives
+<!-- keep this file under ~150 words -->
 
 ## Goal
 <!-- One-sentence project goal -->

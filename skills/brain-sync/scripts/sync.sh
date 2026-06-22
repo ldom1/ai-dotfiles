@@ -199,6 +199,13 @@ cmd_end() {
   mkdir -p "$(dirname "$LOG")"
 
   if command -v qmd &>/dev/null && [[ -n "${QMD_INDEX_PATH:-}" ]]; then
+    # Hooks run without nvm, so 'node' may resolve to a system version that
+    # doesn't match the ABI of better-sqlite3 bundled with qmd. Prepend qmd's
+    # own bin directory so the qmd wrapper's 'exec node' picks the right runtime.
+    _qmd_real=$(readlink -f "$(command -v qmd)" 2>/dev/null || command -v qmd)
+    _qmd_bin=$(dirname "$_qmd_real")
+    [[ -x "$_qmd_bin/node" ]] && export PATH="$_qmd_bin:$PATH"
+
     _info "qmd" "updating brain index…"
     INDEX_PATH="$QMD_INDEX_PATH" qmd update --collection brain 2>&1 | tee -a "$LOG" || \
       _warn "qmd" "update failed — check $LOG"

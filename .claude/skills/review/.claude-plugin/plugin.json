@@ -1,0 +1,10 @@
+{
+  "name": "review",
+  "version": "1.0.0",
+  "description": "Code review with auto-discovery of CONTRIBUTING.md and .claude/skills/review/SKILL.md",
+  "author": {
+    "name": "Artelys",
+    "url": "https://gitlab.artelys.lan/pratiques/pratique-ia"
+  },
+  "homepage": "https://gitlab.artelys.lan/pratiques/pratique-ia/-/tree/main/skills/review"
+}

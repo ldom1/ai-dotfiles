@@ -1,5 +1,5 @@
 {
-  "description": "Project brain — persistent knowledge synced with Local Brain vault",
+  "description": "Project memory — persistent knowledge synced with Local Brain vault",
   "read_on_session_start": ["OBJECTIVES.md", "CONTEXT.md"],
   "files": {
     "OBJECTIVES.md": "Project goals, scope, non-goals. Read at session start.",

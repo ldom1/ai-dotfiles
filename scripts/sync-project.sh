@@ -30,9 +30,11 @@ sync_one() {
 
   project_path="$(realpath "$project_path")"
 
-  local project_brain="$project_path/.claude/brain"
+  local project_brain="$project_path/.claude/memory"
+  # Fall back to legacy .claude/brain/ for projects not yet upgraded
+  [[ ! -d "$project_brain" && -d "$project_path/.claude/brain" ]] && project_brain="$project_path/.claude/brain"
   if [[ ! -d "$project_brain" ]]; then
-    echo "[sync-project] WARNING: no .claude/brain/ in $project_path, skipping."
+    echo "[sync-project] WARNING: no .claude/memory/ in $project_path, skipping."
     return 0
   fi
 

@@ -1,4 +1,10 @@
+---
+type: context
+updated:
+---
+
 # Context
+<!-- keep this file under ~150 words -->
 
 <!-- Current state snapshot. Update at session end. -->
 

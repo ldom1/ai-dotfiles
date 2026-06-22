@@ -21,7 +21,7 @@ fi
 # shellcheck source=lib-mcp.sh
 source "$SCRIPT_DIR/lib-mcp.sh"
 
-TEMPLATE_DIR="$AI_DOTFILES/config/brain-templates"
+TEMPLATE_DIR="$AI_DOTFILES/config/memory-templates"
 REGISTRY="$AI_DOTFILES/config/brain-projects.tsv"
 
 upgrade_one() {
@@ -43,7 +43,13 @@ upgrade_one() {
   local slug
   slug="$(grep -m1 '[^[:space:]]' "$brain_project" | tr -d '[:space:]')"
 
-  local project_brain="$project_path/.claude/brain"
+  local project_brain="$project_path/.claude/memory"
+  # Migrate existing .claude/brain/ → .claude/memory/ if not yet migrated
+  local old_brain="$project_path/.claude/brain"
+  if [[ -d "$old_brain" && ! -d "$project_brain" ]]; then
+    mv "$old_brain" "$project_brain"
+    echo "[upgrade-project] Migrated $old_brain → $project_brain"
+  fi
   local vault_brain="$BRAIN_PATH/projects/$slug"
 
   mkdir -p "$project_brain" "$vault_brain"
@@ -80,6 +86,13 @@ print(json.dumps(deep_merge(t, e), indent=2))
             (( added++ )) || true
           fi
         fi
+      elif [[ "$fname" == *.md ]]; then
+        # Backfill frontmatter and append any ## sections the template gained since this file was written
+        result="$(python3 "$SCRIPT_DIR/merge-memory-md.py" "$f" "$dest")"
+        if [[ "$result" == "changed" ]]; then
+          echo "[upgrade-project] Updated: $dest"
+          (( added++ )) || true
+        fi
       fi
     done
   done
@@ -101,26 +114,64 @@ print(json.dumps(deep_merge(t, e), indent=2))
     echo "[upgrade-project] $slug: added $added file(s)."
   fi
 
-  # Generate .claude/CLAUDE.md if missing (VSCode / IDE fallback for brain-load)
+  # Create AGENTS.md + CLAUDE.md symlink if missing
+  local agents_md="$project_path/AGENTS.md"
+  local claude_symlink="$project_path/CLAUDE.md"
+  if [[ ! -f "$agents_md" && ! -L "$agents_md" ]]; then
+    cat > "$agents_md" << 'EOF'
+# AGENTS.md — Project instructions
+# Location : project root (canonical). CLAUDE.md is a symlink → AGENTS.md.
+# Scope    : all agents (Claude, Mistral, Codex, …). Claude Code loads it via the symlink.
+# Length   : keep under 60 lines — agents read this every session.
+
+---
+
+## Description
+<!-- One paragraph: what this project does, tech stack, deployment context. -->
+
+## Key Files
+<!-- 3–5 files an agent must know to orient itself. -->
+
+## Task-Specific Behaviors
+<!-- Commands to always run, files to read before touching a module, hard rules. -->
+
+## Constraints
+<!-- Protected files, dependency policy, hard limits. -->
+
+## Standards
+<!-- Reference shared coding standards. Uncomment the relevant line(s): -->
+<!-- @.claude/standards/python.md -->
+
+## Memory
+# CLI  : memory files loaded at session start declared in .claude/memory/settings.json
+# VSCode: uncomment the @-imports below as you create each file.
+<!--
+@.claude/memory/OBJECTIVES.md
+@.claude/memory/CONTEXT.md
+@.claude/memory/ARCHITECTURE.md
+@.claude/memory/DECISIONS.md
+@.claude/memory/ROADMAP.md
+@.claude/memory/API.md
+-->
+EOF
+    echo "[upgrade-project] Created $agents_md"
+    (( added++ )) || true
+  fi
+  if [[ ! -L "$claude_symlink" && ! -f "$claude_symlink" ]]; then
+    ln -s AGENTS.md "$claude_symlink"
+    echo "[upgrade-project] Created symlink $claude_symlink -> AGENTS.md"
+    (( added++ )) || true
+  fi
+
+  # Generate .claude/CLAUDE.md if missing or outdated (must contain @../AGENTS.md)
   local claude_md_tpl="$TEMPLATE_DIR/CLAUDE.md.tpl"
   local claude_md_dest="$project_path/.claude/CLAUDE.md"
-  if [[ -f "$claude_md_tpl" && ! -f "$claude_md_dest" ]]; then
-    local session_files=()
-    local brain_settings="$project_path/.claude/brain/settings.json"
-    if [[ -f "$brain_settings" ]] && command -v python3 &>/dev/null; then
-      while IFS= read -r fname; do
-        session_files+=("$fname")
-      done < <(python3 -c "import json; d=json.load(open('$brain_settings')); [print(f) for f in d.get('read_on_session_start',[])]" 2>/dev/null)
+  if [[ -f "$claude_md_tpl" ]]; then
+    if [[ ! -f "$claude_md_dest" ]] || ! grep -qF "@../AGENTS.md" "$claude_md_dest" 2>/dev/null; then
+      cp "$claude_md_tpl" "$claude_md_dest"
+      echo "[upgrade-project] Updated $claude_md_dest (VSCode fallback)"
+      (( added++ )) || true
     fi
-    [[ ${#session_files[@]} -eq 0 ]] && session_files=("OBJECTIVES.md" "CONTEXT.md")
-    {
-      cat "$claude_md_tpl"
-      for fname in "${session_files[@]}"; do
-        echo "@brain/$fname"
-      done
-    } > "$claude_md_dest"
-    echo "[upgrade-project] Created $claude_md_dest"
-    (( added++ )) || true
   fi
 
   setup_project_mcp "$project_path"

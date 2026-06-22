@@ -1,6 +1,6 @@
 ---
 name: capture
-description: End-of-session workflow — write implementation notes, check pitfalls/lessons, sync brain vault. Invoke when user types /capture or asks to end the session.
+description: End-of-session workflow — write implementation notes, review project brain, check pitfalls/lessons, sync brain vault. Invoke when user types /capture or asks to end the session.
 user-invocable: true
 ---
 
@@ -35,7 +35,31 @@ Determine the project name from the working directory or `.claude/CLAUDE.md`.
 **Follow-ups:** <open questions or next steps, or "none">
 ```
 
-## Step 2 — Update pitfalls (only if a new mistake pattern was discovered)
+## Step 2 — Review project brain (only update if relevant)
+
+Read all implementation notes for this project:
+
+`$BRAIN_PATH/inbox/daily/implementation/<project-name>/`
+
+Then review project-brain files, preferring the repo copy when present:
+
+- `<project>/.claude/brain/ARCHITECTURE.md`
+- `<project>/.claude/brain/DECISIONS.md`
+- `<project>/.claude/brain/ROADMAP.md`
+- `<project>/.claude/brain/CONTEXT.md`
+
+Fallback path: the same filenames under `$BRAIN_PATH/projects/<project-name>/`.
+
+Update only when the implementation notes reveal relevant, durable project knowledge:
+
+- `ARCHITECTURE.md` — stack, module boundaries, data flow, integration points.
+- `DECISIONS.md` — append significant project-specific decisions; do not rewrite prior decisions.
+- `ROADMAP.md` — changed priorities, completed items, or new follow-ups.
+- `CONTEXT.md` — current state, active blockers, open questions.
+
+Skip files where nothing relevant changed. If an update would be breaking or contradict existing project-brain content (for example removing an architecture claim, reversing a decision, or changing roadmap direction), ask the user before editing.
+
+## Step 3 — Update pitfalls (only if a new mistake pattern was discovered)
 
 File: `$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md`
 
@@ -49,7 +73,7 @@ Append only if this session revealed a **cross-project, generalizable** wrong ap
 **What to do instead:** <the correct approach>
 ```
 
-## Step 3 — Update lessons learned (only if a non-obvious decision was made)
+## Step 4 — Update lessons learned (only if a non-obvious decision was made)
 
 File: `$BRAIN_PATH/resources/operational/ai-agents/lessons-learned.md`
 
@@ -64,12 +88,12 @@ Append only if a **cross-project, generalizable** lesson was learned — somethi
 ---
 ```
 
-## Step 4 — Sync the vault
+## Step 5 — Sync the vault
 
 ```bash
 bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh end
 ```
 
-## Step 5 — Tell the user
+## Step 6 — Tell the user
 
 Output: `Session documented. You can now close with Ctrl+C.`

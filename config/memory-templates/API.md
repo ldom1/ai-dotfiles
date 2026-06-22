@@ -1,4 +1,10 @@
+---
+type: api
+updated:
+---
+
 # API
+<!-- keep this file under ~150 words -->
 
 <!-- External contracts, endpoints, and auth patterns. -->
 
