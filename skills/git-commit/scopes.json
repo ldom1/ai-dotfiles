@@ -1,0 +1,20 @@
+{
+  "project_types": {
+    "ai-dotfiles": {
+      "detect": ["skills/brain-sync", ".claude/skills"],
+      "scopes": ["skill", "claude", "config", "scripts", "core", "ci", "design", "docs"]
+    },
+    "python": {
+      "detect": ["pyproject.toml", "uv.lock", "setup.py"],
+      "scopes": ["core", "ci", "design", "docs", "api", "tests", "config", "vulnerability"]
+    },
+    "nextjs": {
+      "detect": ["next.config.js", "next.config.ts", "next.config.mjs"],
+      "scopes": ["core", "ci", "design", "docs", "ui", "api", "auth", "tests", "config", "vulnerability"]
+    },
+    "ansible": {
+      "detect": ["ansible.cfg", "site.yml", "playbook.yml", "roles"],
+      "scopes": ["core", "ci", "design", "docs", "roles", "inventory", "config", "tests", "vulnerability"]
+    }
+  }
+}
