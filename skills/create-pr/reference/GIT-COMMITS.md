@@ -18,28 +18,24 @@ Format: `<type>(<scope>): <imperative description>`
 
 ## Scopes
 
-| Scope | Typical paths |
-|-------|---------------|
-| `core` | Cross-cutting or repo-wide |
-| `skill` | `skills/**` |
-| `claude` | `.claude/**` |
-| `cursor` | `.cursor/**` |
-| `config` | `config/**` |
-| `scripts` | `scripts/**` |
-| `prompts` | `prompts/**` |
-| `ci` | `.github/**` |
+Scopes are **free-form** — use the most descriptive word for the domain or concern changed.
 
-If nothing fits, use the folder name at repo root.
+Common scopes: `chore` (cross-cutting maintenance), `design`, `ci`, `vulnerability`, `auth`, `api`, `tests`, `deps`, `config`, `skill`, `claude`, `scripts`
+
+`chore` is preferred over `core` for repo-wide or cross-cutting work.
+
+If nothing obvious fits, use the folder name at repo root.
 
 ## Examples
 
 ```
-feat(skill): add brain sync skill
+feat(chore): apply ruff formatting across codebase
+feat(skill): add git-commit convention enforcement hook
+fix(vulnerability): sanitize user input before SQL query
+enh(design): extend NocoDB schema with intelligence columns
 fix(skill): handle missing BRAIN_PATH in load script
-enh(cursor): tighten brain-sync rule wording
-doc: link git commit guide from README
+doc(api): document OpenRouter embedding endpoint usage
 ci: add workflow to validate shell scripts
-feat(claude): add RTK hook for token proxy
 ```
 
 ## References

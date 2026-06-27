@@ -23,6 +23,7 @@ Shared coding standards loaded on demand via `@~/.claude/general/<file>` in a pr
 | /brain-init-project | Interactive project brain setup — reads vault + project, asks questions, writes knowledge files |
 | /brain-route | Decide session mode: normal (brain-load) or maintenance (brain-audit) |
 | /brain-audit | Compile raw data, find connections, run Q&A, generate digest |
+| /git-commit | Validate commit message against `type(scope): description` convention before committing |
 | /review | Code review — auto-discovers `CONTRIBUTING.md` + `.claude/review/checklist.md` |
 | /create-pr | GitHub PR with branch prefix + conventional commit conventions |
 | /token-watch | Snapshot token burn rate via ccusage |

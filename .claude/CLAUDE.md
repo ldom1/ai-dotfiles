@@ -87,6 +87,8 @@ Brain system runs automatically at session start:
 
 For git operations (rm --cached, .gitignore changes, resets): always check for nested .gitignore files that may override rules, and verify the change persists after a full `git status` check. Prefer a clean single-commit approach over incremental fixes.
 
+**Commit messages** — invoke the `/git-commit` skill before every `git commit`. Convention: `type(scope): description`. Types: `feat`, `fix`, `enh`, `doc`, `ci`. Scope is free-form (`chore`, `design`, `ci`, `vulnerability`, …). The PreToolUse hook enforces this and blocks non-compliant messages.
+
 ## Documentation Hygiene
 
 When behavior, workflow, setup, commands, or visible outputs change:

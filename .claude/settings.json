@@ -44,6 +44,15 @@
             "command": "/home/lgiron/.claude/hooks/rtk-rewrite.sh"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.claude/hooks/git-commit-check.sh"
+          }
+        ]
       }
     ]
   },
@@ -71,5 +80,6 @@
     }
   },
   "skipDangerousModePermissionPrompt": true,
-  "skipWorkflowUsageWarning": true
+  "skipWorkflowUsageWarning": true,
+  "tui": "fullscreen"
 }
