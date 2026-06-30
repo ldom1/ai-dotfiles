@@ -1,7 +1,7 @@
 {
   "project_types": {
     "ai-dotfiles": {
-      "detect": ["skills/brain-sync", ".claude/skills"],
+      "detect": ["skills/brain-sync", ".claude/skills", "skills/review"],
       "scopes": ["skill", "claude", "config", "scripts", "core", "ci", "design", "docs"]
     },
     "python": {
