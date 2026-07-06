@@ -35,6 +35,12 @@ Determine the project name from the working directory or `.claude/CLAUDE.md`.
 **Follow-ups:** <open questions or next steps, or "none">
 ```
 
+> **Obsidian wiki-links rule:** Any reference to another brain file in an implementation note MUST use `[[slug]]` format (filename without path or extension), not a plain file path. Examples:
+> - ✓ `See [[infisical-nextjs-vercel-sop]]` — not `resources/knowledge/sops/infisical-nextjs-vercel-sop.md`
+> - ✓ `Pattern documented in [[infisical-patterns]] §Pattern 8` — not the full path
+> - ✓ `Added to [[pitfalls]]`, `Added to [[lessons-learned]]`
+> This applies everywhere in the note: Goal, Changes, Follow-ups, and any prose.
+
 ## Step 2 — Review project brain (only update if relevant)
 
 Read all implementation notes for this project:

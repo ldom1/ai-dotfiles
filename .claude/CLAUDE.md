@@ -78,6 +78,17 @@ Brain system runs automatically at session start:
 - Force maintenance mode: `brain-route --maintenance` (at session start)
 - View last maintenance: `cat $BRAIN_PATH/meta/last-maintenance.md`
 - View latest digest: `ls -lt $BRAIN_PATH/meta/digest-*.md | head -1`
+
+## Brain Writing — Obsidian Wiki-Links
+
+When writing ANY content to the brain vault (implementation notes, pitfalls, lessons-learned, SOPs, patterns, project-brain files), **always use `[[slug]]` wiki-links** to reference other vault files — never plain file paths.
+
+- `[[infisical-nextjs-vercel-sop]]` ✓ — not `resources/knowledge/sops/infisical-nextjs-vercel-sop.md`
+- `[[pitfalls]]`, `[[lessons-learned]]` ✓ — not the full path
+- The slug is the filename without the directory path and without `.md`
+
+This applies in all contexts: Follow-ups sections, Changes bullets, inline prose, and cross-references in any brain document.
+
 ## Remote Server Work
 
 - End-to-end verification: after any fix on a remote host, confirm from the user's perspective (`curl` the endpoint, check the browser response). Never claim success on config change alone.
@@ -88,6 +99,8 @@ Brain system runs automatically at session start:
 For git operations (rm --cached, .gitignore changes, resets): always check for nested .gitignore files that may override rules, and verify the change persists after a full `git status` check. Prefer a clean single-commit approach over incremental fixes.
 
 **Commit messages** — ALWAYS invoke the `/git-commit` skill before ANY `git commit` command, no exceptions. The skill detects project type, validates scope against a locked per-project list, and handles new scope/project proposals with user validation. The PreToolUse hook blocks non-compliant messages as a safety net. Never run `git commit` without completing the skill first.
+
+**PR merges** — ALWAYS use `gh pr merge <PR> --squash --delete-branch` (never `--merge`). Never let GitHub default to a regular merge commit — this pollutes history with "Merge pull request #N" entries. Squash keeps the history linear.
 
 ## Documentation Hygiene
 
