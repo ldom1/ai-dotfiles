@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- `DESIGN.md` project memory template for original application intent, UX, and durable workflows, kept distinct from live technical `ARCHITECTURE.md`
 - `grill-me` skill for stress-testing plans and designs through one-question-at-a-time interrogation with recommended answers
 - `brain-audit` refactored as a plugin with 6 independent subskills (`compile`, `connect`, `insights`, `queries`, `qmd-sync`, `digest`) following the superpowers plugin pattern
 - `brain-audit:compile` — reads `inbox/daily/` (last 30 days), promotes cross-project pitfalls/lessons to `resources/operational/ai-agents/`, asks inline for ambiguous entries
@@ -14,6 +15,7 @@
 - `qmd mcp` wired globally in `~/.claude/claude.json` (replaces broken `clawvis-skills`)
 
 ### Changed
+- `.gitignore` now excludes Claude daemon/job runtime state plus last cleanup/update result markers
 - `/capture` now reviews project implementation notes against `ARCHITECTURE.md`, `DECISIONS.md`, `ROADMAP.md`, and `CONTEXT.md`, updating only relevant project-brain files and asking before breaking changes.
 - `grill-me` now explicitly forbids reflexive praise and requires skeptical challenge before approving an idea
 - Per-project memory directory renamed from `.claude/brain/` to `.claude/memory/` to align with pratique-ia standard

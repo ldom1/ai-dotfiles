@@ -104,11 +104,14 @@ This creates `<project>/.claude/memory/` with template files, mirrors them to `$
 | File | Purpose | When to update |
 |------|---------|----------------|
 | `OBJECTIVES.md` | Goals, scope, non-goals | Written once, refined rarely |
+| `DESIGN.md` | Original application intent, UX, and durable product workflows | When product/design intent changes |
 | `ARCHITECTURE.md` | Stack decisions, key modules | When architecture changes |
 | `DECISIONS.md` | Append-only ADR log | After every significant decision |
 | `CONTEXT.md` | Current state: done / in-progress / open questions | At session end |
 | `ROADMAP.md` | Feature backlog and priorities | When priorities shift |
 | `API.md` | External contracts and endpoints | When API changes |
+
+`DESIGN.md` is the durable product/application baseline: original intent, UX, and workflows. `ARCHITECTURE.md` is the live technical map: stack, modules, data flow, and implementation trade-offs.
 
 `settings.json` controls which files are injected by `brain-load` at session start (`read_on_session_start`, defaults to `OBJECTIVES.md` + `CONTEXT.md`). The rest are loaded on demand.
 
@@ -211,6 +214,7 @@ ai-dotfiles/
 │   ├── memory-templates/            # OKF-typed templates copied on `ai-dotfiles init`
 │   │   ├── settings.json            # Agent instructions + read_on_session_start list
 │   │   ├── OBJECTIVES.md            # type: objectives — goals, scope, non-goals
+│   │   ├── DESIGN.md                # type: design — original intent, UX, durable workflows
 │   │   ├── ARCHITECTURE.md          # type: architecture — stack, modules, decisions log
 │   │   ├── DECISIONS.md             # type: decisions — append-only ADR entries
 │   │   ├── CONTEXT.md               # type: context — current state snapshot

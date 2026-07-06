@@ -1,6 +1,6 @@
 ---
 name: brain-init-project
-description: Interactively initialise a project brain — read the vault note and project files, ask targeted questions, and write properly documented OBJECTIVES/ARCHITECTURE/DECISIONS/CONTEXT/ROADMAP/API files into .claude/memory/.
+description: Interactively initialise a project brain — read the vault note and project files, ask targeted questions, and write properly documented OBJECTIVES/DESIGN/ARCHITECTURE/DECISIONS/CONTEXT/ROADMAP/API files into .claude/memory/.
 user-invocable: true
 ---
 
@@ -38,6 +38,11 @@ For each knowledge file, present a **short summary of what you already know** fr
 - What is the main goal of this project in one sentence?
 - What does success look like? (measurable outcomes if possible)
 - What is explicitly out of scope?
+
+#### DESIGN.md
+- What was the original application/product design?
+- Who is the primary user, and what are the core workflows?
+- Which design intent should remain reviewable over time, separate from live implementation details?
 
 #### ARCHITECTURE.md
 - What is the tech stack? (language, framework, key libraries)

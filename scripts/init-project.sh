@@ -136,6 +136,7 @@ if [[ ! -f "$AGENTS_MD" && ! -L "$AGENTS_MD" ]]; then
 <!--
 @.claude/memory/OBJECTIVES.md
 @.claude/memory/CONTEXT.md
+@.claude/memory/DESIGN.md
 @.claude/memory/ARCHITECTURE.md
 @.claude/memory/DECISIONS.md
 @.claude/memory/ROADMAP.md

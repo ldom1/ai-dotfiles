@@ -1,4 +1,7 @@
 # Claude Code — runtime files
+.claude/daemon/
+.claude/daemon.log
+.claude/jobs/
 .claude/projects/
 .claude/todos/
 .claude/tasks/
@@ -19,6 +22,8 @@
 .claude/logs/
 .claude/usage-data/
 .claude/history.jsonl
+.claude/.last-cleanup*
+.claude/.last-update-result*
 .claude/stats-cache.json
 .claude/mcp-needs-auth-cache.json
 .claude/.credentials.json

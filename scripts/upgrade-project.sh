@@ -148,6 +148,7 @@ print(json.dumps(deep_merge(t, e), indent=2))
 <!--
 @.claude/memory/OBJECTIVES.md
 @.claude/memory/CONTEXT.md
+@.claude/memory/DESIGN.md
 @.claude/memory/ARCHITECTURE.md
 @.claude/memory/DECISIONS.md
 @.claude/memory/ROADMAP.md
