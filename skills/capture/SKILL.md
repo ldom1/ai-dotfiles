@@ -49,10 +49,13 @@ Read all implementation notes for this project:
 
 Then review project-brain files, preferring the repo copy when present:
 
-- `<project>/.claude/brain/ARCHITECTURE.md`
-- `<project>/.claude/brain/DECISIONS.md`
-- `<project>/.claude/brain/ROADMAP.md`
-- `<project>/.claude/brain/CONTEXT.md`
+- `<project>/.claude/memory/ARCHITECTURE.md`
+- `<project>/.claude/memory/DECISIONS.md`
+- `<project>/.claude/memory/ROADMAP.md`
+- `<project>/.claude/memory/CONTEXT.md`
+
+(`.claude/memory/` is the standing convention everywhere — set up by
+`ai-dotfiles init` / `brain-init-project`. `.claude/brain/` is not used.)
 
 Fallback path: the same filenames under `$BRAIN_PATH/projects/<project-name>/`.
 
