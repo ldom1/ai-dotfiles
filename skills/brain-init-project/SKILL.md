@@ -81,9 +81,23 @@ Write each file to `<project>/.claude/memory/<FILE>.md` using the gathered answe
 - DECISIONS.md is append-only — if it already has entries, add new ones at the bottom, never delete.
 - If the user says "skip" for a file, leave the template placeholder unchanged.
 
+### 4b — Mirror to the vault (always, no need to ask)
+
+After writing/updating any file(s) in `<project>/.claude/memory/`, immediately copy those same files to `$BRAIN_PATH/projects/<slug>/<FILE>.md`, overwriting the vault copy so it matches. This is a standard, automatic part of this skill — never ask the user whether to do it, and never skip it. Do this for every file touched in step 4, every time this skill runs (initial init and later updates alike).
+
+### 4c — Create/update the vault one-pager (always, no need to ask)
+
+Every project also needs `$BRAIN_PATH/projects/<slug>.md` — the single-file overview note, distinct from the `projects/<slug>/` detail folder. `init-project.sh` does not create this file, so this skill is responsible for it. Never ask whether to create it — always do it as a standard part of this process, on first init and again whenever memory files materially change.
+
+- Use `$BRAIN_PATH/_templates/project-template.md` as the structural reference (frontmatter: `title`, `created`, `tags: [project]`, `caps`, `status`, `start`, `end`, `path`, `prod`; body sections: Objective, TL;DR, Description, Architecture, Roadmap, Proposed Improvements, Related Resources, Notes, Journal). That file is an Obsidian Templater script (not directly executable) — hand-write the rendered Markdown yourself following its structure, don't try to run it.
+- `caps`: ask the user which CAP(s) apply if not already known (e.g. `[[caps/developer]]`, `[[caps/artelys]]`) — do not guess silently.
+- Populate every section from the already-gathered OBJECTIVES/DESIGN/ARCHITECTURE/DECISIONS/CONTEXT/ROADMAP/API content — do not re-interview the user for content that lives there; synthesize and cross-link with `[[<slug>/FILE]]`-style links back to the detail files instead of duplicating full text.
+- Append one line to the Journal section for this session's work instead of rewriting prior entries.
+- If the one-pager already exists with substantive content, update it in place (sync new/changed facts) rather than overwriting wholesale — same non-destructive rule as step 4.
+
 ### 5 — Confirm and print next steps
 
-After writing all files, print a one-line summary of what was written and remind the user:
+After writing all files, print a one-line summary of what was written (confirming both the vault mirror from 4b and the one-pager from 4c) and remind the user:
 - `CONTEXT.md` should be updated at the end of each session
 - `brain-sync end` will push changes to the vault automatically
 

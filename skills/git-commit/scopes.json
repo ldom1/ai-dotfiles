@@ -6,7 +6,7 @@
     },
     "python": {
       "detect": ["pyproject.toml", "uv.lock", "setup.py"],
-      "scopes": ["core", "ci", "design", "docs", "api", "tests", "config", "vulnerability"]
+      "scopes": ["core", "ci", "design", "docs", "api", "tests", "config", "vulnerability", "storage"]
     },
     "ansible": {
       "detect": ["ansible.cfg", "site.yml", "playbook.yml", "roles"],
