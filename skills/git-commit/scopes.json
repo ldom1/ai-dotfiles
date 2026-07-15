@@ -19,6 +19,10 @@
     "validation": {
       "detect": ["docs/srd", "inventory", "fixtures/jupyter"],
       "scopes": ["core", "docs", "inventory", "fixtures", "scripts", "user", "slurm", "jupyter", "monitoring", "service"]
+    },
+    "brain-vault": {
+      "detect": [".obsidian"],
+      "scopes": ["specs", "plans", "decisions", "digest", "projects", "sop", "config"]
     }
   }
 }
