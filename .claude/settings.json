@@ -68,7 +68,7 @@
     "skill-creator@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {},
-  "effortLevel": "medium",
+  "effortLevel": "high",
   "pluginConfigs": {
     "finops-audit": {
       "options": {
@@ -79,7 +79,7 @@
       }
     }
   },
+  "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
-  "skipWorkflowUsageWarning": true,
-  "tui": "fullscreen"
+  "skipWorkflowUsageWarning": true
 }
