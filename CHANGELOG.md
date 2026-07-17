@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 ### Added
-- **graphify skill**: Step 8.5 auto-configures agent MCP after each build — `scripts/setup_agent_mcp.py` runs `uv add graphifyy[mcp]`, merges `graphify` into `.cursor/mcp.json` and `.mcp.json` (skip with `--no-mcp`)
+- `DESIGN.md` project memory template for original application intent, UX, and durable workflows, kept distinct from live technical `ARCHITECTURE.md`
 - `grill-me` skill for stress-testing plans and designs through one-question-at-a-time interrogation with recommended answers
 - `brain-audit` refactored as a plugin with 6 independent subskills (`compile`, `connect`, `insights`, `queries`, `qmd-sync`, `digest`) following the superpowers plugin pattern
 - `brain-audit:compile` — reads `inbox/daily/` (last 30 days), promotes cross-project pitfalls/lessons to `resources/operational/ai-agents/`, asks inline for ambiguous entries
