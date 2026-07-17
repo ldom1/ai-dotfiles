@@ -62,7 +62,7 @@ Each project can carry a persistent knowledge layer — git-tracked in the proje
 
 | Tool | Install | Required for |
 |------|---------|--------------|
-| `jq` | `apt install jq` / `brew install jq` | MCP settings merge in init/upgrade |
+| `jq` | `apt install jq` / `brew install jq` | Central + per-project MCP settings merge |
 | `uvx` | `pip install uv` | Running code-index-mcp (zero install) |
 | `qmd` | `npm install -g @tobilu/qmd` | Semantic search over brain vault |
 
@@ -99,6 +99,31 @@ ai-dotfiles init /path/to/project
 
 This creates `<project>/.claude/memory/` with template files, mirrors them to `$BRAIN_PATH/projects/my-project/`, and registers the project in `config/brain-projects.tsv`. `brain-sync` then keeps both sides in sync automatically at session start/end.
 
+### Centrally-managed MCP servers
+
+`qmd`, `code-index-mcp`, and `graphify` are registered once, globally, instead of
+being copy-pasted into every project:
+
+- Claude Code: `~/.claude.json` (user scope) — all three servers
+- Cursor: `~/.cursor/mcp.json` (global scope) — `qmd` only (see note below)
+
+`ai-dotfiles init` / `ai-dotfiles upgrade` apply this automatically. Run
+`ai-dotfiles mcp-sync` any time to re-apply by hand — e.g. after editing
+`config/memory-templates/mcp-central-claude.json.tpl` or
+`mcp-central-cursor.json.tpl`, or as a first-time bootstrap on a new machine. Each
+sync fully replaces its own managed keys and leaves every other `mcpServers` entry
+untouched; a `.bak` copy of the target file is written before every merge.
+
+Project-specific servers (e.g. a project's own RapidAPI key) stay in that project's
+own `.mcp.json` / `.cursor/mcp.json` — only servers meant for every project belong in
+the central templates.
+
+`code-index-mcp` and `graphify` rely on `${CLAUDE_PROJECT_DIR}` (Claude Code's own
+per-session path variable) to resolve the active project from a global-scope entry.
+Cursor's equivalent global-scope behavior is unconfirmed, so those two stay
+per-project there instead: `graphify`'s Cursor entry is written by the graphify skill
+per project; there's no Cursor entry for `code-index-mcp` at all.
+
 ### Knowledge files
 
 | File | Purpose | When to update |
@@ -134,6 +159,7 @@ ai-dotfiles sync <path>              # manual bidirectional rsync
 ai-dotfiles sync --all               # sync all registered projects
 ai-dotfiles merge-memory <path>      # backfill OKF frontmatter + missing sections only (no file additions)
 ai-dotfiles merge-memory --all       # merge all registered projects
+ai-dotfiles mcp-sync                 # (re)apply centrally-managed MCP servers (qmd, code-index, graphify)
 ```
 
 `merge-memory` is the focused variant of `upgrade`: it runs only the structural backfill step (`merge-memory-md.py`) on existing files, without adding new files or touching MCP settings. Use it when you want to bring an older project's memory files up to the current template structure without triggering a full upgrade.
