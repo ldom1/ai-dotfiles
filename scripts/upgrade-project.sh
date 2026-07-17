@@ -174,8 +174,6 @@ EOF
       (( added++ )) || true
     fi
   fi
-
-  setup_project_mcp "$project_path"
 }
 
 if [[ "${1:-}" == "--all" ]]; then
@@ -196,3 +194,8 @@ else
   fi
   upgrade_one "$1"
 fi
+
+# ── Sync centrally-managed MCP servers (qmd, code-index, graphify) ──────────
+# Runs once per invocation (not once per project) since it's a global, not
+# per-project, operation.
+setup_central_mcp
