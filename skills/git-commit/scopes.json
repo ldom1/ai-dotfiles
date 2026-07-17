@@ -14,7 +14,7 @@
     },
     "ai-dotfiles": {
       "detect": ["skills/brain-sync", ".claude/skills", "skills/review"],
-      "scopes": ["skill", "claude", "config", "scripts", "core", "ci", "design", "docs"]
+      "scopes": ["skill", "claude", "config", "scripts", "core", "ci", "design", "docs", "mcp"]
     },
     "validation": {
       "detect": ["docs/srd", "inventory", "fixtures/jupyter"],
