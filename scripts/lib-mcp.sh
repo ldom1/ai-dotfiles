@@ -75,8 +75,8 @@ setup_central_mcp() {
   claude_block=$(sed "s|__QMD_INDEX_PATH__|${qmd_index_path}|g" "$claude_tpl")
   cursor_block=$(sed "s|__QMD_INDEX_PATH__|${qmd_index_path}|g" "$cursor_tpl")
 
-  _merge_central_mcp_file "${HOME}/.claude.json" "$claude_block" "$jq_bin"
-  _merge_central_mcp_file "${HOME}/.cursor/mcp.json" "$cursor_block" "$jq_bin"
+  _merge_central_mcp_file "${HOME}/.claude.json" "$claude_block" "$jq_bin" || return 1
+  _merge_central_mcp_file "${HOME}/.cursor/mcp.json" "$cursor_block" "$jq_bin" || return 1
 
   echo "[mcp-sync] QMD DB: $qmd_index_path"
   if ! command -v qmd &>/dev/null; then
