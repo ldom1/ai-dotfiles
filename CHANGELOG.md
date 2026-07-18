@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-18
+
 ### Added
 - `DESIGN.md` project memory template for original application intent, UX, and durable workflows, kept distinct from live technical `ARCHITECTURE.md`
 - `grill-me` skill for stress-testing plans and designs through one-question-at-a-time interrogation with recommended answers
