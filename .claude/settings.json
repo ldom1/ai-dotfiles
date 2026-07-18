@@ -67,7 +67,14 @@
     "code-simplifier@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true
   },
-  "extraKnownMarketplaces": {},
+  "extraKnownMarketplaces": {
+    "pratique-ia": {
+      "source": {
+        "source": "git",
+        "url": "git@gitlab.artelys.lan:pratiques/pratique-ia.git"
+      }
+    }
+  },
   "effortLevel": "high",
   "pluginConfigs": {
     "finops-audit": {

@@ -1,1 +1,13 @@
-{}
+{
+  "mcpServers": {
+    "qmd": {
+      "command": "qmd",
+      "args": [
+        "mcp"
+      ],
+      "env": {
+        "INDEX_PATH": "/home/lgiron/vault-qmd/brain.db"
+      }
+    }
+  }
+}
