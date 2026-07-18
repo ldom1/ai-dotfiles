@@ -12,7 +12,7 @@
 - `brain-audit:qmd-sync` — `qmd update` with prune reporting, triggers re-embed if stale
 - `brain-audit:queries` — two structured vault analyses: knowledge-gaps (coverage survey vs. recent implementation notes) and roadmap (consolidated status from `projects/*/ROADMAP.md` + recent follow-ups); archives to `resources/queries/archive/`
 - `brain-audit:digest` — weekly summary to `meta/digest-YYYY-MM-DD.md`, resets maintenance clock
-- `qmd mcp` wired globally in `~/.claude/claude.json` (replaces broken `clawvis-skills`)
+- **MCP server centralization**: `qmd`, `code-index-mcp`, and `graphify` are now registered once at Claude Code's user scope (`~/.claude.json`) and — `qmd` only — Cursor's global scope (`~/.cursor/mcp.json`), instead of being copy-pasted into every project. New `ai-dotfiles mcp-sync` command (re)applies them by hand. `ai-dotfiles init`/`ai-dotfiles upgrade` no longer write `qmd`/`code-index` into a new project's `.claude/settings.json`; the graphify skill no longer writes a per-project Claude Code entry into `.mcp.json` either (its Cursor entry is unchanged, still per-project). Forward-only: already-initialized projects keep their existing per-project entries untouched. Corrects the claim above — `~/.claude/claude.json` (note the extra `.claude/` segment) is not a path Claude Code actually reads; the real global-scope location is `~/.claude.json` (home root, confirmed via https://code.claude.com/docs/en/mcp).
 
 ### Changed
 - `.gitignore` now excludes Claude daemon/job runtime state plus last cleanup/update result markers

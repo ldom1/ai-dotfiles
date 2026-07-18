@@ -1,9 +1,5 @@
 {
   "mcpServers": {
-    "code-index": {
-      "command": "uvx",
-      "args": ["code-index-mcp", "--project-path", "__PROJECT_PATH__"]
-    },
     "qmd": {
       "command": "qmd",
       "args": ["mcp"],

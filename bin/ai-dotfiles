@@ -8,6 +8,7 @@
 #   sync --all                    sync all registered projects
 #   merge-memory <project-path>   backfill OKF frontmatter + missing sections only
 #   merge-memory --all            merge all registered projects
+#   mcp-sync                      (re)apply centrally-managed MCP servers globally
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
@@ -21,8 +22,9 @@ case "$CMD" in
   upgrade)      bash "$AI_DOTFILES/scripts/upgrade-project.sh" "$@" ;;
   sync)         bash "$AI_DOTFILES/scripts/sync-project.sh"    "$@" ;;
   merge-memory) bash "$AI_DOTFILES/scripts/merge-memory.sh"    "$@" ;;
+  mcp-sync)     bash "$AI_DOTFILES/scripts/mcp-sync.sh"        "$@" ;;
   *)
-    echo "Usage: ai-dotfiles <init|upgrade|sync|merge-memory> [project-path|--all]" >&2
+    echo "Usage: ai-dotfiles <init|upgrade|sync|merge-memory|mcp-sync> [project-path|--all]" >&2
     exit 1
     ;;
 esac

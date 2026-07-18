@@ -186,9 +186,9 @@ if [[ -d "$PRATIQUE_IA_STANDARDS" ]]; then
   done
 fi
 
-# ── Set up per-project MCP servers ───────────────────────────────────────────
+# ── Sync centrally-managed MCP servers (qmd, code-index, graphify) ──────────
 source "$SCRIPT_DIR/lib-mcp.sh"
-setup_project_mcp "$PROJECT_PATH"
+setup_central_mcp
 
 echo ""
 echo "[init-project] Structure ready. Run the following in Claude Code to populate the files:"
