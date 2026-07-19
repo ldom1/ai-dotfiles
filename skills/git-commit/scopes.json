@@ -49,7 +49,9 @@
         "ansible.cfg",
         "site.yml",
         "playbook.yml",
-        "roles"
+        "roles",
+        "ansible/server-setup/ansible.cfg",
+        "ansible/server-setup/site.yml"
       ],
       "scopes": [
         "core",
