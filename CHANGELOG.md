@@ -4,6 +4,8 @@
 
 ### Fixed
 - Added missing Claude plugin metadata for `sop-builder` so the skill structure CI check passes.
+- Allowed standard merge commit messages in the git-commit hook.
+- Added `ansible/server-setup` detection markers to the git-commit scope registry.
 
 ## [0.3.0] - 2026-07-18
 

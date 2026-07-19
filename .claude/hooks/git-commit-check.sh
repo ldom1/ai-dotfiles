@@ -24,11 +24,14 @@ if ! echo "$CMD" | grep -qE 'git\s+commit'; then
   exit 0
 fi
 
-# Extract commit message from -m flag
+# Extract commit message from -m flag. Match same-quote pairs greedily so
+# an apostrophe inside the message (e.g. "Merge branch 'main' into develop",
+# "fix(core): don't crash") doesn't truncate the match at the first quote
+# of either kind.
 MSG=$(echo "$CMD" | python3 -c "
 import re, sys
 cmd = sys.stdin.read()
-m = re.search(r'-m\s+[\"\'](.*?)[\"\']', cmd, re.DOTALL)
+m = re.search(r'-m\s+\"(.*)\"', cmd, re.DOTALL) or re.search(r\"-m\s+'(.*)'\", cmd, re.DOTALL)
 if m:
     print(m.group(1).strip())
 " 2>/dev/null || true)
@@ -42,6 +45,13 @@ if [ -z "$MSG" ]; then
       "permissionDecisionReason": "git-commit skill reminder: validate type(scope): description before committing"
     }
   }'
+  exit 0
+fi
+
+# Merge commits (two parents) record a merge of two histories, not authored
+# work — git's standard "Merge branch/pull request/remote-tracking branch"
+# messages are exempt from the type(scope) convention.
+if echo "$MSG" | grep -qE "^Merge (branch|pull request|remote-tracking branch) "; then
   exit 0
 fi
 

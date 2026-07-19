@@ -18,6 +18,10 @@ type(scope): imperative description
 - Imperative mood: *add*, *fix*, *update* — not *added*, *fixes*.
 - Lowercase after the colon unless a proper noun.
 
+## Merge commits — exempt
+
+A merge commit (two parents) records a merge of two histories, not authored work. Git's standard messages — `Merge branch 'X' into Y`, `Merge pull request #N from ...`, `Merge remote-tracking branch ...` — are exempt from the type(scope) convention and the hook allows them unchanged. Do not force a merge commit message into `type(scope):` form.
+
 ## Types (fixed)
 
 | Type | When |
