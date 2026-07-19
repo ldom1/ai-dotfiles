@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- Added missing Claude plugin metadata for `sop-builder` so the skill structure CI check passes.
+
 ## [0.3.0] - 2026-07-18
 
 ### Added
