@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- Five frontend/design skills pre-enabled by default via `.claude/settings.json.tpl`: `frontend-design` (already present, now documented), `web-artifacts-builder`, `canvas-design`, `algorithmic-art` (all three from the `example-skills` plugin, `anthropic-agent-skills` marketplace / [anthropics/skills](https://github.com/anthropics/skills)), and `ui-ux-pro-max` (third-party, [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)). `extraKnownMarketplaces` registers the two new marketplaces so `scripts/install.sh` picks them up on any machine after `git pull` with no manual `/plugin install` step. See README "Frontend & design skills" for how the five compose.
+
 ### Fixed
 - Added missing Claude plugin metadata for `sop-builder` so the skill structure CI check passes.
 - Allowed standard merge commit messages in the git-commit hook.

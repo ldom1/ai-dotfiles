@@ -56,6 +56,28 @@ bash scripts/update-wiki.sh
 
 ---
 
+## Frontend & design skills
+
+Five design/frontend skills are pre-enabled by default via `.claude/settings.json.tpl` (regenerated into `.claude/settings.json` by `scripts/install.sh` on every machine) — no manual `/plugin install` needed after `git pull` + re-running install. They come from three different sources and cover distinct, complementary stages of building a visual artifact:
+
+| Skill | Source | Role |
+|-------|--------|------|
+| `frontend-design` | `claude-plugins-official` (Anthropic) | Production-grade UI code for real apps — avoids generic "AI-generated" look. Use for actual app screens/components. |
+| `web-artifacts-builder` | `example-skills@anthropic-agent-skills` ([anthropics/skills](https://github.com/anthropics/skills)) | Bundles a multi-component React + Tailwind + shadcn/ui build into a single self-contained HTML artifact. Use for interactive claude.ai artifacts. |
+| `canvas-design` | `example-skills@anthropic-agent-skills` | Static visual art — posters, social graphics, cover images — as PDF/PNG, via a "design philosophy first" workflow. |
+| `algorithmic-art` | `example-skills@anthropic-agent-skills` | Generative/procedural art via p5.js — flow fields, particle systems, fractals, seeded randomness. |
+| `ui-ux-pro-max` | `ui-ux-pro-max-skill` ([nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill), third-party) | Design-intelligence lookup: color palettes, font pairings, UX guidelines, chart types. Feeds decisions *into* the other four rather than producing output itself. |
+
+**Why they're complementary, not redundant:** `ui-ux-pro-max` supplies the design decisions (palette, typography, layout guideline); `frontend-design` and `web-artifacts-builder` turn those decisions into working UI code (a real app vs. a self-contained artifact, respectively); `canvas-design` and `algorithmic-art` cover static and generative *visual art* rather than UI — different output shape (PDF/PNG image) than the code-producing skills. Claude picks the matching skill from the task's output shape (app screen vs. artifact vs. static image vs. generative art vs. "what palette should I use").
+
+`example-skills` bundles more than the three listed here (`mcp-builder`, `webapp-testing`, `theme-factory`, etc.) — installing the one plugin gives access to all of them.
+
+`web-artifacts-builder`, `canvas-design`, and `algorithmic-art` come from Anthropic's official examples repo but are **not** part of `claude-plugins-official` (Claude Code's built-in marketplace) — they need `anthropic-agent-skills` registered as a known marketplace, which `settings.json.tpl` now does via `extraKnownMarketplaces`. Same pattern for the third-party `ui-ux-pro-max-skill` marketplace.
+
+To pick these up on a machine that already ran `install.sh` before this change: `git pull && bash scripts/install.sh` (idempotent — regenerates `settings.json` from the template).
+
+---
+
 ## Project brain sync
 
 Each project can carry a persistent knowledge layer — git-tracked in the project repo and mirrored in the Local Brain vault — so the agent always loads structured context without manual prompting.
