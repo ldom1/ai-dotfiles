@@ -1,0 +1,10 @@
+{
+  "name": "canvas-design",
+  "version": "1.0.0",
+  "description": "Create beautiful visual art in .png and .pdf documents using design philosophy.",
+  "author": {
+    "name": "Anthropic",
+    "github": "anthropics"
+  },
+  "homepage": "https://github.com/anthropics/skills/tree/main/skills/canvas-design"
+}

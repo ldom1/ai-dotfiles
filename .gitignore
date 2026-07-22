@@ -61,6 +61,7 @@ scripts/sync-coe-skills.sh
 scripts/.coe-skills-sync-list
 skills/coe-*
 .claude/skills/coe-*
+.vibe/skills/coe-*
 .cursor/skills/coe-*
 
 # Python
