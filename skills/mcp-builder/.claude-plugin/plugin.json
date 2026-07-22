@@ -1,0 +1,10 @@
+{
+  "name": "mcp-builder",
+  "version": "1.0.0",
+  "description": "Guide for creating high-quality MCP (Model Context Protocol) servers that enable LLMs to interact with external services through well-designed tools.",
+  "author": {
+    "name": "Anthropic",
+    "github": "anthropics"
+  },
+  "homepage": "https://github.com/anthropics/skills/tree/main/skills/mcp-builder"
+}
