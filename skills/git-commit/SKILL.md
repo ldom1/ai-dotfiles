@@ -34,14 +34,7 @@ A merge commit (two parents) records a merge of two histories, not authored work
 
 ## Scopes (finite, per project type)
 
-Scopes are defined in `~/ai-dotfiles/skills/git-commit/scopes.json`.
-
-| Project type | Detection markers | Valid scopes |
-|---|---|---|
-| `ai-dotfiles` | `skills/brain-sync`, `.claude/skills` | `skill`, `claude`, `config`, `scripts`, `core`, `ci`, `design`, `docs` |
-| `python` | `pyproject.toml`, `uv.lock`, `setup.py` | `core`, `ci`, `design`, `docs`, `api`, `tests`, `config`, `vulnerability` |
-| `nextjs` | `next.config.*` | `core`, `ci`, `design`, `docs`, `ui`, `api`, `auth`, `tests`, `config`, `vulnerability` |
-| `ansible` | `ansible.cfg`, `site.yml`, `roles/` | `core`, `ci`, `design`, `docs`, `roles`, `inventory`, `config`, `tests`, `vulnerability` |
+Scopes are defined in `~/ai-dotfiles/skills/git-commit/scopes.json` — that file is the single source of truth. Read it at commit time; do not rely on a copied table here.
 
 ## Process (run before every commit)
 

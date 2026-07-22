@@ -66,8 +66,22 @@
       ]
     },
     "ai-dotfiles": {
-      "detect": ["skills/brain-sync", ".claude/skills", "skills/review"],
-      "scopes": ["skill", "claude", "config", "scripts", "core", "ci", "design", "docs", "mcp"]
+      "detect": [
+        "skills/brain-sync",
+        ".claude/skills",
+        "skills/review"
+      ],
+      "scopes": [
+        "skill",
+        "claude",
+        "config",
+        "scripts",
+        "core",
+        "ci",
+        "design",
+        "docs",
+        "mcp"
+      ]
     },
     "validation": {
       "detect": [
@@ -89,8 +103,25 @@
       ]
     },
     "brain-vault": {
-      "detect": [".obsidian", "_templates"],
-      "scopes": ["specs", "plans", "decisions", "digest", "projects", "sop", "config", "project", "pitfalls", "resources", "inbox", "meta", "docs"]
+      "detect": [
+        ".obsidian",
+        "_templates"
+      ],
+      "scopes": [
+        "specs",
+        "plans",
+        "decisions",
+        "digest",
+        "projects",
+        "sop",
+        "config",
+        "project",
+        "pitfalls",
+        "resources",
+        "inbox",
+        "meta",
+        "docs"
+      ]
     }
   }
 }

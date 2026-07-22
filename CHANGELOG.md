@@ -7,6 +7,8 @@
 - `brain-session-start.sh` (SessionStart hook) now detects when `settings.json` is behind `settings.json.tpl` (new `enabledPlugins`/`extraKnownMarketplaces` keys) and automatically re-runs `scripts/install.sh` — so forgetting to re-run install after a `git pull` self-heals on the next session instead of silently missing new plugins.
 
 ### Changed
+- CI skill validation now rejects duplicate entries in `skills/git-commit/scopes.json` and verifies shared skills are symlinked in `.claude/skills/` and `.cursor/skills/`.
+- `review` skill moved to canonical `skills/review/` with Claude/Cursor/Vibe symlinks; `git-commit` SKILL.md no longer carries a stale scope snapshot table.
 - `scripts/install.sh`'s skill-linking loop now symlinks `skills/<name>` into `.cursor/skills/<name>` per-skill (same as `.claude/skills/`/`.vibe/skills/`), replacing the old single `.cursor/skills -> ../skills` directory symlink. The loop now also skips any skill matching `coe-*` for all three tools, so internal/company skills synced locally (via the separate, gitignored `scripts/sync-coe-skills.sh`) are excluded from Claude Code, Vibe, and Cursor's runtime view alike — previously the `coe-*` `.gitignore` rules only kept them out of git, not out of any tool's local skill list. See README "Skill discovery across tools".
 - Added `.vibe/skills/coe-*` to `.gitignore` (previously only `.claude/skills/coe-*` and `.cursor/skills/coe-*` were listed).
 

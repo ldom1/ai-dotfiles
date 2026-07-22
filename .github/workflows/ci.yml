@@ -73,3 +73,45 @@ jobs:
             fi
           done
           exit $fail
+      - name: git-commit scopes.json has no duplicate entries
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          from pathlib import Path
+          data = json.loads(Path("skills/git-commit/scopes.json").read_text())
+          fail = False
+          for ptype, cfg in data.get("project_types", {}).items():
+              for key in ("detect", "scopes"):
+                  items = cfg.get(key, [])
+                  seen = set()
+                  for item in items:
+                      if item in seen:
+                          print(f"FAIL: duplicate {key!r} {item!r} in project type {ptype!r}", file=sys.stderr)
+                          fail = True
+                      seen.add(item)
+          if fail:
+              sys.exit(1)
+          print("OK: skills/git-commit/scopes.json")
+          PY
+      - name: Shared skills are symlinked in Claude and Cursor
+        run: |
+          fail=0
+          for skill_dir in skills/*/; do
+            name=$(basename "$skill_dir")
+            [[ "$name" == coe-* ]] && continue
+            [[ -f "$skill_dir/SKILL.md" ]] || continue
+            for target in .claude/skills/"$name" .cursor/skills/"$name"; do
+              if [[ ! -L "$target" ]]; then
+                echo "FAIL: $target is not a symlink to skills/$name" >&2
+                fail=1
+                continue
+              fi
+              resolved=$(readlink -f "$target")
+              expected=$(readlink -f "$skill_dir")
+              if [[ "$resolved" != "$expected" ]]; then
+                echo "FAIL: $target -> $resolved (expected $expected)" >&2
+                fail=1
+              fi
+            done
+          done
+          exit $fail
