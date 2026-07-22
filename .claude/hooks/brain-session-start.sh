@@ -11,6 +11,41 @@ LOG_FILE="$LOG_DIR/brain-load.log"
 
 mkdir -p "$LOG_DIR"
 
+# ── Auto-heal settings.json if it's behind settings.json.tpl (e.g. after a
+# git pull that enabled new plugins but install.sh wasn't re-run). Only
+# checks keys install.sh actually templates (enabledPlugins,
+# extraKnownMarketplaces); local-only additions in settings.json are left
+# untouched. Takes effect from the *next* session — Claude Code has already
+# read settings.json by the time this hook runs.
+TPL_FILE="$AI_DOTFILES/.claude/settings.json.tpl"
+SETTINGS_FILE="$AI_DOTFILES/.claude/settings.json"
+if [[ -f "$TPL_FILE" ]]; then
+  DRIFT=$(python3 - "$TPL_FILE" "$SETTINGS_FILE" 2>/dev/null <<'EOF' || true
+import json, sys
+tpl_path, cur_path = sys.argv[1], sys.argv[2]
+tpl = json.load(open(tpl_path))
+try:
+    cur = json.load(open(cur_path))
+except (FileNotFoundError, json.JSONDecodeError):
+    cur = {}
+missing = []
+for name, enabled in tpl.get("enabledPlugins", {}).items():
+    if cur.get("enabledPlugins", {}).get(name) != enabled:
+        missing.append(name)
+for name in tpl.get("extraKnownMarketplaces", {}):
+    if name not in cur.get("extraKnownMarketplaces", {}):
+        missing.append(f"marketplace:{name}")
+print(",".join(missing))
+EOF
+  )
+  if [[ -n "$DRIFT" ]]; then
+    echo "[install-check] settings.json missing: $DRIFT — running scripts/install.sh" | tee -a "$LOG_FILE"
+    bash "$AI_DOTFILES/scripts/install.sh" >>"$LOG_FILE" 2>&1 \
+      && echo "[install-check] install.sh done — new plugins active from next session" \
+      || echo "[install-check] install.sh failed — see $LOG_FILE"
+  fi
+fi
+
 ENV_FILE="${BRAIN_ENV_FILE:-}"
 if [[ -z "$ENV_FILE" || ! -f "$ENV_FILE" ]]; then
   ENV_FILE="$AI_DOTFILES/config/brain.env"

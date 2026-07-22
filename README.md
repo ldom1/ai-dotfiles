@@ -74,7 +74,7 @@ Five design/frontend skills are pre-enabled by default via `.claude/settings.jso
 
 `web-artifacts-builder`, `canvas-design`, and `algorithmic-art` come from Anthropic's official examples repo but are **not** part of `claude-plugins-official` (Claude Code's built-in marketplace) — they need `anthropic-agent-skills` registered as a known marketplace, which `settings.json.tpl` now does via `extraKnownMarketplaces`. Same pattern for the third-party `ui-ux-pro-max-skill` marketplace.
 
-To pick these up on a machine that already ran `install.sh` before this change: `git pull && bash scripts/install.sh` (idempotent — regenerates `settings.json` from the template).
+To pick these up on a machine that already ran `install.sh` before this change: `git pull && bash scripts/install.sh` (idempotent — regenerates `settings.json` from the template). You don't have to remember this yourself — the `SessionStart` hook (`brain-session-start.sh`) compares `settings.json` against `settings.json.tpl` on every session and re-runs `install.sh` automatically if it's behind, logging to `.claude/logs/brain-load.log`. New plugins from an auto-heal become active starting the *next* session, since Claude Code reads `settings.json` before the hook runs.
 
 ---
 
