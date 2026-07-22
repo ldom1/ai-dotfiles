@@ -73,9 +73,17 @@ Six design/frontend skills are available by default, from two different mechanis
 
 **Two enablement mechanisms, deliberately:**
 - `frontend-design` and `ui-ux-pro-max` are enabled as Claude Code **plugins** via `enabledPlugins`/`extraKnownMarketplaces` in `.claude/settings.json.tpl` (regenerated into `settings.json` by `scripts/install.sh`).
-- `web-artifacts-builder`, `canvas-design`, `algorithmic-art`, and `mcp-builder` are vendored as **local skills** under `skills/<name>/SKILL.md`, cherry-picked from Anthropic's `example-skills` plugin (which bundles 17 skills — `docx`, `pdf`, `webapp-testing`, `theme-factory`, etc. — most unwanted here). `scripts/install.sh` auto-symlinks any `skills/<name>` with a `SKILL.md` into `.claude/skills/` and `.vibe/skills/`, so no plugin/marketplace entry is needed for these four, and no unwanted skills come along for the ride.
+- `web-artifacts-builder`, `canvas-design`, `algorithmic-art`, and `mcp-builder` are vendored as **local skills** under `skills/<name>/SKILL.md`, cherry-picked from Anthropic's `example-skills` plugin (which bundles 17 skills — `docx`, `pdf`, `webapp-testing`, `theme-factory`, etc. — most unwanted here). `scripts/install.sh` auto-symlinks any `skills/<name>` with a `SKILL.md` into `.claude/skills/`, `.vibe/skills/`, and `.cursor/skills/`, so no plugin/marketplace entry is needed for these four, and no unwanted skills come along for the ride. See "Skill discovery across tools" below for how that linking works.
 
 To pick these up on a machine that already ran `install.sh` before this change: `git pull && bash scripts/install.sh` (idempotent — resymlinks `skills/`, regenerates `settings.json` from the template). You don't have to remember this yourself — the `SessionStart` hook (`brain-session-start.sh`) compares `settings.json` against `settings.json.tpl` on every session and re-runs `install.sh` automatically if it's behind, logging to `.claude/logs/brain-load.log`. New plugins from an auto-heal become active starting the *next* session, since Claude Code reads `settings.json` before the hook runs; local skills under `skills/` are picked up as soon as `install.sh` resymlinks them.
+
+### Skill discovery across tools
+
+Every skill under `skills/<name>/` is symlinked by `scripts/install.sh` into three per-tool directories — `.claude/skills/<name>`, `.vibe/skills/<name>`, `.cursor/skills/<name>` — one flat loop, same rule for all three: link it if `skills/<name>/SKILL.md` exists, skip it if the name matches `coe-*`.
+
+`coe-*` is reserved for internal/company skills synced locally by a separate, gitignored `scripts/sync-coe-skills.sh` — never committed to this repo (`skills/coe-*`, `.claude/skills/coe-*`, `.vibe/skills/coe-*`, `.cursor/skills/coe-*` are all in `.gitignore`). The `install.sh` filter keeps them out of all three tools' runtime view too, not just out of git — a `coe-*` skill present locally is invisible to Claude Code, Vibe, and Cursor alike until the exclusion is deliberately lifted.
+
+(Prior to this, `install.sh`'s skill loop had no `coe-*` filter at all — `.claude/skills`/`.vibe/skills` linked every skill unconditionally, and `.cursor/skills` was a single symlink to the whole `skills/` directory. `coe-*` was kept out of git via `.gitignore`, but a `coe-*` skill present locally was fully visible to all three tools at runtime. The filter above is what actually enforces the exclusion now, for all three.)
 
 ---
 
@@ -219,18 +227,18 @@ ai-dotfiles/
 │   ├── CLAUDE.md                    # Global instructions (tool-native, no ai-dotfiles refs)
 │   ├── LocalBrain.md                # Vault layout pointer
 │   ├── RTK.md                       # RTK reference
-│   ├── skills/                      # symlinks → ../../skills/<name> (Claude Code)
+│   ├── skills/                      # symlinks → ../../skills/<name> (Claude Code, coe-* excluded)
 │   ├── settings.json.tpl            # Settings template (HOME placeholder)
 │   ├── settings.local.json.example  # Machine-specific permissions template
 │   └── hooks/
 │       └── rtk-rewrite.sh           # PreToolUse: rtk rewrite + tail cap on noisy output
 ├── .cursor/
 │   ├── rules/                       # brain-sync, brain-load, finops-claude, graphify-context (.mdc)
-│   └── skills                       # symlink → ../skills (shared skill source)
+│   └── skills/                      # symlinks → ../skills/<name> (Cursor, coe-* excluded)
 ├── .vibe/
 │   ├── AGENTS.md                    # Mistral Vibe bootstrap (canonical)
 │   ├── README.md                    # Vibe skill discovery and trust
-│   └── skills/                      # symlinks → skills/* (Mistral Vibe discovery)
+│   └── skills/                      # symlinks → skills/* (Mistral Vibe, coe-* excluded)
 ├── skills/
 │   ├── brain-sync/                  # Sync Local Brain at session start/end
 │   │   ├── SKILL.md

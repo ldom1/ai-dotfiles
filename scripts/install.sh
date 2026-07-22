@@ -40,17 +40,19 @@ link() {
 link ".claude"
 link ".cursor"
 
-# ── 1b. skills/ → .claude/skills/ and .vibe/skills/ (Claude + Vibe discovery) ─
-header "Linking skills (Claude Code + Vibe)"
+# ── 1b. skills/ → .claude/skills/, .vibe/skills/, .cursor/skills/ (per-skill; coe-* excluded) ─
+header "Linking skills (Claude Code + Vibe + Cursor)"
 
-mkdir -p "$DOTFILES/.claude/skills" "$DOTFILES/.vibe/skills"
+mkdir -p "$DOTFILES/.claude/skills" "$DOTFILES/.vibe/skills" "$DOTFILES/.cursor/skills"
 for skill_dir in "$DOTFILES/skills"/*; do
   [[ -d "$skill_dir" ]] || continue
   name=$(basename "$skill_dir")
+  [[ "$name" == coe-* ]] && continue
   [[ -f "$skill_dir/SKILL.md" ]] || continue
   ln -sfn "../../skills/$name" "$DOTFILES/.claude/skills/$name"
   ln -sfn "../../skills/$name" "$DOTFILES/.vibe/skills/$name"
-  log "skills/$name → .claude/skills/ + .vibe/skills/"
+  ln -sfn "../../skills/$name" "$DOTFILES/.cursor/skills/$name"
+  log "skills/$name → .claude/skills/ + .vibe/skills/ + .cursor/skills/"
 done
 
 # ── 2. Generate settings.json from template ────────────────────────────────────

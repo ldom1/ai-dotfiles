@@ -6,6 +6,10 @@
 - Six frontend/design skills available by default via two mechanisms: `frontend-design` and `ui-ux-pro-max` (third-party, [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)) as Claude Code plugins in `.claude/settings.json.tpl`/`extraKnownMarketplaces`; `web-artifacts-builder`, `canvas-design`, `algorithmic-art`, and `mcp-builder` vendored as local skills under `skills/<name>/` (cherry-picked from Anthropic's `example-skills` plugin / [anthropics/skills](https://github.com/anthropics/skills), which bundles 17 skills total — most not wanted here), auto-symlinked into `.claude/skills/` by `scripts/install.sh`. See README "Frontend & design skills" for how the six compose.
 - `brain-session-start.sh` (SessionStart hook) now detects when `settings.json` is behind `settings.json.tpl` (new `enabledPlugins`/`extraKnownMarketplaces` keys) and automatically re-runs `scripts/install.sh` — so forgetting to re-run install after a `git pull` self-heals on the next session instead of silently missing new plugins.
 
+### Changed
+- `scripts/install.sh`'s skill-linking loop now symlinks `skills/<name>` into `.cursor/skills/<name>` per-skill (same as `.claude/skills/`/`.vibe/skills/`), replacing the old single `.cursor/skills -> ../skills` directory symlink. The loop now also skips any skill matching `coe-*` for all three tools, so internal/company skills synced locally (via the separate, gitignored `scripts/sync-coe-skills.sh`) are excluded from Claude Code, Vibe, and Cursor's runtime view alike — previously the `coe-*` `.gitignore` rules only kept them out of git, not out of any tool's local skill list. See README "Skill discovery across tools".
+- Added `.vibe/skills/coe-*` to `.gitignore` (previously only `.claude/skills/coe-*` and `.cursor/skills/coe-*` were listed).
+
 ### Fixed
 - Added missing Claude plugin metadata for `sop-builder` so the skill structure CI check passes.
 - Allowed standard merge commit messages in the git-commit hook.
