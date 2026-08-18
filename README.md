@@ -22,6 +22,7 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 /plugin install create-pr@ldom1/ai-dotfiles
 /plugin install grill-me@ldom1/ai-dotfiles
 /plugin install sop-builder@ldom1/ai-dotfiles
+/plugin install photo-archive-triage@ldom1/ai-dotfiles
 /plugin install server-audit@ldom1/ai-dotfiles
 /plugin install graphify@ldom1/ai-dotfiles
 /plugin install finops-audit@ldom1/ai-dotfiles
@@ -38,6 +39,7 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 | [create-pr](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Create-PR) | GitHub PR with branch + commit conventions |
 | grill-me | Stress-test plans through one-question-at-a-time design interrogation |
 | sop-builder | Turn process notes into validated seven-section SOP documents |
+| photo-archive-triage | Non-destructive photo/video triage: exact dedup, corrupt screening, capture-date recovery |
 | [server-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Server-Audit) | Infra audit: parallel checks and JSON reports |
 | [graphify](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Graphify) | `/graphify` — folder → knowledge graph; also [graphify.net](https://graphify.net/) |
 | [finops-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/FinOps-Audit) | Weekly token spend review → vault |

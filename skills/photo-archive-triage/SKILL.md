@@ -14,6 +14,7 @@ description: >
   plain "dedup this folder" ask, since that hides the corrupt-file and
   wrong-date problems this skill catches. Skip it for a single file or an
   already-organized library with no dedup/corruption/date concerns.
+user-invocable: true
 ---
 
 # Photo & Video Archive Triage
