@@ -23,7 +23,9 @@
       "detect": [
         "pyproject.toml",
         "uv.lock",
-        "setup.py"
+        "setup.py",
+        "backend/pyproject.toml",
+        "backend/uv.lock"
       ],
       "scopes": [
         "core",
