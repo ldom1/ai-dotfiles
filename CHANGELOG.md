@@ -11,6 +11,7 @@
 - Added `.vibe/skills/coe-*` to `.gitignore` (previously only `.claude/skills/coe-*` and `.cursor/skills/coe-*` were listed).
 
 ### Fixed
+- `code-index` and `graphify`'s central MCP entries (`config/memory-templates/mcp-central-claude.json.tpl`) now use `${CLAUDE_PROJECT_DIR:-.}` instead of bare `${CLAUDE_PROJECT_DIR}`. Claude Code only sets `CLAUDE_PROJECT_DIR` in the *spawned server's* environment, not in its own env used to expand `${VAR}` in user-scoped `~/.claude.json` entries — so the bare form always showed a "Missing environment variables" warning and failed to connect. Run `ai-dotfiles mcp-sync` (or restart Claude Code) to pick up the fix.
 - Added missing Claude plugin metadata for `sop-builder` so the skill structure CI check passes.
 - Allowed standard merge commit messages in the git-commit hook.
 - Added `ansible/server-setup` detection markers to the git-commit scope registry.
