@@ -6,7 +6,7 @@
         "mcp"
       ],
       "env": {
-        "INDEX_PATH": "/home/lgiron/vault-qmd/brain.db"
+        "INDEX_PATH": "/home/lgiron/vault-qmd/index.sqlite"
       }
     }
   }
