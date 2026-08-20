@@ -1,5 +1,4 @@
 {
-  "model": "opus[1m]",
   "permissions": {
     "allow": [
       "Write(/mnt/c/Users/louis/Documents/Local Brain/*)",
@@ -67,7 +66,8 @@
     "frontend-design@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
-    "ui-ux-pro-max@ui-ux-pro-max-skill": true
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true,
+    "vercel@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "pratique-ia": {
@@ -96,5 +96,38 @@
   },
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
-  "skipWorkflowUsageWarning": true
+  "skipWorkflowUsageWarning": true,
+  "autoMode": {
+    "environment": [
+      "### Org-wide",
+      "**Organization**: None configured",
+      "**Cloud provider(s)**: AWS (aws CLI used, 15×); infisical.com (secrets)",
+      "**Repository visibility**: Private — ldom1/ansible-server-setup (via gh)",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: Infisical (infisical.dombot.tech, app.infisical.com; CLI used 36×); CI secret ANSIBLE_VAULT_PASSWORD referenced in this repo's CI config",
+      "**Default / protected branches**: default branch unknown (origin/HEAD unset); protected branches: none listed (rulesets not queryable here — do not assume unprotected)",
+      "**CI/CD deploy targets**: Coolify (coolify.dombot.tech); Vercel (vercel.app preview deployments seen)",
+      "**Network posture**: Tailscale-connected (100.85.131.0 contacted 12×; tailscale CLI used); sslip.io nip-style hosts observed",
+      "**Source control**: This repo (github.com/ldom1/ansible-server-setup) and its origin remote only",
+      "**Trusted internal domains**: infisical.dombot.tech, coolify.dombot.tech, dombot.tech (this project's Infisical/Coolify hosts)",
+      "**Trusted cloud buckets**: dom-coolify-persistence (config-derived — not a confirmed upload destination; uploads of local data still require confirmation)",
+      "**Key internal services**: Infisical (infisical.dombot.tech, app.infisical.com), Coolify (coolify.dombot.tech), Tailscale node 100.85.131.0",
+      "**Internal package registry**: None configured",
+      "**Sensitive data locations & audiences**: Ansible vault-protected files (ANSIBLE_VAULT_PASSWORD), Infisical-managed secrets — share only with audiences cleared at the [named+specifics] bar",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment; this repo's live target hp-elite-server (personal server, not prod-named)",
+      "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic",
+      "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment; Ansible inventory/vault files for hp-elite-server",
+      "### User-specific",
+      "**Primary use of Claude Code**: software development (Ansible-based personal server provisioning)",
+      "**Trusted repo**: /home/lgiron/lab/server-setup (github.com/ldom1/ansible-server-setup, private) and its origin remote",
+      "**Org-specific CLIs**: infisical, aws, vercel, tailscale, rtk (token proxy wrapper from ~/ai-dotfiles)",
+      "**routine under lgiron/ prefix**: brain-vault writes under $BRAIN_PATH/inbox/daily/{implementation,specs,plans}/server-setup/ per ~/.claude/CLAUDE.md conventions"
+    ],
+    "soft_deny": [
+      "$defaults",
+      "Bash(aws s3 rm:*) — scope to dom-coolify-persistence and other buckets touched by this project",
+      "Bash(infisical secrets delete:*) — Infisical secret deletion in this project's workspace"
+    ]
+  }
 }
