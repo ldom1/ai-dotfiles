@@ -37,23 +37,26 @@ build_interactive_config() {
   user="$(ask "SSH user" "$USER")"
   port="$(ask "SSH port" "22")"
 
-  local use_docker use_nginx use_tailscale use_authelia use_cron use_git
+  local use_docker use_network use_tailscale use_authelia use_cron use_git use_coolify use_systemd
   yn "Run Docker check?" "y" && use_docker=true || use_docker=false
-  yn "Run nginx check?" "y" && use_nginx=true || use_nginx=false
+  yn "Run network check? (nginx and/or Traefik, endpoint reachability)" "y" && use_network=true || use_network=false
   yn "Run Tailscale check?" "y" && use_tailscale=true || use_tailscale=false
   yn "Run Authelia check?" "y" && use_authelia=true || use_authelia=false
   yn "Run cron check?" "y" && use_cron=true || use_cron=false
   yn "Run git repo check?" "y" && use_git=true || use_git=false
+  yn "Run Coolify check?" "n" && use_coolify=true || use_coolify=false
+  yn "Run systemd check? (failed units + required services)" "y" && use_systemd=true || use_systemd=false
 
   local endpoint1 endpoint2 authelia_portal authelia_protected
-  local tailscale_peer1 git_repo1 cron_pattern1
-  endpoint1="$(ask "nginx endpoint #1 URL (optional)" "")"
-  endpoint2="$(ask "nginx endpoint #2 URL (optional)" "")"
+  local tailscale_peer1 git_repo1 cron_pattern1 systemd_service1
+  endpoint1="$(ask "network endpoint #1 URL (optional)" "")"
+  endpoint2="$(ask "network endpoint #2 URL (optional)" "")"
   authelia_portal="$(ask "Authelia portal URL (optional)" "")"
   authelia_protected="$(ask "Authelia protected URL (optional)" "")"
   tailscale_peer1="$(ask "Tailscale peer hostname/IP (optional)" "")"
-  cron_pattern1="$(ask "Cron required pattern (optional, e.g. backup.sh)" "")"
+  cron_pattern1="$(ask "Cron/systemd-timer required pattern (optional, e.g. backup.sh)" "")"
   git_repo1="$(ask "Git repo path to validate (optional)" "")"
+  systemd_service1="$(ask "Required systemd service to verify active (optional, e.g. docker)" "")"
 
   python3 - "$RUNTIME_CONFIG" <<PY
 import json, sys
@@ -61,12 +64,12 @@ out = sys.argv[1]
 cfg = {
   "ssh": {"user": "$user", "host": "$host", "port": int("$port")},
   "docker": {"target": "remote" if "$host" else "local", "required_containers": [], "health_required": True},
-  "nginx": {
+  "network": {
     "target": "remote" if "$host" else "local",
     "test_endpoints": [],
-    "require_buffering_directives": ["proxy_buffering", "proxy_buffers", "proxy_busy_buffers_size"]
+    "require_buffering_directives": []
   },
-  "tailscale": {"target": "local", "peer_hosts": []},
+  "tailscale": {"target": "remote" if "$host" else "local", "peer_hosts": []},
   "authelia": {
     "target": "local",
     "portal_url": "$authelia_portal",
@@ -76,23 +79,28 @@ cfg = {
     "password_env": "AUTHELIA_PASS"
   },
   "cron": {"target": "remote" if "$host" else "local", "required_patterns": [], "max_age_hours": 24},
-  "git": {"target": "remote" if "$host" else "local", "repo_paths": []}
+  "git": {"target": "remote" if "$host" else "local", "repo_paths": []},
+  "coolify": {"target": "remote" if "$host" else "local", "required_containers": ["coolify", "coolify-proxy", "coolify-db", "coolify-redis", "coolify-realtime"]},
+  "systemd": {"target": "remote" if "$host" else "local", "required_services": []}
 }
-if "$endpoint1": cfg["nginx"]["test_endpoints"].append({"name":"endpoint-1","url":"$endpoint1","expected_status":200})
-if "$endpoint2": cfg["nginx"]["test_endpoints"].append({"name":"endpoint-2","url":"$endpoint2","expected_status":200})
+if "$endpoint1": cfg["network"]["test_endpoints"].append({"name":"endpoint-1","url":"$endpoint1","expected_status":200})
+if "$endpoint2": cfg["network"]["test_endpoints"].append({"name":"endpoint-2","url":"$endpoint2","expected_status":200})
 if "$tailscale_peer1": cfg["tailscale"]["peer_hosts"].append("$tailscale_peer1")
 if "$cron_pattern1": cfg["cron"]["required_patterns"].append("$cron_pattern1")
 if "$git_repo1": cfg["git"]["repo_paths"].append("$git_repo1")
+if "$systemd_service1": cfg["systemd"]["required_services"].append("$systemd_service1")
 json.dump(cfg, open(out, "w", encoding="utf-8"), indent=2)
 PY
 
   local checks=()
   [[ "$use_docker" == true ]] && checks+=("docker")
-  [[ "$use_nginx" == true ]] && checks+=("nginx")
+  [[ "$use_network" == true ]] && checks+=("network")
   [[ "$use_tailscale" == true ]] && checks+=("tailscale")
   [[ "$use_authelia" == true ]] && checks+=("authelia")
   [[ "$use_cron" == true ]] && checks+=("cron")
   [[ "$use_git" == true ]] && checks+=("git")
+  [[ "$use_coolify" == true ]] && checks+=("coolify")
+  [[ "$use_systemd" == true ]] && checks+=("systemd")
   printf '%s\n' "${checks[@]}"
 }
 
@@ -103,7 +111,7 @@ if [[ -n "${1:-}" ]]; then
     echo "Copy and customize: $ROOT_DIR/config/targets.json.example" >&2
     exit 2
   fi
-  mapfile -t checks < <(printf '%s\n' docker nginx tailscale authelia cron git)
+  mapfile -t checks < <(printf '%s\n' docker network tailscale authelia cron git coolify systemd)
 elif [[ -t 0 ]]; then
   echo "No config provided: starting interactive setup..."
   mapfile -t checks < <(build_interactive_config)
@@ -115,7 +123,7 @@ else
     echo "Run interactively or copy: $ROOT_DIR/config/targets.json.example" >&2
     exit 2
   fi
-  mapfile -t checks < <(printf '%s\n' docker nginx tailscale authelia cron git)
+  mapfile -t checks < <(printf '%s\n' docker network tailscale authelia cron git coolify systemd)
 fi
 
 if [[ ${#checks[@]} -eq 0 ]]; then

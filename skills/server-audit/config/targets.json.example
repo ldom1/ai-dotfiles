@@ -9,8 +9,9 @@
     "required_containers": ["nginx", "authelia"],
     "health_required": true
   },
-  "nginx": {
+  "network": {
     "target": "remote",
+    "traefik_container": "",
     "test_endpoints": [
       {
         "name": "app-home",
@@ -31,7 +32,7 @@
     ]
   },
   "tailscale": {
-    "target": "local",
+    "target": "remote",
     "peer_hosts": ["devbox.local", "router.local"]
   },
   "authelia": {
@@ -50,5 +51,14 @@
   "git": {
     "target": "remote",
     "repo_paths": ["/srv/app", "/srv/infra"]
+  },
+  "coolify": {
+    "target": "remote",
+    "required_containers": ["coolify", "coolify-proxy", "coolify-db", "coolify-redis", "coolify-realtime"],
+    "health_url": ""
+  },
+  "systemd": {
+    "target": "remote",
+    "required_services": ["docker", "tailscaled", "ssh"]
   }
 }

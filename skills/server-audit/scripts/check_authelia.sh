@@ -13,9 +13,13 @@ pass_env = au.get("password_env", "AUTHELIA_PASS")
 
 result = {"check":"authelia","status":"pass","severity":"info","findings":[],"evidence":[],"suggested_fixes":[],"meta":{"mode":"probe+optional-creds"}}
 
+_no_redirect_handler = urllib.request.HTTPRedirectHandler()
+_no_redirect_handler.redirect_request = lambda *a, **k: None
+no_redirect_opener = urllib.request.build_opener(_no_redirect_handler)
+
 def fetch(url):
     req = urllib.request.Request(url, method="GET")
-    with urllib.request.urlopen(req, timeout=12) as resp:
+    with no_redirect_opener.open(req, timeout=12) as resp:
         body = resp.read(2048).decode("utf-8", errors="ignore")
         return int(resp.getcode()), dict(resp.headers), body
 
