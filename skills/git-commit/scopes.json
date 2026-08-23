@@ -104,6 +104,18 @@
         "service"
       ]
     },
+    "docker-compose": {
+      "detect": [
+        "docker-compose.yml"
+      ],
+      "scopes": [
+        "core",
+        "config",
+        "docs",
+        "ci",
+        "vulnerability"
+      ]
+    },
     "brain-vault": {
       "detect": [
         ".obsidian",
