@@ -38,8 +38,8 @@ _merge_central_mcp_file() {
   echo "[mcp-sync] Synced central MCP servers into $target (backup: $target.bak)"
 }
 
-# Idempotently sync the centrally-managed MCP servers (qmd, code-index, graphify for
-# Claude Code; qmd for Cursor) into the user's global config files. Safe to call
+# Idempotently sync the centrally-managed MCP servers (qmd, code-index, graphify —
+# for both Claude Code and Cursor) into the user's global config files. Safe to call
 # repeatedly — each run fully replaces its managed keys with the template's current
 # values, leaving any other mcpServers entries untouched.
 setup_central_mcp() {
