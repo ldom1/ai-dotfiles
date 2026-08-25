@@ -91,6 +91,19 @@ Every skill under `skills/<name>/` is symlinked by `scripts/install.sh` into thr
 
 ---
 
+## Security review & pentesting skills
+
+| Skill | Mechanism | Source | Role |
+|-------|-----------|--------|------|
+| `find-security-vulnerabilities-in-code` | Local skill (`skills/`) | Vendored from [usestrix/strix](https://github.com/usestrix/strix) | White-box AI security review — reads the source, then exploits what it finds in a Docker sandbox so every reported issue has a working proof-of-concept, not a static-analysis guess. Only invoke against a local path/repo you own; the SKILL.md itself gates on this — see below. |
+| `fix-security-vulnerabilities-with-strix` | Local skill (`skills/`) | Vendored from `usestrix/strix` | Triage Strix findings by severity, patch the root cause, re-run Strix to prove the fix actually closes the exploit. |
+
+Both wrap the [Strix](https://github.com/usestrix/strix) open-source CLI (Apache-2.0) — install separately with `curl -sSL https://strix.ai/install | bash` or `pipx install strix-agent`; requires Docker and an `STRIX_LLM`/`LLM_API_KEY` pair. Strix's own README disclaims unauthorized use but doesn't enforce it at runtime — it will point real exploit execution at whatever target string it's given. `find-security-vulnerabilities-in-code`'s SKILL.md adds an explicit gate on top: only run against a local path or a repo you own, and stop to confirm authorization if a bare external hostname/domain/IP is named instead.
+
+Only these 2 of Strix's 9 upstream skills are vendored — the rest ([usestrix/strix/skills](https://github.com/usestrix/strix/tree/main/skills)) are either thinner wrappers around the same engine or cover per-project decisions (CI PR-gating, the managed app.strix.ai cloud) that don't belong in a shared dotfiles skill set. Read the upstream repo directly if a specific project wants one of those.
+
+---
+
 ## Project brain sync
 
 Each project can carry a persistent knowledge layer — git-tracked in the project repo and mirrored in the Local Brain vault — so the agent always loads structured context without manual prompting.

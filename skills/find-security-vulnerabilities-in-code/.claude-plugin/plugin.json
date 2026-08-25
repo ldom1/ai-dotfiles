@@ -1,0 +1,10 @@
+{
+  "name": "find-security-vulnerabilities-in-code",
+  "version": "1.0.0",
+  "description": "White-box AI security review with Strix — exploits what it finds in a live sandbox so every reported issue has a working proof-of-concept.",
+  "author": {
+    "name": "usestrix",
+    "github": "usestrix"
+  },
+  "homepage": "https://github.com/usestrix/strix/tree/main/skills/find-security-vulnerabilities-in-code"
+}

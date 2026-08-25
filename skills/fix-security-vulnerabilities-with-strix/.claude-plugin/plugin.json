@@ -1,0 +1,10 @@
+{
+  "name": "fix-security-vulnerabilities-with-strix",
+  "version": "1.0.0",
+  "description": "Fix security vulnerabilities found by a Strix pentest — triage by severity, patch the root cause, and re-run Strix to prove each fix closes the exploit.",
+  "author": {
+    "name": "usestrix",
+    "github": "usestrix"
+  },
+  "homepage": "https://github.com/usestrix/strix/tree/main/skills/fix-security-vulnerabilities-with-strix"
+}
