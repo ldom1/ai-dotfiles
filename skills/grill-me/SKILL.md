@@ -12,3 +12,5 @@ For each question, provide your recommended answer.
 Ask questions one at a time.
 
 If a question can be answered by exploring the codebase, explore the codebase instead.
+
+If no convergence after roughly 8-10 questions, summarize the open items and hand the decision back to the user instead of continuing indefinitely.

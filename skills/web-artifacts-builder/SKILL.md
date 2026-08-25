@@ -29,6 +29,8 @@ bash scripts/init-artifact.sh <project-name>
 cd <project-name>
 ```
 
+Note: if `pnpm` is not already installed, this script runs `npm install -g pnpm` as a side effect (`scripts/init-artifact.sh:33`).
+
 This creates a fully configured project with:
 - ✅ React + TypeScript (via Vite)
 - ✅ Tailwind CSS 3.4.1 with shadcn/ui theming system

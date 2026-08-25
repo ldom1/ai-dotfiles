@@ -10,7 +10,7 @@ Turn a website or HTML document into a short promotional video using HyperFrames
 
 ## Prerequisites
 
-Project must have `npx skills add heygen-com/hyperframes` installed and the following skills available:
+Project must have `npx skills add heygen-com/hyperframes` installed (no version pinning available from this registry as of 2026-08 — verify the package before relying on it in an untrusted project) and the following skills available:
 - `/website-to-hyperframes` — URL capture → HyperFrames composition
 - `/hyperframes` — composition authoring rules
 - `/gsap` — animation patterns

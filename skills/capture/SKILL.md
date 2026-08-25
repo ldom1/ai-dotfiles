@@ -9,6 +9,8 @@ user-invocable: true
 Run this skill when the user types `/capture` or asks to close/end the session.
 Execute every step below in order. Do not skip any step, even for short sessions.
 
+The automatic missing-notes reminder (SessionEnd hook injecting a `systemMessage`) only fires under Claude Code. Cursor and Mistral Vibe have no equivalent nudge — remember to invoke `/capture` manually there.
+
 ## Step 1 — Write implementation notes (ALWAYS)
 
 Resolve `BRAIN_PATH`:

@@ -74,6 +74,8 @@ bash ~/ai-dotfiles/skills/brain-route/scripts/route.sh
 
 Runs **before** brain-load or brain-audit. Examines vault state, decides which skill to run next, and logs the decision.
 
+This automatic invocation only happens under Claude Code (via the SessionStart hook). Cursor and Mistral Vibe do not run this automatically — invoke `brain-load`/`brain-audit` manually in those tools.
+
 **On failure:**
 - Missing `BRAIN_PATH` → warn once, skip to normal mode (brain-load).
 - Script not found → warn once, continue with normal mode.
