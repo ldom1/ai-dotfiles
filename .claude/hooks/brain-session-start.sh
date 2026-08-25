@@ -14,9 +14,11 @@ mkdir -p "$LOG_DIR"
 # ── Auto-heal settings.json if it's behind settings.json.tpl (e.g. after a
 # git pull that enabled new plugins but install.sh wasn't re-run). Only
 # checks keys install.sh actually templates (enabledPlugins,
-# extraKnownMarketplaces); local-only additions in settings.json are left
-# untouched. Takes effect from the *next* session — Claude Code has already
-# read settings.json by the time this hook runs.
+# extraKnownMarketplaces); install.sh's generation step (as of the merge fix)
+# only ever touches those same two keys once settings.json exists, so
+# local-only additions in settings.json are left untouched. Takes effect from
+# the *next* session — Claude Code has already read settings.json by the time
+# this hook runs.
 TPL_FILE="$AI_DOTFILES/.claude/settings.json.tpl"
 SETTINGS_FILE="$AI_DOTFILES/.claude/settings.json"
 if [[ -f "$TPL_FILE" ]]; then

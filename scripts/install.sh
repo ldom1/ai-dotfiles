@@ -60,9 +60,26 @@ header "Generating settings.json"
 
 TPL="$DOTFILES/.claude/settings.json.tpl"
 OUT="$DOTFILES/.claude/settings.json"
+TPL_RENDERED="$(sed "s|__HOME__|$HOME|g" "$TPL")"
 
-sed "s|__HOME__|$HOME|g" "$TPL" > "$OUT"
-log "settings.json generated (HOME=$HOME)"
+if [[ ! -f "$OUT" ]]; then
+  echo "$TPL_RENDERED" > "$OUT"
+  log "settings.json generated (HOME=$HOME)"
+else
+  # settings.json commonly carries machine-local additions the template never
+  # defines (extra permissions, extra hooks, effortLevel, pluginConfigs, ...).
+  # Only merge the two keys the template actually owns — enabledPlugins and
+  # extraKnownMarketplaces — instead of overwriting the whole file, so those
+  # local-only additions survive a re-run.
+  cp "$OUT" "$OUT.bak"
+  MERGED=$(jq -n --argjson tpl "$TPL_RENDERED" --argjson cur "$(cat "$OUT")" '
+    $cur
+    | .enabledPlugins = ((.enabledPlugins // {}) + ($tpl.enabledPlugins // {}))
+    | .extraKnownMarketplaces = ((.extraKnownMarketplaces // {}) + ($tpl.extraKnownMarketplaces // {}))
+  ') || { echo "ERROR: jq merge failed for $OUT (backup at $OUT.bak)" >&2; exit 1; }
+  echo "$MERGED" > "$OUT"
+  log "settings.json merged from template (HOME=$HOME, backup: $OUT.bak)"
+fi
 
 # ── 3. Bootstrap settings.local.json if missing ───────────────────────────────
 header "Checking settings.local.json"

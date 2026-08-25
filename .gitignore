@@ -2,6 +2,7 @@
 .claude/daemon/
 .claude/daemon.log
 .claude/skill-usage.log
+.claude/settings.json.bak
 .claude/jobs/
 .claude/projects/
 .claude/todos/
