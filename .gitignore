@@ -1,6 +1,7 @@
 # Claude Code — runtime files
 .claude/daemon/
 .claude/daemon.log
+.claude/skill-usage.log
 .claude/jobs/
 .claude/projects/
 .claude/todos/
