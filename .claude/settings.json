@@ -54,6 +54,15 @@
             "command": "/home/lgiron/.claude/hooks/git-commit-check.sh"
           }
         ]
+      },
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.skill' | { read -r s; echo \"$(date -Iseconds) $s\" >> /home/lgiron/.claude/skill-usage.log; } 2>/dev/null || true"
+          }
+        ]
       }
     ]
   },

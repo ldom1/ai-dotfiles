@@ -32,9 +32,9 @@ Routes to **normal mode** (brain-load) otherwise.
 |------|--------|
 | 1. Load config | Read `BRAIN_PATH` from `BRAIN_ENV_FILE`, `brain.env`, or `config/brain.env` |
 | 2. Check flags | Look for `--maintenance` flag |
-| 3. Check maintenance state | Read `$BRAIN_PATH/.brain/last-maintenance` timestamp |
-| 4. Check vault bloat | Count files in `$BRAIN_PATH/` (excluding `.git`, `.obsidian`, etc.) |
-| 5. Log decision | Write human-readable decision to `$BRAIN_PATH/.brain/route.log` |
+| 3. Check maintenance state | Read `$BRAIN_PATH/meta/last-maintenance.md` timestamp |
+| 4. Check vault bloat | Count files in `$BRAIN_PATH/raw/` (recursively) |
+| 5. Log decision | Print human-readable decision to stdout (no log file is written) |
 | 6. Call downstream | Execute `brain-load` (normal) or `brain-audit` (maintenance) |
 
 ## Configuration
@@ -49,17 +49,15 @@ See `reference/brain.env.example` for the template.
 
 ## Decision output
 
-The route.sh script outputs JSON (or key=value pairs) with:
+The route.sh script exports two shell variables — `session_mode` (`NORMAL` or `MAINTENANCE`, uppercase) and `decision_reason` (free-text string) — and prints a colored human-readable summary to stdout:
 
 ```
-session_mode=normal|maintenance
-reason=<string>
-timestamp=<ISO8601>
-file_count=<count>
-last_maintenance_age_days=<days>
+[brain-route] Session routing at 2026-08-25 10:00:00
+[brain-route] Mode: NORMAL
+[brain-route] Reason: Standard session load
 ```
 
-This output is consumed by the harness (SessionStart hook) to determine which downstream skill to call.
+No JSON or key=value file is produced. The harness (SessionStart hook) reads the exported variables to decide which downstream skill to call.
 
 ## Scripts
 

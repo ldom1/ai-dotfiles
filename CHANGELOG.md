@@ -7,6 +7,11 @@
 - Six frontend/design skills available by default via two mechanisms: `frontend-design` and `ui-ux-pro-max` (third-party, [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)) as Claude Code plugins in `.claude/settings.json.tpl`/`extraKnownMarketplaces`; `web-artifacts-builder`, `canvas-design`, `algorithmic-art`, and `mcp-builder` vendored as local skills under `skills/<name>/` (cherry-picked from Anthropic's `example-skills` plugin / [anthropics/skills](https://github.com/anthropics/skills), which bundles 17 skills total — most not wanted here), auto-symlinked into `.claude/skills/` by `scripts/install.sh`. See README "Frontend & design skills" for how the six compose.
 - `brain-session-start.sh` (SessionStart hook) now detects when `settings.json` is behind `settings.json.tpl` (new `enabledPlugins`/`extraKnownMarketplaces` keys) and automatically re-runs `scripts/install.sh` — so forgetting to re-run install after a `git pull` self-heals on the next session instead of silently missing new plugins.
 
+### Removed
+- `create-pr` skill (redundant with the mandatory `git-commit` skill; PR creation left to `gh pr create` directly).
+- `review` skill (rarely used; also resolved a triggering collision with the separate `code-review` skill).
+- Dead `token-watch`/`token-guard` entries in `.claude-plugin/marketplace.json` — retired, but the entries pointed at `skills/` directories that no longer existed.
+
 ### Changed
 - CI skill validation now rejects duplicate entries in `skills/git-commit/scopes.json` and verifies shared skills are symlinked in `.claude/skills/` and `.cursor/skills/`.
 - `review` skill moved to canonical `skills/review/` with Claude/Cursor/Vibe symlinks; `git-commit` SKILL.md no longer carries a stale scope snapshot table.

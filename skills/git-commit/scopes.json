@@ -71,7 +71,7 @@
       "detect": [
         "skills/brain-sync",
         ".claude/skills",
-        "skills/review"
+        ".claude-plugin/marketplace.json"
       ],
       "scopes": [
         "skill",

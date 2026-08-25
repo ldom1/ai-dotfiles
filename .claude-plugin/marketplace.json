@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "ldom1-ai-dotfiles",
-  "description": "Personal AI skills for Claude Code — Local Brain (brain-sync, brain-load), knowledge graphs (graphify), GitHub PRs (create-pr), token optimization (token-watch, token-guard, finops-audit)",
+  "description": "Personal AI skills for Claude Code — Local Brain (brain-sync, brain-load), knowledge graphs (graphify), token optimization (finops-audit)",
   "owner": {
     "name": "Louis Giron",
     "github": "ldom1"
@@ -22,30 +22,9 @@
       "homepage": "https://github.com/ldom1/ai-dotfiles"
     },
     {
-      "name": "create-pr",
-      "description": "Open a GitHub PR using gh and ai-dotfiles git conventions — branch prefix (feature/, fix/, enh/), conventional commits, gh pr create workflow.",
-      "source": "./skills/create-pr",
-      "category": "productivity",
-      "homepage": "https://github.com/ldom1/ai-dotfiles"
-    },
-    {
       "name": "grill-me",
       "description": "Stress-test a plan or design through relentless one-question-at-a-time interrogation until shared understanding is reached.",
       "source": "./skills/grill-me",
-      "category": "productivity",
-      "homepage": "https://github.com/ldom1/ai-dotfiles"
-    },
-    {
-      "name": "token-watch",
-      "description": "Snapshot current token burn rate via ccusage — active 5h window, daily per-model breakdown, session history.",
-      "source": "./skills/token-watch",
-      "category": "productivity",
-      "homepage": "https://github.com/ldom1/ai-dotfiles"
-    },
-    {
-      "name": "token-guard",
-      "description": "Model routing heuristic (Sonnet/Opus/Haiku) and /model-check command. Emits routing reminder before multi-step tasks.",
-      "source": "./skills/token-guard",
       "category": "productivity",
       "homepage": "https://github.com/ldom1/ai-dotfiles"
     },

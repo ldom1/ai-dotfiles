@@ -54,7 +54,7 @@ type(scope): imperative description
 
 Types: `feat`, `fix`, `enh`, `doc`, `ci`. Scope: `skill`, `claude`, `cursor`, `config`, `scripts`, `core`.
 
-See `skills/create-pr/reference/GIT-COMMITS.md` for the full reference.
+See `skills/git-commit/scopes.json` for the full, per-project scope reference.
 
 ## Pull request process
 

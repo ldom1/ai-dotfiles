@@ -19,7 +19,6 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 /plugin install brain-audit@ldom1/ai-dotfiles
 /plugin install capture@ldom1/ai-dotfiles
 /plugin install brain-init-project@ldom1/ai-dotfiles
-/plugin install create-pr@ldom1/ai-dotfiles
 /plugin install grill-me@ldom1/ai-dotfiles
 /plugin install sop-builder@ldom1/ai-dotfiles
 /plugin install photo-archive-triage@ldom1/ai-dotfiles
@@ -36,7 +35,6 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 | [brain-route](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Route) | Session router: maintenance vs normal (used after brain-sync pull) |
 | [brain-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Audit) | Four-phase vault maintenance (raw → digest) |
 | capture | End-of-session workflow: implementation notes, project-brain review, pitfalls/lessons, sync |
-| [create-pr](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Create-PR) | GitHub PR with branch + commit conventions |
 | grill-me | Stress-test plans through one-question-at-a-time design interrogation |
 | sop-builder | Turn process notes into validated seven-section SOP documents |
 | photo-archive-triage | Non-destructive photo/video triage: exact dedup, corrupt screening, capture-date recovery |
@@ -257,9 +255,6 @@ ai-dotfiles/
 │   │   ├── SKILL.md
 │   │   ├── .claude-plugin/plugin.json
 │   │   └── skills/graphify/SKILL.md -> ../../SKILL.md
-│   ├── create-pr/                   # /create-pr — gh + git conventions
-│   │   ├── SKILL.md
-│   │   └── reference/GIT-COMMITS.md
 │   └── server-audit/                # /server-audit — robust server audit
 │       ├── SKILL.md
 │       ├── scripts/audit.sh
@@ -322,7 +317,6 @@ ai-dotfiles/
 | [rtk](https://github.com/ldom1/rtk) | Token-saving CLI proxy for Claude Code hooks | `cargo install rtk` |
 | [ccusage](https://github.com/ryoppippi/ccusage) | Claude Code token & cost usage dashboard | `npx ccusage` |
 | [shellcheck](https://www.shellcheck.net) | Shell script linter (CI + local) | `brew install shellcheck` / `apt install shellcheck` |
-| [gh](https://cli.github.com) | GitHub CLI — used by `create-pr` skill | `brew install gh` / `apt install gh` |
 | [jq](https://jqlang.github.io/jq) | JSON processor — required by rtk hook | `brew install jq` / `apt install jq` |
 | [Python 3](https://www.python.org) | Template substitution in `brain-load` | Pre-installed on most systems |
 | [Obsidian](https://obsidian.md) | Browse the Local Brain vault | See site |
