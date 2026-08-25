@@ -42,6 +42,8 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 | [graphify](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Graphify) | `/graphify` — folder → knowledge graph; also [graphify.net](https://graphify.net/) |
 | [finops-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/FinOps-Audit) | Weekly token spend review → vault |
 
+`graphify` is vendored from [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) (the `SKILL.md` + `reference/` files, adapted with two local additions: the `GRAPHIFY_PROJECT` local-clone fallback and default-on agent-MCP auto-wiring via `scripts/setup_agent_mcp.py`). The synced upstream release is tracked in `skills/graphify/.graphify_version` — re-diff against that tag before syncing again to isolate local customizations from upstream changes.
+
 Wiki hub: **[Skills](https://github.com/ldom1/ai-dotfiles/wiki/Skills)** (catalogue). Keep wiki pages directly in the local **`.wiki/`** clone (GitHub wiki repo) under the **`Skills/`** namespace (e.g. `Skills/Brain-Sync`), then publish explicitly with:
 
 ```bash
