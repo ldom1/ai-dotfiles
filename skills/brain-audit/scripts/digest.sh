@@ -1,6 +1,7 @@
 #!/bin/bash
-# Phase 4: Digest Generation & Clock Reset
-# Synthesizes phases 1-3 into a weekly summary and resets audit clock
+# brain-audit:digest — Digest Generation & Clock Reset
+# Synthesizes the compile/connect/insights subskill outputs into a weekly
+# summary and resets the maintenance clock.
 
 set -euo pipefail
 
@@ -9,16 +10,17 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$script_dir/_brain_env.sh"
 
 # Colors for logging
-LOG_PREFIX="[phase-4]"
+LOG_PREFIX="[digest]"
 
 log_info() { echo "$LOG_PREFIX [INFO] $*"; }
 log_error() { echo "$LOG_PREFIX [ERROR] $*" >&2; }
 log_result() { echo "$LOG_PREFIX [RESULT] $*"; }
 
-# Accept phase counts as parameters
-phase1_count=${1:-0}
-phase2_count=${2:-0}
-phase3_count=${3:-0}
+# Accept subskill counts as parameters (matches brain-audit:digest SKILL.md's
+# COMPILE_COUNT / CONNECT_COUNT / INSIGHTS_COUNT)
+compile_count=${1:-0}
+connect_count=${2:-0}
+insights_count=${3:-0}
 
 # Verify BRAIN_PATH is valid
 if [[ ! -d "$BRAIN_PATH" ]]; then
@@ -48,6 +50,8 @@ week_file="$archive_dir/weekly-digest-${year}-W${week_num}.md"
 
 log_info "Generating digest for week $week_num..."
 
+next_maintenance=$(date -u -d '+7 days' +%Y-%m-%d 2>/dev/null || date -u -v+7d +%Y-%m-%d)
+
 # Create digest file
 {
     echo "# Weekly Digest — Week $week_num ($year)"
@@ -56,64 +60,57 @@ log_info "Generating digest for week $week_num..."
     echo ""
     echo "## At a Glance"
     echo ""
-    echo "✅ Phase 1 (Compile): $phase1_count draft article(s) created"
-    echo "✅ Phase 2 (Connect): $phase2_count connection suggestion(s) generated"
-    echo "✅ Phase 3 (Q&A): $phase3_count query result(s) created"
+    echo "✅ Compile: $compile_count pitfall/lesson promotion(s) to [[pitfalls]] / [[lessons-learned]]"
+    echo "✅ Connect: $connect_count knowledge file(s) created/updated in resources/knowledge/"
+    echo "✅ Insights: $insights_count insight quer(y/ies) synthesized to inbox/insights/"
     echo ""
     echo "## Executive Summary"
     echo ""
-    echo "This week's audit produced:"
-    echo "- **$phase1_count new draft articles** requiring review and approval"
-    echo "- **$phase2_count connection suggestions** to strengthen the vault"
-    echo "- **$phase3_count Q&A queries** to validate knowledge coverage"
+    echo "This audit run produced:"
+    echo "- **$compile_count cross-project pitfall/lesson promotion(s)** from inbox/daily/ into resources/operational/ai-agents/"
+    echo "- **$connect_count knowledge file update(s)** synthesizing recurring patterns across projects"
+    echo "- **$insights_count insight synthes(is/es)** written to inbox/insights/"
     echo ""
     echo "## Key Metrics"
     echo ""
     echo "| Metric | Count | Status |"
     echo "|--------|-------|--------|"
-    echo "| Drafts to Review | $phase1_count | Pending |"
-    echo "| Connection Suggestions | $phase2_count | Pending Review |"
-    echo "| Q&A Results | $phase3_count | Pending Review |"
+    echo "| Pitfalls/lessons promoted | $compile_count | Committed |"
+    echo "| Knowledge files created/updated | $connect_count | Pending review |"
+    echo "| Insight queries synthesized | $insights_count | Written |"
     echo ""
     echo "## Action Items"
     echo ""
-    if [[ $phase1_count -gt 0 ]]; then
-        echo "### Phase 1: Review & Publish Drafts"
-        echo "- [ ] Review all drafts in \`inbox/drafts/\`"
-        echo "- [ ] Approve or request revisions"
-        echo "- [ ] Move approved articles to \`resources/articles/published/\`"
-        echo "- [ ] Archive rejected or duplicate drafts"
+    if [[ $compile_count -gt 0 ]]; then
+        echo "### Compile: Review Promoted Entries"
+        echo "- [ ] Skim new entries in \`resources/operational/ai-agents/pitfalls.md\` and \`lessons-learned.md\` for accuracy"
+        echo "- [ ] Confirm nothing project-specific leaked into a cross-project entry"
         echo ""
     fi
     echo ""
-    if [[ $phase2_count -gt 0 ]]; then
-        echo "### Phase 2: Process Connection Suggestions"
-        echo "- [ ] Review \`inbox/connections/suggested-connections.md\`"
-        echo "- [ ] Add wiki-links between connected files"
-        echo "- [ ] Decide: keep, merge, or archive isolated notes"
-        echo "- [ ] Update vault structure as needed"
+    if [[ $connect_count -gt 0 ]]; then
+        echo "### Connect: Review Knowledge Files"
+        echo "- [ ] Review the diff in \`resources/knowledge/\` and \`projects/*.md\` (\`## See also\` additions)"
+        echo "- [ ] Approve or edit before committing (brain-audit:connect stops for confirmation before its own commit)"
         echo ""
     fi
     echo ""
-    if [[ $phase3_count -gt 0 ]]; then
-        echo "### Phase 3: Extract Q&A Insights"
-        echo "- [ ] Review \`inbox/qa/\` results"
-        echo "- [ ] Identify actionable insights"
-        echo "- [ ] Update relevant articles based on findings"
-        echo "- [ ] File completed Q&A to \`resources/queries/archive/\`"
+    if [[ $insights_count -gt 0 ]]; then
+        echo "### Insights: Act on Findings"
+        echo "- [ ] Read \`inbox/insights/$(date -u +%Y-%m-%d).md\`"
+        echo "- [ ] Work through its \`## Action Items\` checklist"
         echo ""
     fi
     echo ""
     echo "### General"
-    echo "- [ ] Commit all audit outputs to git"
-    echo "- [ ] Update project CAPs based on identified blockers"
+    echo "- [ ] Commit all audit outputs to the vault git repo (\`brain-sync end\` or manual commit)"
+    echo "- [ ] Check \`resources/queries/archive/\` for this run's knowledge-gaps/roadmap results, if \`brain-audit:queries\` was also run"
     echo "- [ ] Plan next week's focus areas"
-    echo "- [ ] Celebrate progress!"
     echo ""
     echo "---"
     echo ""
     echo "**Audit Timestamp:** $now"
-    echo "**Next Maintenance:** $(date -u -d '+7 days' +%Y-%m-%d)T10:00:00Z"
+    echo "**Next Maintenance:** ${next_maintenance}T10:00:00Z"
 
 } > "$week_file"
 
@@ -131,10 +128,10 @@ $(date -u +"%Y-%m-%d %H:%M:%S")
 **Epoch Seconds:** $now_epoch
 **Week:** $week_num / $year
 
-*Updated by phase-4-digest.sh*
+*Updated by digest.sh (brain-audit:digest)*
 EOF
 
 log_info "Maintenance clock updated"
 
-log_result "Phase 4 complete: digest written, maintenance clock reset"
+log_result "Digest complete: digest written, maintenance clock reset"
 exit 0
