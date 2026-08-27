@@ -199,12 +199,21 @@ cmd_end() {
   mkdir -p "$(dirname "$LOG")"
 
   if command -v qmd &>/dev/null && [[ -n "${QMD_INDEX_PATH:-}" ]]; then
-    # Hooks run without nvm, so 'node' may resolve to a system version that
-    # doesn't match the ABI of better-sqlite3 bundled with qmd. Prepend qmd's
-    # own bin directory so the qmd wrapper's 'exec node' picks the right runtime.
-    _qmd_real=$(readlink -f "$(command -v qmd)" 2>/dev/null || command -v qmd)
-    _qmd_bin=$(dirname "$_qmd_real")
-    [[ -x "$_qmd_bin/node" ]] && export PATH="$_qmd_bin:$PATH"
+    # qmd's published wrapper does `exec node` — PATH must prefer the Node that
+    # compiled better-sqlite3 (nvm), not Cursor-agent/system Node (ABI mismatch).
+    # Prefer dirname of the qmd shim (.../versions/node/vX/bin). If command -v
+    # already resolved into .../node_modules/@tobilu/qmd/bin, climb to the
+    # version bin; never rely on readlink -f alone (same trap).
+    _qmd_bin=$(dirname "$(command -v qmd)")
+    if [[ ! -x "$_qmd_bin/node" && "$_qmd_bin" == *"/node_modules/"* ]]; then
+      _ver_bin="$(cd "$_qmd_bin/../../../../.." 2>/dev/null && pwd)/bin"
+      [[ -x "$_ver_bin/node" ]] && _qmd_bin="$_ver_bin"
+    fi
+    if [[ -x "$_qmd_bin/node" ]]; then
+      export PATH="$_qmd_bin:$PATH"
+    elif [[ -n "${NVM_BIN:-}" && -x "${NVM_BIN}/node" ]]; then
+      export PATH="$NVM_BIN:$PATH"
+    fi
 
     _info "qmd" "updating brain index…"
     INDEX_PATH="$QMD_INDEX_PATH" qmd update --collection brain 2>&1 | tee -a "$LOG" || \

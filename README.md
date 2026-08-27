@@ -137,6 +137,8 @@ INDEX_PATH="$QMD_INDEX_PATH" qmd embed --collection brain
 
 After this, Claude can query vault notes semantically from any initialized project. The index and embeddings refresh automatically at session end via `brain-sync` (`qmd update` then `qmd embed`).
 
+`qmd` must run on the same Node major that compiled its native deps (`better-sqlite3`). If Cursor (or another tool) injects a different `node` earlier on `PATH`, `qmd doctor` / `qmd embed` fail with `NODE_MODULE_VERSION` mismatch. Keep nvm's default Node first (`.zshenv` / end of `.zshrc` prepend `$NVM_BIN`); `brain-sync` also prepends the directory that hosts the `qmd` shim before embed.
+
 ### Setup
 
 ```bash
