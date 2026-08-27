@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-08-27
+
+### Fixed
+- `brain-sync` qmd PATH fix: use the shim directory from `command -v qmd` (nvm's `.../bin`) instead of `readlink -f` into the package tree — the resolved package `bin/` has no `node`, so the old check never prepended and Cursor agent's Node 24 broke `better-sqlite3` (ABI 137 vs 141). Shell startup (`.zshenv` / `.zshrc`) now also keeps `$NVM_BIN` ahead of injected runtimes.
+
 ### Added
 - `photo-archive-triage` skill — non-destructively triages messy photo/video collections (PhotoRec `recup_dir.N` dumps, phone backups, duplicated exports) into a clean set ready for an Immich import: resumable SQLite-ledger pipeline for validity screening and exact SHA-256 dedup, junk/thumbnail routing to a human-reviewed folder, and exiftool-based capture-date recovery with either an `--apply-mtime` or a post-upload destination-patch path. Includes `reference/destination-patch-immich.md`, documenting the verified Immich API contract and an SSO/reverse-proxy trap that makes the API unreachable while the web UI still works.
 - Six frontend/design skills available by default via two mechanisms: `impeccable` ([pbakaus/impeccable](https://github.com/pbakaus/impeccable)) and `taste-skill` (third-party, [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill)) as Claude Code plugins in `.claude/settings.json.tpl`/`extraKnownMarketplaces`; `web-artifacts-builder`, `canvas-design`, `algorithmic-art`, and `mcp-builder` vendored as local skills under `skills/<name>/` (cherry-picked from Anthropic's `example-skills` plugin / [anthropics/skills](https://github.com/anthropics/skills), which bundles 17 skills total — most not wanted here), auto-symlinked into `.claude/skills/` by `scripts/install.sh`. See README "Frontend & design skills" for how the six compose.
@@ -29,7 +34,6 @@
 - Added missing Claude plugin metadata for `sop-builder` so the skill structure CI check passes.
 - Allowed standard merge commit messages in the git-commit hook.
 - Added `ansible/server-setup` detection markers to the git-commit scope registry.
-
 ## [0.3.0] - 2026-07-18
 
 ### Added
