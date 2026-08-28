@@ -13,7 +13,6 @@
       "Bash(rm -rf *)"
     ]
   },
-  "model": "opus[1m]",
   "hooks": {
     "SessionStart": [
       {
@@ -114,6 +113,11 @@
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
   "autoMode": {
+    "soft_deny": [
+      "$defaults",
+      "Bash(aws s3 rm:*) — scope to dom-coolify-persistence and other buckets touched by this project",
+      "Bash(infisical secrets delete:*) — Infisical secret deletion in this project's workspace"
+    ],
     "environment": [
       "### Org-wide",
       "**Organization**: None configured",
@@ -139,11 +143,6 @@
       "**Trusted repo**: /home/lgiron/lab/server-setup (github.com/ldom1/ansible-server-setup, private) and its origin remote",
       "**Org-specific CLIs**: infisical, aws, vercel, tailscale, rtk (token proxy wrapper from ~/ai-dotfiles)",
       "**routine under lgiron/ prefix**: brain-vault writes under $BRAIN_PATH/inbox/daily/{implementation,specs,plans}/server-setup/ per ~/.claude/CLAUDE.md conventions"
-    ],
-    "soft_deny": [
-      "$defaults",
-      "Bash(aws s3 rm:*) — scope to dom-coolify-persistence and other buckets touched by this project",
-      "Bash(infisical secrets delete:*) — Infisical secret deletion in this project's workspace"
     ]
   }
 }
