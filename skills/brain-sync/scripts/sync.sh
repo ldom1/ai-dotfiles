@@ -194,6 +194,7 @@ cmd_end() {
   fi
 
   commit_push_repo "brain"    "$BRAIN_PATH"       "brain: session sync $ts"
+  commit_push_repo "dotfiles" "$AI_DOTFILES_PATH" "dotfiles: session sync $ts"
 
   LOG="${HOME}/.claude/logs/brain-sync.log"
   mkdir -p "$(dirname "$LOG")"
