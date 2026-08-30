@@ -1,0 +1,31 @@
+{
+  "draft_id": "133d3e8c-1d40-49b9-92a2-abdf72f46c4a",
+  "created_at": "2026-08-30T06:14:06.417Z",
+  "source_session_id": "6da9b8eb-d742-4556-80e6-a65604d0d900",
+  "cwd": "/home/lgiron/lab/prosper",
+  "model": "claude-sonnet-5",
+  "cli_version": "2.1.251",
+  "os": "linux x64",
+  "request_ids": [
+    "req_011CeYST3L3tjAW2vPg4qRK4",
+    "req_011CeYSUTsTPcruzAruTogXj",
+    "req_011CeYSUw3agbHz9SM8L122m"
+  ],
+  "type": "bug",
+  "title": "Stop hook re-fires identically every turn with no way to resolve without user input, causing a loop",
+  "details": "**What happened:** A `check_functional_docs.py` Stop hook fired 4 consecutive turns with byte-identical output, after the assistant explicitly declined to act (uncommitted changes in the shared checkout belonged to another party, not the assistant) and asked the user a clarifying question. No new user message arrived between fires — each \"user\" turn was just the same hook payload again.\n**What the user said:** User didn't comment; observed by the model. No human reply appeared between the repeated hook firings.\n**Repro:** Have uncommitted functional-file changes in a repo (from any source) with a `documenter-changement-fonctionnel`-style Stop hook configured; end an assistant turn without committing or calling the hook's own `--ack` escape hatch (e.g. because the assistant correctly judged the changes weren't its own to acknowledge); the hook re-fires with identical content on every subsequent Stop even when the assistant's reply already addressed it and is only waiting on the user.\n**Evidence:** Session this occurred in; hook script path `.claude/skills/documenter-changement-fonctionnel/scripts/check_functional_docs.py`.\n**Cause:** The hook appears to have no \"already surfaced this turn, don't repeat until state changes or the user responds\" gate — it re-evaluates and re-prints on every Stop unconditionally.",
+  "failure_mode": "other",
+  "task_category": "other",
+  "trigger": "model_judgment",
+  "effort": "high",
+  "thinking_type": "adaptive",
+  "message_count": 1291,
+  "assistant_turn_count": 186,
+  "subagent_count": 18,
+  "transcript_ref": {
+    "session_file": "/home/lgiron/.claude/projects/-home-lgiron-lab-prosper/6da9b8eb-d742-4556-80e6-a65604d0d900.jsonl",
+    "message_range": null,
+    "project_dir_key": "-home-lgiron-lab-prosper"
+  },
+  "status": "queued"
+}
