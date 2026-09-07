@@ -15,10 +15,13 @@ cat >"$INPUT_FILE" || true
 source "$HOOKS_DIR/lib-gate.sh"
 # shellcheck source=lib-session.sh
 source "$HOOKS_DIR/lib-session.sh"
+# shellcheck source=lib-inject-rule.sh
+source "$HOOKS_DIR/lib-inject-rule.sh"
 
 brain_hooks_prune_markers
 
 reason="$(brain_hooks_should_run)" || {
+  brain_hooks_clear_inject_rule
   brain_hooks_log_decision SKIP reason="$reason" event=sessionEnd \
     VSCODE_PID="${VSCODE_PID:-unset}" \
     VSCODE_CWD="${VSCODE_CWD:-unset}" \
@@ -38,6 +41,7 @@ fi
 
 brain_hooks_with_sync_lock bash "$AI_DOTFILES/skills/brain-sync/scripts/sync.sh" end \
   >>"$LOG_FILE" 2>&1 || true
+bash "$AI_DOTFILES/scripts/log-skill-usage.sh" brain-sync "cursor:sessionEnd" 2>/dev/null || true
 
 if [[ -n "$key" ]]; then
   marker_dir="$(brain_hooks_marker_dir)"
@@ -49,4 +53,5 @@ if [[ -n "$key" ]]; then
     id_source="$id_source" key="$key"
 fi
 
+brain_hooks_clear_inject_rule
 exit 0

@@ -29,7 +29,7 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 
 | Skill | Purpose |
 |-------|---------|
-| [brain-sync](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Sync) | Sync Local Brain Obsidian vault (Claude Code hooks; Cursor CLI with `BRAIN_AGENT_HOOKS=1`; manual via skill) |
+| [brain-sync](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Sync) | Sync Local Brain Obsidian vault (Claude Code hooks; Cursor CLI via `cursor-agent-brain.sh` alias; manual via skill) |
 | [brain-load](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Load) | Load / instantiate project notes from vault |
 | [brain-search](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Search) | Semantic + keyword search over vault via qmd (`scripts/search.sh`) |
 | [brain-route](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Route) | Session router: maintenance vs normal (used after brain-sync pull) |
@@ -149,7 +149,7 @@ echo "my-project" > /path/to/project/.brain-project
 ai-dotfiles init /path/to/project
 ```
 
-This creates `<project>/.claude/memory/` with template files, mirrors them to `$BRAIN_PATH/projects/my-project/`, and registers the project in `config/brain-projects.tsv`. `brain-sync` keeps both sides in sync when session hooks run (Claude Code always; Cursor Agent CLI with `BRAIN_AGENT_HOOKS=1`) — not automatically in Cursor IDE Agent.
+This creates `<project>/.claude/memory/` with template files, mirrors them to `$BRAIN_PATH/projects/my-project/`, and registers the project in `config/brain-projects.tsv`. `brain-sync` keeps both sides in sync when session hooks run (Claude Code always; Cursor Agent CLI with prewarm wrapper) — not automatically in Cursor IDE Agent.
 
 ### Centrally-managed MCP servers
 
@@ -226,37 +226,22 @@ ai-dotfiles mcp-sync                 # (re)apply centrally-managed MCP servers (
 |------|-------------------|
 | **Claude Code** | Automatic — `.claude/hooks/brain-session-start.sh` / `brain-session-end.sh` (unchanged) |
 | **Cursor IDE Agent** | **Off** — no automatic sync, load, or pitfalls injection |
-| **Cursor Agent CLI** | Opt-in only — see [Cursor Agent CLI brain hooks](#cursor-agent-cli-brain-hooks) below |
+| **Cursor Agent CLI** | **On by default** — see [Cursor Agent CLI brain hooks](#cursor-agent-cli-brain-hooks) below |
 
 Invoke the `brain-sync` / `brain-load` skills manually when hooks are off or the user asks.
 
 ### Cursor Agent CLI brain hooks
 
-Cursor **user hooks** (`.cursor/hooks.json`, symlinked to `~/.cursor/hooks.json` by `install.sh`) can run brain session lifecycle on the **Agent CLI** — not in the IDE Agent panel and **not on Cursor Cloud** (cloud agents are excluded).
+Cursor **user hooks** (`.cursor/hooks.json`) run brain sync on the **Agent CLI** — not IDE Agent, not Cloud/remote IDE (`CURSOR_CODE_REMOTE=true` → skip).
 
-**Enable (opt-in):**
+**Turn-1 context:** use the zsh alias from **any directory** (no `cd` required):
 
 ```bash
-# launcher (sets BRAIN_AGENT_HOOKS=1)
-~/ai-dotfiles/scripts/cursor-agent-brain.sh -p '…'
-
-# or inline
-BRAIN_AGENT_HOOKS=1 agent -p '…'
+alias agent='~/ai-dotfiles/scripts/cursor-agent-brain.sh'   # already in ~/.zshrc
+agent   # from anywhere
 ```
 
-Set `BRAIN_AGENT_HOOKS=0` to force hooks to skip brain inject for one invocation. Without `BRAIN_AGENT_HOOKS=1`, hooks load but do not run sync/load/pitfalls.
-
-**Never export `BRAIN_AGENT_HOOKS=1` from `.zshrc` / `.bashrc` / shell profile.** Cursor IDE Agent inherits that env and would RUN brain hooks — bypassing IDE hard-off. Enable only via the launcher or a one-shot prefix on `agent`.
-
-**Cursor IDE Agent:** no automatic sync, load, pitfalls inject, or implementation-session notes. Use **`/capture`** for end-of-session vault notes; `@claude-pitfall` when you need pitfalls apply/append/re-check; run `brain-sync` / `brain-load` only if you explicitly ask.
-
-**`sessionStart` (CLI, opted in):** `brain-sync start`, project note from `brain-load` (stdout capped), plus a **bounded pitfalls excerpt** (≤12 KiB: up to **3 newest** full entries first, then a truncated `##` heading index from `$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md`) and fixed CLI instructions. The excerpt is incomplete — read the full file or use `@claude-pitfall` when detail matters.
-
-**`sessionEnd` (best-effort):** runs `brain-sync end` when the hook fires; may not run on crash or kill. Do not rely on it as the only path to push vault changes — use `/capture` or `brain-sync end` manually when needed.
-
-**Claim C1 — disable Claude Code / third-party hooks in Cursor:** While using Cursor brain hooks, disable any Claude Code or third-party hook bridge inside Cursor that would duplicate session automation. Claude Code hooks (`.claude/hooks/`) and Cursor user hooks (`.cursor/hooks/`) are separate stacks; **Claude↔Cursor hook bridge is unsupported** for brain automation — turn the bridge off when using Cursor brain hooks.
-
-Logs: `~/.cursor/logs/brain-hooks.log`, `~/.cursor/logs/brain-hooks-session.log`.
+Prewarm writes a global user rule `~/.cursor/rules/brain-hooks-session-inject.mdc` (alwaysApply) + sidecar. It does **not** touch repo-root `AGENTS.md` (that symlink is for Vibe → `.vibe/AGENTS.md`). Verify: quote `[brain-hooks] sessionStart OK` without Reading files.
 
 ---
 
@@ -292,7 +277,7 @@ ai-dotfiles/
 │   └── hooks/
 │       └── rtk-rewrite.sh           # PreToolUse: rtk rewrite + tail cap on noisy output
 ├── .cursor/
-│   ├── hooks.json                   # User hooks: sessionStart/End → brain-sync + brain-load (CLI opt-in)
+│   ├── hooks.json                   # User hooks: sessionStart/End → brain-sync + brain-load (CLI default)
 │   ├── hooks/                       # session-start.sh, session-end.sh, lib-*.sh
 │   ├── rules/                       # claude-pitfall (@ manual), finops-claude, graphify-context, … (.mdc)
 │   └── skills/                      # symlinks → ../skills/<name> (Cursor, coe-* excluded)
@@ -350,7 +335,8 @@ ai-dotfiles/
 ├── bin/
 │   └── ai-dotfiles                  # CLI: init / upgrade / sync / merge-memory
 └── scripts/
-    ├── cursor-agent-brain.sh        # BRAIN_AGENT_HOOKS=1 wrapper for `agent` CLI
+    ├── cursor-agent-brain.sh        # prewarm inject rule + agent (turn-1 reliable)
+    ├── brain-hooks-prewarm.sh       # write alwaysApply inject + sidecar
     ├── install.sh                   # Setup script (symlinks, settings, hooks, CLI)
     ├── init-project.sh              # Initialise a project brain folder
     ├── upgrade-project.sh           # Add missing files, backfill frontmatter + sections

@@ -12,8 +12,7 @@ Map the current codebase to a **project note** in the Local Brain vault and load
 
 ```bash
 # Manual / on-demand only in Cursor IDE. Claude Code + Cursor CLI hooks
-# (BRAIN_AGENT_HOOKS=1) already inject load output — do not re-run there
-# unless the user asks.
+# already inject load output — do not re-run there unless the user asks.
 bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh
 ```
 
@@ -56,9 +55,9 @@ The script determines the project slug in this order:
 
 ## Session start (hooks — do not re-run)
 
-**Cursor IDE Agent:** never bash-run `sync.sh` / `load.sh` at session start or end. Empty hook output / `{}` is normal (opt-in CLI only). Run only if the user explicitly asks or invokes `/brain-load`.
+**Cursor IDE Agent:** never bash-run `sync.sh` / `load.sh` at session start or end. Empty hook output / `{}` is normal (`ide_surface` / hard-off). Run only if the user explicitly asks or invokes `/brain-load`.
 
-**Claude Code** (`brain-session-start.sh`) and **Cursor Agent CLI** with `BRAIN_AGENT_HOOKS=1` (`.cursor/hooks/session-start.sh`) already run `brain-sync start` then `load.sh` and inject stdout. Do **not** re-run those scripts in that same session unless the user asks.
+**Claude Code** (`brain-session-start.sh`) and **Cursor Agent CLI** (`.cursor/hooks/session-start.sh`, on by default) already run `brain-sync start` then `load.sh` and inject stdout. Do **not** re-run those scripts in that same session unless the user asks.
 
 When **`/brain-load`** is invoked manually (or Claude/CLI hook stderr indicates `PROJECT_NOTE_MISSING`), run from the project git root:
 

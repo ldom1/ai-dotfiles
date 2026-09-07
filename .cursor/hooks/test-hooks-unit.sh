@@ -14,17 +14,38 @@ fail=0
 ok() { echo "PASS $1"; }
 bad() { echo "FAIL $1"; fail=1; }
 
-unset BRAIN_AGENT_HOOKS || true
+unset BRAIN_AGENT_HOOKS CURSOR_VERSION VSCODE_PID VSCODE_IPC_HOOK VSCODE_CWD CURSOR_CODE_REMOTE || true
 if r="$(brain_hooks_should_run)"; then e=0; else e=$?; fi
-[[ "$e" -eq 1 && "$r" == no_opt_in ]] && ok "gate unset skips" || bad "gate unset skips"
+[[ "$e" -eq 0 && "$r" == cli_default ]] && ok "gate unset cli_default runs" || bad "gate unset cli_default runs"
 
-export BRAIN_AGENT_HOOKS=1
+export CURSOR_VERSION=2026.09.02-c22c1a3
 if r="$(brain_hooks_should_run)"; then e=0; else e=$?; fi
-[[ "$e" -eq 0 && "$r" == opt_in ]] && ok "gate 1 runs" || bad "gate 1 runs"
+[[ "$e" -eq 0 && "$r" == cli_default ]] && ok "gate CLI version runs" || bad "gate CLI version runs"
 
-export BRAIN_AGENT_HOOKS=0
+# CLI version wins even if VSCODE_* inherited (integrated terminal)
+export VSCODE_PID=12345
+if r="$(brain_hooks_should_run)"; then e=0; else e=$?; fi
+[[ "$e" -eq 0 && "$r" == cli_default ]] && ok "gate CLI version beats VSCODE" || bad "gate CLI version beats VSCODE"
+unset VSCODE_PID CURSOR_VERSION
+
+export CURSOR_VERSION=3.19.13
+if r="$(brain_hooks_should_run)"; then e=0; else e=$?; fi
+[[ "$e" -eq 1 && "$r" == ide_surface ]] && ok "gate IDE version skips" || bad "gate IDE version skips"
+unset CURSOR_VERSION
+
+export CURSOR_CODE_REMOTE=true
+if r="$(brain_hooks_should_run)"; then e=0; else e=$?; fi
+[[ "$e" -eq 1 && "$r" == ide_surface ]] && ok "gate remote skips" || bad "gate remote skips"
+unset CURSOR_CODE_REMOTE
+
+export BRAIN_AGENT_HOOKS=1 CURSOR_VERSION=3.19.13
+if r="$(brain_hooks_should_run)"; then e=0; else e=$?; fi
+[[ "$e" -eq 0 && "$r" == explicit_enable ]] && ok "gate 1 force runs" || bad "gate 1 force runs"
+
+export BRAIN_AGENT_HOOKS=0 CURSOR_VERSION=2026.09.02-c22c1a3
 if r="$(brain_hooks_should_run)"; then e=0; else e=$?; fi
 [[ "$e" -eq 1 && "$r" == explicit_disable ]] && ok "gate 0 skips" || bad "gate 0 skips"
+unset BRAIN_AGENT_HOOKS CURSOR_VERSION
 
 # shellcheck source=/dev/null
 source "$ROOT/config/brain.env"

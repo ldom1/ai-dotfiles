@@ -50,3 +50,5 @@ projects/*/*
 !hooks/
 hooks/*
 !hooks/*.sh
+# Ephemeral alwaysApply inject (rewritten each CLI session; do not commit)
+rules/brain-hooks-session-inject.mdc

@@ -7,7 +7,7 @@ alwaysApply: false
 
 **Cursor IDE Agent:** do not write these notes automatically. Use **`/capture`** (or an explicit user request). `@session-implementation-log` is optional guidance if needed.
 
-**Cursor Agent CLI** (`BRAIN_AGENT_HOOKS=1`) / **Claude Code:** still write for substantive sessions (or rely on `/capture` / SessionEnd reminder).
+**Cursor Agent CLI** (brain hooks on by default) / **Claude Code:** still write for substantive sessions (or rely on `/capture` / SessionEnd reminder).
 
 When writing (manual / CLI / Claude):
 

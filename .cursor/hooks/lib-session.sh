@@ -76,18 +76,33 @@ brain_hooks_prune_markers() {
 }
 
 brain_hooks_with_sync_lock() {
-  local dir lock lock_mtime lock_age
+  local dir lock lock_mtime lock_age pid
   dir="$(brain_hooks_marker_dir)"
   mkdir -p "$dir"
   lock="$dir/sync.lock"
 
+  _brain_hooks_lock_stale() {
+    if [[ ! -d "$lock" ]]; then
+      return 1
+    fi
+    if [[ -f "$lock/pid" ]]; then
+      pid="$(cat "$lock/pid" 2>/dev/null || true)"
+      if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+        return 1
+      fi
+      return 0
+    fi
+    lock_mtime="$(stat -c %Y "$lock" 2>/dev/null || echo 0)"
+    lock_age=$(( $(date +%s) - lock_mtime ))
+    (( lock_age >= 600 ))
+  }
+
   _brain_hooks_acquire_lock() {
     if mkdir "$lock" 2>/dev/null; then
-      trap 'rmdir "$lock" 2>/dev/null || true' RETURN
+      echo $$ >"$lock/pid"
       "$@"
       local rc=$?
-      rmdir "$lock" 2>/dev/null || true
-      trap - RETURN
+      rm -rf "$lock"
       return "$rc"
     fi
     return 1
@@ -97,21 +112,16 @@ brain_hooks_with_sync_lock() {
     return 0
   fi
 
+  if _brain_hooks_lock_stale; then
+    brain_hooks_log reason=lock_stale_reclaimed
+    rm -rf "$lock"
+    if _brain_hooks_acquire_lock "$@"; then
+      return 0
+    fi
+  fi
+
   lock_mtime="$(stat -c %Y "$lock" 2>/dev/null || echo 0)"
   lock_age=$(( $(date +%s) - lock_mtime ))
-
-  if (( lock_age < 600 )); then
-    brain_hooks_log reason=lock_busy lock_age="$lock_age"
-    return 1
-  fi
-
-  brain_hooks_log reason=lock_stale_reclaimed lock_age="$lock_age"
-  rmdir "$lock" 2>/dev/null || rm -rf "$lock"
-
-  if _brain_hooks_acquire_lock "$@"; then
-    return 0
-  fi
-
   brain_hooks_log reason=lock_busy lock_age="$lock_age"
   return 1
 }

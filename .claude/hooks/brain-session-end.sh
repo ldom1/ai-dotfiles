@@ -24,6 +24,7 @@ INPUT=$(cat || true)
 
 # ── Sync vault (commit + push whatever is on disk) ────────────────────────────
 "$AI_DOTFILES/skills/brain-sync/scripts/sync.sh" end 2>&1 | tee -a "$LOG" >&2 || true
+bash "$AI_DOTFILES/scripts/log-skill-usage.sh" brain-sync "claude:sessionEnd" 2>/dev/null || true
 
 # ── Warn if implementation notes are missing (written AFTER sync so tail -20 shows it) ──
 if [[ -n "$BRAIN_PATH" ]]; then

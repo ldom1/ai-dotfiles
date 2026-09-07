@@ -1,12 +1,12 @@
 ---
 name: brain-sync
-description: Sync the Local Brain Obsidian vault (git repo). Claude Code SessionStart/End and Cursor Agent CLI (BRAIN_AGENT_HOOKS=1) run this automatically; Cursor IDE Agent must not auto-run it — only on explicit user request or /brain-sync.
+description: Sync the Local Brain Obsidian vault (git repo). Claude Code SessionStart/End and Cursor Agent CLI (default) run this automatically; Cursor IDE Agent must not auto-run it — only on explicit user request or /brain-sync.
 user-invocable: true
 ---
 
 # brain-sync
 
-Keep the Local Brain vault and ai-dotfiles repo in sync. **Automatic** start/end is owned by Claude Code hooks and Cursor CLI hooks (`BRAIN_AGENT_HOOKS=1`). In Cursor IDE Agent, only run when the user asks or uses `/brain-sync`.
+Keep the Local Brain vault and ai-dotfiles repo in sync. **Automatic** start/end is owned by Claude Code hooks and Cursor CLI hooks (CLI default; `BRAIN_AGENT_HOOKS=0` to force off). In Cursor IDE Agent, only run when the user asks or uses `/brain-sync`.
 
 On session start (hooks/CLI), pull latest changes for all repos. On session end, enforce implementation note writing then commit and push.
 

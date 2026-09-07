@@ -1,19 +1,18 @@
 ---
-description: Cursor IDE Agent must never auto-run brain-sync/load or auto-write implementation session logs.
-alwaysApply: true
+description: ONLY for Cursor IDE Agent (Composer / in-editor chat) — never for Agent CLI (CURSOR_VERSION like 2026.09.02).
+alwaysApply: false
 ---
 
 # Cursor IDE — brain hard-off
 
-In **Cursor IDE Agent** (Composer / Agent Chat inside the editor):
+Apply **only** in Cursor IDE Agent (Composer / Agent Chat in the editor).
 
-- Do **not** run `sync.sh start`, `sync.sh end`, or `load.sh` at session start or end.
-- Do **not** write `$BRAIN_PATH/inbox/daily/implementation/**` notes automatically.
-- Do **not** “compensate” when hooks return empty/`{}` — that is expected without `BRAIN_AGENT_HOOKS=1` (CLI opt-in only).
-- Only do the above if the user **explicitly** asks, or they use **`/capture`**, `/brain-sync`, `/brain-load`, or `@` the matching rule/skill.
+**Do not apply** when running as Cursor Agent CLI (`agent`, `CURSOR_VERSION` like `YYYY.MM.DD-…`).
 
-Automatic sync/load/pitfalls inject is for **Cursor Agent CLI** with `BRAIN_AGENT_HOOKS=1` (or `scripts/cursor-agent-brain.sh`) and for **Claude Code** hooks — not the IDE Agent.
+In IDE Agent:
 
-**Never** put `export BRAIN_AGENT_HOOKS=1` in `.zshrc` / shell profile — the IDE Agent inherits it and would RUN hooks.
+- Do **not** run `sync.sh start/end` or `load.sh` unless the user explicitly asks.
+- Do **not** auto-write implementation notes — use **`/capture`**.
+- Do **not** compensate for empty hooks.
 
-End-of-session vault notes in the IDE: **`/capture` only**.
+CLI uses `alias agent='~/ai-dotfiles/scripts/cursor-agent-brain.sh'` from any directory (no `cd`).
