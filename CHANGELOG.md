@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- Cursor: brain-sync / brain-load session lifecycle moved from always-apply rules to opt-in user hooks (`BRAIN_AGENT_HOOKS=1` / `scripts/cursor-agent-brain.sh`). IDE Agent hard-off; `@claude-pitfall` manual only. Bounded pitfalls excerpt on CLI sessionStart. Claude Code hooks unchanged. Claude↔Cursor hook bridge unsupported for brain automation (disable bridge when using Cursor brain hooks).
+
 ## [0.3.1] - 2026-08-27
 
 ### Fixed

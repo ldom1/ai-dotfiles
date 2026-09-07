@@ -29,7 +29,7 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 
 | Skill | Purpose |
 |-------|---------|
-| [brain-sync](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Sync) | Sync Local Brain Obsidian vault at session start/end |
+| [brain-sync](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Sync) | Sync Local Brain Obsidian vault (hooks at session start/end; manual via skill) |
 | [brain-load](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Load) | Load / instantiate project notes from vault |
 | [brain-search](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Search) | Semantic + keyword search over vault via qmd (`scripts/search.sh`) |
 | [brain-route](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Route) | Session router: maintenance vs normal (used after brain-sync pull) |
@@ -220,6 +220,42 @@ ai-dotfiles mcp-sync                 # (re)apply centrally-managed MCP servers (
 
 `brain-sync start` pulls vault → project for all registered paths. `brain-sync end` pushes project → vault before the vault git commit. Strategy: `rsync --update` (newer mtime wins, no merge). Unregistered projects are skipped silently.
 
+**Who runs it:**
+
+| Tool | Session automation |
+|------|-------------------|
+| **Claude Code** | Automatic — `.claude/hooks/brain-session-start.sh` / `brain-session-end.sh` (unchanged) |
+| **Cursor IDE Agent** | **Off** — no automatic sync, load, or pitfalls injection |
+| **Cursor Agent CLI** | Opt-in only — see [Cursor Agent CLI brain hooks](#cursor-agent-cli-brain-hooks) below |
+
+Invoke the `brain-sync` / `brain-load` skills manually when hooks are off or the user asks.
+
+### Cursor Agent CLI brain hooks
+
+Cursor **user hooks** (`.cursor/hooks.json`, symlinked to `~/.cursor/hooks.json` by `install.sh`) can run brain session lifecycle on the **Agent CLI** — not in the IDE Agent panel and **not on Cursor Cloud** (cloud agents are excluded).
+
+**Enable (opt-in):**
+
+```bash
+# launcher (sets BRAIN_AGENT_HOOKS=1)
+~/ai-dotfiles/scripts/cursor-agent-brain.sh -p '…'
+
+# or inline
+BRAIN_AGENT_HOOKS=1 agent -p '…'
+```
+
+Set `BRAIN_AGENT_HOOKS=0` to force hooks to skip brain inject for one invocation. Without `BRAIN_AGENT_HOOKS=1`, hooks load but do not run sync/load/pitfalls.
+
+**Cursor IDE Agent:** no automatic sync, load, or pitfalls inject. `@`-mention **`@claude-pitfall`** when you need pitfalls apply/append/re-check behavior; run `brain-sync` / `brain-load` manually if you want vault sync or project notes in context.
+
+**`sessionStart` (CLI, opted in):** `brain-sync start`, project note from `brain-load` (stdout capped), plus a **bounded pitfalls excerpt** (~12 KiB: `##` heading index + last three registry entries from `$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md`) and fixed CLI instructions. The excerpt is incomplete — read the full file or use `@claude-pitfall` when detail matters.
+
+**`sessionEnd` (best-effort):** runs `brain-sync end` when the hook fires; may not run on crash or kill. Do not rely on it as the only path to push vault changes — use `/capture` or `brain-sync end` manually when needed.
+
+**Claim C1 — disable Claude Code / third-party hooks in Cursor:** While using Cursor brain hooks, disable any Claude Code or third-party hook bridge inside Cursor that would duplicate session automation. Claude Code hooks (`.claude/hooks/`) and Cursor user hooks (`.cursor/hooks/`) are separate stacks; **Claude↔Cursor hook bridge is unsupported** for brain automation — turn the bridge off when using Cursor brain hooks.
+
+Logs: `~/.cursor/logs/brain-hooks.log`, `~/.cursor/logs/brain-hooks-session.log`.
+
 ---
 
 ## Personal setup (quick start)
@@ -252,7 +288,9 @@ ai-dotfiles/
 │   └── hooks/
 │       └── rtk-rewrite.sh           # PreToolUse: rtk rewrite + tail cap on noisy output
 ├── .cursor/
-│   ├── rules/                       # brain-sync, brain-load, finops-claude, graphify-context (.mdc)
+│   ├── hooks.json                   # User hooks: sessionStart/End → brain-sync + brain-load (CLI opt-in)
+│   ├── hooks/                       # session-start.sh, session-end.sh, lib-*.sh
+│   ├── rules/                       # claude-pitfall (@ manual), finops-claude, graphify-context, … (.mdc)
 │   └── skills/                      # symlinks → ../skills/<name> (Cursor, coe-* excluded)
 ├── .vibe/
 │   ├── AGENTS.md                    # Mistral Vibe bootstrap (canonical)
@@ -308,6 +346,7 @@ ai-dotfiles/
 ├── bin/
 │   └── ai-dotfiles                  # CLI: init / upgrade / sync / merge-memory
 └── scripts/
+    ├── cursor-agent-brain.sh        # BRAIN_AGENT_HOOKS=1 wrapper for `agent` CLI
     ├── install.sh                   # Setup script (symlinks, settings, hooks, CLI)
     ├── init-project.sh              # Initialise a project brain folder
     ├── upgrade-project.sh           # Add missing files, backfill frontmatter + sections

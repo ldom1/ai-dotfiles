@@ -11,7 +11,7 @@ Map the current codebase to a **project note** in the Local Brain vault and load
 ## Quick start
 
 ```bash
-# Run from your project's git root after brain-sync start:
+# Manual / on-demand (hooks already run this at session start):
 bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh
 ```
 
@@ -52,9 +52,11 @@ The script determines the project slug in this order:
 | `scripts/load.sh` | `--list-caps` | Print `cap:<id>` for each `caps/*.md` |
 | `scripts/instantiate.sh` | `--cap <id>` | Copy `_template.md` → `projects/<slug>.md`, update `.brain-project` |
 
-## Autonomous execution (session start)
+## Session start (hooks — do not re-run)
 
-Run **after** `brain-sync start`:
+Claude Code (`brain-session-start.sh`) and Cursor (`.cursor/hooks/session-start.sh`) already run `brain-sync start` then `load.sh` and inject stdout into context. **Do not** bash-run sync/load again at session start unless hook output is missing or the user explicitly asks.
+
+When **`/brain-load`** is invoked manually (or hook stderr indicates `PROJECT_NOTE_MISSING`), run from the project git root:
 
 ```bash
 bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh

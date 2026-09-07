@@ -40,6 +40,22 @@ link() {
 link ".claude"
 link ".cursor"
 
+header "Cursor brain hooks"
+HOOKS_JSON="$DOTFILES/.cursor/hooks.json"
+if [[ -f "$HOOKS_JSON" ]]; then
+  chmod +x "$DOTFILES/.cursor/hooks/"*.sh 2>/dev/null || true
+  if [[ "$(readlink -f "$HOME/.cursor")" != "$(readlink -f "$DOTFILES/.cursor")" ]]; then
+    warn "~/.cursor is not the expected symlink to ai-dotfiles/.cursor"
+  else
+    log "~/.cursor → ai-dotfiles/.cursor"
+  fi
+  [[ -x "$DOTFILES/.cursor/hooks/session-start.sh" ]] && log "session-start.sh executable" || warn "session-start.sh not executable"
+  [[ -x "$DOTFILES/.cursor/hooks/session-end.sh" ]] && log "session-end.sh executable" || warn "session-end.sh not executable"
+  log "hooks.json present"
+else
+  warn "No .cursor/hooks.json — Cursor brain hooks not installed"
+fi
+
 # ── 1b. skills/ → .claude/skills/, .vibe/skills/, .cursor/skills/ (per-skill; coe-* excluded) ─
 header "Linking skills (Claude Code + Vibe + Cursor)"
 

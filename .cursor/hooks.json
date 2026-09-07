@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [{ "command": "./hooks/session-start.sh", "timeout": 120 }],
+    "sessionEnd": [{ "command": "./hooks/session-end.sh", "timeout": 180 }]
+  }
+}
