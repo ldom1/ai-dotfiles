@@ -23,6 +23,7 @@ reason="$(brain_hooks_should_run)" || {
     VSCODE_PID="${VSCODE_PID:-unset}" \
     VSCODE_CWD="${VSCODE_CWD:-unset}" \
     VSCODE_IPC_HOOK="${VSCODE_IPC_HOOK:+set}${VSCODE_IPC_HOOK:-unset}" \
+    CURSOR_CODE_REMOTE="${CURSOR_CODE_REMOTE:-unset}" \
     id_source=n/a
   echo '{}'
   exit 0

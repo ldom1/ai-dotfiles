@@ -29,7 +29,7 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 
 | Skill | Purpose |
 |-------|---------|
-| [brain-sync](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Sync) | Sync Local Brain Obsidian vault (hooks at session start/end; manual via skill) |
+| [brain-sync](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Sync) | Sync Local Brain Obsidian vault (Claude Code hooks; Cursor CLI with `BRAIN_AGENT_HOOKS=1`; manual via skill) |
 | [brain-load](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Load) | Load / instantiate project notes from vault |
 | [brain-search](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Search) | Semantic + keyword search over vault via qmd (`scripts/search.sh`) |
 | [brain-route](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Route) | Session router: maintenance vs normal (used after brain-sync pull) |
@@ -149,7 +149,7 @@ echo "my-project" > /path/to/project/.brain-project
 ai-dotfiles init /path/to/project
 ```
 
-This creates `<project>/.claude/memory/` with template files, mirrors them to `$BRAIN_PATH/projects/my-project/`, and registers the project in `config/brain-projects.tsv`. `brain-sync` then keeps both sides in sync automatically at session start/end.
+This creates `<project>/.claude/memory/` with template files, mirrors them to `$BRAIN_PATH/projects/my-project/`, and registers the project in `config/brain-projects.tsv`. `brain-sync` keeps both sides in sync when session hooks run (Claude Code always; Cursor Agent CLI with `BRAIN_AGENT_HOOKS=1`) — not automatically in Cursor IDE Agent.
 
 ### Centrally-managed MCP servers
 
@@ -246,9 +246,11 @@ BRAIN_AGENT_HOOKS=1 agent -p '…'
 
 Set `BRAIN_AGENT_HOOKS=0` to force hooks to skip brain inject for one invocation. Without `BRAIN_AGENT_HOOKS=1`, hooks load but do not run sync/load/pitfalls.
 
+**Never export `BRAIN_AGENT_HOOKS=1` from `.zshrc` / `.bashrc` / shell profile.** Cursor IDE Agent inherits that env and would RUN brain hooks — bypassing IDE hard-off. Enable only via the launcher or a one-shot prefix on `agent`.
+
 **Cursor IDE Agent:** no automatic sync, load, pitfalls inject, or implementation-session notes. Use **`/capture`** for end-of-session vault notes; `@claude-pitfall` when you need pitfalls apply/append/re-check; run `brain-sync` / `brain-load` only if you explicitly ask.
 
-**`sessionStart` (CLI, opted in):** `brain-sync start`, project note from `brain-load` (stdout capped), plus a **bounded pitfalls excerpt** (~12 KiB: `##` heading index + last three registry entries from `$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md`) and fixed CLI instructions. The excerpt is incomplete — read the full file or use `@claude-pitfall` when detail matters.
+**`sessionStart` (CLI, opted in):** `brain-sync start`, project note from `brain-load` (stdout capped), plus a **bounded pitfalls excerpt** (≤12 KiB: up to **3 newest** full entries first, then a truncated `##` heading index from `$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md`) and fixed CLI instructions. The excerpt is incomplete — read the full file or use `@claude-pitfall` when detail matters.
 
 **`sessionEnd` (best-effort):** runs `brain-sync end` when the hook fires; may not run on crash or kill. Do not rely on it as the only path to push vault changes — use `/capture` or `brain-sync end` manually when needed.
 
@@ -299,7 +301,7 @@ ai-dotfiles/
 │   ├── README.md                    # Vibe skill discovery and trust
 │   └── skills/                      # symlinks → skills/* (Mistral Vibe, coe-* excluded)
 ├── skills/
-│   ├── brain-sync/                  # Sync Local Brain at session start/end
+│   ├── brain-sync/                  # Sync Local Brain (Claude/CLI hooks; manual skill)
 │   │   ├── SKILL.md
 │   │   ├── scripts/sync.sh
 │   │   └── reference/

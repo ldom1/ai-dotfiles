@@ -1,6 +1,6 @@
 ---
 name: brain-load
-description: Load the current Local Brain project note into context; detect new projects, ask for a CAP to instantiate from the vault project template, and prime Claude with project context.
+description: Load the current Local Brain project note into context on demand (or after Claude Code / Cursor CLI hooks). Cursor IDE Agent must not auto-run at session start — use /brain-load or an explicit ask.
 user-invocable: true
 ---
 
@@ -11,7 +11,9 @@ Map the current codebase to a **project note** in the Local Brain vault and load
 ## Quick start
 
 ```bash
-# Manual / on-demand (hooks already run this at session start):
+# Manual / on-demand only in Cursor IDE. Claude Code + Cursor CLI hooks
+# (BRAIN_AGENT_HOOKS=1) already inject load output — do not re-run there
+# unless the user asks.
 bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh
 ```
 

@@ -14,4 +14,6 @@ In **Cursor IDE Agent** (Composer / Agent Chat inside the editor):
 
 Automatic sync/load/pitfalls inject is for **Cursor Agent CLI** with `BRAIN_AGENT_HOOKS=1` (or `scripts/cursor-agent-brain.sh`) and for **Claude Code** hooks — not the IDE Agent.
 
+**Never** put `export BRAIN_AGENT_HOOKS=1` in `.zshrc` / shell profile — the IDE Agent inherits it and would RUN hooks.
+
 End-of-session vault notes in the IDE: **`/capture` only**.

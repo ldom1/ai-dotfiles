@@ -41,6 +41,7 @@ reason="$(brain_hooks_should_run)" || {
     VSCODE_PID="${VSCODE_PID:-unset}" \
     VSCODE_CWD="${VSCODE_CWD:-unset}" \
     VSCODE_IPC_HOOK="${VSCODE_IPC_HOOK:+set}${VSCODE_IPC_HOOK:-unset}" \
+    CURSOR_CODE_REMOTE="${CURSOR_CODE_REMOTE:-unset}" \
     id_source=n/a
   echo '{}'
   exit 0
@@ -63,7 +64,11 @@ started="$marker_dir/cursor-${key}.started"
 
 if [[ -f "$started" ]]; then
   brain_hooks_log_decision SKIP reason=already_ran event=sessionStart \
-    id_source="$id_source" key="$key"
+    id_source="$id_source" key="$key" \
+    VSCODE_PID="${VSCODE_PID:-unset}" \
+    VSCODE_CWD="${VSCODE_CWD:-unset}" \
+    VSCODE_IPC_HOOK="${VSCODE_IPC_HOOK:+set}${VSCODE_IPC_HOOK:-unset}" \
+    CURSOR_CODE_REMOTE="${CURSOR_CODE_REMOTE:-unset}"
   echo '{}'
   exit 0
 fi
@@ -118,11 +123,19 @@ fi
 if brain_hooks_emit_additional_context "$CTX"; then
   touch "$started"
   brain_hooks_log_decision RUN reason="$reason" event=sessionStart \
-    id_source="$id_source" key="$key"
+    id_source="$id_source" key="$key" \
+    VSCODE_PID="${VSCODE_PID:-unset}" \
+    VSCODE_CWD="${VSCODE_CWD:-unset}" \
+    VSCODE_IPC_HOOK="${VSCODE_IPC_HOOK:+set}${VSCODE_IPC_HOOK:-unset}" \
+    CURSOR_CODE_REMOTE="${CURSOR_CODE_REMOTE:-unset}"
 else
-  touch "$started"
-  brain_hooks_log_decision RUN reason=emit_failed_marked event=sessionStart \
-    id_source="$id_source" key="$key"
+  # Do not plant .started — allow a later turn to retry inject (sync is idempotent)
+  brain_hooks_log_decision SKIP reason=emit_failed event=sessionStart \
+    id_source="$id_source" key="$key" \
+    VSCODE_PID="${VSCODE_PID:-unset}" \
+    VSCODE_CWD="${VSCODE_CWD:-unset}" \
+    VSCODE_IPC_HOOK="${VSCODE_IPC_HOOK:+set}${VSCODE_IPC_HOOK:-unset}" \
+    CURSOR_CODE_REMOTE="${CURSOR_CODE_REMOTE:-unset}"
 fi
 
 exit 0
