@@ -25,12 +25,14 @@ brain_hooks_raw_id_to_vars() {
     if [[ -n "$raw" ]]; then
       BRAIN_HOOKS_ID_SOURCE=conversation_id
       BRAIN_HOOKS_RAW_ID="$raw"
+      export BRAIN_HOOKS_RAW_ID BRAIN_HOOKS_ID_SOURCE
       return 0
     fi
     raw="$(jq -r '.session_id // empty' "$file" 2>/dev/null || true)"
     if [[ -n "$raw" ]]; then
       BRAIN_HOOKS_ID_SOURCE=session_id
       BRAIN_HOOKS_RAW_ID="$raw"
+      export BRAIN_HOOKS_RAW_ID BRAIN_HOOKS_ID_SOURCE
       return 0
     fi
   fi
@@ -38,6 +40,7 @@ brain_hooks_raw_id_to_vars() {
   if [[ -n "${CURSOR_TRACE_ID:-}" ]]; then
     BRAIN_HOOKS_ID_SOURCE=CURSOR_TRACE_ID
     BRAIN_HOOKS_RAW_ID="$CURSOR_TRACE_ID"
+    export BRAIN_HOOKS_RAW_ID BRAIN_HOOKS_ID_SOURCE
     return 0
   fi
 
@@ -48,6 +51,8 @@ brain_hooks_raw_id_to_vars() {
   project="${CURSOR_PROJECT_DIR:-}"
   time="${EPOCHREALTIME:-$(date +%s.%N)}"
   BRAIN_HOOKS_RAW_ID="$(printf '%s' "${stdin_bytes}${transcript}${project}${time}" | sha256sum | awk '{print $1}')"
+  # Exported for callers / shellcheck (vars are intentional API of this helper)
+  export BRAIN_HOOKS_RAW_ID BRAIN_HOOKS_ID_SOURCE
 }
 
 # Prints raw id to stdout; sets BRAIN_HOOKS_ID_SOURCE in the current shell only
