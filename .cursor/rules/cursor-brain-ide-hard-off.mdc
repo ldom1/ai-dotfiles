@@ -1,0 +1,14 @@
+---
+description: Cursor IDE Agent must never auto-run brain-sync or brain-load at session start/end.
+alwaysApply: true
+---
+
+# Cursor IDE — brain hard-off
+
+In **Cursor IDE Agent** (Composer / Agent Chat inside the editor):
+
+- Do **not** run `sync.sh start`, `sync.sh end`, or `load.sh` at session start or end.
+- Do **not** “compensate” when hooks return empty/`{}` — that is expected without `BRAIN_AGENT_HOOKS=1` (CLI opt-in only).
+- Only run those scripts if the user **explicitly** asks, or they `@` / invoke `/brain-sync` or `/brain-load`.
+
+Automatic sync/load/pitfalls inject is for **Cursor Agent CLI** with `BRAIN_AGENT_HOOKS=1` (or `scripts/cursor-agent-brain.sh`) and for **Claude Code** hooks — not the IDE Agent.

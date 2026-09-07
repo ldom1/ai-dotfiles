@@ -54,9 +54,11 @@ The script determines the project slug in this order:
 
 ## Session start (hooks — do not re-run)
 
-Claude Code (`brain-session-start.sh`) and Cursor (`.cursor/hooks/session-start.sh`) already run `brain-sync start` then `load.sh` and inject stdout into context. **Do not** bash-run sync/load again at session start unless hook output is missing or the user explicitly asks.
+**Cursor IDE Agent:** never bash-run `sync.sh` / `load.sh` at session start or end. Empty hook output / `{}` is normal (opt-in CLI only). Run only if the user explicitly asks or invokes `/brain-load`.
 
-When **`/brain-load`** is invoked manually (or hook stderr indicates `PROJECT_NOTE_MISSING`), run from the project git root:
+**Claude Code** (`brain-session-start.sh`) and **Cursor Agent CLI** with `BRAIN_AGENT_HOOKS=1` (`.cursor/hooks/session-start.sh`) already run `brain-sync start` then `load.sh` and inject stdout. Do **not** re-run those scripts in that same session unless the user asks.
+
+When **`/brain-load`** is invoked manually (or Claude/CLI hook stderr indicates `PROJECT_NOTE_MISSING`), run from the project git root:
 
 ```bash
 bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh
