@@ -246,7 +246,7 @@ BRAIN_AGENT_HOOKS=1 agent -p '…'
 
 Set `BRAIN_AGENT_HOOKS=0` to force hooks to skip brain inject for one invocation. Without `BRAIN_AGENT_HOOKS=1`, hooks load but do not run sync/load/pitfalls.
 
-**Cursor IDE Agent:** no automatic sync, load, or pitfalls inject. `@`-mention **`@claude-pitfall`** when you need pitfalls apply/append/re-check behavior; run `brain-sync` / `brain-load` manually if you want vault sync or project notes in context.
+**Cursor IDE Agent:** no automatic sync, load, pitfalls inject, or implementation-session notes. Use **`/capture`** for end-of-session vault notes; `@claude-pitfall` when you need pitfalls apply/append/re-check; run `brain-sync` / `brain-load` only if you explicitly ask.
 
 **`sessionStart` (CLI, opted in):** `brain-sync start`, project note from `brain-load` (stdout capped), plus a **bounded pitfalls excerpt** (~12 KiB: `##` heading index + last three registry entries from `$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md`) and fixed CLI instructions. The excerpt is incomplete — read the full file or use `@claude-pitfall` when detail matters.
 
@@ -264,6 +264,8 @@ Logs: `~/.cursor/logs/brain-hooks.log`, `~/.cursor/logs/brain-hooks-session.log`
 git clone git@github.com:<you>/ai-dotfiles.git ~/ai-dotfiles
 bash ~/ai-dotfiles/scripts/install.sh
 ```
+
+Local Medium/blog drafts belong in `articles/` (gitignored).
 
 `install.sh` symlinks `~/.claude` and `~/.cursor` to this repo, generates `settings.json` from the template, and creates `settings.local.json` if missing. Skills are wired automatically — no plugin install needed for your own machine. It also sets `git config core.hooksPath git-hooks` so the versioned [pre-commit hook](git-hooks/pre-commit) runs (blocks accidental commits under Cursor runtime dirs under `.cursor/` and scans staged diffs for secrets). If you clone without running `install.sh`, run `bash scripts/install-git-hooks.sh` once from the repo root.
 
