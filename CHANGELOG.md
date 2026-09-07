@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Added
+- Gitignored `articles/` for local Medium/blog drafts (not published from this repo).
+
+### Added
+- `scripts/log-skill-usage.sh` — Claude + Cursor session hooks append `brain-sync` / `brain-load` runs to `~/.claude/skill-usage.log` (with source tag). Skill-tool PreToolUse logging alone never counted hook-driven runs.
+
+### Changed
+- Cursor brain hooks: turn-1 via global user rule (prewarm; **any cwd**, no `cd`); stop writing repo-root `AGENTS.md` (restore Vibe symlink); IDE hard-off not alwaysApply.
+- Cursor: brain-sync / brain-load session lifecycle moved from always-apply rules to user hooks. IDE Agent hard-off; `@claude-pitfall` manual only. Bounded pitfalls excerpt on CLI sessionStart. Claude Code hooks unchanged. Claude↔Cursor hook bridge unsupported for brain automation (disable bridge when using Cursor brain hooks).
+- Cursor: add always-apply `cursor-brain-ide-hard-off` rule and tighten brain-sync/load skill wording so IDE Agent does not bash-compensate when hooks skip.
+- Cursor: `session-implementation-log` is no longer always-apply — IDE Agent must not auto-write implementation notes; use `/capture` (or explicit ask) only.
+- Cursor brain hooks: fix pitfalls excerpt packing (newest 3 first, then truncated index); do not plant `.started` on JSON emit failure; RUN logs include VSCODE_*/remote; warn against exporting `BRAIN_AGENT_HOOKS` from shell profile; unit test script for libs.
+
 ## [0.3.1] - 2026-08-27
 
 ### Fixed

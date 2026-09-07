@@ -1,6 +1,6 @@
 ---
 name: brain-load
-description: Load the current Local Brain project note into context; detect new projects, ask for a CAP to instantiate from the vault project template, and prime Claude with project context.
+description: Load the current Local Brain project note into context on demand (or after Claude Code / Cursor CLI hooks). Cursor IDE Agent must not auto-run at session start — use /brain-load or an explicit ask.
 user-invocable: true
 ---
 
@@ -11,7 +11,8 @@ Map the current codebase to a **project note** in the Local Brain vault and load
 ## Quick start
 
 ```bash
-# Run from your project's git root after brain-sync start:
+# Manual / on-demand only in Cursor IDE. Claude Code + Cursor CLI hooks
+# already inject load output — do not re-run there unless the user asks.
 bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh
 ```
 
@@ -52,9 +53,13 @@ The script determines the project slug in this order:
 | `scripts/load.sh` | `--list-caps` | Print `cap:<id>` for each `caps/*.md` |
 | `scripts/instantiate.sh` | `--cap <id>` | Copy `_template.md` → `projects/<slug>.md`, update `.brain-project` |
 
-## Autonomous execution (session start)
+## Session start (hooks — do not re-run)
 
-Run **after** `brain-sync start`:
+**Cursor IDE Agent:** never bash-run `sync.sh` / `load.sh` at session start or end. Empty hook output / `{}` is normal (`ide_surface` / hard-off). Run only if the user explicitly asks or invokes `/brain-load`.
+
+**Claude Code** (`brain-session-start.sh`) and **Cursor Agent CLI** (`.cursor/hooks/session-start.sh`, on by default) already run `brain-sync start` then `load.sh` and inject stdout. Do **not** re-run those scripts in that same session unless the user asks.
+
+When **`/brain-load`** is invoked manually (or Claude/CLI hook stderr indicates `PROJECT_NOTE_MISSING`), run from the project git root:
 
 ```bash
 bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh

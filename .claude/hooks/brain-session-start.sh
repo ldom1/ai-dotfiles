@@ -77,6 +77,7 @@ if [[ "$SOURCE" == "startup" || "$SOURCE" == "resume" ]]; then
     rm -f "$EXIT_LOG"
   fi
   "$SYNC" start >>"$LOG_FILE" 2>&1 || true
+  bash "$AI_DOTFILES/scripts/log-skill-usage.sh" brain-sync "claude:sessionStart" 2>/dev/null || true
 fi
 
 # Always emit BRAIN_PATH so Bash tool processes can use it
@@ -90,6 +91,7 @@ fi
 
 # Run load.sh; cap context injection at 30 lines; redirect verbose stderr to log
 "$LOAD" 2>>"$LOG_FILE" | head -30 || true
+bash "$AI_DOTFILES/scripts/log-skill-usage.sh" brain-load "claude:sessionStart" 2>/dev/null || true
 
 # Inject operational constraints from ai-agents knowledge base
 AI_AGENTS_DIR="${BRAIN_PATH}/resources/operational/ai-agents"

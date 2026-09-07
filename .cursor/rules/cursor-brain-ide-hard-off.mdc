@@ -1,0 +1,18 @@
+---
+description: ONLY for Cursor IDE Agent (Composer / in-editor chat) — never for Agent CLI (CURSOR_VERSION like 2026.09.02).
+alwaysApply: false
+---
+
+# Cursor IDE — brain hard-off
+
+Apply **only** in Cursor IDE Agent (Composer / Agent Chat in the editor).
+
+**Do not apply** when running as Cursor Agent CLI (`agent`, `CURSOR_VERSION` like `YYYY.MM.DD-…`).
+
+In IDE Agent:
+
+- Do **not** run `sync.sh start/end` or `load.sh` unless the user explicitly asks.
+- Do **not** auto-write implementation notes — use **`/capture`**.
+- Do **not** compensate for empty hooks.
+
+CLI uses `alias agent='~/ai-dotfiles/scripts/cursor-agent-brain.sh'` from any directory (no `cd`).

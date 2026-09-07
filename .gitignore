@@ -73,3 +73,6 @@ __pycache__/
 
 # Temporary files
 tmp/
+
+# Local article drafts (Medium / blog) — not published from this repo
+articles/

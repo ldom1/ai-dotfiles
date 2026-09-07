@@ -1,11 +1,15 @@
 ---
-description: Log every agent session under Local Brain inbox/daily/implementation by project.
-alwaysApply: true
+description: Local Brain implementation session log — @-mention only; prefer /capture. Cursor IDE must not auto-write these notes.
+alwaysApply: false
 ---
 
 # Session implementation log (Local Brain)
 
-For **every** conversation that does substantive work on a project (code, infra, skills, vault structure):
+**Cursor IDE Agent:** do not write these notes automatically. Use **`/capture`** (or an explicit user request). `@session-implementation-log` is optional guidance if needed.
+
+**Cursor Agent CLI** (brain hooks on by default) / **Claude Code:** still write for substantive sessions (or rely on `/capture` / SessionEnd reminder).
+
+When writing (manual / CLI / Claude):
 
 1. Resolve **`$BRAIN_PATH`** from `~/ai-dotfiles/config/brain.env` if unset.
 2. Choose **`<project-name>`** (slug): prefer an existing `projects/<slug>.md`, CAP id, or git remote/repo name; if unclear, ask once and then reuse that slug.

@@ -29,7 +29,7 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 
 | Skill | Purpose |
 |-------|---------|
-| [brain-sync](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Sync) | Sync Local Brain Obsidian vault at session start/end |
+| [brain-sync](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Sync) | Sync Local Brain Obsidian vault (Claude Code hooks; Cursor CLI via `cursor-agent-brain.sh` alias; manual via skill) |
 | [brain-load](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Load) | Load / instantiate project notes from vault |
 | [brain-search](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Search) | Semantic + keyword search over vault via qmd (`scripts/search.sh`) |
 | [brain-route](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Route) | Session router: maintenance vs normal (used after brain-sync pull) |
@@ -149,7 +149,7 @@ echo "my-project" > /path/to/project/.brain-project
 ai-dotfiles init /path/to/project
 ```
 
-This creates `<project>/.claude/memory/` with template files, mirrors them to `$BRAIN_PATH/projects/my-project/`, and registers the project in `config/brain-projects.tsv`. `brain-sync` then keeps both sides in sync automatically at session start/end.
+This creates `<project>/.claude/memory/` with template files, mirrors them to `$BRAIN_PATH/projects/my-project/`, and registers the project in `config/brain-projects.tsv`. `brain-sync` keeps both sides in sync when session hooks run (Claude Code always; Cursor Agent CLI with prewarm wrapper) — not automatically in Cursor IDE Agent.
 
 ### Centrally-managed MCP servers
 
@@ -220,6 +220,29 @@ ai-dotfiles mcp-sync                 # (re)apply centrally-managed MCP servers (
 
 `brain-sync start` pulls vault → project for all registered paths. `brain-sync end` pushes project → vault before the vault git commit. Strategy: `rsync --update` (newer mtime wins, no merge). Unregistered projects are skipped silently.
 
+**Who runs it:**
+
+| Tool | Session automation |
+|------|-------------------|
+| **Claude Code** | Automatic — `.claude/hooks/brain-session-start.sh` / `brain-session-end.sh` (unchanged) |
+| **Cursor IDE Agent** | **Off** — no automatic sync, load, or pitfalls injection |
+| **Cursor Agent CLI** | **On by default** — see [Cursor Agent CLI brain hooks](#cursor-agent-cli-brain-hooks) below |
+
+Invoke the `brain-sync` / `brain-load` skills manually when hooks are off or the user asks.
+
+### Cursor Agent CLI brain hooks
+
+Cursor **user hooks** (`.cursor/hooks.json`) run brain sync on the **Agent CLI** — not IDE Agent, not Cloud/remote IDE (`CURSOR_CODE_REMOTE=true` → skip).
+
+**Turn-1 context:** use the zsh alias from **any directory** (no `cd` required):
+
+```bash
+alias agent='~/ai-dotfiles/scripts/cursor-agent-brain.sh'   # already in ~/.zshrc
+agent   # from anywhere
+```
+
+Prewarm writes a global user rule `~/.cursor/rules/brain-hooks-session-inject.mdc` (alwaysApply) + sidecar. It does **not** touch repo-root `AGENTS.md` (that symlink is for Vibe → `.vibe/AGENTS.md`). Verify: quote `[brain-hooks] sessionStart OK` without Reading files.
+
 ---
 
 ## Personal setup (quick start)
@@ -228,6 +251,8 @@ ai-dotfiles mcp-sync                 # (re)apply centrally-managed MCP servers (
 git clone git@github.com:<you>/ai-dotfiles.git ~/ai-dotfiles
 bash ~/ai-dotfiles/scripts/install.sh
 ```
+
+Local Medium/blog drafts belong in `articles/` (gitignored).
 
 `install.sh` symlinks `~/.claude` and `~/.cursor` to this repo, generates `settings.json` from the template, and creates `settings.local.json` if missing. Skills are wired automatically — no plugin install needed for your own machine. It also sets `git config core.hooksPath git-hooks` so the versioned [pre-commit hook](git-hooks/pre-commit) runs (blocks accidental commits under Cursor runtime dirs under `.cursor/` and scans staged diffs for secrets). If you clone without running `install.sh`, run `bash scripts/install-git-hooks.sh` once from the repo root.
 
@@ -252,14 +277,16 @@ ai-dotfiles/
 │   └── hooks/
 │       └── rtk-rewrite.sh           # PreToolUse: rtk rewrite + tail cap on noisy output
 ├── .cursor/
-│   ├── rules/                       # brain-sync, brain-load, finops-claude, graphify-context (.mdc)
+│   ├── hooks.json                   # User hooks: sessionStart/End → brain-sync + brain-load (CLI default)
+│   ├── hooks/                       # session-start.sh, session-end.sh, lib-*.sh
+│   ├── rules/                       # claude-pitfall (@ manual), finops-claude, graphify-context, … (.mdc)
 │   └── skills/                      # symlinks → ../skills/<name> (Cursor, coe-* excluded)
 ├── .vibe/
 │   ├── AGENTS.md                    # Mistral Vibe bootstrap (canonical)
 │   ├── README.md                    # Vibe skill discovery and trust
 │   └── skills/                      # symlinks → skills/* (Mistral Vibe, coe-* excluded)
 ├── skills/
-│   ├── brain-sync/                  # Sync Local Brain at session start/end
+│   ├── brain-sync/                  # Sync Local Brain (Claude/CLI hooks; manual skill)
 │   │   ├── SKILL.md
 │   │   ├── scripts/sync.sh
 │   │   └── reference/
@@ -308,6 +335,8 @@ ai-dotfiles/
 ├── bin/
 │   └── ai-dotfiles                  # CLI: init / upgrade / sync / merge-memory
 └── scripts/
+    ├── cursor-agent-brain.sh        # prewarm inject rule + agent (turn-1 reliable)
+    ├── brain-hooks-prewarm.sh       # write alwaysApply inject + sidecar
     ├── install.sh                   # Setup script (symlinks, settings, hooks, CLI)
     ├── init-project.sh              # Initialise a project brain folder
     ├── upgrade-project.sh           # Add missing files, backfill frontmatter + sections
