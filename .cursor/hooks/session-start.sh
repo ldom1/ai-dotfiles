@@ -63,10 +63,14 @@ fi
 LOAD_OUT="$(bash "$AI_DOTFILES/skills/brain-load/scripts/load.sh" 2>>"$LOG_FILE" | head -30 || true)"
 bash "$AI_DOTFILES/scripts/log-skill-usage.sh" brain-load "cursor:sessionStart" 2>/dev/null || true
 
+VENDOR_OUT="$(bash "$AI_DOTFILES/scripts/check-vendored-skill-updates.sh" --inject 2>>"$LOG_FILE" || true)"
+
 CANARY="[brain-hooks] sessionStart OK reason=${reason} — Local Brain context injected (CLI)."
 CTX="${CANARY}
 
 ${LOAD_OUT:-}
+${VENDOR_OUT:+
+}${VENDOR_OUT:-}
 
 --- PITFALLS BEHAVIOR (CLI) ---
 Canonical: ${BRAIN_PATH:-unset}/resources/operational/ai-agents/pitfalls.md

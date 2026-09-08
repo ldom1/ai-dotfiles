@@ -1,0 +1,15 @@
+{
+  "check_interval_hours": 24,
+  "skills": [
+    {
+      "name": "graphify",
+      "pin_file": "skills/graphify/.graphify_version",
+      "github": "Graphify-Labs/graphify"
+    },
+    {
+      "name": "ponytail",
+      "pin_file": "skills/ponytail/.ponytail_version",
+      "github": "DietrichGebert/ponytail"
+    }
+  ]
+}

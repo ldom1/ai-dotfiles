@@ -93,6 +93,9 @@ fi
 "$LOAD" 2>>"$LOG_FILE" | head -30 || true
 bash "$AI_DOTFILES/scripts/log-skill-usage.sh" brain-load "claude:sessionStart" 2>/dev/null || true
 
+# Vendored skill pins vs GitHub latest (cached ≤24h, fail-open)
+bash "$AI_DOTFILES/scripts/check-vendored-skill-updates.sh" --inject 2>>"$LOG_FILE" || true
+
 # Inject operational constraints from ai-agents knowledge base
 AI_AGENTS_DIR="${BRAIN_PATH}/resources/operational/ai-agents"
 
