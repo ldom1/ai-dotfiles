@@ -47,6 +47,12 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 
 `ponytail` is vendored from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (`skills/ponytail/SKILL.md` only — on-demand skill, not the upstream alwaysApply Cursor rule). Pin: `skills/ponytail/.ponytail_version`. Re-sync: diff against the pinned tag, apply upstream, bump the pin (same pattern as graphify; no local patches today).
 
+### Vendored skill update checks
+
+SessionStart (Claude + Cursor Agent CLI) runs `scripts/check-vendored-skill-updates.sh`: compares pins in `config/vendored-skills.json` to each repo’s GitHub **latest release** (cache: `~/.claude/cache/vendored-skill-updates.json`, default **24h**, fail-open). Fetches run in parallel (shared 3s budget). If a pin is behind, a short WARNING is injected into session context and appended to `.claude/logs/vendored-skill-updates.log`. Transient fetch failures do not freeze the cache for a full day (short retry TTL).
+
+This does **not** auto-upgrade — alert only. Re-sync stays manual (diff pin→tag, replace `skills/<name>/`, bump pin, CHANGELOG, `install.sh`). Register new upstreams in `config/vendored-skills.json`. Force refresh: delete the cache file, then start a session or run `bash scripts/check-vendored-skill-updates.sh --inject`.
+
 Wiki hub: **[Skills](https://github.com/ldom1/ai-dotfiles/wiki/Skills)** (catalogue). Keep wiki pages directly in the local **`.wiki/`** clone (GitHub wiki repo) under the **`Skills/`** namespace (e.g. `Skills/Brain-Sync`), then publish explicitly with:
 
 ```bash

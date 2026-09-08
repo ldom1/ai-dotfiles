@@ -5,6 +5,7 @@
 ### Added
 - `ponytail` skill vendored from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) `v4.9.0` into `skills/ponytail/` (core only; on-demand). Symlinked into Claude / Cursor / Vibe via `install.sh`. Always-on `.mdc` deferred (re-check 2026-10-01).
 - Skill-usage telemetry: Claude `Skill` PreToolUse now calls `.claude/hooks/log-skill-usage.sh` (source `claude:Skill`). Cursor `preToolUse`/`Read` logs `**/skills/**/SKILL.md` loads as `cursor:skill-read` (heuristic; B0 in `spikes/cursor-b0-*`).
+- SessionStart check for vendored skills: `scripts/check-vendored-skill-updates.sh` + `config/vendored-skills.json` (graphify, ponytail). Cached GitHub latest-release compare (24h, parallel fetches, short retry on fetch failure); injects a WARNING when behind (Claude + Cursor). Does not auto-upgrade.
 
 ## [0.4.0] - 2026-09-08
 
