@@ -1,0 +1,3 @@
+2026-09-08T10:49:07+02:00 {"tool_name":"Read","tool_input":{"path":"/home/lgiron/ai-dotfiles/skills/grill-me/SKILL.md"},"tool_use_id":"t1"}
+2026-09-08T10:49:07+02:00 {"tool_name":"Shell","tool_input":{"command":"echo hi"}}
+2026-09-08T10:49:07+02:00 {"file_path":"/home/lgiron/ai-dotfiles/skills/git-commit/SKILL.md","content":"# x"}

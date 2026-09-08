@@ -154,6 +154,7 @@ chmod +x \
   "$DOTFILES/.claude/hooks/rtk-rewrite.sh" \
   "$DOTFILES/.claude/hooks/brain-session-start.sh" \
   "$DOTFILES/.claude/hooks/brain-session-end.sh" \
+  "$DOTFILES/.claude/hooks/log-skill-usage.sh" \
   "$DOTFILES/git-hooks/pre-commit" \
   "$DOTFILES/scripts/init-project.sh" \
   "$DOTFILES/scripts/upgrade-project.sh" \

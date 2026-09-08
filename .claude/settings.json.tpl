@@ -47,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.skill' | { read -r s; echo \"$(date -Iseconds) $s\" >> __HOME__/.claude/skill-usage.log; } 2>/dev/null || true"
+            "command": "__HOME__/.claude/hooks/log-skill-usage.sh"
           }
         ]
       }
