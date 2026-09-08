@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- `ponytail` skill vendored from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) `v4.9.0` into `skills/ponytail/` (core only; on-demand). Symlinked into Claude / Cursor / Vibe via `install.sh`. Always-on `.mdc` deferred (re-check 2026-10-01).
+
 ## [0.4.0] - 2026-09-08
 
 ### Added

@@ -36,6 +36,7 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 | [brain-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Audit) | Four-phase vault maintenance (raw → digest) |
 | capture | End-of-session workflow: implementation notes, project-brain review, pitfalls/lessons, sync |
 | grill-me | Stress-test plans through one-question-at-a-time design interrogation |
+| ponytail | Lazy senior mode — YAGNI ladder, stdlib before deps, minimum code that works (`/ponytail`) |
 | sop-builder | Turn process notes into validated seven-section SOP documents |
 | photo-archive-triage | Non-destructive photo/video triage: exact dedup, corrupt screening, capture-date recovery |
 | [server-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Server-Audit) | Infra audit: parallel checks and JSON reports |
@@ -43,6 +44,8 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 | [finops-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/FinOps-Audit) | Weekly token spend review → vault |
 
 `graphify` is vendored from [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) (the `SKILL.md` + `reference/` files, adapted with two local additions: the `GRAPHIFY_PROJECT` local-clone fallback and default-on agent-MCP auto-wiring via `scripts/setup_agent_mcp.py`). The synced upstream release is tracked in `skills/graphify/.graphify_version` — re-diff against that tag before syncing again to isolate local customizations from upstream changes.
+
+`ponytail` is vendored from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (`skills/ponytail/SKILL.md` only — on-demand skill, not the upstream alwaysApply Cursor rule). Pin: `skills/ponytail/.ponytail_version`. Re-sync: diff against the pinned tag, apply upstream, bump the pin (same pattern as graphify; no local patches today).
 
 Wiki hub: **[Skills](https://github.com/ldom1/ai-dotfiles/wiki/Skills)** (catalogue). Keep wiki pages directly in the local **`.wiki/`** clone (GitHub wiki repo) under the **`Skills/`** namespace (e.g. `Skills/Brain-Sync`), then publish explicitly with:
 
