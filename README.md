@@ -92,6 +92,20 @@ Every skill under `skills/<name>/` is symlinked by `scripts/install.sh` into thr
 
 (Prior to this, `install.sh`'s skill loop had no `coe-*` filter at all — `.claude/skills`/`.vibe/skills` linked every skill unconditionally, and `.cursor/skills` was a single symlink to the whole `skills/` directory. `coe-*` was kept out of git via `.gitignore`, but a `coe-*` skill present locally was fully visible to all three tools at runtime. The filter above is what actually enforces the exclusion now, for all three.)
 
+### Skill usage log
+
+Invocations append to `~/.claude/skill-usage.log` (`date skill [source]`):
+
+| Source tag | When |
+|------------|------|
+| *(none)* / `claude:Skill` | Claude Code `Skill` tool (`PreToolUse` → `.claude/hooks/log-skill-usage.sh`) |
+| `claude:sessionStart` / `cursor:sessionStart` / … | Hook-driven `brain-sync` / `brain-load` via `scripts/log-skill-usage.sh` |
+| `cursor:skill-read` | Cursor Agent `preToolUse`/`Read` of a `**/skills/**/SKILL.md` (heuristic — exploratory reads count too) |
+
+**Not counted:** alwaysApply `.mdc` rules, SessionStart prompt injection, memory-only follow-through, Vibe (no hook yet). Cursor counts are approximate; do not delete skills from Cursor lines alone.
+
+B0 observation artifacts: `spikes/cursor-b0-*` (logger + live sample).
+
 ---
 
 ## Security review & pentesting skills
