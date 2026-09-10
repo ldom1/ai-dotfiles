@@ -1,0 +1,10 @@
+{
+  "name": "copywriting",
+  "version": "2.11.1",
+  "description": "Write and improve marketing copy for home, landing, pricing and feature pages. Trigger: /copywriting",
+  "author": {
+    "name": "Corey Haines",
+    "github": "coreyhaines31"
+  },
+  "homepage": "https://github.com/coreyhaines31/marketingskills"
+}

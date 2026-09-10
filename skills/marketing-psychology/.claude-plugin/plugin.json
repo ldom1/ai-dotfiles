@@ -1,0 +1,10 @@
+{
+  "name": "marketing-psychology",
+  "version": "2.11.1",
+  "description": "Apply mental models and cognitive biases to marketing copy, pricing and offers. Trigger: /marketing-psychology",
+  "author": {
+    "name": "Corey Haines",
+    "github": "coreyhaines31"
+  },
+  "homepage": "https://github.com/coreyhaines31/marketingskills"
+}

@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+- Six marketing skills vendored from [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) `v2.11.1` (MIT, © Corey Haines): `product-marketing`, `launch`, `copywriting`, `directory-submissions`, `competitors`, `marketing-psychology`. `SKILL.md` + `references/` only (upstream `evals/` fixtures dropped). Selected for promoting **notion-pilot** (self-hosted OSS dev tool, no ad budget) — the paid/sales/mobile skills in the upstream set were deliberately left out. Symlinked into Claude / Cursor / Vibe.
+- Shared vendor pin `skills/.marketingskills_version` (one pin for all six) registered in `config/vendored-skills.json` as `marketingskills`, so SessionStart flags upstream releases.
+
+### Changed
+- Local patch in `skills/launch/SKILL.md`: the `../../tools/integrations/introw.md` partner link is rewritten to an absolute upstream URL, since the upstream `tools/` tree is not vendored.
+
 ## [0.5.0] - 2026-09-08
 
 ### Added

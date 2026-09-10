@@ -1,0 +1,10 @@
+{
+  "name": "launch",
+  "version": "2.11.1",
+  "description": "Plan a product launch — ORB framework, readiness gate, Product Hunt playbook, post-launch cadence. Trigger: /launch",
+  "author": {
+    "name": "Corey Haines",
+    "github": "coreyhaines31"
+  },
+  "homepage": "https://github.com/coreyhaines31/marketingskills"
+}

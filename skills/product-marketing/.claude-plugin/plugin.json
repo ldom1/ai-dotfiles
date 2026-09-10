@@ -1,0 +1,10 @@
+{
+  "name": "product-marketing",
+  "version": "2.11.1",
+  "description": "Create and maintain the product/ICP/positioning context doc every other marketing skill reads. Trigger: /product-marketing",
+  "author": {
+    "name": "Corey Haines",
+    "github": "coreyhaines31"
+  },
+  "homepage": "https://github.com/coreyhaines31/marketingskills"
+}
