@@ -42,16 +42,24 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 | [server-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Server-Audit) | Infra audit: parallel checks and JSON reports |
 | [graphify](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Graphify) | `/graphify` — folder → knowledge graph; also [graphify.net](https://graphify.net/) |
 | [finops-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/FinOps-Audit) | Weekly token spend review → vault |
-| product-marketing | Product/ICP/positioning context doc (`.agents/product-marketing.md`) — read first by the other marketing skills |
+| marketingpowers | `/marketingpowers` — router over six marketing sub-skills; enforces `product-marketing` first and the order the rest run in |
+
+`graphify` is vendored from [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) (the `SKILL.md` + `reference/` files, adapted with two local additions: the `GRAPHIFY_PROJECT` local-clone fallback and default-on agent-MCP auto-wiring via `scripts/setup_agent_mcp.py`). The synced upstream release is tracked in `skills/graphify/.graphify_version` — re-diff against that tag before syncing again to isolate local customizations from upstream changes.
+
+`marketingpowers` is a **router plugin**: `skills/marketingpowers/SKILL.md` decides which marketing sub-skill to run and in what order, and `references/campaign-sequence.md` holds the ordered full-campaign playbook. Both are local, not upstream.
+
+The six sub-skills under `skills/marketingpowers/skills/` — `product-marketing`, `launch`, `copywriting`, `directory-submissions`, `competitors`, `marketing-psychology` — are vendored from [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) `v2.11.1` (MIT, © Corey Haines) — `SKILL.md` + `references/` only; upstream `evals/` fixtures dropped. They surface as `marketingpowers:<name>`. Single shared pin for all six: `skills/marketingpowers/.marketingskills_version`. One local patch: the `../../tools/integrations/introw.md` link in `launch/SKILL.md` is rewritten to an absolute upstream URL (the partner `tools/` tree is not vendored). Re-syncing the six does not touch the router.
+
+| Sub-skill | Purpose |
+|-----------|---------|
+| product-marketing | Product/ICP/positioning context doc (`.agents/product-marketing.md`) — **runs first**; every other sub-skill reads it |
 | launch | Launch planning: ORB framework, readiness gate, Product Hunt playbook, post-launch cadence |
 | copywriting | Landing/home/pricing page copy — frameworks, hero structure, CTA and value-prop work |
 | directory-submissions | Directory + review-site layer of a launch: backlinks, GEO, destination pages, submission tracker |
 | competitors | `vs` / `alternative` comparison pages for SEO and positioning |
-| marketing-psychology | Mental models + cognitive biases as a lens for copy, pricing and offers |
+| marketing-psychology | Mental models + cognitive biases as a lens for copy, pricing and offers — never a deliverable on its own |
 
-`graphify` is vendored from [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) (the `SKILL.md` + `reference/` files, adapted with two local additions: the `GRAPHIFY_PROJECT` local-clone fallback and default-on agent-MCP auto-wiring via `scripts/setup_agent_mcp.py`). The synced upstream release is tracked in `skills/graphify/.graphify_version` — re-diff against that tag before syncing again to isolate local customizations from upstream changes.
-
-The six marketing skills (`product-marketing`, `launch`, `copywriting`, `directory-submissions`, `competitors`, `marketing-psychology`) are vendored from [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) `v2.11.1` (MIT, © Corey Haines) — `SKILL.md` + `references/` only; upstream `evals/` fixtures dropped. Single shared pin for all six: `skills/.marketingskills_version`. One local patch: the `../../tools/integrations/introw.md` link in `launch/SKILL.md` is rewritten to an absolute upstream URL (the partner `tools/` tree is not vendored). `product-marketing` is the foundation — the other five read `.agents/product-marketing.md` in the **target project** repo, not in ai-dotfiles.
+`product-marketing` writes `.agents/product-marketing.md` into the **target project** repo, not into ai-dotfiles. Paid ads, cold email, sales decks, mobile app-store listings, SMS and referral programs are deliberately **not** vendored.
 
 `ponytail` is vendored from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (`skills/ponytail/SKILL.md` only — on-demand skill, not the upstream alwaysApply Cursor rule). Pin: `skills/ponytail/.ponytail_version`. Re-sync: diff against the pinned tag, apply upstream, bump the pin (same pattern as graphify; no local patches today).
 

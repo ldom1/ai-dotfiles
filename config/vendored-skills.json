@@ -13,7 +13,7 @@
     },
     {
       "name": "marketingskills",
-      "pin_file": "skills/.marketingskills_version",
+      "pin_file": "skills/marketingpowers/.marketingskills_version",
       "github": "coreyhaines31/marketingskills"
     }
   ]

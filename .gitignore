@@ -30,6 +30,8 @@
 .claude/mcp-needs-auth-cache.json
 .claude/.credentials.json
 .claude/policy-limits.json
+.claude/feedback/
+.claude/remote-settings.json
 
 # Local permissions — machine-specific, do not track
 .claude/settings.local.json

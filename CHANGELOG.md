@@ -3,11 +3,14 @@
 ## [Unreleased]
 
 ### Added
-- Six marketing skills vendored from [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) `v2.11.1` (MIT, © Corey Haines): `product-marketing`, `launch`, `copywriting`, `directory-submissions`, `competitors`, `marketing-psychology`. `SKILL.md` + `references/` only (upstream `evals/` fixtures dropped). Selected for promoting **notion-pilot** (self-hosted OSS dev tool, no ad budget) — the paid/sales/mobile skills in the upstream set were deliberately left out. Symlinked into Claude / Cursor / Vibe.
-- Shared vendor pin `skills/.marketingskills_version` (one pin for all six) registered in `config/vendored-skills.json` as `marketingskills`, so SessionStart flags upstream releases.
+- `marketingpowers` — a router plugin over six vendored marketing skills. `skills/marketingpowers/SKILL.md` (local, not upstream) picks the right sub-skill, enforces `product-marketing` first, and routes away requests that are not marketing tasks; `references/campaign-sequence.md` holds the ordered full-campaign playbook (front door → comparison pages → launch → directories → psychology pass). Symlinked into Claude / Cursor / Vibe as one plugin.
+- Six marketing skills vendored from [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) `v2.11.1` (MIT, © Corey Haines) under `skills/marketingpowers/skills/`: `product-marketing`, `launch`, `copywriting`, `directory-submissions`, `competitors`, `marketing-psychology` — surfacing as `marketingpowers:<name>`. `SKILL.md` + `references/` only (upstream `evals/` fixtures dropped). Selected for promoting **notion-pilot** (self-hosted OSS dev tool, no ad budget) — the paid/sales/mobile skills in the upstream set were deliberately left out.
+- Shared vendor pin `skills/marketingpowers/.marketingskills_version` (one pin for all six) registered in `config/vendored-skills.json` as `marketingskills`, so SessionStart flags upstream releases.
 
 ### Changed
-- Local patch in `skills/launch/SKILL.md`: the `../../tools/integrations/introw.md` partner link is rewritten to an absolute upstream URL, since the upstream `tools/` tree is not vendored.
+- Local patch in `skills/marketingpowers/skills/launch/SKILL.md`: the `../../tools/integrations/introw.md` partner link is rewritten to an absolute upstream URL, since the upstream `tools/` tree is not vendored.
+- Six separate top-level skills folded into the single `marketingpowers` plugin: the per-skill `.claude-plugin/plugin.json` files are dropped in favour of one at the plugin root, and the 18 per-skill Claude/Cursor/Vibe symlinks collapse to 3. Re-syncing the six no longer touches the router.
+- Runtime `.claude/feedback/` and `.claude/remote-settings.json` gitignored.
 
 ## [0.5.0] - 2026-09-08
 
