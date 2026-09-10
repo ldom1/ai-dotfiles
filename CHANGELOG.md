@@ -11,6 +11,7 @@
 - Local patch in `skills/marketingpowers/skills/launch/SKILL.md`: the `../../tools/integrations/introw.md` partner link is rewritten to an absolute upstream URL, since the upstream `tools/` tree is not vendored.
 - Six separate top-level skills folded into the single `marketingpowers` plugin: the per-skill `.claude-plugin/plugin.json` files are dropped in favour of one at the plugin root, and the 18 per-skill Claude/Cursor/Vibe symlinks collapse to 3. Re-syncing the six no longer touches the router.
 - Runtime `.claude/feedback/` and `.claude/remote-settings.json` gitignored.
+- Nested sub-skills are discoverable only in Claude Code (as `plugin:name`) — Cursor CLI and Mistral Vibe scan skills one level deep, so they see a router and nothing under it. Both the `marketingpowers` and `brain-audit` routers now carry an "Invoking a sub-skill" section giving the relative `skills/<name>/SKILL.md` path and telling the agent to read it directly when the namespaced form is unavailable, rather than reporting the sub-skill as missing.
 
 ## [0.5.0] - 2026-09-08
 

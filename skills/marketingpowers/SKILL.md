@@ -28,6 +28,22 @@ If `.agents/product-marketing.md` is missing when a downstream skill is requeste
 | `competitors` | Buyers are comparing you to a named tool, or searching "<tool> alternative". | `vs` and `alternative` pages, content architecture | Differentiators, competitor set, ICP |
 | `marketing-psychology` | Copy or pricing is technically correct but doesn't move anyone. | Not a deliverable — a lens applied to another skill's output | Pain points, buying triggers |
 
+## Invoking a Sub-Skill
+
+The six live one level below this file, at `skills/<name>/SKILL.md` relative to this plugin's
+root — where `<name>` is the exact name in the table above (`skills/product-marketing/SKILL.md`,
+`skills/launch/SKILL.md`, and so on).
+
+**In Claude Code** they are addressable directly as `marketingpowers:<name>` — invoke them and
+stop reading here.
+
+**In Cursor CLI and Mistral Vibe** they are *not*. Both discover skills one level deep, so they
+see this router and nothing under it: `marketingpowers:<name>` resolves to nothing there, and
+neither does a bare `<name>`. **Read the file at the path above instead** — reading it puts the
+same instructions in context that invoking it would, and the routing and ordering rules in this
+file still apply unchanged. If a `<name>` in the table is not in your available-skills list,
+that is the situation you are in; go straight to the path, do not report the skill as missing.
+
 ## How to Use Each One
 
 ### `product-marketing` — the foundation

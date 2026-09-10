@@ -61,6 +61,8 @@ The six sub-skills under `skills/marketingpowers/skills/` — `product-marketing
 
 `product-marketing` writes `.agents/product-marketing.md` into the **target project** repo, not into ai-dotfiles. Paid ads, cold email, sales decks, mobile app-store listings, SMS and referral programs are deliberately **not** vendored.
 
+**Cross-harness caveat.** Nested sub-skills resolve only in Claude Code, as `marketingpowers:<name>`. Cursor CLI and Mistral Vibe discover skills one level deep, so they load the router and nothing beneath it. Both routers (`marketingpowers` and `brain-audit`) therefore document the relative `skills/<name>/SKILL.md` path and instruct the agent to read the file directly when the namespaced form is unavailable — reading it puts the same instructions in context that invoking it would.
+
 `ponytail` is vendored from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (`skills/ponytail/SKILL.md` only — on-demand skill, not the upstream alwaysApply Cursor rule). Pin: `skills/ponytail/.ponytail_version`. Re-sync: diff against the pinned tag, apply upstream, bump the pin (same pattern as graphify; no local patches today).
 
 ### Vendored skill update checks
