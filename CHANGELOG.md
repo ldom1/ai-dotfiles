@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-10
+
 ### Added
 - `marketingpowers` — a router plugin over six vendored marketing skills. `skills/marketingpowers/SKILL.md` (local, not upstream) picks the right sub-skill, enforces `product-marketing` first, and routes away requests that are not marketing tasks; `references/campaign-sequence.md` holds the ordered full-campaign playbook (front door → comparison pages → launch → directories → psychology pass). Symlinked into Claude / Cursor / Vibe as one plugin.
 - Six marketing skills vendored from [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) `v2.11.1` (MIT, © Corey Haines) under `skills/marketingpowers/skills/`: `product-marketing`, `launch`, `copywriting`, `directory-submissions`, `competitors`, `marketing-psychology` — surfacing as `marketingpowers:<name>`. `SKILL.md` + `references/` only (upstream `evals/` fixtures dropped). Selected for promoting **notion-pilot** (self-hosted OSS dev tool, no ad budget) — the paid/sales/mobile skills in the upstream set were deliberately left out.
