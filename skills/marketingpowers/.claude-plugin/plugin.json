@@ -1,0 +1,10 @@
+{
+  "name": "marketingpowers",
+  "version": "1.0.0",
+  "description": "Six marketing skills behind one router — positioning, launch, copy, directories, comparison pages, psychology. Enforces product-marketing first. Trigger: /marketingpowers",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles"
+}

@@ -10,6 +10,11 @@
       "name": "ponytail",
       "pin_file": "skills/ponytail/.ponytail_version",
       "github": "DietrichGebert/ponytail"
+    },
+    {
+      "name": "marketingskills",
+      "pin_file": "skills/marketingpowers/.marketingskills_version",
+      "github": "coreyhaines31/marketingskills"
     }
   ]
 }
