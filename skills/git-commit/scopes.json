@@ -124,6 +124,20 @@
         "meta",
         "docs"
       ]
+    },
+    "static-site": {
+      "detect": [
+        "index.html"
+      ],
+      "scopes": [
+        "core",
+        "content",
+        "ui",
+        "deploy",
+        "docs",
+        "ci",
+        "config"
+      ]
     }
   }
 }
