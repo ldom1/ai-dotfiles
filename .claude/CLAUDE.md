@@ -3,7 +3,7 @@
 ## Local Brain (Obsidian vault)
 `$BRAIN_PATH` comes from `~/ai-dotfiles/config/brain.env` (the SessionStart hook exports it). Layout: `~/ai-dotfiles/.claude/LocalBrain.md`.
 
-- **Pitfalls** — `$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md`, injected at session start: distilled cross-project rules; treat them as constraints. When the user corrects a mistake that would recur in *other* projects, add one rule there (format in the `capture` skill). Project-specific gotchas go to the project's `.claude/memory/CONTEXT.md`.
+- **Pitfalls** — `$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md`, injected at session start: distilled cross-project rules; treat them as constraints. When the user corrects a mistake that would recur in *other* projects, add one rule there (format in the `capture` skill); a rule tied to one stack goes to that stack's `resources/knowledge/patterns/*-patterns.md` instead. Project-specific gotchas go to the project's `.claude/memory/CONTEXT.md`.
 - **Where to write** — in the vault, never in the project repo's `docs/`:
 
   | Kind | Path |

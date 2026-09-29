@@ -46,7 +46,7 @@ tags: [knowledge, patterns, <topic>]
 - [[<session-log-slug>]] — <one-line context>
 ```
 
-For each contributing project with a `projects/<slug>.md` note, add (if absent) `## See also` → `- [[<topic>-patterns]] — <pattern that applies>`.
+For each contributing project with a `projects/<slug>.md` note, add (if absent) `- [[<topic>-patterns]] — <pattern that applies>` under its existing `## Links` section — the one-pager shape is fixed, so no new sections.
 
 ## B — Link
 
@@ -56,7 +56,7 @@ For each file touched in A:
 INDEX_PATH="$QMD_INDEX_PATH" qmd query "<1–2 sentence pattern summary>" 2>&1
 ```
 
-`qmd query` (hybrid, LLM expansion) is more precise than `vsearch` here. Take up to 3 results with score ≥ 0.70 that are specs, plans, architecture docs or project notes not already linked, and append them under `## Related` as `[[<slug>]]` (`qmd://brain/a/b/<slug>.md` → `[[<slug>]]`).
+`qmd query` (hybrid, LLM expansion) is more precise than `vsearch` here, but on CPU one query can take several minutes and outlive the Bash timeout: then use `qmd vsearch "…" -n 12` (seconds; its scores run lower, so take ≥ 0.45). Take up to 3 results with score ≥ 0.70 (`query`) that are specs, plans, architecture docs or project notes not already linked, and append them under `## Related` as `[[<slug>]]` (`qmd://brain/a/b/<slug>.md` → `[[<slug>]]`).
 
 ## C — Review, then commit
 

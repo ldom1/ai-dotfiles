@@ -29,7 +29,7 @@ command -v qmd || { echo "qmd not installed"; exit 1; }
 
 ## Retrieve
 
-Open-ended questions (1, 2, 4) → semantic search, then read the top ~5 results (score ≥ 0.60) in full. The first `qmd query` run downloads its expansion model and is slow.
+Open-ended questions (1, 2, 4) → semantic search, then read the top ~5 results (score ≥ 0.60) in full. The first `qmd query` run downloads its expansion model; on CPU a query can outlive the Bash timeout — use `qmd vsearch` (seconds, scores ~0.1 lower) if so.
 
 ```bash
 INDEX_PATH="$QMD_INDEX_PATH" qmd query "<question>"

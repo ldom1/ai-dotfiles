@@ -30,7 +30,8 @@ Stop and tell the user if `BRAIN_PATH` is missing.
 
 For each notable mistake, decision or working approach:
 
-- **Cross-project** (would recur in a different project) → search `pitfalls.md`; sharpen the rule that already covers it, otherwise add one bullet under the matching `## <Topic>`: imperative rule + the mechanism in a clause, exact command when that is the fix. No dates, project names or narrative — the session log keeps the story. Merge rules to stay under 6 KB.
+- **Cross-project and cross-stack** (would recur in a different project on a different stack) → search `pitfalls.md`; sharpen the rule that already covers it, otherwise add one bullet under the matching `## <Topic>`: imperative rule + the mechanism in a clause, exact command when that is the fix. No dates, project names or narrative — the session log keeps the story. Merge rules to stay under 6 KB.
+- **Stack-specific** (one tool or platform: Docker/Coolify, Python/Postgres/pandas, Ansible/network, Prometheus) → add it to the `## Rules` list of the matching `resources/knowledge/patterns/*-patterns.md`, not to `pitfalls.md`.
 - **Project-specific** → skip; it belongs in that project's `.claude/memory/CONTEXT.md` Gotchas or DECISIONS.
 - **Ambiguous** → ask before moving on:
 
