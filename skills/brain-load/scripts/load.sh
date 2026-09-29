@@ -57,8 +57,8 @@ fi
 # ── Note path (Obsidian PARA projects/*.md vs legacy Projects/<slug>/brief.md)
 NOTE_PARA="$BRAIN_PATH/projects/$SLUG.md"
 NOTE_LEGACY="$BRAIN_PATH/Projects/$SLUG/brief.md"
-TEMPLATE_VAULT="$BRAIN_PATH/projects/_template.md"
-SKILL_BRIEF_TEMPLATE="$SCRIPT_DIR/templates/brief.md"
+TEMPLATE_VAULT="$BRAIN_PATH/_templates/project-template.md"
+SKILL_BRIEF_TEMPLATE="$SCRIPT_DIR/../reference/templates/brief.md"
 CAPS_DIR="$BRAIN_PATH/caps"
 
 NOTE_PATH=""
@@ -91,14 +91,22 @@ fi
 # ── Output note ─────────────────────────────────────────────────────────────
 if [[ "$NOTE_MODE" == "para" || "$NOTE_MODE" == "legacy" ]]; then
   echo "[brain-load] Loading note: $NOTE_PATH" >&2
+  # Snapshot hygiene: history belongs in inbox/daily/implementation/, not here.
+  if grep -qE '^## (Journal|Changelog|Historique)' "$NOTE_PATH" || (( $(wc -w <"$NOTE_PATH") > 600 )); then
+    echo "[brain-load] WARNING: $NOTE_PATH has a journal or is > 600 words — rewrite it as a ≤ 450-word one-pager (idea, objectives, how it works — see instantiate.sh); history goes to session logs."
+  fi
+  CTX="$REPO_ROOT/.claude/memory/CONTEXT.md"
+  if [[ -n "$REPO_ROOT" && -f "$CTX" ]] && (( $(wc -w <"$CTX") > 1200 )); then
+    echo "[brain-load] WARNING: $CTX is > 1200 words — rewrite it in place as a snapshot (capture step 3)."
+  fi
   echo "--- PROJECT NOTE: $SLUG ---"
   cat "$NOTE_PATH"
   echo "--- END NOTE ---"
 fi
 
-# ── Load .claude/brain session files (if present) ────────────────────────────
-if [[ -n "$REPO_ROOT" && -f "$REPO_ROOT/.claude/brain/settings.json" ]]; then
-  BRAIN_DIR="$REPO_ROOT/.claude/brain"
+# ── Load .claude/memory session files (if present) ────────────────────────────
+if [[ "${BRAIN_LOAD_SKIP_MEMORY:-0}" != "1" && -n "$REPO_ROOT" && -f "$REPO_ROOT/.claude/memory/settings.json" ]]; then
+  BRAIN_DIR="$REPO_ROOT/.claude/memory"
   echo "[brain-load] Found project brain: $BRAIN_DIR" >&2
 
   # Parse read_on_session_start from settings.json (requires python3 or jq)

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Instantiate projects/<slug>.md from vault projects/_template.md + chosen cap.
-# Usage: instantiate.sh --cap <basename> [--slug <slug>] [--path <abs-repo-path>]
+# Create the vault one-pager projects/<slug>.md if missing (idempotent).
+# The skeleton below is the canonical shape; /brain-init-project fills it.
+# Usage: instantiate.sh [--cap <basename>] [--slug <slug>] [--path <abs-repo-path>]
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,17 +17,12 @@ while [[ $# -gt 0 ]]; do
     --cap) CAP="$2"; shift 2 ;;
     --slug) SLUG="$2"; shift 2 ;;
     --path) PROJ_PATH="$2"; shift 2 ;;
-    *) echo "Usage: $(basename "$0") --cap <name> [--slug <slug>] [--path <dir>]" >&2; exit 1 ;;
+    *) echo "Usage: $(basename "$0") [--cap <name>] [--slug <slug>] [--path <dir>]" >&2; exit 1 ;;
   esac
 done
 
-if [[ -z "$CAP" ]]; then
-  echo "[instantiate] ERROR: --cap is required. List caps: bash \"$SCRIPT_DIR/load.sh\" --list-caps" >&2
-  exit 1
-fi
-
-if [[ ! -f "$BRAIN_PATH/caps/$CAP.md" ]]; then
-  echo "[instantiate] ERROR: no note at caps/$CAP.md in vault." >&2
+if [[ -n "$CAP" && ! -f "$BRAIN_PATH/caps/$CAP.md" ]]; then
+  echo "[instantiate] ERROR: no note at caps/$CAP.md in vault. List caps: bash \"$SCRIPT_DIR/load.sh\" --list-caps" >&2
   exit 1
 fi
 
@@ -57,50 +53,55 @@ if [[ -z "$SLUG" ]]; then
   fi
 fi
 
-TEMPLATE_VAULT="${BRAIN_PATH}/_templates/project-template.md"
 OUT="$BRAIN_PATH/projects/$SLUG.md"
-CAP_WIKI="caps/$CAP"
-
-if [[ ! -f "$TEMPLATE_VAULT" ]]; then
-  echo "[instantiate] ERROR: vault template missing: $TEMPLATE_VAULT (expected at _templates/project-template.md)" >&2
-  exit 1
-fi
 
 if [[ -f "$OUT" ]]; then
-  echo "[instantiate] ERROR: already exists: $OUT" >&2
-  exit 1
+  echo "[instantiate] Exists, skipped: $OUT"
+  exit 0
 fi
 
 TODAY="$(date +%Y-%m-%d)"
+CAPS_LINE='caps: ""'
+[[ -n "$CAP" ]] && CAPS_LINE="caps: \"[[$CAP]]\""
+# One-pager: stable description of the project, rewritten in place. No journal —
+# current state is <repo>/.claude/memory/CONTEXT.md, history is inbox/daily/implementation/<slug>/.
+cat >"$OUT" <<NOTE
+---
+title: $SLUG
+created: $TODAY
+updated: $TODAY
+tags: [project]
+$CAPS_LINE
+status: draft
+path: "$PROJ_PATH"
+repo:
+prod:
+---
 
-export _INST_TEMPLATE="$TEMPLATE_VAULT" _INST_OUT="$OUT" _INST_CAP_WIKI="$CAP_WIKI" \
-  _INST_PATH="$PROJ_PATH" _INST_TODAY="$TODAY" _INST_SLUG="$SLUG"
-python3 - <<'PY'
-import os, re
-from pathlib import Path
+# $SLUG
 
-template = Path(os.environ["_INST_TEMPLATE"]).read_text(encoding="utf-8")
-title = os.environ["_INST_SLUG"].replace("-", " ").title()
-cap_wiki = os.environ["_INST_CAP_WIKI"]
-proj_path = os.environ["_INST_PATH"]
-today = os.environ["_INST_TODAY"]
+> One sentence: what it is and for whom.
 
-template = template.replace("{{project-name}}", title)
-template = template.replace("{{caps-name}}", cap_wiki)
-template = template.replace("{{project-path}}", proj_path)
-template = template.replace("{{start}}", today)
-template = template.replace("{{end}}", today)
-template = template.replace("{{status}}", "draft")
-template = template.replace("YYYY-MM-DD", today)
-template = re.sub(
-    r"^title: project-template\s*$",
-    f'title: "{title.replace(chr(34), "")}"',
-    template,
-    flags=re.MULTILINE,
-)
+## Idea
+<!-- 2–4 sentences: the problem, the key insight or approach, what makes it different. -->
 
-Path(os.environ["_INST_OUT"]).write_text(template, encoding="utf-8")
-PY
+## Objectives
+- **Goal:**
+- **Users:**
+- **Success:**
+- **Non-goals:**
+
+## How it works
+<!-- 3–6 bullets: core workflows and main components. Deep architecture lives in ARCHITECTURE.md. -->
+
+## Where
+- Repo: \`$PROJ_PATH\`
+
+## Memory
+- Current state, roadmap, decisions: \`$PROJ_PATH/.claude/memory/\` · session logs: \`inbox/daily/implementation/$SLUG/\`
+
+## Links
+NOTE
 
 echo "[instantiate] Wrote $OUT"
 

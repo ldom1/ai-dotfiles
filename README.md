@@ -15,11 +15,11 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 /plugin install brain-sync@ldom1/ai-dotfiles
 /plugin install brain-load@ldom1/ai-dotfiles
 /plugin install brain-search@ldom1/ai-dotfiles
-/plugin install brain-route@ldom1/ai-dotfiles
 /plugin install brain-audit@ldom1/ai-dotfiles
 /plugin install capture@ldom1/ai-dotfiles
 /plugin install brain-init-project@ldom1/ai-dotfiles
 /plugin install grill-me@ldom1/ai-dotfiles
+/plugin install git-promotion@ldom1/ai-dotfiles
 /plugin install sop-builder@ldom1/ai-dotfiles
 /plugin install photo-archive-triage@ldom1/ai-dotfiles
 /plugin install server-audit@ldom1/ai-dotfiles
@@ -32,10 +32,11 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 | [brain-sync](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Sync) | Sync Local Brain Obsidian vault (Claude Code hooks; Cursor CLI via `cursor-agent-brain.sh` alias; manual via skill) |
 | [brain-load](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Load) | Load / instantiate project notes from vault |
 | [brain-search](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Search) | Semantic + keyword search over vault via qmd (`scripts/search.sh`) |
-| [brain-route](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Route) | Session router: maintenance vs normal (used after brain-sync pull) |
 | [brain-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Audit) | Four-phase vault maintenance (raw → digest) |
-| capture | End-of-session workflow: implementation notes, project-brain review, pitfalls/lessons, sync |
+| capture | End-of-session workflow: session log, project memory snapshot, cross-project pitfall rules, sync |
 | grill-me | Stress-test plans through one-question-at-a-time design interrogation |
+| git-promotion | Promote develop → preprod → main (or a PR straight onto main) with a semver tag and GitHub Release; stages, tag prefix, gate and changelog per repo in `.git-promotion.json` |
+| medium-writer | Draft a Medium article from real repo code into `articles/`, then write it onto its Notion task page |
 | ponytail | Lazy senior mode — YAGNI ladder, stdlib before deps, minimum code that works (`/ponytail`) |
 | sop-builder | Turn process notes into validated seven-section SOP documents |
 | photo-archive-triage | Non-destructive photo/video triage: exact dedup, corrupt screening, capture-date recovery |
@@ -344,7 +345,6 @@ ai-dotfiles/
 │   │   └── skills/graphify/SKILL.md -> ../../SKILL.md
 │   └── server-audit/                # /server-audit — robust server audit
 │       ├── SKILL.md
-│       ├── scripts/audit.sh
 │       ├── scripts/check_*.sh
 │       ├── scripts/aggregate.py
 │       ├── config/targets.json.example

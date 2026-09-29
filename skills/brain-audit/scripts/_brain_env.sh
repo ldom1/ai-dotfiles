@@ -1,7 +1,10 @@
 #!/bin/bash
-# Config loader for brain-audit — source this to get BRAIN_PATH
+# Config loader for brain-audit — source this to get BRAIN_PATH (bash or zsh).
+# No `set -euo pipefail`: a sourced file would impose it on the caller's shell.
 
-set -euo pipefail
+# Top level, not inside the function: zsh has no BASH_SOURCE, and $0 inside a
+# function is the function name.
+_BRAIN_AUDIT_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 
 # Determine BRAIN_PATH from three possible sources
 _load_brain_path() {
@@ -17,9 +20,7 @@ _load_brain_path() {
     fi
 
     # Priority 2: brain.env beside this script
-    local script_dir
-    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    local brain_env_local="$script_dir/../reference/brain.env"
+    local brain_env_local="$_BRAIN_AUDIT_SCRIPT_DIR/../reference/brain.env"
     if [[ -f "$brain_env_local" ]]; then
         # shellcheck disable=SC1090
         source "$brain_env_local"

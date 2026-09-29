@@ -174,9 +174,6 @@ cmd_start() {
     bash "$sync_script" --all 2>&1 || _warn "projects" "project brain sync had errors."
   fi
 
-  _info "brain-route" "deciding session mode…"
-  bash ~/ai-dotfiles/skills/brain-route/scripts/route.sh
-
   local elapsed=$(( $(date +%s) - _SYNC_START_TS ))
   _footer "$elapsed"
 }

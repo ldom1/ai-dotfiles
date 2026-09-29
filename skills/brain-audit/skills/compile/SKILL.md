@@ -2,102 +2,54 @@
 name: compile
 description: >-
   Reads inbox/daily/ notes from the last 30 days, extracts cross-project
-  pitfalls and lessons, and writes them to resources/operational/ai-agents/.
-  Asks inline when an entry is ambiguous. Also audits existing entries for
-  project-specific content that leaked in. Use when: "compile notes",
-  "promote pitfalls", "review inbox", or after /capture.
+  pitfalls and lessons, and writes them as rules to
+  resources/operational/ai-agents/pitfalls.md. Asks inline when an entry is
+  ambiguous. Also audits existing rules for project-specific content that
+  leaked in. Use when: "compile notes", "promote pitfalls", "review inbox",
+  or after /capture.
 user-invocable: true
 ---
 
 # brain-audit:compile
 
-Promote cross-project knowledge from `inbox/daily/` to `resources/operational/ai-agents/`.
+Promote cross-project rules from `inbox/daily/` into `resources/operational/ai-agents/pitfalls.md`. That file is injected into every session (it shares the SessionStart hook's ~9.5 KB output budget with the project note and is truncated past it), so it holds distilled rules, not incidents. Vault references are `[[slug]]` wikilinks.
 
-> **Wikilink rule:** ALL internal vault references written into any file MUST use Obsidian wikilinks: `[[path/to/file]]` (vault-relative, no `.md`, no leading slash). Never use markdown links or plain paths — only wikilinks appear in Obsidian's backlinks panel and graph view.
-
-## Step 1 — Load config
+## 1 — Find recent notes
 
 ```bash
 source ~/ai-dotfiles/skills/brain-audit/scripts/_brain_env.sh
-echo "BRAIN_PATH=$BRAIN_PATH"
-```
-
-If BRAIN_PATH is empty or the directory does not exist, stop and tell the user.
-
-## Step 2 — Discover recent inbox files
-
-```bash
 LOOKBACK=${BRAIN_AUDIT_LOOKBACK_DAYS:-30}
 CUTOFF=$(date -d "-${LOOKBACK} days" +%Y-%m-%d 2>/dev/null || date -v-${LOOKBACK}d +%Y-%m-%d)
-find "$BRAIN_PATH/inbox/daily/implementation" \
-     "$BRAIN_PATH/inbox/daily/plans" \
-     "$BRAIN_PATH/inbox/daily/specs" \
-     -name "*.md" -newermt "$CUTOFF" 2>/dev/null \
-  | sort
+find "$BRAIN_PATH/inbox/daily/implementation" "$BRAIN_PATH/inbox/daily/plans" "$BRAIN_PATH/inbox/daily/specs" \
+     -name "*.md" -newermt "$CUTOFF" 2>/dev/null | sort
 ```
 
-Read each file. For every notable decision, mistake, or pattern you find, classify it:
+Stop and tell the user if `BRAIN_PATH` is missing.
 
-| Classification | Criteria | Action |
-|---|---|---|
-| **cross-project pitfall** | A mistake that could happen in any project | Append to `resources/operational/ai-agents/pitfalls.md` |
-| **cross-project lesson** | A generalizable decision or insight | Append to `resources/operational/ai-agents/lessons-learned.md` |
-| **project-specific** | Only applies to one project/client | Skip — leave in inbox |
-| **ambiguous** | Could be either | Ask user inline (see format below) |
+## 2 — Classify and promote
 
-## Step 3 — Promote entries
+For each notable mistake, decision or working approach:
 
-For each cross-project entry, append to the relevant file using this format:
+- **Cross-project and cross-stack** (would recur in a different project on a different stack) → search `pitfalls.md`; sharpen the rule that already covers it, otherwise add one bullet under the matching `## <Topic>`: imperative rule + the mechanism in a clause, exact command when that is the fix. No dates, project names or narrative — the session log keeps the story. Merge rules to stay under 6 KB.
+- **Stack-specific** (one tool or platform: Docker/Coolify, Python/Postgres/pandas, Ansible/network, Prometheus) → add it to the `## Rules` list of the matching `resources/knowledge/patterns/*-patterns.md`, not to `pitfalls.md`.
+- **Project-specific** → skip; it belongs in that project's `.claude/memory/CONTEXT.md` Gotchas or DECISIONS.
+- **Ambiguous** → ask before moving on:
 
-**pitfalls.md entry:**
-```markdown
-## YYYY-MM-DD — <short title>
+  ```
+  Ambiguous entry in <relative/path.md>:
+    "<entry, max 2 sentences>"
+  → cross-project rule, or <project>-specific (skip)?
+  ```
 
-**Context:** <what was happening>
-**What was wrong:** <the mistake>
-**What to do instead:** <the correct approach>
-```
+## 3 — Audit existing rules
 
-**lessons-learned.md entry:**
-```markdown
-## YYYY-MM-DD — <project name>
+Re-read `pitfalls.md` (not `archive/` — those logs are frozen). Flag rules that name a specific client/repo, duplicate another rule, or are no longer true; propose remove / merge / keep for each.
 
-**Decision:** <what was decided> | **Rejected:** <what was not done> | **Rationale:** <why>
-**Blocker:** <blocker or NONE>
-**Do not repeat:** <specific instruction>
-```
-
-## Step 4 — Inline question format for ambiguous entries
-
-When an entry is ambiguous, pause and ask:
-
-```
-❗ Ambiguous entry in <relative/path/to/file.md>:
-  "<quoted entry text, max 2 sentences>"
-→ Is this cross-project or <project>-specific?
-  Reply: [cross-project pitfall] / [cross-project lesson] / [project-specific, skip]
-```
-
-Wait for the user's answer before continuing to the next entry.
-
-## Step 5 — Audit existing entries
-
-After promoting new entries, read all files in `$BRAIN_PATH/resources/operational/ai-agents/`. Flag:
-
-- **Project-specific content** — mentions a specific client, repo, or tool not universally applicable
-- **Duplicates** — two entries describing the same mistake or decision
-- **Stale entries** — dated more than 6 months ago with no current relevance
-
-For each flag, show the entry and propose: remove / merge / keep.
-
-## Step 6 — Summary
+## 4 — Report
 
 ```
 brain-audit:compile complete
-  Promoted: N pitfalls, N lessons
-  Skipped (project-specific): N
-  Ambiguous resolved: N
-  Flagged in existing entries: N (see above)
+  Rules added: N · sharpened: N
+  Skipped (project-specific): N · ambiguous resolved: N
+  Flagged existing rules: N
 ```
-
-Remind user to run `brain-audit:qmd-sync` so new entries are indexed.

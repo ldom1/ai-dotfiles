@@ -41,6 +41,13 @@
       "source": "./skills/graphify",
       "category": "productivity",
       "homepage": "https://graphify.net/"
+    },
+    {
+      "name": "git-promotion",
+      "description": "Promote code between stage branches (develop → preprod → main, develop → main, or a PR straight onto main) with a semver tag and a GitHub Release. Per-repo .git-promotion.json.",
+      "source": "./skills/git-promotion",
+      "category": "productivity",
+      "homepage": "https://github.com/ldom1/ai-dotfiles"
     }
   ]
 }

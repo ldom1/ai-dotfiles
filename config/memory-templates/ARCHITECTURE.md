@@ -3,12 +3,11 @@ type: architecture
 updated:
 ---
 
-# Architecture (live working log)
+# Architecture
 <!-- keep this file under ~300 words -->
 
-<!-- This file is Claude's working memory for architecture decisions.
-     The stable module map lives in AGENTS.md ## Architecture (human-visible, kept under 20 lines).
-     This file is for the running log of non-obvious decisions, trade-offs, and what changed. -->
+<!-- Durable structure only, rewritten in place when it changes. Decisions and their reasons go to DECISIONS.md;
+     the short module map for humans lives in AGENTS.md ## Architecture. -->
 
 ## Stack
 <!-- Languages, frameworks, key dependencies -->
@@ -16,8 +15,8 @@ updated:
 ## Key Modules
 <!-- Top-level components and their responsibilities -->
 
-## Non-Obvious Decisions
-<!-- What was chosen and why; what was rejected and why. Append-only. -->
-
 ## Data Flow
-<!-- How data moves through the system — update when it changes -->
+<!-- How data moves through the system -->
+
+## Invariants
+<!-- What must stay true (contracts, ordering, security boundaries) -->

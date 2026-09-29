@@ -13,18 +13,15 @@ Your vault evolves automatically through a four-phase maintenance pipeline:
 - **Synthesis** runs templated Q&A queries to generate insights and actionable summaries
 - **Human approval** lets you review and integrate all changes
 
-Between sessions, your vault stays lightweight—only when maintenance is triggered does the heavy lifting happen. The system decides autonomously whether to run a full maintenance or simply load project context, based on vault health metrics.
+Between sessions, your vault stays lightweight—only when maintenance is triggered does the heavy lifting happen. Maintenance is manual: the SessionStart hook says when `/brain-audit` is due (last run over 7 days ago).
 
 ### How It Works
 
 #### Session Start Flow
 
 1. **brain-sync start** pulls your vault from remote (git)
-2. **brain-route** analyzes vault state to decide:
-   - **Maintenance mode**: If >7 days since last maintenance, >50 raw files waiting, or explicit `--maintenance` flag
-   - **Normal mode**: Otherwise, proceed with normal session
-3. **brain-audit** (maintenance only) runs the four-phase pipeline
-4. **brain-load** (normal mode) loads your current project context
+2. **brain-load** loads your current project context and the pitfalls
+3. If `meta/last-maintenance.md` is older than 7 days, the hook prints "maintenance due" — run `/brain-audit` when convenient
 5. **notion-brain-sync** (optional): when you paste Notion exports or ask to compile decisions into the vault, agents use L1/L2/L3 routing and append `$BRAIN_PATH/log.md` per change
 6. **Your work**: Continue your session as normal
 7. **brain-sync end** commits and pushes vault changes
@@ -213,11 +210,8 @@ The system provides starter queries:
 ### Force Maintenance Mode
 
 ```bash
-# At session start, force maintenance regardless of 7-day clock
-brain-route --maintenance
-
-# Or manually run the pipeline
-bash ~/ai-dotfiles/skills/brain-audit/scripts/audit.sh
+# In Claude Code / Cursor
+/brain-audit
 ```
 
 ### View Maintenance History
@@ -320,12 +314,11 @@ $BRAIN_PATH/
 
 1. **Not yet 7 days since last maintenance**
    - Check: `cat $BRAIN_PATH/meta/last-maintenance.md`
-   - Fix: Run `brain-route --maintenance` to force
+   - Fix: run `/brain-audit`
 
 2. **Fewer than 50 raw files waiting**
-   - Brain-audit only triggers automatically if raw data accumulates
    - Check: `ls $BRAIN_PATH/raw/ | wc -l`
-   - Fix: Add more raw files or run `brain-route --maintenance` to force
+   - Fix: run `/brain-audit`
 
 3. **Last maintenance failed**
    - Check: `cat $BRAIN_PATH/meta/digest-*.md` (most recent)
@@ -411,7 +404,7 @@ Get started with the Local Brain System:
 - [ ] **Initialize git** — `cd $BRAIN_PATH && git init && git add . && git commit -m "init: local brain vault"`
 - [ ] **Add starter raw files** — Put research notes, ideas, or logs into `/raw/`
 - [ ] **Create first query template** — Copy one from the system defaults to `/meta/queries/`
-- [ ] **Run first maintenance** — `brain-route --maintenance` (takes 5-15 min)
+- [ ] **Run first maintenance** — `/brain-audit` (takes 5-15 min)
 - [ ] **Review inbox** — Check `/inbox/drafts/`, `/inbox/connections/`, `/inbox/qa/`
 - [ ] **Approve changes** — Move approved articles from `/inbox/drafts/` to `/published/`
 - [ ] **Commit & push** — `cd $BRAIN_PATH && git add . && git commit -m "inbox: approve first maintenance" && git push`
@@ -430,6 +423,6 @@ Get started with the Local Brain System:
 
 **Key files:**
 - System integration: `~/.claude/CLAUDE.md` (Brain System Integration section)
-- Skill scripts: `~/ai-dotfiles/skills/brain-route/`, `~/ai-dotfiles/skills/brain-audit/`
+- Skill scripts: `~/ai-dotfiles/skills/brain-audit/`
 - Configuration: `~/ai-dotfiles/config/brain.env`
 - Vault root: `$BRAIN_PATH` (usually `/mnt/c/Users/lgiron/Documents/developer-brain/`)

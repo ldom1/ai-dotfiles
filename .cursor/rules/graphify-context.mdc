@@ -14,7 +14,4 @@ At the **start of substantive work** in a project workspace, check the **reposit
 
 **If not found:** work as usual; project context may be incomplete. You may suggest generating output via [Graphify](https://graphify.net/).
 
-**Hard constraints**
-
-- Do not skip this check when starting real work in a repo that might contain Graphify output.
-- **Never** modify, overwrite, or delete `graphify-out*` artifacts.
+Leave `graphify-out*` artifacts unmodified: Graphify regenerates them, so hand edits are lost or silently diverge from the graph.

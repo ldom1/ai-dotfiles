@@ -6,113 +6,57 @@ user-invocable: true
 
 # brain-init-project
 
-Populate a project's `.claude/memory/` knowledge files by gathering context from the vault, the project itself, and targeted questions to the user. Never overwrites a non-template file without asking.
+Replace the template placeholders that `ai-dotfiles init <path>` (`scripts/init-project.sh`) copied into `<project>/.claude/memory/` with real content, and write the vault one-pager. Also use it when a project's memory files still hold only boilerplate. These files are read by agents at session start, so write them for an agent: terse, current state, one fact per line.
 
-## When to use
+## 1 — Gather context (silently)
 
-Run after `ai-dotfiles init <path>` has created the `.claude/memory/` folder structure. The init command creates template placeholders; this skill replaces them with real content.
+Project = the path argument, else the git root; slug = first line of `.brain-project`. Read, stopping once you have enough signal:
 
-Also run when a project brain exists but the files still contain only template boilerplate.
+1. Vault note `$BRAIN_PATH/projects/<slug>.md`
+2. Existing `<project>/.claude/memory/*.md`
+3. `README.md` (root or `docs/`), the package manifest (`package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `pom.xml`), the top-level tree
 
-## Steps
+## 2 — Interview, one file at a time
 
-### 1 — Locate the project
+For each file: summarise what you already know, then ask only for the gaps. One file per message keeps answers focused; the interview happens in chat, never via shell prompts. If you can't fill a section from context or answers, ask — don't invent. "skip" leaves the template untouched.
 
-If a path was given as an argument, use it. Otherwise use the current git root. Confirm the project slug from `.brain-project`.
+| File | Ask about | Skip when |
+|---|---|---|
+| `OBJECTIVES.md` | one-sentence goal, measurable success, explicit non-goals | — |
+| `DESIGN.md` | original product intent, primary user, core workflows, durable constraints | pure library/infra |
+| `ARCHITECTURE.md` | stack, top-level components and their job, data flow, invariants | — |
+| `DECISIONS.md` | decisions already made and why | nothing decided yet |
+| `CONTEXT.md` | what is live, in flight, blocked; open questions | — |
+| `ROADMAP.md` | planned work in priority order | — |
+| `API.md` | exposed/consumed endpoints, auth | no external API surface |
 
-### 2 — Read available context (silently, do not narrate)
+## 3 — Write `<project>/.claude/memory/`
 
-Read in this order — stop reading each source once you have enough signal:
+Base structure: `~/ai-dotfiles/config/memory-templates/`. Respect each template's `<!-- keep under ~N words -->` budget and set `updated:` to today on every change. These are snapshots rewritten in place — the history lives only in session logs (`inbox/daily/implementation/<slug>/`), so no journal, changelog or dated-entry sections:
 
-1. **Vault one-pager** `$BRAIN_PATH/projects/<slug>.md` — goals, status, caps, roadmap section
-2. **Existing brain files** `<project>/.claude/memory/*.md` — anything already written
-3. **Project README** (root `README.md` or `docs/README.md`)
-4. **Package manifest** — first match of `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `pom.xml`
-5. **Top-level directory listing** — infer module structure
+- `CONTEXT.md` sections: `Live now`, `In flight`, `Blockers / open questions`, `Gotchas`, `Recent history` (≤ 5 `[[session-log]]` links).
+- `DECISIONS.md`: one line per live decision, `- **<decision>** — <why> (<date>)`; a superseded decision is replaced, not appended to.
+- `ROADMAP.md`: `Now` / `Next` / `Later` / `Open debt`.
+- Link between memory files with relative markdown links (`[Key Modules](ARCHITECTURE.md#key-modules)`) rather than repeating content.
 
-### 3 — Ask questions per file
+Ask before overwriting a file that already has real content (not just placeholders).
 
-For each knowledge file, present a **short summary of what you already know** from step 2, then ask only the gaps. Do not ask for information you already have. Ask one file at a time, not all at once.
+The vault mirror `projects/<slug>/` is kept in sync by `scripts/sync-project.sh` at every `brain-sync start`/`end` for projects in `config/brain-projects.tsv` (`init-project.sh` registers them). If the project is not registered, run `bash ~/ai-dotfiles/scripts/sync-project.sh <project-path>` once.
 
-#### OBJECTIVES.md
-- What is the main goal of this project in one sentence?
-- What does success look like? (measurable outcomes if possible)
-- What is explicitly out of scope?
+## 4 — Write the vault one-pager `projects/<slug>.md`
 
-#### DESIGN.md
-- What was the original application/product design?
-- Who is the primary user, and what are the core workflows?
-- Which design intent should remain reviewable over time, separate from live implementation details?
+Always create or refresh it (`init`/`upgrade` create the skeleton via `skills/brain-load/scripts/instantiate.sh` — that skeleton is the canonical shape). It is the project's **clear description**, printed at session start: someone who has never seen the repo should understand what it is, why it exists and what success looks like. ≤ 450 words, rewritten in place.
 
-#### ARCHITECTURE.md
-- What is the tech stack? (language, framework, key libraries)
-- What are the top-level components and what does each do?
-- Are there any non-obvious architectural decisions already made?
+- **frontmatter:** `title`, `created`, `updated`, `tags: [project]`, `caps`, `status` (`draft`/`active`/`paused`/`concluded`), `path`, `repo`, `prod`
+- **`> one sentence`:** what it is and for whom.
+- **Idea:** the problem, the key insight or approach, what makes it different (2–4 sentences).
+- **Objectives:** goal, users, measurable success, non-goals — condensed from `OBJECTIVES.md` / `DESIGN.md`.
+- **How it works:** 3–6 bullets on core workflows and main components; deep architecture stays in `ARCHITECTURE.md`.
+- **Where:** repo, remote, live URLs, deploy target.
+- **Memory:** pointer to `<project>/.claude/memory/` and the session logs; **Links:** `[[spec]]`/`[[sop]]` wikilinks.
 
-#### DECISIONS.md
-- What are the most important decisions already made (with rationale)?
-- What was considered and rejected?
-*(Skip if no decisions have been made yet — leave template header only)*
+No current-state or history sections: current state is `CONTEXT.md`, history is the session logs — that is what keeps the note from drifting. `caps`: ask which CAP(s) apply if unknown (`[[developer]]`, `[[Artelys]]`); don't pick one silently.
 
-#### CONTEXT.md
-- What is done, what is in progress, what is blocked?
-- What are the open questions or unresolved decisions?
-- What should happen next?
+## 5 — Report
 
-#### ROADMAP.md
-- What features or milestones are planned?
-- What is the current priority order?
-*(Skip if roadmap is covered in the vault one-pager — just reference it)*
-
-#### API.md
-- Does this project expose or consume external APIs/endpoints?
-- What auth mechanism is used?
-*(Skip entirely if the project has no external API surface)*
-
-### 4 — Write the files
-
-Write each file to `<project>/.claude/memory/<FILE>.md` using the gathered answers. Use the [template format](../../config/memory-templates/) as the base structure.
-
-**Rules:**
-- Never overwrite a file that already has substantive content (not just template placeholders) without explicitly asking the user first.
-- Write concisely — respect the `<!-- keep this file under ~N words -->` budget in each template; these files are read by an agent at session start.
-- Set the `updated:` frontmatter field to today's date whenever a file's content changes.
-- Cross-link related files with markdown links instead of repeating content: a DECISIONS.md entry's **Affects** line should link to the ARCHITECTURE.md/ROADMAP.md section it changes; ROADMAP.md items should link back to the OBJECTIVES.md scope they serve.
-- DECISIONS.md is append-only — if it already has entries, add new ones at the bottom, never delete.
-- If the user says "skip" for a file, leave the template placeholder unchanged.
-
-### 4b — Mirror to the vault (always, no need to ask)
-
-After writing/updating any file(s) in `<project>/.claude/memory/`, immediately copy those same files to `$BRAIN_PATH/projects/<slug>/<FILE>.md`, overwriting the vault copy so it matches. This is a standard, automatic part of this skill — never ask the user whether to do it, and never skip it. Do this for every file touched in step 4, every time this skill runs (initial init and later updates alike).
-
-### 4c — Create/update the vault one-pager (always, no need to ask)
-
-Every project also needs `$BRAIN_PATH/projects/<slug>.md` — the single-file overview note, distinct from the `projects/<slug>/` detail folder. `init-project.sh` does not create this file, so this skill is responsible for it. Never ask whether to create it — always do it as a standard part of this process, on first init and again whenever memory files materially change.
-
-- Use `$BRAIN_PATH/_templates/project-template.md` as the structural reference (frontmatter: `title`, `created`, `tags: [project]`, `caps`, `status`, `start`, `end`, `path`, `prod`; body sections: Objective, TL;DR, Description, Architecture, Roadmap, Proposed Improvements, Related Resources, Notes, Journal). That file is an Obsidian Templater script (not directly executable) — hand-write the rendered Markdown yourself following its structure, don't try to run it.
-- `caps`: ask the user which CAP(s) apply if not already known (e.g. `[[caps/developer]]`, `[[caps/artelys]]`) — do not guess silently.
-- Populate every section from the already-gathered OBJECTIVES/DESIGN/ARCHITECTURE/DECISIONS/CONTEXT/ROADMAP/API content — do not re-interview the user for content that lives there; synthesize and cross-link with `[[<slug>/FILE]]`-style links back to the detail files instead of duplicating full text.
-- Append one line to the Journal section for this session's work instead of rewriting prior entries.
-- If the one-pager already exists with substantive content, update it in place (sync new/changed facts) rather than overwriting wholesale — same non-destructive rule as step 4.
-
-### 5 — Confirm and print next steps
-
-After writing all files, print a one-line summary of what was written (confirming both the vault mirror from 4b and the one-pager from 4c) and remind the user:
-- `CONTEXT.md` should be updated at the end of each session
-- `brain-sync end` will push changes to the vault automatically
-
-## Critical rules
-
-- Never ask all questions at once — one file at a time keeps the conversation focused.
-- Never silently skip a file — always tell the user which files were written and which were skipped.
-- Never invent content — if you don't have enough context to fill a section, ask.
-- The interview happens in the chat conversation, not via shell prompts.
-
-## Files
-
-```
-skills/brain-init-project/
-├── SKILL.md
-└── skills/brain-init-project/
-    └── SKILL.md  → ../../SKILL.md
-```
+One line listing files written and files skipped (with reason), plus the vault note. Remind the user that `/capture` refreshes `CONTEXT.md` at session end and `brain-sync end` pushes the vault.

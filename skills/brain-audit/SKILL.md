@@ -4,31 +4,19 @@ description: Vault maintenance pipeline — compile inbox notes, connect via QMD
 user-invocable: true
 ---
 
-# brain-audit — Context Routing
+# brain-audit
 
-Route to the appropriate subskill based on what the user is asking:
+Manual vault maintenance. Pick the subskill that matches the request; "run brain-audit" / "weekly audit" means the full run below.
 
-| User says | Invoke |
-|-----------|--------|
-| "audit my notes", "weekly audit", "vault maintenance", "run brain-audit" | `brain-audit` (full orchestrator) |
-| "compile my notes", "promote pitfalls", "review inbox" | `brain-audit:compile` |
-| "find connections", "link my notes", "semantic connections" | `brain-audit:connect` |
-| "insights", "what patterns", "what blockers", "synthesize" | `brain-audit:insights` |
-| "sync qmd", "update qmd index", "reindex vault" | `brain-audit:qmd-sync` |
-| "knowledge gaps", "what am I missing", "what to document" | `brain-audit:queries` |
-| "roadmap", "project status", "where are my projects" | `brain-audit:queries` |
-| "weekly digest", "generate digest", "reset audit clock" | `brain-audit:digest` |
+| User says | Subskill |
+|-----------|----------|
+| "compile my notes", "promote pitfalls", "review inbox" | `compile` |
+| "find connections", "link my notes", "synthesize patterns" | `connect` |
+| "insights", "what patterns", "what blockers" | `insights` |
+| "knowledge gaps", "what to document", "roadmap", "where are my projects" | `queries` |
+| "sync qmd", "reindex vault" | `qmd-sync` |
+| "weekly digest", "reset audit clock" | `digest` |
 
-## Invoking a Subskill
+**Full run order:** `qmd-sync` → `compile` → `queries` → `connect` → `insights` → `digest` (pass the compile/connect/insights counts to `digest`). `compile` and `queries` read files directly; `connect` and `insights` need a fresh QMD index.
 
-The subskills live at `skills/<name>/SKILL.md` relative to this skill's root — `skills/compile/SKILL.md`,
-`skills/connect/SKILL.md`, `skills/insights/SKILL.md`, `skills/qmd-sync/SKILL.md`,
-`skills/queries/SKILL.md`, `skills/digest/SKILL.md`.
-
-The `brain-audit:<name>` form in the table above is **Claude Code only**. Cursor CLI and Mistral
-Vibe discover skills one level deep, so they see this router and nothing under it. There, **read
-the file at the path above instead** — same instructions in context, and the routing table still
-decides which one. If a `brain-audit:<name>` is not in your available-skills list, go straight to
-the path rather than reporting the subskill as missing.
-
-After `/capture` completes, suggest: "Run `brain-audit:compile` to promote today's notes to cross-project knowledge?"
+Each subskill is `skills/<name>/SKILL.md` under this skill's root (`~/ai-dotfiles/skills/brain-audit/`). Claude Code exposes them as `brain-audit:<name>`; Cursor CLI and Mistral Vibe only see this router, so read the file at that path instead — don't report the subskill as missing.

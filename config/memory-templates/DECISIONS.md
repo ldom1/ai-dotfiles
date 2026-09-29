@@ -4,15 +4,7 @@ updated:
 ---
 
 # Decisions
-<!-- keep each entry under ~80 words -->
+<!-- one line per live decision; keep the file under ~300 words -->
 
-<!-- Append-only ADR log. Never delete entries.
-     Link the affected area, e.g. "Affects: [Key Modules](ARCHITECTURE.md#key-modules)" -->
-
-## Template
-
-### YYYY-MM-DD — Decision title
-**Decision:** What was decided  
-**Rejected:** What was considered and rejected  
-**Rationale:** Why this choice was made  
-**Affects:** Link to the ARCHITECTURE.md / ROADMAP.md section this changes (if any)  
+<!-- Format: - **<decision>** — <why> (<YYYY-MM-DD>)
+     Replace a superseded line instead of adding a contradicting one. The reasoning trail lives in the session logs. -->

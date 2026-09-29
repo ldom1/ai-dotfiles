@@ -2,6 +2,41 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-29
+
+### Added
+- `git-promotion` skill, generalised from prosper's: `scripts/promote.py` moves code onto a stage branch with a semver tag (from `feat`/`fix`/`enh`/breaking commit types) and a GitHub Release, dry run by default. Stages, tag prefix, gate commands and changelog come from a per-repo `.git-promotion.json`: `develop → preprod → main` (alpha tags on preprod), `develop → main`, or `main` alone, where `--pr N` squash-merges the PR, tags the merge commit and uses the CHANGELOG `## [X.Y.Z]` section as release notes. Stdlib-only (prosper's `packaging` dependency is gone); tests under `scripts/tests/`.
+- `.git-promotion.json` for ai-dotfiles: single `main` stage, `v` tags, the git-promotion tests as gate, CHANGELOG notes.
+- `medium-writer` skill: drafts a Medium article from real repo code into `articles/`, then writes it onto its Notion task page.
+
+### Changed
+- `.claude/ccstatusline-settings.json` saved in ccstatusline's v4 format; HyperFrames CLI-installed skills (`hyperframes*`, `media-use`) gitignored under `.claude/skills/` and `.cursor/skills/`.
+- Prompt audit of the global config. `.claude/CLAUDE.md` rewritten (946 → 500 words): same rules, stale facts removed (wrong vault path, `.claude/brain/`, an "automatic" brain-route flow no hook runs), the duplicated wikilink/commit/plan-location rules said once, shouting removed. `.claude/LocalBrain.md` rewritten against the real vault layout.
+- `capture` skill: reads only this session's log (not every past note), rewrites `CONTEXT.md` in place as a snapshot, keeps `DECISIONS.md` one line per live decision, and records pitfalls **and** lessons as one-line cross-project rules in `pitfalls.md`; project-specific traps go to `CONTEXT.md` → Gotchas. The slug comes from `load.sh --slug-only`.
+- `git-commit` skill states its reason (the PreToolUse hook rejects off-list scopes) instead of shouting; the "Hard Rules" block, which repeated Steps 1–3 and referred to a scope table that no longer exists, is gone. Cursor `graphify-context` gives the reason for leaving `graphify-out*` alone instead of "Hard constraints"; `session-implementation-log` drops a warning about the long-removed `index/implementation/` path.
+- Stack-specific rules (Docker/Coolify, Python/Postgres/pandas, Ansible/network, Prometheus) live in the `## Rules` list of the vault's `resources/knowledge/patterns/*-patterns.md`, not in `pitfalls.md`, so the injected file stays under its ~6 KB share of the SessionStart budget. `capture`, `brain-audit:compile` and `.claude/CLAUDE.md` route rules accordingly; `LocalBrain.md` drops the removed `todo/`, `kanban/` and `docs/memory/` entries.
+- `brain-audit:connect` adds pattern links under a project note's existing `## Links` (the one-pager shape has no `## See also`); `connect` and `insights` fall back to `qmd vsearch` when `qmd query` outlives the Bash timeout on CPU.
+- `lessons-learned.md` merged into `pitfalls.md` (a distilled rule list); the old incident logs are frozen under `resources/operational/ai-agents/archive/`. `brain-audit` compile/digest/insights and the Cursor `claude-pitfall` rule follow the same format.
+
+- No journals outside session logs: vault `projects/<slug>.md` notes and repo `.claude/memory/*` are snapshots. Rule stated in `.claude/CLAUDE.md` and the always-on Cursor `specs-location` rule; the vault project template's `## Journal` became a pointer to the session logs; `load.sh` warns at session start when a project note has a journal section or exceeds 600 words, or `CONTEXT.md` exceeds 1,200 words. Claude's SessionStart hook no longer prints `.claude/memory/` (the project CLAUDE.md @-imports it; Cursor/Vibe still get it).
+
+- Vault `projects/<slug>.md` is a one-pager with a fixed shape — one-sentence summary, Idea, Objectives (goal, users, success, non-goals), How it works, Where, Memory, Links — and no current-state or journal section. `ai-dotfiles init` and `upgrade` now create the skeleton via `skills/brain-load/scripts/instantiate.sh` (idempotent, `--cap` optional); `/brain-init-project` fills it; the vault Templater template matches.
+
+### Fixed
+- `.cursor/skills/medium-writer` symlink pointed at itself (`../skills/…`).
+- SessionStart hook injected the whole 50K-word `pitfalls.md`; the oversized output was saved to a file and only a 2 KB preview reached the model. Pitfalls now get whatever the hook's ~9.5 KB output budget leaves after the project note, cut at a line boundary with a truncation notice (a fixed 10 KB pitfalls cap still overflowed once the note was added); the lessons block is gone (merged).
+- `brain-audit/scripts/_brain_env.sh` failed when sourced from zsh (`BASH_SOURCE[0]: parameter not set`) and leaked `set -euo pipefail` into the caller's shell.
+- `brain-load/scripts/load.sh` looked for project memory in `.claude/brain/` — it lives in `.claude/memory/`.
+- The `AGENTS.md` template (`init`/`upgrade`) had every `@.claude/memory/` import commented out, while Claude's SessionStart hook now skips memory — new projects loaded none. `OBJECTIVES.md` and `CONTEXT.md` (the `read_on_session_start` defaults) are imported by default; the stale `# CLI / VSCode` heading lines are gone.
+- `.claude/CLAUDE.md` is generated only when the root `CLAUDE.md` is not the `AGENTS.md` symlink (it loaded `AGENTS.md` twice otherwise); its template is now just `@../AGENTS.md`, without the stale "hooks don't fire in VSCode" header.
+- Cursor `finops-claude` rule: `claude-finops.md` path matches `.claude/CLAUDE.md` (`resources/operational/ai-agents/`), retired `/create-pr` reference removed. `brain-load/reference/VAULT-LAYOUT.md`: mode detection checks `_templates/project-template.md`, as `load.sh` does.
+- `.vibe/AGENTS.md` pointed at `skills/brain-sync/sync.sh` / `skills/brain-load/load.sh`; the scripts are under `scripts/`.
+
+### Removed
+- `.github/workflows/release.yml`: releases are created by `git-promotion` (notes from the CHANGELOG section); the tag-triggered workflow would race it, and its notes listed plugins that no longer exist.
+- `brain-route` skill, its `sync.sh start` call and `brain-audit/scripts/audit.sh`: the "automatic maintenance" only created folders and wrote an empty digest every 7 days, resetting the clock without doing any work. `/brain-audit` is manual; the SessionStart hook prints "maintenance due" when `meta/last-maintenance.md` is older than 7 days.
+- `.claude/SKILLS_INDEX.md` — stale (two skills that no longer exist, ten missing) and redundant with the skill list Claude Code injects.
+
 ## [0.6.0] - 2026-09-10
 
 ### Added
