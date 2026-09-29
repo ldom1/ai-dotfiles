@@ -8,7 +8,7 @@ Obsidian vault, git repo. Path: `$BRAIN_PATH` from `~/ai-dotfiles/config/brain.e
 | `inbox/daily/specs/<project>/…-design.md` · `inbox/daily/plans/<project>/…-plan.md` | Specs · implementation plans | brainstorming / planning |
 | `inbox/{connections,insights,qa,drafts}/` | Maintenance output | `/brain-audit` |
 | `projects/<slug>.md` | Project one-pager: idea, objectives, how it works, where (printed at session start) | `ai-dotfiles init`/`upgrade` (skeleton), `/brain-init-project` |
-| `resources/operational/ai-agents/pitfalls.md` | Cross-project rules, injected every session (≤ 10 KB) | `/capture`, `/brain-audit` |
+| `resources/operational/ai-agents/pitfalls.md` | Cross-project rules, injected every session (keep ≤ 6 KB: it shares the hook's ~9.5 KB budget with the project note) | `/capture`, `/brain-audit` |
 | `resources/operational/ai-agents/archive/` | Frozen incident logs (pre-2026-09-29 pitfalls/lessons) | — |
 | `resources/knowledge/{sops,patterns,home-lab,operational}/` | SOPs, patterns, infra docs | as needed |
 | `caps/`, `todo/`, `kanban/` | Areas of responsibility, ideas, tasks | user |

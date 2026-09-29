@@ -19,7 +19,7 @@
 
 ## Hooks
 - SessionStart: vault pull, project note, pitfalls. SessionEnd: vault commit + push, warns if today has no session log. PreToolUse/Bash: RTK shrinks command output (`rtk proxy '<cmd>'` bypasses; `~/ai-dotfiles/.claude/RTK.md`) and the commit-message check.
-- If no `BRAIN_PATH=` / pitfalls block is in context, hooks did not run: run `bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh start`, then read pitfalls.md yourself.
+- If no `BRAIN_PATH=` line is in context, hooks did not run: run `bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh start`. If the pitfalls block is missing, truncated, or the hook output was replaced by a file preview, read pitfalls.md yourself.
 
 ## Development
 - Occam's razor: fewest assumptions, smallest surface area. Structured, simple, readable code. No speculative abstractions. No backwards-compat shims for removed code.

@@ -11,6 +11,14 @@ LOG_FILE="$LOG_DIR/brain-load.log"
 
 mkdir -p "$LOG_DIR"
 
+# Claude Code swaps hook output over ~10,000 characters for a file path and a
+# 2 KB preview, so none of it reaches the model. Buffer stdout; pitfalls (printed
+# last) get whatever budget the rest leaves.
+OUTPUT_MAX_BYTES=9500
+OUT_BUF=$(mktemp)
+exec 3>&1 >"$OUT_BUF"
+trap 'exec 1>&3; cat "$OUT_BUF"; rm -f "$OUT_BUF"' EXIT
+
 # ── Auto-heal settings.json if it's behind settings.json.tpl (e.g. after a
 # git pull that enabled new plugins but install.sh wasn't re-run). Only
 # checks keys install.sh actually templates (enabledPlugins,
@@ -106,17 +114,17 @@ fi
 # Inject operational constraints from ai-agents knowledge base
 AI_AGENTS_DIR="${BRAIN_PATH}/resources/operational/ai-agents"
 
-# pitfalls.md is a distilled rule list (lessons-learned merged into it). Cap the
-# injection: large hook output is persisted to a file and only a
-# 2KB preview reaches the model.
+# pitfalls.md is a distilled rule list (lessons-learned merged into it).
 PITFALLS="$AI_AGENTS_DIR/pitfalls.md"
-PITFALLS_MAX_BYTES=10000
 if [[ -f "$PITFALLS" ]]; then
+  PITFALLS_MAX_BYTES=$(( OUTPUT_MAX_BYTES - $(wc -c <"$OUT_BUF") - 200 ))
+  (( PITFALLS_MAX_BYTES > 0 )) || PITFALLS_MAX_BYTES=0
   echo "--- AI-AGENTS PITFALLS (constraints) ---"
-  head -c "$PITFALLS_MAX_BYTES" "$PITFALLS"
   if (( $(wc -c <"$PITFALLS") > PITFALLS_MAX_BYTES )); then
-    echo ""
-    echo "[truncated: pitfalls.md exceeds ${PITFALLS_MAX_BYTES} bytes — merge rules or run /brain-audit]"
+    head -c "$PITFALLS_MAX_BYTES" "$PITFALLS" | head -n -1   # drop the cut line
+    echo "[truncated at ${PITFALLS_MAX_BYTES} bytes (hook output budget) — merge rules or run /brain-audit; full file: $PITFALLS]"
+  else
+    cat "$PITFALLS"
   fi
   echo "--- END PITFALLS ---"
 fi

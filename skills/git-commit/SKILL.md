@@ -6,7 +6,7 @@ user-invocable: true
 
 # Git Commit Convention
 
-**This skill MUST run before every `git commit`. Never run `git commit` without completing this skill first.**
+Run this before every `git commit`: the PreToolUse hook (`.claude/hooks/git-commit-check.sh`) rejects a message whose type or scope is not in `scopes.json`.
 
 ## Format
 
@@ -71,10 +71,3 @@ Check the scope against the locked list for the detected project type.
 ### Step 4 — Commit
 
 All checks pass. Run `git commit -m "<validated message>"`.
-
-## Hard Rules
-
-- **Never run `git commit` before completing Steps 1–3.**
-- **Never add a new scope or project type without explicit user validation.**
-- **Never modify `scopes.json` without immediately committing the change.**
-- The `scopes.json` file is the single source of truth — the table above is a snapshot.

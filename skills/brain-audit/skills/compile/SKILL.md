@@ -12,7 +12,7 @@ user-invocable: true
 
 # brain-audit:compile
 
-Promote cross-project rules from `inbox/daily/` into `resources/operational/ai-agents/pitfalls.md`. That file is injected into every session (hook truncates at 10 KB), so it holds distilled rules, not incidents. Vault references are `[[slug]]` wikilinks.
+Promote cross-project rules from `inbox/daily/` into `resources/operational/ai-agents/pitfalls.md`. That file is injected into every session (it shares the SessionStart hook's ~9.5 KB output budget with the project note and is truncated past it), so it holds distilled rules, not incidents. Vault references are `[[slug]]` wikilinks.
 
 ## 1 — Find recent notes
 
@@ -30,7 +30,7 @@ Stop and tell the user if `BRAIN_PATH` is missing.
 
 For each notable mistake, decision or working approach:
 
-- **Cross-project** (would recur in a different project) → search `pitfalls.md`; sharpen the rule that already covers it, otherwise add one bullet under the matching `## <Topic>`: imperative rule + the mechanism in a clause, exact command when that is the fix. No dates, project names or narrative — the session log keeps the story. Merge rules to stay under 10 KB.
+- **Cross-project** (would recur in a different project) → search `pitfalls.md`; sharpen the rule that already covers it, otherwise add one bullet under the matching `## <Topic>`: imperative rule + the mechanism in a clause, exact command when that is the fix. No dates, project names or narrative — the session log keeps the story. Merge rules to stay under 6 KB.
 - **Project-specific** → skip; it belongs in that project's `.claude/memory/CONTEXT.md` Gotchas or DECISIONS.
 - **Ambiguous** → ask before moving on:
 
