@@ -13,7 +13,7 @@ $BRAIN_PATH/                  (git repo, Obsidian vault)
 └── inbox/daily/implementation/<slug>/   ← session logs — the only place history goes
 ```
 
-**Mode detection:** `projects/` or `projects/_template.md` exists → PARA (`projects/<slug>.md`); otherwise legacy (`Projects/<slug>/brief.md`, from `templates/brief.md`). On `/mnt/c` the filesystem is case-insensitive, so `Projects/` and `projects/` are the same folder.
+**Mode detection:** `projects/` or `_templates/project-template.md` exists → PARA (`projects/<slug>.md`); otherwise legacy (`Projects/<slug>/brief.md`, from `templates/brief.md`). On `/mnt/c` the filesystem is case-insensitive, so `Projects/` and `projects/` are the same folder.
 
 **One-pager** (`projects/<slug>.md`, ≤ 450 words, rewritten in place — no journal, no current-state section):
 

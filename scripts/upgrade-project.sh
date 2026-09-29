@@ -144,11 +144,11 @@ print(json.dumps(deep_merge(t, e), indent=2))
 <!-- @.claude/standards/python.md -->
 
 ## Memory
-# CLI  : memory files loaded at session start declared in .claude/memory/settings.json
-# VSCode: uncomment the @-imports below as you create each file.
-<!--
+<!-- Claude Code loads memory only through these imports (the SessionStart hook skips it).
+     Move a line out of the comment below once that file has real content. -->
 @.claude/memory/OBJECTIVES.md
 @.claude/memory/CONTEXT.md
+<!--
 @.claude/memory/DESIGN.md
 @.claude/memory/ARCHITECTURE.md
 @.claude/memory/DECISIONS.md
@@ -165,13 +165,14 @@ EOF
     (( added++ )) || true
   fi
 
-  # Generate .claude/CLAUDE.md if missing or outdated (must contain @../AGENTS.md)
+  # .claude/CLAUDE.md imports AGENTS.md when the root CLAUDE.md is not its symlink
+  # (with the symlink, a second import would load AGENTS.md twice every session)
   local claude_md_tpl="$TEMPLATE_DIR/CLAUDE.md.tpl"
   local claude_md_dest="$project_path/.claude/CLAUDE.md"
-  if [[ -f "$claude_md_tpl" ]]; then
+  if [[ -f "$claude_md_tpl" && "$(readlink "$claude_symlink")" != "AGENTS.md" ]]; then
     if [[ ! -f "$claude_md_dest" ]] || ! grep -qF "@../AGENTS.md" "$claude_md_dest" 2>/dev/null; then
       cp "$claude_md_tpl" "$claude_md_dest"
-      echo "[upgrade-project] Updated $claude_md_dest (VSCode fallback)"
+      echo "[upgrade-project] Updated $claude_md_dest (imports AGENTS.md)"
       (( added++ )) || true
     fi
   fi

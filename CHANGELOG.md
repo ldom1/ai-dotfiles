@@ -15,6 +15,9 @@
 ### Fixed
 - SessionStart hook injected the whole 50K-word `pitfalls.md`; the oversized output was saved to a file and only a 2 KB preview reached the model. Pitfalls now get whatever the hook's ~9.5 KB output budget leaves after the project note, cut at a line boundary with a truncation notice (a fixed 10 KB pitfalls cap still overflowed once the note was added); the lessons block is gone (merged).
 - `brain-load/scripts/load.sh` looked for project memory in `.claude/brain/` — it lives in `.claude/memory/`.
+- The `AGENTS.md` template (`init`/`upgrade`) had every `@.claude/memory/` import commented out, while Claude's SessionStart hook now skips memory — new projects loaded none. `OBJECTIVES.md` and `CONTEXT.md` (the `read_on_session_start` defaults) are imported by default; the stale `# CLI / VSCode` heading lines are gone.
+- `.claude/CLAUDE.md` is generated only when the root `CLAUDE.md` is not the `AGENTS.md` symlink (it loaded `AGENTS.md` twice otherwise); its template is now just `@../AGENTS.md`, without the stale "hooks don't fire in VSCode" header.
+- Cursor `finops-claude` rule: `claude-finops.md` path matches `.claude/CLAUDE.md` (`resources/operational/ai-agents/`), retired `/create-pr` reference removed. `brain-load/reference/VAULT-LAYOUT.md`: mode detection checks `_templates/project-template.md`, as `load.sh` does.
 - `.vibe/AGENTS.md` pointed at `skills/brain-sync/sync.sh` / `skills/brain-load/load.sh`; the scripts are under `scripts/`.
 
 ### Removed

@@ -5,9 +5,8 @@ alwaysApply: false
 
 # FinOps
 
-- **Lean rules:** long procedures live in the **Local Brain** (`$BRAIN_PATH/resources/knowledge/operational/`), especially `claude-finops.md`.
+- **Lean rules:** long procedures live in the **Local Brain**, especially `$BRAIN_PATH/resources/operational/ai-agents/claude-finops.md`.
 - **Session:** brain-sync/load is automatic via Claude Code SessionStart/End and Cursor Agent CLI hooks (default ON; IDE OFF). **Cursor IDE Agent:** never auto-run at session start/end (empty hooks are expected). Run only if the user asks.
 - **Habits:** `/clear` between unrelated tasks; in long work, also after a **theme or implementation-block switch** (`/rename` then `/clear` in Claude Code if resumable). **`/compact` early** in Claude Code with explicit keep-list (files, decisions, tests, errors). Optional shell: `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` — see `claude-finops.md`.
-- **PRs:** `/create-pr` skill — gh + branch/commit conventions.
 - **Bash hook:** RTK + tail cap on noisy install/build output.
 - **Reference:** [FinOps Claude Code (sfeir.dev)](https://www.sfeir.dev/ia/finops-claude-code-comment-optimiser-sa-consommation-de-tokens/).

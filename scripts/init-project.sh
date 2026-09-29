@@ -134,11 +134,11 @@ if [[ ! -f "$AGENTS_MD" && ! -L "$AGENTS_MD" ]]; then
 <!-- @.claude/standards/python.md -->
 
 ## Memory
-# CLI  : memory files loaded at session start declared in .claude/memory/settings.json
-# VSCode: uncomment the @-imports below as you create each file.
-<!--
+<!-- Claude Code loads memory only through these imports (the SessionStart hook skips it).
+     Move a line out of the comment below once that file has real content. -->
 @.claude/memory/OBJECTIVES.md
 @.claude/memory/CONTEXT.md
+<!--
 @.claude/memory/DESIGN.md
 @.claude/memory/ARCHITECTURE.md
 @.claude/memory/DECISIONS.md
@@ -153,10 +153,11 @@ if [[ ! -L "$CLAUDE_SYMLINK" && ! -f "$CLAUDE_SYMLINK" ]]; then
   echo "[init-project] Created symlink $CLAUDE_SYMLINK -> AGENTS.md"
 fi
 
-# ── Generate .claude/CLAUDE.md (VSCode / IDE fallback — loads AGENTS.md) ─────
+# ── .claude/CLAUDE.md imports AGENTS.md when the root CLAUDE.md is not its symlink ─
+# (with the symlink, a second import would load AGENTS.md twice every session)
 CLAUDE_MD_TPL="$TEMPLATE_DIR/CLAUDE.md.tpl"
 CLAUDE_MD_DEST="$PROJECT_PATH/.claude/CLAUDE.md"
-if [[ -f "$CLAUDE_MD_TPL" && ! -f "$CLAUDE_MD_DEST" ]]; then
+if [[ -f "$CLAUDE_MD_TPL" && ! -f "$CLAUDE_MD_DEST" && "$(readlink "$CLAUDE_SYMLINK")" != "AGENTS.md" ]]; then
   cp "$CLAUDE_MD_TPL" "$CLAUDE_MD_DEST"
   echo "[init-project] Created $CLAUDE_MD_DEST"
 fi
