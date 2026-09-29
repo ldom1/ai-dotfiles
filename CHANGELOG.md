@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-29
+
 ### Added
 - `git-promotion` skill, generalised from prosper's: `scripts/promote.py` moves code onto a stage branch with a semver tag (from `feat`/`fix`/`enh`/breaking commit types) and a GitHub Release, dry run by default. Stages, tag prefix, gate commands and changelog come from a per-repo `.git-promotion.json`: `develop → preprod → main` (alpha tags on preprod), `develop → main`, or `main` alone, where `--pr N` squash-merges the PR, tags the merge commit and uses the CHANGELOG `## [X.Y.Z]` section as release notes. Stdlib-only (prosper's `packaging` dependency is gone); tests under `scripts/tests/`.
 - `.git-promotion.json` for ai-dotfiles: single `main` stage, `v` tags, the git-promotion tests as gate, CHANGELOG notes.
