@@ -53,6 +53,7 @@ upgrade_one() {
   local vault_brain="$BRAIN_PATH/projects/$slug"
 
   mkdir -p "$project_brain" "$vault_brain"
+  bash "$AI_DOTFILES/skills/brain-load/scripts/instantiate.sh" --slug "$slug" --path "$project_path" | sed "s/^/[upgrade-project] /"
 
   local added=0
   for f in "$TEMPLATE_DIR"/*; do

@@ -3,7 +3,7 @@ name: queries
 description: >-
   Two structured vault analyses: (1) knowledge-gaps — surveys resources/knowledge/
   and cross-references recent implementation notes to find underdocumented topics;
-  (2) roadmap — aggregates all active project notes + recent implementation logs
+  (2) roadmap — aggregates all active project folders + recent implementation logs
   into a consolidated status view. Archives results to resources/queries/archive/.
   Use when: "knowledge gaps", "what am I missing", "project roadmap", "where are
   my projects", "what should I document".
@@ -12,49 +12,18 @@ user-invocable: true
 
 # brain-audit:queries
 
-Two structured analyses: knowledge coverage gaps and project roadmap. Both archive results for Obsidian backlinks.
-
-> **Wikilink rule:** ALL internal vault references MUST use Obsidian wikilinks: `[[path/to/file]]` (vault-relative, no `.md`, no leading slash).
-
-## Prerequisites
+Two analyses, each archived to `resources/queries/archive/`. Vault references are `[[slug]]` wikilinks; files whose name repeats in every project folder (`ROADMAP`, `OBJECTIVES`…) need the folder to be unambiguous: `[[<slug>/ROADMAP]]`.
 
 ```bash
 source ~/ai-dotfiles/skills/brain-audit/scripts/_brain_env.sh
 TODAY=$(date +%Y-%m-%d)
+CUTOFF=$(date -d '-30 days' +%Y-%m-%d 2>/dev/null || date -v-30d +%Y-%m-%d)
 mkdir -p "$BRAIN_PATH/resources/queries/archive"
 ```
 
----
+## 1 — Knowledge gaps → `$TODAY-knowledge-gaps.md`
 
-## Query 1 — Knowledge Gaps
-
-**Goal:** find what's underdocumented relative to what the vault actually talks about.
-
-### Step 1 — Survey existing knowledge files
-
-```bash
-ls "$BRAIN_PATH/resources/knowledge/"
-ls "$BRAIN_PATH/resources/operational/ai-agents/"
-```
-
-For each `.md` in `resources/knowledge/`: note title, number of `##` sections (patterns), creation date from frontmatter.
-
-### Step 2 — Find topics mentioned but not documented
-
-```bash
-# Topics appearing in recent implementation notes without a knowledge file
-find "$BRAIN_PATH/inbox/daily/implementation" -name "*.md" -newermt "$(date -d '-30 days' +%Y-%m-%d 2>/dev/null || date -v-30d +%Y-%m-%d)" \
-  | xargs grep -h "^\*\*" 2>/dev/null | sort | uniq -c | sort -rn | head -30
-```
-
-Read the 5 most recent implementation notes in full. Look for:
-- Recurring tools, frameworks, or patterns not covered by any `resources/knowledge/` file
-- Topics referenced 3+ times across different projects
-- Domains present in projects but absent from knowledge files (e.g., CI/CD, auth, frontend, database)
-
-### Step 3 — Write knowledge-gaps archive
-
-Write to `$BRAIN_PATH/resources/queries/archive/$TODAY-knowledge-gaps.md`:
+Survey what exists (`find "$BRAIN_PATH/resources/knowledge" -name '*.md'` — title, number of `##` patterns, `created`), then read recent implementation notes (`-newermt "$CUTOFF"`) and look for tools, failure modes or domains that recur across 3+ notes or 2+ projects with no knowledge file. Check the previous `*-knowledge-gaps.md` and say which gaps are still open.
 
 ```markdown
 ---
@@ -65,65 +34,34 @@ query: knowledge-gaps
 
 # Knowledge Gaps — YYYY-MM-DD
 
-## Coverage Overview
-
-| Knowledge file | Patterns | Last updated |
+## Coverage
+| Knowledge file | Patterns | Created |
 |---|---|---|
-| [[resources/knowledge/docker-patterns]] | N | YYYY-MM-DD |
-| ... | | |
+| [[docker-patterns]] | N | YYYY-MM-DD |
 
-## Tier 1 — Write this week
+## Write this week
+1. **<topic>** — why: seen in [[<note>]], [[<note>]]; seed: <2 sentences>
 
-1. **`resources/knowledge/<topic>.md`**
-   - Why: mentioned in [[project-a]], [[project-b]] — no dedicated file
-   - Seed content: <2-sentence description of what it should cover>
+## Write this month
+1. **<topic>** — why: <rationale>
 
-## Tier 2 — Write this month
-
-1. **`resources/knowledge/<topic>.md`**
-   - Why: <rationale>
-
-## What looks good
-
-- <knowledge files with solid coverage — 1 line each>
+## Still open from last run
+- <gap> (first flagged YYYY-MM-DD)
 ```
 
----
+## 2 — Roadmap → `$TODAY-roadmap.md`
 
-## Query 2 — Roadmap
-
-**Goal:** one consolidated view of all active projects — status, current objectives, open items, next step.
-
-Only projects that have a **folder** in `projects/` are in scope (they have `ROADMAP.md`, `OBJECTIVES.md`, etc.). Flat `.md` files in `projects/` are not project folders — skip them.
-
-### Step 1 — Discover project folders
+In scope: project folders `projects/<slug>/` (mirrors of each repo's `.claude/memory/`). Flat `projects/<slug>.md` notes without a folder are not.
 
 ```bash
-ls -d "$BRAIN_PATH/projects"/*/ 2>/dev/null
+ls -d "$BRAIN_PATH/projects"/*/
+# last session log per project
+for d in "$BRAIN_PATH/inbox/daily/implementation"/*/; do
+  last=$(ls "$d" | sort | tail -1); [[ -n "$last" ]] && echo "$(basename "$d"): $last"
+done
 ```
 
-For each folder, read:
-- `ROADMAP.md` — current milestones and their status
-- `OBJECTIVES.md` — what the project is trying to achieve
-- `DECISIONS.md` (if present) — any pending or recent decisions
-
-### Step 2 — Cross-reference recent activity
-
-```bash
-# Last implementation note per project (folder name = project slug)
-find "$BRAIN_PATH/inbox/daily/implementation" -name "*.md" \
-  | sed 's|.*/implementation/\([^/]*\)/.*|\1|' | sort -u \
-  | while read proj; do
-      last=$(find "$BRAIN_PATH/inbox/daily/implementation/$proj" -name "*.md" 2>/dev/null | sort | tail -1)
-      [[ -n "$last" ]] && echo "$proj: $last"
-    done
-```
-
-For each project with a recent implementation note, read it and extract the `## Follow-ups` section.
-
-### Step 3 — Write roadmap archive
-
-Write to `$BRAIN_PATH/resources/queries/archive/$TODAY-roadmap.md`:
+Per folder read `ROADMAP.md`, `OBJECTIVES.md`, `CONTEXT.md`; flag folders missing `ROADMAP.md`. For projects active in the last 30 days, pull open items from the latest session log's `**Follow-ups:**`.
 
 ```markdown
 ---
@@ -135,30 +73,16 @@ query: roadmap
 # Project Roadmap — YYYY-MM-DD
 
 ## Active
-
-| Project | Last activity | Milestone / current focus | Next step |
+| Project | Last activity | Current focus | Next step |
 |---|---|---|---|
-| [[projects/artelys-crystal-hpc/ROADMAP]] | YYYY-MM-DD | <milestone from ROADMAP.md> | <one action> |
-| ... | | | |
+| [[<slug>/ROADMAP]] | YYYY-MM-DD | <from ROADMAP Now> | <one action> |
 
-## Stalled / no recent activity
-
+## Stalled (no session log in 30 days) or missing ROADMAP.md
 | Project | Last activity | Note |
 |---|---|---|
-| [[projects/xyz/ROADMAP]] | YYYY-MM-DD | no implementation notes in 30 days |
 
-## Open follow-ups (consolidated)
-
-- [ ] <item> — [[inbox/daily/implementation/project/file]]
-- [ ] <item> — [[inbox/daily/implementation/project/file]]
+## Open follow-ups
+- [ ] <item> — [[<session-log-slug>]]
 ```
 
----
-
-## Step 4 — Summary
-
-```
-brain-audit:queries complete
-  knowledge-gaps → resources/queries/archive/YYYY-MM-DD-knowledge-gaps.md
-  roadmap        → resources/queries/archive/YYYY-MM-DD-roadmap.md
-```
+Report both output paths.

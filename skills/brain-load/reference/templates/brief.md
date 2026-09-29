@@ -7,43 +7,18 @@ status: active
 
 # {{PROJECT_SLUG}}
 
-## Goal
+<!-- One-pager: ≤ 450 words (idea, objectives, how it works, where), rewritten in place. No journal or dated entries — history lives in inbox/daily/implementation/{{PROJECT_SLUG}}/. -->
 
-> One sentence: what problem does this project solve, and for whom?
+## What it is
 
-## Stack
+> One or two sentences: what problem it solves, for whom.
 
-| Layer | Technology |
-|---|---|
-| Language | |
-| Framework | |
-| Database | |
-| Infra / Deploy | |
-| Key libs | |
+## Where things are
 
-## Key decisions
+- **Repo:** 
+- **Live:** 
+- **Memory:** `<repo>/.claude/memory/` (objectives, context, architecture, decisions, roadmap)
 
-> Record significant architectural or design choices made so far. Keep it concise — one bullet per decision.
+## Specs & plans
 
--
-
-## Current status
-
-> What is the state of the project right now? What was last completed?
-
-- **Phase**: (e.g. exploration / MVP / production)
-- **Last milestone**: 
-- **Next milestone**: 
-
-## Open questions
-
-> Unresolved questions that affect upcoming work.
-
--
-
-## Resources
-
-> Links to specs, ADRs, designs, external docs.
-
-- [[resources/knowledge/architecture/plans/]] ← implementation plans
-- [[resources/knowledge/architecture/specs/]] ← design docs
+- [[<spec-slug>]]

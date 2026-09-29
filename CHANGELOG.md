@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+### Changed
+- Prompt audit of the global config. `.claude/CLAUDE.md` rewritten (946 → 500 words): same rules, stale facts removed (wrong vault path, `.claude/brain/`, an "automatic" brain-route flow no hook runs), the duplicated wikilink/commit/plan-location rules said once, shouting removed. `.claude/LocalBrain.md` rewritten against the real vault layout.
+- `capture` skill: reads only this session's log (not every past note), rewrites `CONTEXT.md` in place as a snapshot, keeps `DECISIONS.md` one line per live decision, and records pitfalls **and** lessons as one-line cross-project rules in `pitfalls.md`; project-specific traps go to `CONTEXT.md` → Gotchas. The slug comes from `load.sh --slug-only`.
+- `lessons-learned.md` merged into `pitfalls.md` (a distilled rule list); the old incident logs are frozen under `resources/operational/ai-agents/archive/`. `brain-audit` compile/digest/insights and the Cursor `claude-pitfall` rule follow the same format.
+
+- No journals outside session logs: vault `projects/<slug>.md` notes and repo `.claude/memory/*` are snapshots. Rule stated in `.claude/CLAUDE.md` and the always-on Cursor `specs-location` rule; the vault project template's `## Journal` became a pointer to the session logs; `load.sh` warns at session start when a project note has a journal section or exceeds 600 words, or `CONTEXT.md` exceeds 1,200 words. Claude's SessionStart hook no longer prints `.claude/memory/` (the project CLAUDE.md @-imports it; Cursor/Vibe still get it).
+
+- Vault `projects/<slug>.md` is a one-pager with a fixed shape — one-sentence summary, Idea, Objectives (goal, users, success, non-goals), How it works, Where, Memory, Links — and no current-state or journal section. `ai-dotfiles init` and `upgrade` now create the skeleton via `skills/brain-load/scripts/instantiate.sh` (idempotent, `--cap` optional); `/brain-init-project` fills it; the vault Templater template matches.
+
+### Fixed
+- SessionStart hook injected the whole 50K-word `pitfalls.md`; the oversized output was saved to a file and only a 2 KB preview reached the model. Injection is now capped at 10 KB with a truncation notice; the lessons block is gone (merged).
+- `brain-load/scripts/load.sh` looked for project memory in `.claude/brain/` — it lives in `.claude/memory/`.
+- `.vibe/AGENTS.md` pointed at `skills/brain-sync/sync.sh` / `skills/brain-load/load.sh`; the scripts are under `scripts/`.
+
+### Removed
+- `brain-route` skill, its `sync.sh start` call and `brain-audit/scripts/audit.sh`: the "automatic maintenance" only created folders and wrote an empty digest every 7 days, resetting the clock without doing any work. `/brain-audit` is manual; the SessionStart hook prints "maintenance due" when `meta/last-maintenance.md` is older than 7 days.
+- `.claude/SKILLS_INDEX.md` — stale (two skills that no longer exist, ten missing) and redundant with the skill list Claude Code injects.
+
 ## [0.6.0] - 2026-09-10
 
 ### Added

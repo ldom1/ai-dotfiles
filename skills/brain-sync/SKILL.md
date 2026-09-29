@@ -6,128 +6,20 @@ user-invocable: true
 
 # brain-sync
 
-Keep the Local Brain vault and ai-dotfiles repo in sync. **Automatic** start/end is owned by Claude Code hooks and Cursor CLI hooks (CLI default; `BRAIN_AGENT_HOOKS=0` to force off). In Cursor IDE Agent, only run when the user asks or uses `/brain-sync`.
-
-On session start (hooks/CLI), pull latest changes for all repos. On session end, enforce implementation note writing then commit and push.
-
-## Quick start
+Git sync for the vault. Claude Code hooks (`.claude/hooks/brain-session-{start,end}.sh`) and Cursor Agent CLI hooks run it automatically (`BRAIN_AGENT_HOOKS=0` turns the CLI hooks off), so don't re-run it in a hooked session unless the user asks or a hook failed. Cursor IDE Agent: only on explicit request or `/brain-sync`, since its hooks are off by design. Mistral Vibe: `/brain-sync` loads this skill; the script still needs a bash step.
 
 ```bash
-cp reference/brain.env.example brain.env   # standalone
-# — or —
-cp config/brain.env.example config/brain.env   # full ai-dotfiles install
-# Set BRAIN_PATH to the absolute path of your vault
+bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh start   # pull
+bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh end     # commit + push vault
 ```
 
-Run manually:
-
-```bash
-bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh start   # pull all repos
-bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh end     # commit + push all repos
-```
-
-## What it does
-
-| Event | Repos | Steps |
-|---|---|---|
-| **start** | brain, dotfiles | Stash dirty tree → `git pull --rebase` → pop stash |
-| **end** | brain, dotfiles | Check for today's implementation notes → emit `systemMessage` if missing → `git add -A` → `git commit` → `git push` |
-
-Commit messages per repo:
-- **brain**: `brain: session sync <timestamp>`
-- **dotfiles**: `dotfiles: session sync <timestamp>`
-
-## Configuration
-
-`BRAIN_PATH` must be the **absolute path** to a **git repository** (your Obsidian vault). The script loads it from the **first match**:
-
-1. `BRAIN_ENV_FILE` — environment variable pointing to an env file with `BRAIN_PATH=…`
-2. `brain.env` beside `scripts/sync.sh` — for standalone usage
-3. `config/brain.env` at the ai-dotfiles root — default when using the full install
-
-Additional repo paths (defaults, override via env vars):
-- `AI_DOTFILES_PATH` — auto-derived from script location (`$SCRIPT_DIR/../../..'`)
-
-See `reference/brain.env.example` for the template.
-
-## Autonomous execution rules
-
-Claude Code executes these automatically, without prompting the user.
-
-### Session start (PreSession / SessionStart hook)
-
-```bash
-bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh start
-```
-
-**On failure:**
-- Rebase conflict → abort rebase, warn user to resolve in `$BRAIN_PATH`, continue session.
-- Other pull failure (network, permissions) → restore stash if any, warn user — do **not** label as a rebase conflict.
-- No remote → skip pull, log warning, continue.
-- Script not found → warn once, continue session.
-
-### Session end (SessionEnd hook)
-
-The `brain-session-end.sh` hook runs two steps:
-
-**Step 1 — implementation note check:**
-Scans `$BRAIN_PATH/inbox/daily/implementation/` for any `YYYY-MM-DD-*.md` matching today's date. If none found, outputs a `systemMessage` JSON to stdout — Claude Code injects this as a system message giving Claude a final turn to write the missing notes. The warning is also appended to the end-session log so it surfaces in the `LAST EXIT` block on the next `SessionStart` (fallback path if Claude Code doesn't act on the systemMessage).
-
-When Claude receives this systemMessage it must:
-1. Write the implementation note
-2. Run `bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh end` to commit it
-
-**Step 2 — sync:**
-```bash
-bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh end
-```
-
-**On failure:**
-- Nothing to commit → skip commit silently, attempt push for unpushed commits.
-- Push rejected / no network → warn: _"brain-sync: push failed — changes are committed locally. Run `git push` in `$BRAIN_PATH` when back online."_
-- No remote → skip push silently.
-
-## Edge cases
-
-| Situation | Behavior |
+| Command | Does |
 |---|---|
-| Dirty tree at pull | Stash → pull → pop |
-| Rebase conflict | Abort rebase, warn user, continue |
-| Pull failed (no rebase state) | Restore stash if any, warn (permissions/network) |
-| No remote | Skip network ops, log warning |
-| Nothing to commit | Skip commit, attempt push |
-| Push failure | Warn user, leave commit local |
-| Script not found | Warn once, continue session |
-| No config file | Script exits with hint about BRAIN_ENV_FILE, local brain.env, or ai-dotfiles config/brain.env |
+| `start` | Vault and ai-dotfiles: stash tracked changes → `git pull --rebase origin <branch>` (3 tries) → pop. Then `scripts/sync-project.sh --all` (rsync `.claude/memory/` ↔ `projects/<slug>/` for repos in `config/brain-projects.tsv`). |
+| `end` | `sync-project.sh --all` → vault `git add -A` + commit `brain: session sync <ts>` + push → `qmd update` + `qmd embed` (logged to `~/.claude/logs/brain-sync.log`). ai-dotfiles is **not** committed — commit it yourself via `/git-commit`. |
 
-Full edge case detail: `reference/EDGE-CASES.md`.
+The SessionEnd hook runs `sync.sh end` first, then warns if `inbox/daily/implementation/` has no note dated today. The warning goes to `~/.claude/logs/brain-sync-end.log` and is printed as `LAST EXIT` at the next SessionStart — there is no systemMessage and no extra turn. A note written after that is committed at the next session's end. So write the session log with `/capture` *before* ending.
 
-## Standalone usage
+Failures never block the session: rebase conflict → `git rebase --abort`, stash restored, fix by hand in `$BRAIN_PATH`; push failure → commit stays local, `git push` later. Details: `reference/EDGE-CASES.md`.
 
-Use **only** the `brain-sync/` folder without the rest of ai-dotfiles:
-
-1. Copy the directory.
-2. Place `brain.env` beside `scripts/sync.sh` (copy from `reference/brain.env.example`).
-3. Set `BRAIN_PATH` to your vault path (must contain `.git`).
-4. Run `bash /path/to/brain-sync/scripts/sync.sh start|end`.
-
-Or set `BRAIN_ENV_FILE` to an existing env file.
-
-## Manual trigger (Mistral Vibe)
-
-Type **`/brain-sync`** to load this skill into the thread. Optionally add `start` or `end` as context for the model. **Running `sync.sh` still requires a bash step** — the slash command does not execute the script.
-
-## Files
-
-```
-skills/brain-sync/
-├── SKILL.md
-├── scripts/
-│   └── sync.sh              ← git pull / commit / push logic
-└── reference/
-    ├── brain.env.example    ← copy as brain.env, set BRAIN_PATH
-    └── EDGE-CASES.md        ← detailed failure scenarios
-
-.claude/hooks/
-└── brain-session-end.sh     ← SessionEnd hook: note check + systemMessage + sync
-```
+**Config** — `BRAIN_PATH` (absolute path to the vault git repo) from the first of: `$BRAIN_ENV_FILE` · `brain.env` beside `sync.sh` · `~/ai-dotfiles/config/brain.env`. `QMD_INDEX_PATH` enables the reindex. Standalone use: copy `brain-sync/`, put `brain.env` (from `reference/brain.env.example`) beside the script.

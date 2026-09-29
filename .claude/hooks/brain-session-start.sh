@@ -90,31 +90,33 @@ if [[ "${BRAIN_LOAD_SLIM:-0}" == "1" ]]; then
 fi
 
 # Run load.sh; cap context injection at 30 lines; redirect verbose stderr to log
-"$LOAD" 2>>"$LOG_FILE" | head -30 || true
+# Claude Code already @-imports .claude/memory/ via the project CLAUDE.md
+BRAIN_LOAD_SKIP_MEMORY=1 "$LOAD" 2>>"$LOG_FILE" | head -30 || true
 bash "$AI_DOTFILES/scripts/log-skill-usage.sh" brain-load "claude:sessionStart" 2>/dev/null || true
 
 # Vendored skill pins vs GitHub latest (cached ≤24h, fail-open)
 bash "$AI_DOTFILES/scripts/check-vendored-skill-updates.sh" --inject 2>>"$LOG_FILE" || true
 
+# Maintenance nudge: /brain-audit is manual; its digest step writes meta/last-maintenance.md.
+LAST_MAINT=$(grep -oP '\*\*Epoch Seconds:\*\* \K[0-9]+' "${BRAIN_PATH}/meta/last-maintenance.md" 2>/dev/null || echo 0)
+if (( $(date +%s) - LAST_MAINT > 7 * 86400 )); then
+  echo "[brain] maintenance due — last /brain-audit: $(date -d "@$LAST_MAINT" +%F 2>/dev/null || echo never). Offer it to the user."
+fi
+
 # Inject operational constraints from ai-agents knowledge base
 AI_AGENTS_DIR="${BRAIN_PATH}/resources/operational/ai-agents"
 
-if [[ -f "$AI_AGENTS_DIR/pitfalls.md" ]]; then
-  echo "--- AI-AGENTS PITFALLS (hard constraints) ---"
-  cat "$AI_AGENTS_DIR/pitfalls.md"
+# pitfalls.md is a distilled rule list (lessons-learned merged into it). Cap the
+# injection: large hook output is persisted to a file and only a
+# 2KB preview reaches the model.
+PITFALLS="$AI_AGENTS_DIR/pitfalls.md"
+PITFALLS_MAX_BYTES=10000
+if [[ -f "$PITFALLS" ]]; then
+  echo "--- AI-AGENTS PITFALLS (constraints) ---"
+  head -c "$PITFALLS_MAX_BYTES" "$PITFALLS"
+  if (( $(wc -c <"$PITFALLS") > PITFALLS_MAX_BYTES )); then
+    echo ""
+    echo "[truncated: pitfalls.md exceeds ${PITFALLS_MAX_BYTES} bytes — merge rules or run /brain-audit]"
+  fi
   echo "--- END PITFALLS ---"
-fi
-
-if [[ -f "$AI_AGENTS_DIR/lessons-learned.md" ]]; then
-  echo "--- AI-AGENTS LESSONS LEARNED (last 3 entries) ---"
-  # Extract last 3 dated entries (## YYYY-MM-DD sections), cap at 45 lines
-  python3 - "$AI_AGENTS_DIR/lessons-learned.md" <<'EOF' 2>/dev/null | head -45 || tail -45 "$AI_AGENTS_DIR/lessons-learned.md" | head -45
-import sys, re
-content = open(sys.argv[1]).read()
-entries = [e.strip() for e in re.split(r'^---$', content, flags=re.MULTILINE) if re.match(r'^## \d{4}-\d{2}-\d{2}', e.strip())]
-for e in entries[-3:]:
-    print(e)
-    print('---')
-EOF
-  echo "--- END LESSONS ---"
 fi

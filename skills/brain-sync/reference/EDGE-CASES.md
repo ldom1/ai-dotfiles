@@ -1,82 +1,25 @@
 # brain-sync — Edge Cases
 
-Detailed failure scenarios for `scripts/sync.sh`.
+Failure behaviour of `scripts/sync.sh`. Messages are printed to stderr; the hooks append them to `~/ai-dotfiles/.claude/logs/brain-load.log` (start) and `~/.claude/logs/brain-sync-end.log` (end) and ignore the exit code, so no failure blocks the session.
 
-## Session start failures
+## start (per repo: vault, then ai-dotfiles)
 
-### Dirty working tree
+| Situation | Behaviour |
+|---|---|
+| Not a git repo (ai-dotfiles) | Skip. For the vault, `sync.sh` exits 1 before doing anything. |
+| No remote | Skip pull, warn. |
+| Tracked changes | `git stash push -m "brain-sync: pre-pull stash <ts>"` → pull → `git stash pop`. Untracked files are not stashed and not touched by the rebase. |
+| Pull fails, no rebase state | Retry twice after 3 s (transient `index.lock` on `/mnt/c`), then pop the stash and print `git pull failed after 3 attempts`. Cause is network, SSH key or `.git` permissions — not a conflict. |
+| Rebase conflict (`REBASE_HEAD`, `.git/rebase-merge/` or `.git/rebase-apply/`) | `git rebase --abort`, pop stash, report failure. The vault stays at its last local state; resolve by hand in `$BRAIN_PATH`. |
+| Stash pop conflicts | Warn; the changes stay in `git stash list` — recover with `git stash show -p stash@{0}`. |
+| No config file | Exit 1, listing the three lookup paths (`$BRAIN_ENV_FILE`, `brain.env` beside the script, `config/brain.env`). |
 
-`sync.sh start` detects a dirty tree before pulling:
+## end (vault only)
 
-1. `git stash push -m "brain-sync: pre-pull stash <timestamp>"`
-2. `git pull --rebase`
-3. `git stash pop`
-
-If stash pop conflicts: warn the user — changes are in `git stash list`, not lost.
-
-### Rebase conflict after pull
-
-Detection: `REBASE_HEAD` exists OR `.git/rebase-merge/` OR `.git/rebase-apply/` directory is present.
-
-Action:
-1. `git rebase --abort`
-2. Restore stash if one was made
-3. Print: `[brain-sync] ERROR: rebase conflict detected. Brain is at its last clean state. ACTION REQUIRED: resolve conflicts in $BRAIN_PATH manually.`
-
-The session continues normally — do not block the user.
-
-### Pull failed (not a rebase conflict)
-
-Causes: network unreachable, SSH key missing, `.git/` permission error, remote URL wrong.
-
-Action:
-1. Restore stash if one was made
-2. Print: `[brain-sync] ERROR: git pull failed (network, permissions on .git, or remote). Fix access to $BRAIN_PATH or run git pull manually, then retry.`
-
-Do **not** label this as a rebase conflict.
-
-### No remote configured
-
-`git remote` returns nothing.
-
-Action: skip pull entirely, print `[brain-sync] WARNING: no remote configured, skipping pull.`
-
-### Script not found
-
-If the hook cannot locate `sync.sh` (e.g. DOTFILES path wrong).
-
-Action: warn once, do not abort the session.
-
-### No config file
-
-Script cannot find `brain.env` or `BRAIN_ENV_FILE`.
-
-Action: exit 1 with hint listing all three lookup paths.
-
----
-
-## Session end failures
-
-### Nothing to commit
-
-`git diff` + `git diff --cached` + untracked files all empty.
-
-Action: skip `git commit`, then attempt `git push` for any commits that exist locally but haven't been pushed yet.
-
-### Push rejected or no network
-
-Action: warn the user:
-
-> brain-sync: push failed — your changes are committed locally. Run `git push` in `$BRAIN_PATH` when back online.
-
-Do not exit non-zero to the hook — the commit is safe.
-
-### No remote configured
-
-Action: skip push silently.
-
----
-
-## Stash management
-
-`sync.sh` uses `git stash push -m "brain-sync: ..."` with a timestamped message. On `stash pop` conflict, the stash entry remains in `git stash list` — the user can recover with `git stash show -p stash@{0}`.
+| Situation | Behaviour |
+|---|---|
+| Nothing to commit | Skip commit, still push unpushed commits. |
+| No remote | Skip push. |
+| Push rejected / offline | Print `push failed … your commit is local`, return 1. Under `set -e` this ends the script, so the QMD reindex is skipped for that session; run `git push` in `$BRAIN_PATH` when back online. |
+| `qmd` missing or `QMD_INDEX_PATH` unset | Reindex skipped silently. |
+| `qmd embed` without GPU | Falls back to CPU (Vulkan build error in the log is expected); slow but completes. |

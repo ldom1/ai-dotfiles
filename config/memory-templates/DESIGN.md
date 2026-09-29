@@ -24,4 +24,4 @@ updated:
 <!-- Non-technical constraints, principles, tone, usability, business/domain rules -->
 
 ## Amendments
-<!-- Dated changes to the original design intent; keep historical context reviewable -->
+<!-- Where the current design deliberately departs from the original intent, one line each; the why goes to DECISIONS.md -->

@@ -80,6 +80,9 @@ for f in "$TEMPLATE_DIR"/*; do
   fi
 done
 
+# ── Vault one-pager projects/<slug>.md (skeleton; /brain-init-project fills it) ──
+bash "$AI_DOTFILES/skills/brain-load/scripts/instantiate.sh" --slug "$SLUG" --path "$PROJECT_PATH"
+
 # ── Register in brain-projects.tsv ───────────────────────────────────────────
 if [[ ! -f "$REGISTRY" ]]; then
   printf 'name\tabs_path\tregistered_at\n' > "$REGISTRY"

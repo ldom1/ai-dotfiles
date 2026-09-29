@@ -6,16 +6,19 @@ updated:
 # Context
 <!-- keep this file under ~150 words -->
 
-<!-- Current state snapshot. Update at session end. -->
+<!-- Current-state snapshot, rewritten in place at session end (/capture). Drop what is no longer true.
+     No dated banners or history — that lives in inbox/daily/implementation/<slug>/ session logs. -->
 
-## What's Done
-<!-- Completed milestones -->
+## Live now
+<!-- What is deployed / working today -->
 
-## In Progress
+## In flight
 <!-- Active work items -->
 
-## Open Questions
-<!-- Unresolved decisions or blockers -->
+## Blockers / open questions
 
-## Next Steps
-<!-- Immediate next actions -->
+## Gotchas
+<!-- Project-specific traps, one line each -->
+
+## Recent history
+<!-- ≤ 5 [[session-log-slug]] links, newest first -->

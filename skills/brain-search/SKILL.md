@@ -66,13 +66,12 @@ Each result shows the vault-relative path (`qmd://brain/...`) and a context wind
 
 | Path prefix | Content |
 |-------------|---------|
-| `resources/operational/ai-agents/` | Claude operating rules, pitfalls, finops |
-| `projects/<slug>.md` | Per-project notes (brief, decisions) |
-| `inbox/daily/implementation/` | Session implementation logs |
-| `inbox/daily/specs/` | Design docs and brainstorming |
-| `inbox/daily/plans/` | Implementation plans (task lists) |
-| `resources/knowledge/` | Deep reference knowledge |
-| `consolidation/` | Periodic synthesis digests |
+| `resources/operational/ai-agents/` | Cross-project rules (`pitfalls.md`), finops; `archive/` = frozen old incident logs |
+| `projects/<slug>.md` · `projects/<slug>/` | Project one-pager (idea, objectives) · mirror of the repo's `.claude/memory/` (decisions, context, roadmap) |
+| `inbox/daily/implementation/` | Session logs — the project history |
+| `inbox/daily/specs/` · `inbox/daily/plans/` | Design docs · implementation plans |
+| `resources/knowledge/` | Patterns, SOPs, home-lab docs |
+| `inbox/insights/` · `resources/queries/archive/` | brain-audit reports |
 
 ## Presenting results to the user
 

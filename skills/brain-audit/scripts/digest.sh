@@ -60,7 +60,7 @@ next_maintenance=$(date -u -d '+7 days' +%Y-%m-%d 2>/dev/null || date -u -v+7d +
     echo ""
     echo "## At a Glance"
     echo ""
-    echo "✅ Compile: $compile_count pitfall/lesson promotion(s) to [[pitfalls]] / [[lessons-learned]]"
+    echo "✅ Compile: $compile_count pitfall/lesson promotion(s) to [[pitfalls]]"
     echo "✅ Connect: $connect_count knowledge file(s) created/updated in resources/knowledge/"
     echo "✅ Insights: $insights_count insight quer(y/ies) synthesized to inbox/insights/"
     echo ""
@@ -83,7 +83,7 @@ next_maintenance=$(date -u -d '+7 days' +%Y-%m-%d 2>/dev/null || date -u -v+7d +
     echo ""
     if [[ $compile_count -gt 0 ]]; then
         echo "### Compile: Review Promoted Entries"
-        echo "- [ ] Skim new entries in \`resources/operational/ai-agents/pitfalls.md\` and \`lessons-learned.md\` for accuracy"
+        echo "- [ ] Skim \`resources/operational/ai-agents/pitfalls.md\` for accuracy (rules only, ≤ 10 KB)"
         echo "- [ ] Confirm nothing project-specific leaked into a cross-project entry"
         echo ""
     fi

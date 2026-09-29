@@ -18,3 +18,7 @@ When writing a brainstorming spec or design document:
    - copy/move it to `inbox/daily/specs/<project-name>/...`
    - remove the misplaced spec/plan content from the wrong file
    - explicitly report both actions to the user.
+
+## History
+
+Session history goes only to `$BRAIN_PATH/inbox/daily/implementation/<project-name>/`. Vault `projects/<slug>.md` notes and repo `.claude/memory/*` files are snapshots rewritten in place — never add a journal, changelog or dated-entry section to them.

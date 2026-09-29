@@ -11,12 +11,11 @@ Resolve `BRAIN_PATH` from `~/ai-dotfiles/config/brain.env` (or `config/brain.env
 
 ## Before substantive work
 
-- **Read** `pitfalls.md` when the task is **implementation, debugging, refactors, shell/git, or config** — skim headings for bullets that match the area (paths, stack, tools).
-- Apply matching entries as **hard constraints**, not suggestions.
+- Read `pitfalls.md` for implementation, debugging, refactors, shell/git or config work; apply rules under the matching topic headings as constraints.
 
 ## When the user corrects a mistake
 
-- **Prepend** a new bullet to the file (newest first): short **context**, what was **wrong**, what to **do instead**.
+- If the mistake would recur in a different project, add or sharpen one rule under the matching `## <Topic>` (imperative + mechanism, no dates/project names). Project-specific traps go to the project's `.claude/memory/CONTEXT.md` → Gotchas.
 
 ## Completion
 

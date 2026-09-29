@@ -11,38 +11,19 @@ user-invocable: true
 
 # brain-audit:digest
 
-Write the weekly digest and reset the maintenance clock.
+Close an audit run: stats file, maintenance clock, and a short human summary. Vault references are `[[slug]]` wikilinks, so the digest shows up in each referenced note's backlinks.
 
-> **Wikilink rule:** All internal vault references in the digest file MUST use Obsidian wikilinks: `[[path/to/file]]` (vault-relative, no `.md`, no leading slash). This ensures the digest appears in the backlinks panel of every file it references.
+## 1 — Run digest.sh
 
-## Step 1 — Load config
-
-```bash
-source ~/ai-dotfiles/skills/brain-audit/scripts/_brain_env.sh
-mkdir -p "$BRAIN_PATH/meta"
-```
-
-## Step 2 — Collect stats
-
-Gather counts from the current session (passed in from the orchestrator, or approximate from recent files):
-- `COMPILE_COUNT` — entries promoted in compile step (or 0)
-- `CONNECT_COUNT` — wikilinks added in connect step (or 0)
-- `INSIGHTS_COUNT` — queries run in insights step (or 0)
-
-## Step 3 — Run digest.sh
+Use the counts from this run (0 for a step that didn't run): rules added/sharpened by `compile`, knowledge files touched by `connect`, questions answered by `insights`.
 
 ```bash
-bash ~/ai-dotfiles/skills/brain-audit/scripts/digest.sh \
-  "${COMPILE_COUNT:-0}" "${CONNECT_COUNT:-0}" "${INSIGHTS_COUNT:-0}"
+bash ~/ai-dotfiles/skills/brain-audit/scripts/digest.sh "$COMPILE_COUNT" "$CONNECT_COUNT" "$INSIGHTS_COUNT"
 ```
 
-This writes:
-- `$BRAIN_PATH/resources/queries/archive/weekly-digest-YYYY-WNN.md`
-- `$BRAIN_PATH/meta/last-maintenance.md` (resets clock)
+It writes `resources/queries/archive/weekly-digest-YYYY-WNN.md` and resets `meta/last-maintenance.md`.
 
-## Step 4 — Write meta/digest-YYYY-MM-DD.md (Claude-authored summary)
-
-Write to `$BRAIN_PATH/meta/digest-$(date +%Y-%m-%d).md`:
+## 2 — Write `meta/digest-YYYY-MM-DD.md`
 
 ```markdown
 ---
@@ -53,21 +34,16 @@ type: digest
 # Brain Audit Digest — YYYY-MM-DD
 
 ## What ran
-- compile: N entries promoted
-- connect: N wikilinks added
-- insights: N queries synthesized
-- qmd-sync: N files updated in index
+- compile: N rules added/sharpened in [[pitfalls]]
+- connect: N knowledge files ([[<topic>-patterns]], …)
+- insights: N questions → [[YYYY-MM-DD]] (inbox/insights)
+- queries: [[YYYY-MM-DD-knowledge-gaps]], [[YYYY-MM-DD-roadmap]]
 
 ## Key takeaways
-<2-3 sentences summarising the most important findings from this audit>
+<2–3 sentences: the findings that need the user's attention>
 
 ## Follow-ups
-- [ ] <any action items not yet done>
+- [ ] <action items not done during the run>
 ```
 
-## Step 5 — Remind to sync vault
-
-```
-Digest written. Run brain-sync end (or /capture) to commit and push the vault.
-Next maintenance: ~7 days from today.
-```
+Then tell the user: digest written, next maintenance in ~7 days, and the vault is committed by `brain-sync end` / `/capture`.

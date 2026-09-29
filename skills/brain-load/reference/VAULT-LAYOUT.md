@@ -1,90 +1,32 @@
-# Brain Load — Expected Vault Layout
+# Brain Load — Vault Layout
 
-The Local Brain vault is an Obsidian vault backed by a git repository. `brain-load` expects the following structure.
-
-## PARA layout (preferred)
+Full vault map: `~/ai-dotfiles/.claude/LocalBrain.md`. This file covers only what `load.sh` / `instantiate.sh` depend on.
 
 ```
-$BRAIN_PATH/
-├── IDENTITY.md            ← who you are: role, context, preferences
-├── breadcrumbs.md         ← running index of key resources + active projects
-├── daily/                 ← daily notes (YYYY-MM-DD.md)
+$BRAIN_PATH/                  (git repo, Obsidian vault)
+├── _templates/
+│   └── project-template.md   ← read by instantiate.sh (Templater placeholders)
 ├── projects/
-│   ├── _template.md       ← REQUIRED for auto-instantiation (instantiate.sh reads this)
-│   └── <slug>.md          ← one file per active project
-├── caps/                  ← long-term areas of responsibility
-│   ├── developer.md
-│   ├── entrepreneur.md
-│   └── <id>.md
-├── resources/
-│   └── knowledge/
-│       ├── architecture/
-│       │   ├── plans/     ← YYYY-MM-DD-name.md
-│       │   ├── specs/
-│       │   └── adr/
-│       ├── patterns/
-│       ├── operational/   ← tool setups (Claude, RTK, MCPs…)
-│       └── sops/
-├── docs/
-│   ├── memory/
-│   │   └── MEMORY.md      ← Claude persistent memory (auto-memory symlink target)
-│   └── context/           ← per-session context notes
-├── todo/
-└── archive/
+│   ├── <slug>.md             ← project one-pager, printed at session start
+│   └── <slug>/               ← mirror of <repo>/.claude/memory/ (scripts/sync-project.sh)
+├── caps/<id>.md              ← areas of responsibility (developer, entrepreneur, Artelys…)
+└── inbox/daily/implementation/<slug>/   ← session logs — the only place history goes
 ```
 
-## Legacy layout (fallback)
+**Mode detection:** `projects/` or `projects/_template.md` exists → PARA (`projects/<slug>.md`); otherwise legacy (`Projects/<slug>/brief.md`, from `templates/brief.md`). On `/mnt/c` the filesystem is case-insensitive, so `Projects/` and `projects/` are the same folder.
 
-```
-$BRAIN_PATH/
-└── Projects/
-    └── <slug>/
-        └── brief.md       ← created from reference/templates/brief.md
-```
-
-`brain-load` detects which layout is present:
-
-- If `projects/` directory or `projects/_template.md` exists → **PARA mode**
-- Otherwise → **legacy mode**
-
-## Slug → note path mapping
-
-| Mode | Note path |
-|------|-----------|
-| PARA | `$BRAIN_PATH/projects/<slug>.md` |
-| Legacy | `$BRAIN_PATH/Projects/<slug>/brief.md` |
-
-## Note frontmatter convention
+**One-pager** (`projects/<slug>.md`, ≤ 450 words, rewritten in place — no journal, no current-state section):
 
 ```yaml
 ---
 title: <project name>
 created: YYYY-MM-DD
-tags: [project, <cap-id>]
-caps: [[caps/<cap-id>]]
+tags: [project]
+caps: "[[<cap-id>]]"
 status: active
+path: <repo path>
+prod: <live URL or empty>
 ---
 ```
 
-## Required seed files
-
-For full functionality across sessions:
-
-| File | Purpose |
-|------|---------|
-| `IDENTITY.md` | Claude reads this to understand your role and context |
-| `breadcrumbs.md` | Index of active projects and key resources |
-| `docs/memory/MEMORY.md` | Claude's persistent memory (starts empty) |
-| `projects/_template.md` | Required for `instantiate.sh` auto-creation |
-
-## Claude auto-memory symlink
-
-To make Claude Code's auto-memory write directly into the vault:
-
-```bash
-mkdir -p "$BRAIN_PATH/docs/memory"
-ln -sf "$BRAIN_PATH/docs/memory" \
-  "$HOME/.claude/projects/-home-<you>-<project>/memory"
-```
-
-Replace `<you>` and `<project>` with your username and the project directory slug.
+Body: `> one sentence` · `## Idea` · `## Objectives` (goal, users, success, non-goals) · `## How it works` · `## Where` · `## Memory` · `## Links`. Canonical skeleton: `scripts/instantiate.sh`.

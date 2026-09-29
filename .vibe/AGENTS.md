@@ -7,8 +7,8 @@ Vibe does **not** auto-run shell. Follow this **before your first substantive ac
 ## 1. Sync and load
 
 ```bash
-bash ~/ai-dotfiles/skills/brain-sync/sync.sh start
-bash ~/ai-dotfiles/skills/brain-load/load.sh
+bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh start
+bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh
 ```
 
 - If `sync.sh start` fails (permissions, network), warn the user and continue; do not claim a rebase conflict when it was a permission error.
@@ -21,7 +21,7 @@ Use the **`skill`** tool (`name`: `brain-sync` / `brain-load`) or slash commands
 ## 3. Session end
 
 ```bash
-bash ~/ai-dotfiles/skills/brain-sync/sync.sh end
+bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh end
 ```
 
 (Adjust the path if the clone is not `~/ai-dotfiles`.)

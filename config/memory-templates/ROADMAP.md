@@ -6,11 +6,10 @@ updated:
 # Roadmap
 <!-- keep this file under ~150 words -->
 
-<!-- Feature backlog and priorities. Keep in sync with one-pager roadmap section.
-     Link items back to the OBJECTIVES.md scope they serve where useful. -->
+<!-- Finished items move out (they belong in CHANGELOG). Link items to the OBJECTIVES.md scope they serve where useful. -->
 
 ## Now
-<!-- Current sprint / active work -->
+<!-- Active work -->
 
 ## Next
 <!-- Queued, ready to start -->
@@ -18,5 +17,5 @@ updated:
 ## Later
 <!-- Backlog, not yet prioritized -->
 
-## Won't Do
-<!-- Explicitly deferred or rejected features -->
+## Open debt
+<!-- Known shortcuts, missing tests, deferred cleanups -->

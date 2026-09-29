@@ -6,124 +6,31 @@ user-invocable: true
 
 # brain-load
 
-Map the current codebase to a **project note** in the Local Brain vault and load it into context. If the project is new, ask which **CAP** (area of responsibility) it belongs to and create the note from the vault template.
+Print the current project's vault one-pager (`projects/<slug>.md`) plus its repo memory files (`.claude/memory/`), or create the note if the project is new.
 
-## Quick start
-
-```bash
-# Manual / on-demand only in Cursor IDE. Claude Code + Cursor CLI hooks
-# already inject load output — do not re-run there unless the user asks.
-bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh
-```
-
-Exit 0 → project note printed to stdout (load into context silently).
-Exit 2 + `PROJECT_NOTE_MISSING` on stderr → new project, follow the CAP flow below.
-
-## Vault layout
-
-```
-$BRAIN_PATH/
-├── projects/
-│   ├── _template.md     ← vault project template (required for PARA mode)
-│   └── <slug>.md        ← active project notes
-├── caps/
-│   └── <id>.md          ← areas of responsibility (developer, entrepreneur, …)
-└── Projects/            ← legacy layout (folder-per-project + brief.md)
-    └── <slug>/
-        └── brief.md
-```
-
-See `reference/VAULT-LAYOUT.md` for full structure and PARA conventions.
-
-## Slug resolution
-
-The script determines the project slug in this order:
-
-1. `.brain-project` file at git root — first non-empty line
-2. Git remote `origin` — repo name (SSH `git@host:org/repo.git` → `repo`)
-3. Directory name of `cwd`
-4. Ask the user once — then write `.brain-project`
-
-## Scripts
-
-| Script | Flags | Role |
-|--------|-------|------|
-| `scripts/load.sh` | _(none)_ | Resolve slug + BRAIN_PATH, print note or exit 2 |
-| `scripts/load.sh` | `--slug-only` | Print slug, note path, mode, template_vault, caps_dir |
-| `scripts/load.sh` | `--list-caps` | Print `cap:<id>` for each `caps/*.md` |
-| `scripts/instantiate.sh` | `--cap <id>` | Copy `_template.md` → `projects/<slug>.md`, update `.brain-project` |
-
-## Session start (hooks — do not re-run)
-
-**Cursor IDE Agent:** never bash-run `sync.sh` / `load.sh` at session start or end. Empty hook output / `{}` is normal (`ide_surface` / hard-off). Run only if the user explicitly asks or invokes `/brain-load`.
-
-**Claude Code** (`brain-session-start.sh`) and **Cursor Agent CLI** (`.cursor/hooks/session-start.sh`, on by default) already run `brain-sync start` then `load.sh` and inject stdout. Do **not** re-run those scripts in that same session unless the user asks.
-
-When **`/brain-load`** is invoked manually (or Claude/CLI hook stderr indicates `PROJECT_NOTE_MISSING`), run from the project git root:
+**When to run:** Claude Code (`brain-session-start.sh`) and Cursor Agent CLI (`.cursor/hooks/session-start.sh`) already run it at session start and inject stdout, so re-run only when the user asks, `/brain-load` is invoked, or the hook reported `PROJECT_NOTE_MISSING`. Cursor IDE Agent has no hooks by design: run it only on request. Mistral Vibe: `/brain-load` loads this skill; the script still needs a bash step.
 
 ```bash
-bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh
+bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh              # from the project git root
+bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh --slug-only  # slug=, note=, mode=, template_vault=, caps_dir=
+bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh --list-caps  # cap:<id> per caps/*.md
 ```
 
-**Exit 0** → read stdout into context **silently** (no announcement).
+**Slug:** first line of `.brain-project` at the git root → `origin` repo name → directory name.
 
-**Exit 2 + `mode=para_missing`** (vault has a `projects/` dir or `_template.md`):
+**Output (exit 0):** `--- PROJECT NOTE ---` block, then — if `.claude/memory/settings.json` exists — `--- PROJECT BRAIN ---` with the files in its `read_on_session_start` (default `OBJECTIVES.md`, `CONTEXT.md`). Take it in as context without announcing it. The Claude Code hook sets `BRAIN_LOAD_SKIP_MEMORY=1` (memory comes from the project `CLAUDE.md` imports) and injects only the first 30 lines, so keep the note short.
 
-1. Run `--list-caps`, then **ask the user in the conversation which CAP** to use.
-2. If the chosen CAP has **no** `caps/<id>.md`: run a **conversational interview** (not a shell prompt) to gather: file id, display title, mission, objectives, key resources. Write `$BRAIN_PATH/caps/<id>.md` from `reference/templates/cap.md`. See `reference/CAP-INTERVIEW.md` for the full interview template.
-3. Run `instantiate.sh --cap "<id>"` from the project git root.
-4. Re-run `load.sh` and load the new note into context.
+## New project (exit 2, `PROJECT_NOTE_MISSING`)
 
-**Exit 2 + `mode=legacy_missing`** (no `projects/` layout): offer to create `Projects/<slug>/brief.md` from `reference/templates/brief.md`.
+**`mode=para_missing`** (vault has `projects/`):
 
-**Critical rules:**
-- Never choose a CAP silently — always ask the user.
-- Never use a shell `read` prompt — the interview happens in the chat conversation.
-- Never fail silently on missing `BRAIN_PATH` — warn once, then skip.
+1. Run `--list-caps` and ask the user which CAP the project belongs to — the CAP is their call, not something to infer.
+2. If that CAP has no `caps/<id>.md`, collect its fields in chat (see `reference/CAP-INTERVIEW.md`) and write it from `reference/templates/cap.md`. Shell `read` prompts don't work in an agent session.
+3. From the project git root: `bash ~/ai-dotfiles/skills/brain-load/scripts/instantiate.sh --cap <id>` — renders `$BRAIN_PATH/_templates/project-template.md` into `projects/<slug>.md` (needs Python 3) and writes `.brain-project`.
+4. Re-run `load.sh`.
 
-## Configuration
+The note is the project's one-pager (≤ 450 words, rewritten in place): one-sentence summary, idea, objectives, how it works, where, memory pointer, links — shape in `scripts/instantiate.sh`. No journal or dated entries — history belongs in `inbox/daily/implementation/<slug>/`. `/brain-init-project` fills it properly.
 
-`BRAIN_PATH` via **`BRAIN_ENV_FILE`**, **`brain.env`** beside `scripts/load.sh`, or **`config/brain.env`** at the ai-dotfiles root. See `reference/brain.env.example`.
+**`mode=legacy_missing`** (vault without `projects/`): offer `Projects/<slug>/brief.md` from `reference/templates/brief.md`.
 
-**Standalone:** copy the full `brain-load/` folder (all scripts + reference/). `scripts/instantiate.sh` requires **Python 3**. The vault must have `projects/_template.md` for PARA mode.
-
-## Edge cases
-
-| Situation | Behavior |
-|-----------|----------|
-| Note exists (para or legacy) | Load silently |
-| `para_missing` | Ask CAP → `instantiate.sh` → reload |
-| `legacy_missing` | Offer `reference/templates/brief.md` scaffold |
-| `caps/<cap>.md` missing | Conversational interview → write cap file → `instantiate.sh` |
-| Ambiguous slug | Ask once, write `.brain-project` |
-| Missing `BRAIN_PATH` or script | Warn once, skip |
-
-## Manual trigger (Mistral Vibe)
-
-Type **`/brain-load`** to inject this skill into the chat. Running `scripts/load.sh` still requires a bash step.
-
-**Direct script:**
-
-```bash
-bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh         # run from project git root
-bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh --list-caps
-bash ~/ai-dotfiles/skills/brain-load/scripts/instantiate.sh --cap developer
-```
-
-## Files
-
-```
-skills/brain-load/
-├── SKILL.md
-├── scripts/
-│   ├── load.sh           ← slug resolve + print note (or exit 2)
-│   ├── instantiate.sh    ← create projects/<slug>.md from _template.md
-│   └── _brain_env.sh     ← config loader (sourced by load.sh + instantiate.sh)
-└── reference/
-    ├── brain.env.example
-    ├── VAULT-LAYOUT.md   ← expected vault structure and PARA conventions
-    ├── CAP-INTERVIEW.md  ← conversation template for creating a new CAP
-    └── templates/
-        ├── brief.md      ← legacy project note scaffold
-        └── cap.md        ← new CAP file scaffold
-```
+Missing `BRAIN_PATH`: say so once and continue without the note. Config lookup: `$BRAIN_ENV_FILE` → `scripts/brain.env` → `~/ai-dotfiles/config/brain.env` (template: `reference/brain.env.example`). Vault layout: `reference/VAULT-LAYOUT.md`.

@@ -78,3 +78,6 @@ tmp/
 
 # Local article drafts (Medium / blog) — not published from this repo
 articles/
+.claude/policy-limits.json.stamp.json
+.claude/skills/synced/
+.claude/state/
