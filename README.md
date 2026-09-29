@@ -19,6 +19,7 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 /plugin install capture@ldom1/ai-dotfiles
 /plugin install brain-init-project@ldom1/ai-dotfiles
 /plugin install grill-me@ldom1/ai-dotfiles
+/plugin install git-promotion@ldom1/ai-dotfiles
 /plugin install sop-builder@ldom1/ai-dotfiles
 /plugin install photo-archive-triage@ldom1/ai-dotfiles
 /plugin install server-audit@ldom1/ai-dotfiles
@@ -34,6 +35,8 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 | [brain-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Brain-Audit) | Four-phase vault maintenance (raw → digest) |
 | capture | End-of-session workflow: session log, project memory snapshot, cross-project pitfall rules, sync |
 | grill-me | Stress-test plans through one-question-at-a-time design interrogation |
+| git-promotion | Promote develop → preprod → main (or a PR straight onto main) with a semver tag and GitHub Release; stages, tag prefix, gate and changelog per repo in `.git-promotion.json` |
+| medium-writer | Draft a Medium article from real repo code into `articles/`, then write it onto its Notion task page |
 | ponytail | Lazy senior mode — YAGNI ladder, stdlib before deps, minimum code that works (`/ponytail`) |
 | sop-builder | Turn process notes into validated seven-section SOP documents |
 | photo-archive-triage | Non-destructive photo/video triage: exact dedup, corrupt screening, capture-date recovery |

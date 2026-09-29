@@ -1,0 +1,10 @@
+{
+  "name": "git-promotion",
+  "version": "1.0.0",
+  "description": "Promote code between stage branches (develop → preprod → main, develop → main, or a PR straight onto main) with a semver tag and a GitHub Release",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles"
+}
