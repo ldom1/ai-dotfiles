@@ -68,6 +68,10 @@ skills/coe-*
 .vibe/skills/coe-*
 .cursor/skills/coe-*
 
+# Skills installed by the HyperFrames CLI (`hyperframes skills`) — upstream-managed, not tracked (.cursor/ side: .cursor/.gitignore)
+.claude/skills/hyperframes*
+.claude/skills/media-use
+
 # Python
 __pycache__/
 *.pyc
