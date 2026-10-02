@@ -1,6 +1,22 @@
 {
-  "stages": ["main"],
+  "stages": [
+    "main"
+  ],
   "tag_prefix": "v",
-  "gate": [["uv", "run", "--no-project", "--with", "pytest", "pytest", "-q", "-p", "no:cacheprovider", "skills/git-promotion/scripts/tests"]],
+  "gate": [
+    [
+      "uv",
+      "run",
+      "--no-project",
+      "--with",
+      "pytest",
+      "pytest",
+      "-q",
+      "-p",
+      "no:cacheprovider",
+      "skills/git-promotion/scripts/tests",
+      ".claude/hooks/tests"
+    ]
+  ],
   "changelog": "CHANGELOG.md"
 }
