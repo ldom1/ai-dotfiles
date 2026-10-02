@@ -20,7 +20,7 @@ if [ -z "$CMD" ]; then
 fi
 
 # Only check git commit commands
-if ! echo "$CMD" | grep -qE 'git\s+commit'; then
+if ! echo "$CMD" | grep -qE 'git(\s+-C\s+\S+)?\s+commit'; then
   exit 0
 fi
 
@@ -80,7 +80,19 @@ if [ -z "$SCOPE" ]; then
 fi
 
 # Detect project type from repo root
-REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
+# The repo the commit targets, not the session cwd: `git -C <dir> commit`, else the last
+# `cd <dir>` before `git commit` in the same command, else the hook's cwd.
+TARGET_DIR=$(echo "$CMD" | python3 -c "
+import os, re, shlex, sys
+cmd = sys.stdin.read()
+head = re.split(r'git\s+(?:-C\s+\S+\s+)?commit', cmd, maxsplit=1)[0]
+m = re.search(r'git\s+-C\s+(\S+)\s+commit', cmd)
+cds = re.findall(r'(?:^|[;&|]\s*)cd\s+(\S+)', head)
+target = m.group(1) if m else (cds[-1] if cds else '')
+if target:
+    print(os.path.expanduser(shlex.split(target)[0]))
+" 2>/dev/null || true)
+REPO_ROOT=$(git -C "${TARGET_DIR:-.}" rev-parse --show-toplevel 2>/dev/null || echo "")
 
 if [ -z "$REPO_ROOT" ] || [ ! -f "$SCOPES_FILE" ]; then
   exit 0
