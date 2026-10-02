@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-10-02
+
 ### Fixed
 - `git-commit-check.sh` validates the scope against the repo the commit targets (`git -C <dir> commit`, or the last `cd <dir>` before `git commit`) instead of the session cwd, and now also checks `git -C <dir> commit`, which it used to skip entirely. Tests in `.claude/hooks/tests/`, added to the git-promotion gate.
 
