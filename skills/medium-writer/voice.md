@@ -7,6 +7,7 @@ Gold standard: `~/ai-dotfiles/articles/ai-dotfiles-portable-ai-control-centre.md
 ## Hard rules
 
 - Real code in fenced snippets, copied from a file that exists. Cite the path above the fence.
+- No Markdown tables (Medium does not render them). Prefer bullets, numbered lists, or short labelled paragraphs.
 - No AI slop: no “In this article we’ll explore”, no empty “7 benefits” lists, no generic sample apps, no “delve / landscape / robust solution”.
 - Do not sound like an AI. Short sentences. Name the cost of each choice.
 
@@ -27,6 +28,8 @@ Structure and Readability:
 Analyze the article's flow, organization, and formatting (e.g., use of subheadings,
 bullet points, and paragraph length).
 Suggest ways to make the article skimmable while maintaining depth and clarity.
+Flag any Markdown pipe table (`| col |`) as a required fix: convert to bullets.
+Medium does not support tables.
 
 Content Quality:
 Check for accuracy, relevance, and depth in the content.
@@ -34,8 +37,8 @@ Highlight opportunities to include data, examples, or storytelling to enhance
 credibility and engagement.
 
 Call-to-Actions (CTAs):
-Recommend effective CTAs to drive interactions (e.g., claps, comments, shares,
-or newsletter sign-ups).
+The article must end with the fixed support closing in SKILL.md (do not paraphrase).
+Flag missing or altered closings as a required fix. Do not invent other end CTAs.
 
 SEO and Keywords:
 Identify if the article targets relevant keywords for its niche and suggest

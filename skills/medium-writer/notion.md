@@ -24,11 +24,12 @@ Status values: `Backlog`, `To start`, `In progress`, `Blocked`, `Done`, `Cancell
    - Do **not** put the H1 in the body. Title is property `Tâche`.
    - Keep ` ```language ` fences literal. Do not escape inside code blocks.
    - H5/H6 → `####`.
-   - Pipe tables → `<table header-row="true">` / `<tr>` / `<td>`. Cells are rich text only.
+   - **No data tables.** Medium has no tables. Never emit pipe tables or Notion `<table>…</table>`. Convert comparisons to bullets / labelled lines in the source before write-notion; if a table slipped in, convert it during this step and fix the `.md`.
    - `>` quotes stay. Use `<br>` inside a multi-line quote, not extra `>` lines.
    - Skip decorative blank lines (Notion strips them). Horizontal rules `---` are fine.
    - Callouts: `<callout>` for the one-box asides.
    - Images: `![caption](url)`.
+   - Keep `## Contents` + `<table_of_contents/>` when present in the source (after TL;DR). That widget is not a data table.
 4. `notion-update-page`: `command=replace_content`, `new_str` = converted body, `allow_async=true`. Poll `notion-get-async-task` if returned.
 5. Same call or follow-up: `update_properties` `État` = `In progress`.
 6. Fetch again. Confirm a known fence is a code block. Re-push if it rendered as escaped text.

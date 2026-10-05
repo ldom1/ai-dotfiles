@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-10-05
+
+### Changed
+- `AGENTS.md` Development: prefer the smallest change that works via the `ponytail` skill (YAGNI, reuse, stdlib, installed deps).
+- `medium-writer`: every article must end with the fixed Medium support closing (applause / follow / @louis_10840).
+- `medium-writer`: keep `## Contents` + Notion `<table_of_contents/>` when present in the article source.
+- `medium-writer`: no Markdown/`<table>` data tables in articles (Medium has none); use bullets instead.
+- `medium-writer`: each article carries a `**Topics:**` line (≤ 5 Medium tags) under the H1; review checks it, publish moves it into Medium's topics box.
+- README aligned with the harness article: vault loading per tool, full Claude Code hook list, SessionStart 9.5 KB budget, `git-commit-check` scope, Stop-check permissions warning, `rsync --update` overwrite caveat, `brain.env` step in quick start.
+
+### Fixed
+- Cursor `qmd` MCP: `INDEX_PATH` points at the `brain.db` index.
+
 ## [0.8.0] - 2026-10-05
 
 ### Added
