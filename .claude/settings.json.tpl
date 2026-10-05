@@ -62,8 +62,8 @@
     "superpowers@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
-    "impeccable@impeccable": true,
-    "taste-skill@taste-skill": true
+    "impeccable@impeccable": false,
+    "taste-skill@taste-skill": false
   },
   "extraKnownMarketplaces": {
     "impeccable": {

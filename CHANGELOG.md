@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- `impeccable`, `taste-skill` and `vercel` plugins disabled globally (`settings.json`, and `settings.json.tpl` so `install.sh` does not re-enable them): they loaded skill listings, and impeccable a PostToolUse/Stop hook, into every session, including Python/infra ones. Enable them per frontend project via `enabledPlugins` in the project's `.claude/settings.json` (README → plugins).
+
 ## [0.7.1] - 2026-10-02
 
 ### Fixed
