@@ -71,6 +71,14 @@ for skill_dir in "$DOTFILES/skills"/*; do
   log "skills/$name → .claude/skills/ + .vibe/skills/ + .cursor/skills/"
 done
 
+# ── 1c. AGENTS.md → Cursor rule + Vibe user instructions ─────────────────────
+header "Building shared agent rules from AGENTS.md"
+
+bash "$DOTFILES/scripts/build-agent-rules.sh"
+mkdir -p "$HOME/.vibe"
+ln -sfn "$DOTFILES/.vibe/AGENTS.md" "$HOME/.vibe/AGENTS.md"
+log "$HOME/.vibe/AGENTS.md → ai-dotfiles/.vibe/AGENTS.md (Vibe user-level instructions)"
+
 # ── 2. Generate settings.json from template ────────────────────────────────────
 header "Generating settings.json"
 
@@ -155,6 +163,11 @@ chmod +x \
   "$DOTFILES/.claude/hooks/brain-session-start.sh" \
   "$DOTFILES/.claude/hooks/brain-session-end.sh" \
   "$DOTFILES/.claude/hooks/log-skill-usage.sh" \
+  "$DOTFILES/.claude/hooks/git-commit-check.sh" \
+  "$DOTFILES/.claude/hooks/stop-check.sh" \
+  "$DOTFILES/.claude/hooks/compact-nudge.sh" \
+  "$DOTFILES/.claude/hooks/precompact-checkpoint.sh" \
+  "$DOTFILES/scripts/build-agent-rules.sh" \
   "$DOTFILES/git-hooks/pre-commit" \
   "$DOTFILES/scripts/init-project.sh" \
   "$DOTFILES/scripts/upgrade-project.sh" \

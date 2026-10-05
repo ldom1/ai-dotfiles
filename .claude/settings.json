@@ -64,6 +64,31 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.claude/hooks/stop-check.sh",
+            "timeout": 180
+          },
+          {
+            "type": "command",
+            "command": "/home/lgiron/.claude/hooks/compact-nudge.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.claude/hooks/precompact-checkpoint.sh"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
@@ -111,7 +136,6 @@
     }
   },
   "tui": "fullscreen",
-  "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
   "autoMode": {
     "soft_deny": [

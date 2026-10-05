@@ -5,6 +5,7 @@ updated:
 
 # Objectives
 <!-- keep this file under ~150 words -->
+<!-- one fact per line, ≤ 20 words, active voice -->
 
 ## Goal
 <!-- One-sentence project goal -->

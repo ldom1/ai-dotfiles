@@ -38,6 +38,7 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 | git-promotion | Promote develop → preprod → main (or a PR straight onto main) with a semver tag and GitHub Release; stages, tag prefix, gate and changelog per repo in `.git-promotion.json` |
 | medium-writer | Draft a Medium article from real repo code into `articles/`, then write it onto its Notion task page |
 | ponytail | Lazy senior mode — YAGNI ladder, stdlib before deps, minimum code that works (`/ponytail`) |
+| asd-ste100 | Rewrite a doc in ASD-STE100 Simplified Technical English (strict or STE-flavored), with a stdlib linter (`scripts/ste-lint.py`) |
 | sop-builder | Turn process notes into validated seven-section SOP documents |
 | photo-archive-triage | Non-destructive photo/video triage: exact dedup, corrupt screening, capture-date recovery |
 | [server-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Server-Audit) | Infra audit: parallel checks and JSON reports |
@@ -64,7 +65,9 @@ The six sub-skills under `skills/marketingpowers/skills/` — `product-marketing
 
 **Cross-harness caveat.** Nested sub-skills resolve only in Claude Code, as `marketingpowers:<name>`. Cursor CLI and Mistral Vibe discover skills one level deep, so they load the router and nothing beneath it. Both routers (`marketingpowers` and `brain-audit`) therefore document the relative `skills/<name>/SKILL.md` path and instruct the agent to read the file directly when the namespaced form is unavailable — reading it puts the same instructions in context that invoking it would.
 
-`ponytail` is vendored from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (`skills/ponytail/SKILL.md` only — on-demand skill, not the upstream alwaysApply Cursor rule). Pin: `skills/ponytail/.ponytail_version`. Re-sync: diff against the pinned tag, apply upstream, bump the pin (same pattern as graphify; no local patches today).
+`ponytail` is vendored from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (`skills/ponytail/SKILL.md` only — on-demand skill, not the upstream alwaysApply Cursor rule). Pin: `skills/ponytail/.ponytail_version`. Re-sync: diff against the pinned tag, apply upstream, bump the pin (same pattern as graphify; no local patches today). The upstream `ponytail-review` / `-audit` / `-debt` / `-gain` / `-help` sub-skills are not vendored.
+
+`asd-ste100` is vendored from [danyuchn/asd-ste100-skill](https://github.com/danyuchn/asd-ste100-skill) (MIT): `SKILL.md`, `references/`, `examples/`, `scripts/ste-lint.py`, `LICENSE`. It ships no copy of ASD's dictionary (not redistributable). Upstream has no releases, so the pin `skills/asd-ste100/.ste100_version` is a commit SHA and `config/vendored-skills.json` tracks `"branch": "master"`: the update check compares the pin to the branch head. The always-on part of the docs style is the 6-line `## Docs style (80% ASD-STE100)` block in `AGENTS.md`; this skill is the on-demand rewrite pass.
 
 ### Vendored skill update checks
 
@@ -226,14 +229,14 @@ per project; there's no Cursor entry for `code-index-mcp` at all.
 | File | Purpose | When to update |
 |------|---------|----------------|
 | `OBJECTIVES.md` | Goals, scope, non-goals | Written once, refined rarely |
-| `DESIGN.md` | Original application intent, UX, and durable product workflows | When product/design intent changes |
+| `DESIGN.md` *(on demand)* | Original application intent, UX, and durable product workflows | When product/design intent changes |
 | `ARCHITECTURE.md` | Stack decisions, key modules | When architecture changes |
 | `DECISIONS.md` | Append-only ADR log | After every significant decision |
 | `CONTEXT.md` | Current state: done / in-progress / open questions | At session end |
 | `ROADMAP.md` | Feature backlog and priorities | When priorities shift |
-| `API.md` | External contracts and endpoints | When API changes |
+| `API.md` *(on demand)* | External contracts and endpoints | When API changes |
 
-`DESIGN.md` is the durable product/application baseline: original intent, UX, and workflows. `ARCHITECTURE.md` is the live technical map: stack, modules, data flow, and implementation trade-offs.
+`init` skips the two *on demand* files: copy them from `config/memory-templates/on-demand/` when a project has a product UX or a public API. `DESIGN.md` is the durable product/application baseline: original intent, UX, and workflows. `ARCHITECTURE.md` is the live technical map: stack, modules, data flow, and implementation trade-offs.
 
 `settings.json` controls which files are injected by `brain-load` at session start (`read_on_session_start`, defaults to `OBJECTIVES.md` + `CONTEXT.md`). The rest are loaded on demand.
 
@@ -275,6 +278,26 @@ ai-dotfiles mcp-sync                 # (re)apply centrally-managed MCP servers (
 
 Invoke the `brain-sync` / `brain-load` skills manually when hooks are off or the user asks.
 
+### Claude Code sensor hooks
+
+| Event | Script | What it does |
+|-------|--------|--------------|
+| Stop | `stop-check.sh` | If the repo has `.claude/stop-check` (one shell command) and the git tree has changes, runs it (`STOP_CHECK_TIMEOUT`, default 120 s). On failure it blocks the stop and returns the last 40 lines to the agent. It never blocks twice in a row (`stop_hook_active`); a timeout warns only. Runs are logged to `~/.claude/logs/stop-check.log`. |
+| Stop | `compact-nudge.sh` | Reads the last request's context size from the transcript. Past 250k tokens (`COMPACT_NUDGE_START`), then every 100k (`COMPACT_NUDGE_STEP`), shows a one-line `/compact` reminder. Once per step per session. |
+| PreCompact | `precompact-checkpoint.sh` | Appends trigger, context size, branch, changed files and the last 3 human prompts to `$BRAIN_PATH/inbox/daily/checkpoints/<slug>/YYYY-MM-DD.md`. `/capture` folds it into the session log, then deletes it. |
+
+Opt a project into the Stop check:
+
+```bash
+echo 'ruff check . && pytest -x -q' > .claude/stop-check   # this repo uses shellcheck on changed *.sh
+```
+
+Tests: `.claude/hooks/tests/` (part of the git-promotion gate).
+
+### Shared agent rules (AGENTS.md)
+
+`AGENTS.md` at the repo root is the single source of the rules Claude Code, Cursor and Mistral Vibe share. `.claude/CLAUDE.md` imports it (`@~/ai-dotfiles/AGENTS.md`) and adds Claude-only lines. `scripts/build-agent-rules.sh` (run by `install.sh`) generates `.cursor/rules/agents.mdc` (alwaysApply) and `.vibe/AGENTS.md` (`.vibe/bootstrap.md` + `AGENTS.md`); `install.sh` links `~/.vibe/AGENTS.md` to it, so Vibe gets the rules in every project. CI fails if a generated copy is stale. Edit `AGENTS.md`, never the generated files.
+
 ### Cursor Agent CLI brain hooks
 
 Cursor **user hooks** (`.cursor/hooks.json`) run brain sync on the **Agent CLI** — not IDE Agent, not Cloud/remote IDE (`CURSOR_CODE_REMOTE=true` → skip).
@@ -286,7 +309,7 @@ alias agent='~/ai-dotfiles/scripts/cursor-agent-brain.sh'   # already in ~/.zshr
 agent   # from anywhere
 ```
 
-Prewarm writes a global user rule `~/.cursor/rules/brain-hooks-session-inject.mdc` (alwaysApply) + sidecar. It does **not** touch repo-root `AGENTS.md` (that symlink is for Vibe → `.vibe/AGENTS.md`). Verify: quote `[brain-hooks] sessionStart OK` without Reading files.
+Prewarm writes a global user rule `~/.cursor/rules/brain-hooks-session-inject.mdc` (alwaysApply) + sidecar. It does **not** touch repo-root `AGENTS.md` (the single source of shared rules). Verify: quote `[brain-hooks] sessionStart OK` without Reading files.
 
 ---
 
@@ -311,23 +334,26 @@ Local Medium/blog drafts belong in `articles/` (gitignored).
 
 ```
 ai-dotfiles/
-├── AGENTS.md                        # symlink → .vibe/AGENTS.md (Vibe discovery)
+├── AGENTS.md                        # Shared rules for all three tools (single source)
 ├── .claude/
-│   ├── CLAUDE.md                    # Global instructions (tool-native, no ai-dotfiles refs)
+│   ├── CLAUDE.md                    # @~/ai-dotfiles/AGENTS.md + Claude-only rules (hooks, session)
 │   ├── LocalBrain.md                # Vault layout pointer
 │   ├── RTK.md                       # RTK reference
 │   ├── skills/                      # symlinks → ../../skills/<name> (Claude Code, coe-* excluded)
 │   ├── settings.json.tpl            # Settings template (HOME placeholder)
 │   ├── settings.local.json.example  # Machine-specific permissions template
 │   └── hooks/
-│       └── rtk-rewrite.sh           # PreToolUse: rtk rewrite + tail cap on noisy output
+│       ├── rtk-rewrite.sh           # PreToolUse: rtk rewrite + tail cap on noisy output
+│       ├── git-commit-check.sh      # PreToolUse: reject off-list commit scopes
+│       └── stop-check.sh            # Stop: run the repo's .claude/stop-check, block on failure
 ├── .cursor/
 │   ├── hooks.json                   # User hooks: sessionStart/End → brain-sync + brain-load (CLI default)
 │   ├── hooks/                       # session-start.sh, session-end.sh, lib-*.sh
-│   ├── rules/                       # claude-pitfall (@ manual), finops-claude, graphify-context, … (.mdc)
+│   ├── rules/                       # agents.mdc (generated from AGENTS.md) + Cursor-only rules (.mdc)
 │   └── skills/                      # symlinks → ../skills/<name> (Cursor, coe-* excluded)
 ├── .vibe/
-│   ├── AGENTS.md                    # Mistral Vibe bootstrap (canonical)
+│   ├── AGENTS.md                    # generated: bootstrap.md + AGENTS.md (~/.vibe/AGENTS.md links here)
+│   ├── bootstrap.md                 # Vibe-only sync/load steps (Vibe has no hooks)
 │   ├── README.md                    # Vibe skill discovery and trust
 │   └── skills/                      # symlinks → skills/* (Mistral Vibe, coe-* excluded)
 ├── skills/
@@ -360,12 +386,11 @@ ai-dotfiles/
 │   ├── memory-templates/            # OKF-typed templates copied on `ai-dotfiles init`
 │   │   ├── settings.json            # Agent instructions + read_on_session_start list
 │   │   ├── OBJECTIVES.md            # type: objectives — goals, scope, non-goals
-│   │   ├── DESIGN.md                # type: design — original intent, UX, durable workflows
 │   │   ├── ARCHITECTURE.md          # type: architecture — stack, modules, decisions log
 │   │   ├── DECISIONS.md             # type: decisions — append-only ADR entries
 │   │   ├── CONTEXT.md               # type: context — current state snapshot
 │   │   ├── ROADMAP.md               # type: roadmap — milestones and priorities
-│   │   └── API.md                   # type: api — external contracts and endpoints
+│   │   └── on-demand/               # DESIGN.md, API.md — copied by hand when a project needs them
 │   ├── graphify.env.example         # Optional: GRAPHIFY_PROJECT for uv-based graphify clone
 │   └── graphify.env                 # Your graphify clone path (gitignored)
 ├── .github/

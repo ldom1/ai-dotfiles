@@ -43,11 +43,45 @@
         ]
       },
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.claude/hooks/git-commit-check.sh"
+          }
+        ]
+      },
+      {
         "matcher": "Skill",
         "hooks": [
           {
             "type": "command",
             "command": "__HOME__/.claude/hooks/log-skill-usage.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.claude/hooks/stop-check.sh",
+            "timeout": 180
+          },
+          {
+            "type": "command",
+            "command": "__HOME__/.claude/hooks/compact-nudge.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.claude/hooks/precompact-checkpoint.sh"
           }
         ]
       }
@@ -78,6 +112,5 @@
         "repo": "Leonxlnx/taste-skill"
       }
     }
-  },
-  "skipDangerousModePermissionPrompt": true
+  }
 }
