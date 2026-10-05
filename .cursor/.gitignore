@@ -30,9 +30,6 @@ projects/*/*
 # User's personal skills
 !skills/
 !skills/**
-# Installed by the HyperFrames CLI, not tracked
-skills/hyperframes*
-skills/media-use
 # User's personal slash commands
 !commands/
 !commands/**
