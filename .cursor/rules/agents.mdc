@@ -31,6 +31,7 @@ alwaysApply: true
 - Read only what the answer needs.
 - When behavior, setup, commands or visible output change, update `CHANGELOG.md` in the same change (small infra/skill changes included). Update `README.md` when user-facing usage or structure changed.
 - If the repo root has `graphify-out*` (`graphify-out.md`/`.json`, `graphify-out/graph.json`), read it for architecture before inferring from the file tree. Never modify it: Graphify regenerates it.
+- Prefer the smallest change that works. Use the `ponytail` skill on coding tasks: YAGNI first, then reuse, stdlib, and already-installed deps before new code.
 
 ## Docs style (80% ASD-STE100)
 - Prose docs: sentences ≤ 20 words (procedures), ≤ 25 (descriptions).
