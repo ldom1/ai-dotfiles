@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Wiki](https://img.shields.io/badge/docs-wiki-blue)](https://github.com/ldom1/ai-dotfiles/wiki)
 
-A personal AI control centre with two jobs: **centralise** Claude Code / Cursor / Mistral Vibe config across machines, and give every project a **persistent knowledge layer** backed by an Obsidian vault — so the agent always starts with structured context instead of a blank slate.
+A personal AI control centre with two jobs: **centralise** Claude Code / Cursor / Mistral Vibe config across machines, and give every project a **persistent knowledge layer** backed by an Obsidian vault. Claude Code and the Cursor Agent CLI load a bounded slice of it at session start; Cursor IDE Agent and Vibe load it on demand. `/capture` writes each session back as a log you can read, search and audit.
 
 ---
 
@@ -154,7 +154,7 @@ Only these 2 of Strix's 9 upstream skills are vendored — the rest ([usestrix/s
 
 ## Project brain sync
 
-Each project can carry a persistent knowledge layer — git-tracked in the project repo and mirrored in the Local Brain vault — so the agent always loads structured context without manual prompting.
+Each project can carry a persistent knowledge layer — git-tracked in the project repo and mirrored in the Local Brain vault. Where session hooks run (Claude Code, Cursor Agent CLI), the agent loads it without manual prompting.
 
 ### Prerequisites
 
@@ -266,7 +266,7 @@ ai-dotfiles mcp-sync                 # (re)apply centrally-managed MCP servers (
 
 ### Automatic sync (brain-sync)
 
-`brain-sync start` pulls vault → project for all registered paths. `brain-sync end` pushes project → vault before the vault git commit. Strategy: `rsync --update` (newer mtime wins, no merge). Unregistered projects are skipped silently.
+`brain-sync start` pulls vault → project for all registered paths. `brain-sync end` pushes project → vault before the vault git commit. Strategy: `rsync --update` (newer mtime wins, no merge). If both copies of one file changed since the last sync, the older edit is overwritten; the vault's git history keeps committed versions. Unregistered projects are skipped silently.
 
 **Who runs it:**
 
@@ -278,7 +278,18 @@ ai-dotfiles mcp-sync                 # (re)apply centrally-managed MCP servers (
 
 Invoke the `brain-sync` / `brain-load` skills manually when hooks are off or the user asks.
 
-### Claude Code sensor hooks
+### Claude Code hooks
+
+All hooks are declared in `.claude/settings.json.tpl` and always on:
+
+- **SessionStart** `brain-session-start.sh`: settings drift check, vault pull, project note, pitfalls, vendored-skill update check, `/brain-audit` nudge. Output stays under 9.5 KB: Claude Code (observed on 2.1) swaps longer hook output for a file and a 2 KB preview, so pitfalls get only the bytes left and are cut at a line break.
+- **SessionEnd** `brain-session-end.sh`: vault commit + push, warning if today has no session log. It gives the model no turn: run `/capture` before you quit.
+- **PreToolUse (Bash)** `rtk-rewrite.sh`: rewrites commands to shrink their output.
+- **PreToolUse (Bash)** `git-commit-check.sh`: rejects an off-list `type(scope)` in a `git commit -m` message. A heredoc or file message only gets a reminder.
+- **PreToolUse (Skill)** `log-skill-usage.sh`: appends to `~/.claude/skill-usage.log`.
+- **Stop / PreCompact**: the three sensor hooks below.
+
+#### Sensor hooks
 
 | Event | Script | What it does |
 |-------|--------|--------------|
@@ -291,6 +302,8 @@ Opt a project into the Stop check:
 ```bash
 echo 'ruff check . && pytest -x -q' > .claude/stop-check   # this repo uses shellcheck on changed *.sh
 ```
+
+`.claude/stop-check` is a shell command that runs with your user's permissions at the end of every agent turn that left changes. A cloned repo can ship one: read it before you let an agent work there.
 
 Tests: `.claude/hooks/tests/` (part of the git-promotion gate).
 
@@ -317,8 +330,13 @@ Prewarm writes a global user rule `~/.cursor/rules/brain-hooks-session-inject.md
 
 ```bash
 git clone git@github.com:<you>/ai-dotfiles.git ~/ai-dotfiles
+cp ~/ai-dotfiles/config/brain.env.example ~/ai-dotfiles/config/brain.env
+# edit brain.env: BRAIN_PATH (your vault, a git repo) and QMD_INDEX_PATH
 bash ~/ai-dotfiles/scripts/install.sh
+echo 'source ~/ai-dotfiles/config/brain.env' >> ~/.zshrc
 ```
+
+Then index the vault once ([QMD vault setup](#qmd-vault-setup-one-time)) and tag each project ([Setup](#setup)).
 
 Local Medium/blog drafts belong in `articles/` (gitignored).
 
@@ -343,9 +361,14 @@ ai-dotfiles/
 │   ├── settings.json.tpl            # Settings template (HOME placeholder)
 │   ├── settings.local.json.example  # Machine-specific permissions template
 │   └── hooks/
+│       ├── brain-session-start.sh   # SessionStart: vault pull, project note, pitfalls (≤ 9.5 KB)
+│       ├── brain-session-end.sh     # SessionEnd: vault commit + push, session-log warning
 │       ├── rtk-rewrite.sh           # PreToolUse: rtk rewrite + tail cap on noisy output
 │       ├── git-commit-check.sh      # PreToolUse: reject off-list commit scopes
-│       └── stop-check.sh            # Stop: run the repo's .claude/stop-check, block on failure
+│       ├── log-skill-usage.sh       # PreToolUse (Skill): append to ~/.claude/skill-usage.log
+│       ├── stop-check.sh            # Stop: run the repo's .claude/stop-check, block on failure
+│       ├── compact-nudge.sh         # Stop: /compact reminder past 250k tokens
+│       └── precompact-checkpoint.sh # PreCompact: checkpoint to the vault
 ├── .cursor/
 │   ├── hooks.json                   # User hooks: sessionStart/End → brain-sync + brain-load (CLI default)
 │   ├── hooks/                       # session-start.sh, session-end.sh, lib-*.sh
