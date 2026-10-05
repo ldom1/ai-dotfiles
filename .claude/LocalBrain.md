@@ -5,6 +5,7 @@ Obsidian vault, git repo. Path: `$BRAIN_PATH` from `~/ai-dotfiles/config/brain.e
 | Path | Holds | Written by |
 |---|---|---|
 | `inbox/daily/implementation/<project>/YYYY-MM-DD-<topic>.md` | Session logs (the history) | `/capture` |
+| `inbox/daily/checkpoints/<project>/YYYY-MM-DD.md` | Pre-compaction breadcrumbs; folded into the session log, then deleted | PreCompact hook → `/capture` |
 | `inbox/daily/specs/<project>/…-design.md` · `inbox/daily/plans/<project>/…-plan.md` | Specs · implementation plans | brainstorming / planning |
 | `inbox/{connections,insights,qa,drafts}/` | Maintenance output | `/brain-audit` |
 | `projects/<slug>.md` | Project one-pager: idea, objectives, how it works, where (printed at session start) | `ai-dotfiles init`/`upgrade` (skeleton), `/brain-init-project` |

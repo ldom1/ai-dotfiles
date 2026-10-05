@@ -29,7 +29,7 @@ def _init_repo(tmp_path: Path, config: dict) -> Path:
     subprocess.run(["git", "init", "-q", "--bare"], cwd=remote_dir, check=True)
     repo_dir = tmp_path / "repo"
     repo_dir.mkdir()
-    _git(repo_dir, "init", "-q")
+    _git(repo_dir, "init", "-q", "-b", "scratch")  # never a stage name, whatever init.defaultBranch says
     _git(repo_dir, "config", "user.email", "test@example.com")
     _git(repo_dir, "config", "user.name", "Test")
     _git(repo_dir, "remote", "add", "origin", str(remote_dir))
@@ -63,7 +63,7 @@ def three_stage_repo(tmp_path: Path) -> Path:
 def test_refuses_without_a_config(tmp_path: Path):
     repo_dir = tmp_path / "repo"
     repo_dir.mkdir()
-    _git(repo_dir, "init", "-q")
+    _git(repo_dir, "init", "-q", "-b", "scratch")  # never a stage name, whatever init.defaultBranch says
     assert promote("main", str(repo_dir), execute=False) == 2
 
 

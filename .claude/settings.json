@@ -64,6 +64,31 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.claude/hooks/stop-check.sh",
+            "timeout": 180
+          },
+          {
+            "type": "command",
+            "command": "/home/lgiron/.claude/hooks/compact-nudge.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.claude/hooks/precompact-checkpoint.sh"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
@@ -75,9 +100,9 @@
     "superpowers@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
-    "vercel@claude-plugins-official": true,
-    "impeccable@impeccable": true,
-    "taste-skill@taste-skill": true
+    "vercel@claude-plugins-official": false,
+    "impeccable@impeccable": false,
+    "taste-skill@taste-skill": false
   },
   "extraKnownMarketplaces": {
     "pratique-ia": {
@@ -111,7 +136,6 @@
     }
   },
   "tui": "fullscreen",
-  "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
   "autoMode": {
     "soft_deny": [

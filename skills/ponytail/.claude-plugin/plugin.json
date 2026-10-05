@@ -1,6 +1,6 @@
 {
   "name": "ponytail",
-  "version": "4.9.0",
+  "version": "4.12.0",
   "description": "Lazy senior mode — YAGNI ladder, stdlib before deps, minimum code that works. Trigger: /ponytail",
   "author": {
     "name": "Dietrich Gebert",

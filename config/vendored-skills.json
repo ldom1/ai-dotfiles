@@ -15,6 +15,12 @@
       "name": "marketingskills",
       "pin_file": "skills/marketingpowers/.marketingskills_version",
       "github": "coreyhaines31/marketingskills"
+    },
+    {
+      "name": "asd-ste100",
+      "pin_file": "skills/asd-ste100/.ste100_version",
+      "github": "danyuchn/asd-ste100-skill",
+      "branch": "master"
     }
   ]
 }

@@ -2,6 +2,31 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-05
+
+### Added
+- Claude Code **sensor hooks**:
+  - `Stop` → `stop-check.sh` runs the repo's `.claude/stop-check` command when the git tree has changes, blocks the stop on failure with the output tail, and never blocks twice in a row.
+  - `Stop` → `compact-nudge.sh` reminds the user to `/compact` past 250k tokens of context, then every 100k.
+  - `PreCompact` → `precompact-checkpoint.sh` writes a breadcrumb to `inbox/daily/checkpoints/<slug>/` before each compaction.
+  - Tests are in `.claude/hooks/tests/`. ai-dotfiles dogfoods the Stop check with `shellcheck` on changed scripts (`.claude/stop-check`).
+- `AGENTS.md` (repo root) is the single source of shared agent rules. `.claude/CLAUDE.md` imports it and keeps only Claude-specific lines. `scripts/build-agent-rules.sh` generates `.cursor/rules/agents.mdc` and `.vibe/AGENTS.md` (`.vibe/bootstrap.md` + `AGENTS.md`), and CI checks they are current. `install.sh` links `~/.vibe/AGENTS.md`, which Vibe reads as user-level instructions: Vibe now gets the shared rules outside the ai-dotfiles repo.
+- `## Docs style (80% ASD-STE100)` block in `AGENTS.md`, and the `asd-ste100` skill vendored from danyuchn/asd-ste100-skill at commit `32511c6992ec`.
+- `check-vendored-skill-updates.sh`: an entry with `"branch"` tracks the branch head (commit-SHA pin) for upstreams without releases.
+
+### Changed
+- Cursor rules `development-principles`, `docs-hygiene`, `graphify-context` and `specs-location` merged into the generated `agents.mdc`.
+- `capture` skill: reads and folds today's pre-compaction checkpoint. Before touching `pitfalls.md` it states a verdict: Absorb into an existing rule (default), Improve, Save or Drop.
+- Memory templates: `DESIGN.md` and `API.md` moved to `config/memory-templates/on-demand/` (`init`/`upgrade` no longer create them). Each template header asks for one fact per line, ≤ 20 words, active voice.
+- `ponytail` pin bumped to `v4.12.0`. The vendored `SKILL.md` is unchanged upstream since `v4.9.0`.
+- `skipDangerousModePermissionPrompt` removed from `settings.json(.tpl)`: `--dangerously-skip-permissions` shows its confirmation screen again.
+- `settings.json.tpl` now wires `git-commit-check.sh`. It was only in the tracked `settings.json`, so fresh installs missed it.
+- `impeccable`, `taste-skill` and `vercel` plugins disabled globally (`settings.json`, and `settings.json.tpl` so `install.sh` does not re-enable them): they loaded skill listings, and impeccable a PostToolUse/Stop hook, into every session, including Python/infra ones. Enable them per frontend project via `enabledPlugins` in the project's `.claude/settings.json` (README → plugins).
+
+### Fixed
+- `git-promotion` tests failed locally when `init.defaultBranch=main` (`git branch -f main` on the checked-out branch): test repos now start on a `scratch` branch. CI passed only because its default branch is `master`.
+- `test_git_commit_check.py` used a `dashboard` scope that is not in `scopes.json`; it uses `api` (Python-only) now.
+
 ## [0.7.1] - 2026-10-02
 
 ### Fixed

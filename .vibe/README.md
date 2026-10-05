@@ -14,7 +14,7 @@ Behavior (aligned with Vibe’s implementation):
 
 In this repo, every skill under `skills/<name>/` (with `SKILL.md`) is linked from `.vibe/skills/<name>` → `../../skills/<name>/`. Same links exist under `.claude/skills/` for Claude Code. See [docs/skills.md](../docs/skills.md).
 
-To actually **run** the sync/load scripts at the start of work, Vibe still needs the agent to execute bash — see **`AGENTS.md`** in this folder (canonical). The repo root has a **symlink** `AGENTS.md` → `.vibe/AGENTS.md` because Vibe only loads `AGENTS.md` on the cwd → trust-root path, not by scanning `.vibe/`.
+To actually **run** the sync/load scripts at the start of work, Vibe still needs the agent to execute bash — see **`bootstrap.md`** in this folder. `scripts/build-agent-rules.sh` writes **`AGENTS.md`** here as `bootstrap.md` + the repo-root `AGENTS.md` (shared rules), and `install.sh` links `~/.vibe/AGENTS.md` to it: Vibe reads that file as user-level instructions in every project (`vibe/core/system_prompt.py`). Do not edit the generated file.
 
 ## Trusted folder
 

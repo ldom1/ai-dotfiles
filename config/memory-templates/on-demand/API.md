@@ -5,6 +5,7 @@ updated:
 
 # API
 <!-- keep this file under ~150 words -->
+<!-- one fact per line, ≤ 20 words, active voice -->
 
 <!-- External contracts, endpoints, and auth patterns. -->
 

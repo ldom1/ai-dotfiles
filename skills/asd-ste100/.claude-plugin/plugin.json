@@ -1,0 +1,10 @@
+{
+  "name": "asd-ste100",
+  "version": "0.4.0",
+  "description": "Rewrite ambiguous English into ASD-STE100 Simplified Technical English (strict or STE-flavored), with a stdlib linter. Trigger: STE100 rewrite",
+  "author": {
+    "name": "danyuchn",
+    "github": "danyuchn"
+  },
+  "homepage": "https://github.com/danyuchn/asd-ste100-skill"
+}

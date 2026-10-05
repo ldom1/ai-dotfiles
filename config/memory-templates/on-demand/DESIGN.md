@@ -5,6 +5,7 @@ updated:
 
 # Design (original application intent)
 <!-- keep this file under ~300 words -->
+<!-- one fact per line, ≤ 20 words, active voice -->
 
 <!-- DESIGN.md records the product/application design that should remain reviewable
      over time: original intent, user experience, core workflows, and constraints.

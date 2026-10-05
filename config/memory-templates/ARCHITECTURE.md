@@ -5,6 +5,7 @@ updated:
 
 # Architecture
 <!-- keep this file under ~300 words -->
+<!-- one fact per line, ≤ 20 words, active voice -->
 
 <!-- Durable structure only, rewritten in place when it changes. Decisions and their reasons go to DECISIONS.md;
      the short module map for humans lives in AGENTS.md ## Architecture. -->

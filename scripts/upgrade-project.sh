@@ -57,7 +57,7 @@ upgrade_one() {
 
   local added=0
   for f in "$TEMPLATE_DIR"/*; do
-    [[ "$f" == *.tpl ]] && continue
+    [[ -f "$f" && "$f" != *.tpl ]] || continue  # on-demand/ templates are copied by hand
     fname="$(basename "$f")"
     for dest in "$project_brain/$fname" "$vault_brain/$fname"; do
       if [[ ! -f "$dest" ]]; then

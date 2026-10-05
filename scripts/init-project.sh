@@ -55,7 +55,7 @@ REGISTRY="$AI_DOTFILES/config/brain-projects.tsv"
 # ── Create project .claude/memory/ ────────────────────────────────────────────
 mkdir -p "$PROJECT_BRAIN"
 for f in "$TEMPLATE_DIR"/*; do
-  [[ "$f" == *.tpl ]] && continue
+  [[ -f "$f" && "$f" != *.tpl ]] || continue  # on-demand/ templates are copied by hand
   fname="$(basename "$f")"
   dest="$PROJECT_BRAIN/$fname"
   if [[ ! -f "$dest" ]]; then
@@ -69,7 +69,7 @@ done
 # ── Create vault projects/<slug>/ ─────────────────────────────────────────────
 mkdir -p "$VAULT_BRAIN"
 for f in "$TEMPLATE_DIR"/*; do
-  [[ "$f" == *.tpl ]] && continue
+  [[ -f "$f" && "$f" != *.tpl ]] || continue  # on-demand/ templates are copied by hand
   fname="$(basename "$f")"
   dest="$VAULT_BRAIN/$fname"
   if [[ ! -f "$dest" ]]; then

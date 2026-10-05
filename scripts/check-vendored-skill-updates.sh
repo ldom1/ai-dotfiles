@@ -77,8 +77,12 @@ def norm(tag):
     return t
 
 
-def fetch_latest(repo):
-    url = "https://api.github.com/repos/%s/releases/latest" % repo
+def fetch_latest(repo, branch=""):
+    # Repos without releases: track a branch head, pinned as a short commit SHA.
+    if branch:
+        url = "https://api.github.com/repos/%s/commits/%s" % (repo, branch)
+    else:
+        url = "https://api.github.com/repos/%s/releases/latest" % repo
     req = urllib.request.Request(
         url,
         headers={
@@ -90,7 +94,7 @@ def fetch_latest(repo):
     try:
         with urllib.request.urlopen(req, timeout=curl_max, context=ctx) as resp:
             data = json.loads(resp.read().decode())
-        return data.get("tag_name")
+        return data.get("sha", "")[:12] if branch else data.get("tag_name")
     except Exception:
         return None
 
@@ -102,6 +106,8 @@ def compare_status(pin, latest):
     np, nl = norm(pin), norm(latest)
     if np == nl:
         return "ok"
+    if re.fullmatch(r"[0-9a-f]{7,40}", np) and re.fullmatch(r"[0-9a-f]{7,40}", nl):
+        return "ok" if np.startswith(nl) or nl.startswith(np) else "behind"
     try:
         def parts(s):
             out = []
@@ -148,12 +154,12 @@ if stale:
             }
             continue
         pin = pin_path.read_text().strip().splitlines()[0].strip()
-        to_fetch.append((name, pin, repo))
+        to_fetch.append((name, pin, repo, entry.get("branch") or ""))
 
     results = {}
     if to_fetch:
         with ThreadPoolExecutor(max_workers=max(1, len(to_fetch))) as pool:
-            futs = {pool.submit(fetch_latest, repo): (name, pin, repo) for name, pin, repo in to_fetch}
+            futs = {pool.submit(fetch_latest, repo, branch): (name, pin, repo) for name, pin, repo, branch in to_fetch}
             for fut in as_completed(futs):
                 name, pin, repo = futs[fut]
                 try:
@@ -162,7 +168,7 @@ if stale:
                     latest = None
                 results[name] = (pin, repo, latest)
 
-    for name, pin, repo in to_fetch:
+    for name, pin, repo, _ in to_fetch:
         pin, repo, latest = results.get(name, (pin, repo, None))
         prev = skills_out.get(name) or {}
         if latest is None:

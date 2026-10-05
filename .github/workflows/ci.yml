@@ -93,6 +93,11 @@ jobs:
               sys.exit(1)
           print("OK: skills/git-commit/scopes.json")
           PY
+      - name: Cursor and Vibe copies of AGENTS.md are up to date
+        run: |
+          bash scripts/build-agent-rules.sh
+          git diff --exit-code -- .cursor/rules/agents.mdc .vibe/AGENTS.md \
+            || { echo "FAIL: run scripts/build-agent-rules.sh and commit" >&2; exit 1; }
       - name: Shared skills are symlinked in Claude and Cursor
         run: |
           fail=0

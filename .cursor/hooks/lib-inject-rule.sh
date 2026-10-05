@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Write/clear Local Brain CLI inject into user alwaysApply rule.
 # Path is ~/.cursor/rules (via ai-dotfiles symlink) — works from any cwd; no cd required.
-# Do NOT write repo-root AGENTS.md (reserved for Vibe symlink → .vibe/AGENTS.md).
+# Do NOT write repo-root AGENTS.md (single source of shared rules; see scripts/build-agent-rules.sh).
 # sourced by hooks / prewarm — do not execute alone.
 
 brain_hooks_inject_rule_path() {

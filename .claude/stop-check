@@ -1,0 +1,2 @@
+# Stop hook check for ai-dotfiles (see .claude/hooks/stop-check.sh): shellcheck changed or new shell scripts.
+git ls-files -m -o --exclude-standard -- '*.sh' | xargs -r shellcheck --severity=warning

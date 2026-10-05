@@ -43,11 +43,45 @@
         ]
       },
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.claude/hooks/git-commit-check.sh"
+          }
+        ]
+      },
+      {
         "matcher": "Skill",
         "hooks": [
           {
             "type": "command",
             "command": "__HOME__/.claude/hooks/log-skill-usage.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.claude/hooks/stop-check.sh",
+            "timeout": 180
+          },
+          {
+            "type": "command",
+            "command": "__HOME__/.claude/hooks/compact-nudge.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.claude/hooks/precompact-checkpoint.sh"
           }
         ]
       }
@@ -62,8 +96,8 @@
     "superpowers@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": true,
-    "impeccable@impeccable": true,
-    "taste-skill@taste-skill": true
+    "impeccable@impeccable": false,
+    "taste-skill@taste-skill": false
   },
   "extraKnownMarketplaces": {
     "impeccable": {
@@ -78,6 +112,5 @@
         "repo": "Leonxlnx/taste-skill"
       }
     }
-  },
-  "skipDangerousModePermissionPrompt": true
+  }
 }
