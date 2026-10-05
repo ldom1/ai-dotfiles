@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-05
+
 ### Added
 - Claude Code **sensor hooks**:
   - `Stop` → `stop-check.sh` runs the repo's `.claude/stop-check` command when the git tree has changes, blocks the stop on failure with the output tail, and never blocks twice in a row.
@@ -22,6 +24,7 @@
 - `impeccable`, `taste-skill` and `vercel` plugins disabled globally (`settings.json`, and `settings.json.tpl` so `install.sh` does not re-enable them): they loaded skill listings, and impeccable a PostToolUse/Stop hook, into every session, including Python/infra ones. Enable them per frontend project via `enabledPlugins` in the project's `.claude/settings.json` (README → plugins).
 
 ### Fixed
+- `git-promotion` tests failed locally when `init.defaultBranch=main` (`git branch -f main` on the checked-out branch): test repos now start on a `scratch` branch. CI passed only because its default branch is `master`.
 - `test_git_commit_check.py` used a `dashboard` scope that is not in `scopes.json`; it uses `api` (Python-only) now.
 
 ## [0.7.1] - 2026-10-02
