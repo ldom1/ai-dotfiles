@@ -27,14 +27,23 @@ Copy and track:
 
 **outline.** Fetch the task page + relevant repo files + Local Brain. Bullets only. Wait for approval before draft.
 
-**draft.** Write `~/ai-dotfiles/articles/<slug>.md`. Every snippet is copied from a real file (cite path). Do not invent code. If the repo does not contain the fact, say so.
+**draft.** Write `~/ai-dotfiles/articles/<slug>.md`. Every snippet is copied from a real file (cite path). Do not invent code. If the repo does not contain the fact, say so. **Topics line:** put `**Topics:** A · B · C · D · E` right under the H1. Max 5 (Medium's limit: "Add up to five topics to help readers find your story"). Use existing Medium tags; mix 1–2 broad (large audience) with 2–3 niche (exact match for the subject). **No Markdown tables** — Medium does not render them; use bullets, numbered lists, or short labelled paragraphs instead. **Always end the article with this exact closing** (do not paraphrase):
 
-**review.** Apply the review prompt in [voice.md](voice.md). Output concrete diffs, then apply them to the `.md`. Wait for approval before write-notion.
+```
+If you found value in this article and would like to show your support, consider:
+
+Giving this story a round of applause if it resonated with you.
+Following me on Medium to stay updated on future content and discoveries.
+Exploring more of my latest articles at https://medium.com/@louis_10840 for further insights and knowledge sharing
+Your support means a lot and encourages me to continue sharing valuable information. Thank you!
+```
+
+**review.** Apply the review prompt in [voice.md](voice.md). Output concrete diffs, then apply them to the `.md`. Confirm the support closing is present and unchanged. Confirm the `**Topics:**` line exists with ≤ 5 tags, and propose better tags if they miss the subject. Flag any `| … |` Markdown table as a required fix (convert to bullets). Wait for approval before write-notion.
 
 **write-notion.** Required. Convert the `.md` per [notion.md](notion.md). `replace_content` on the **task page**. Set `État` = `In progress`. Re-fetch and check one code block survived as a code block. Fix and re-push if not.
 
-**publish.** Checklist: copy/import Medium **from the Notion page**; cover via [cover-prompt.md](cover-prompt.md). After the user pastes the Medium URL: `État` = `Done`, `Résumé` = that URL.
+**publish.** Checklist: copy/import Medium **from the Notion page**; enter the `**Topics:**` tags in Medium's topics box, then delete that line from the Medium draft; cover via [cover-prompt.md](cover-prompt.md). After the user pastes the Medium URL: `État` = `Done`, `Résumé` = that URL.
 
 ## Non-goals
 
-Do not auto-publish to Medium. Do not mark the Notion page as a Notion AI skill. Do not create a new Articles database. Do not skip write-notion.
+Do not auto-publish to Medium. Do not mark the Notion page as a Notion AI skill. Do not create a new Articles database. Do not skip write-notion. Do not use Markdown/`<table>` data tables in article bodies (Medium has no tables).
