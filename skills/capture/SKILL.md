@@ -50,7 +50,7 @@ Project-specific traps discovered this session go to `CONTEXT.md` → `Gotchas` 
 
 ## 4. Pitfalls & lessons (only if cross-project)
 
-`$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md` is injected into every session (keep it ≤ 6 KB: it shares the hook's ~9.5 KB output budget with the project note and is truncated past it), so it holds rules, not incidents. It covers both kinds: a **pitfall** (mistake to avoid) and a **lesson** (approach that worked, worth repeating). Add one only if it would apply in a *different* project on any stack. A rule tied to one tool or platform goes to the `## Rules` list of the matching `resources/knowledge/patterns/*-patterns.md`; a rule tied to this project is a Gotcha or Decision (step 3).
+`$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md` is injected into every session, so it holds rules, not incidents. A script enforces its 6,000 B cap: `bash ~/ai-dotfiles/scripts/check-pitfalls-budget.sh`. It covers both kinds: a **pitfall** (mistake to avoid) and a **lesson** (approach that worked, worth repeating). Add one only if it would apply in a *different* project on any stack. A rule tied to one tool or platform goes to the `## Rules` list of the matching `resources/knowledge/patterns/*-patterns.md`; a rule tied to this project is a Gotcha or Decision (step 3).
 
 - Search the file first. Before writing, pick one verdict and state it to the user:
   - **Absorb into <existing rule>** — a rule already covers it: sharpen that rule. This is the default.
@@ -60,10 +60,12 @@ Project-specific traps discovered this session go to `CONTEXT.md` → `Gotchas` 
 
   Prefer Absorb: every new bullet competes for the same injected bytes.
 - Add one bullet under the matching `## <Topic>`: imperative rule + the mechanism in a clause, exact command when that is the fix. No dates, no project names, no narrative — the session log keeps the story.
+- End the bullet with its id: the section letter and the next free number, e.g. `^g15`. Letters: `v` Verification, `d` Diagnosis, `u` Working with the user, `s` Safety and secrets, `g` Git and GitHub, `o` Vault. Never renumber or reuse an id. A merge keeps the lower id and adds the other to `## Retired ids` as `^g7→^g2`.
+- After every edit, run `bash ~/ai-dotfiles/scripts/check-pitfalls-budget.sh`. On exit 1, merge rules (Absorb) or move a stack section to a pattern note, then run it again. Do not leave step 4 while it fails.
 
   ```markdown
-  - Check `git worktree list | grep "[<branch>]"` before checking out a branch — two worktrees on one branch move it under each other's files.
-  - Compute forecast tables and gate thresholds with a script from the stated assumptions — hand-typed tables contradict their own rates.
+  - Check `git worktree list | grep "[<branch>]"` before checking out a branch — two worktrees on one branch move it under each other's files. ^g15
+  - Compute forecast tables and gate thresholds with a script from the stated assumptions — hand-typed tables contradict their own rates. ^v12
   ```
 
 ## 5. Sync and hand off

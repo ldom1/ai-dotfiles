@@ -18,7 +18,7 @@ bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh end     # commit + push vau
 | `start` | Vault and ai-dotfiles: stash tracked changes → `git pull --rebase origin <branch>` (3 tries) → pop. Then `scripts/sync-project.sh --all` (rsync `.claude/memory/` ↔ `projects/<slug>/` for repos in `config/brain-projects.tsv`). |
 | `end` | `sync-project.sh --all` → vault `git add -A` + commit `brain: session sync <ts>` + push → `qmd update` + `qmd embed` (logged to `~/.claude/logs/brain-sync.log`). ai-dotfiles is **not** committed — commit it yourself via `/git-commit`. |
 
-The SessionEnd hook runs `sync.sh end` first, then warns if `inbox/daily/implementation/` has no note dated today. The warning goes to `~/.claude/logs/brain-sync-end.log` and is printed as `LAST EXIT` at the next SessionStart — there is no systemMessage and no extra turn. A note written after that is committed at the next session's end. So write the session log with `/capture` *before* ending.
+The SessionEnd hook runs `sync.sh end` first, then warns if `inbox/daily/implementation/` has no note dated today. The warning goes to `~/.claude/logs/brain-sync-end.log` and the next SessionStart prints it as one `[last exit]` status line plus up to 5 warnings; the full log stays in `brain-sync-end.log.prev` — there is no systemMessage and no extra turn. A note written after that is committed at the next session's end. So write the session log with `/capture` *before* ending.
 
 Failures never block the session: rebase conflict → `git rebase --abort`, stash restored, fix by hand in `$BRAIN_PATH`; push failure → commit stays local, `git push` later. Details: `reference/EDGE-CASES.md`.
 

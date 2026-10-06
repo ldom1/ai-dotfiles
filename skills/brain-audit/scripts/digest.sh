@@ -83,7 +83,7 @@ next_maintenance=$(date -u -d '+7 days' +%Y-%m-%d 2>/dev/null || date -u -v+7d +
     echo ""
     if [[ $compile_count -gt 0 ]]; then
         echo "### Compile: Review Promoted Entries"
-        echo "- [ ] Skim \`resources/operational/ai-agents/pitfalls.md\` for accuracy (rules only, ≤ 6 KB)"
+        echo "- [ ] Skim \`resources/operational/ai-agents/pitfalls.md\` for accuracy (rules only; scripts/check-pitfalls-budget.sh passes)"
         echo "- [ ] Confirm nothing project-specific leaked into a cross-project entry"
         echo ""
     fi

@@ -282,7 +282,7 @@ Invoke the `brain-sync` / `brain-load` skills manually when hooks are off or the
 
 All hooks are declared in `.claude/settings.json.tpl` and always on:
 
-- **SessionStart** `brain-session-start.sh`: settings drift check, vault pull, project note, pitfalls, vendored-skill update check, `/brain-audit` nudge. Output stays under 9.5 KB: Claude Code (observed on 2.1) swaps longer hook output for a file and a 2 KB preview, so pitfalls get only the bytes left and are cut at a line break.
+- **SessionStart** `brain-session-start.sh`: settings drift check, vault pull, project note, pitfalls, vendored-skill update check, `/brain-audit` nudge. Output stays under 9.5 KB: Claude Code (observed on 2.1) swaps longer hook output for a file and a 2 KB preview, so pitfalls get only the bytes left and are cut at a line break. The last-exit log shrinks to one status line. Pitfalls are capped at 6,000 B when written (`scripts/check-pitfalls-budget.sh`); if the budget still runs out, whole sections are dropped and named.
 - **SessionEnd** `brain-session-end.sh`: vault commit + push, warning if today has no session log. It gives the model no turn: run `/capture` before you quit.
 - **PreToolUse (Bash)** `rtk-rewrite.sh`: rewrites commands to shrink their output.
 - **PreToolUse (Bash)** `git-commit-check.sh`: rejects an off-list `type(scope)` in a `git commit -m` message. A heredoc or file message only gets a reminder.
