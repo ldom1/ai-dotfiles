@@ -5,7 +5,7 @@
   "shells": ["bash", "sh", "zsh"],
   "rules": [
     {"id": "rm-recursive-force-root", "tier": "deny", "dynamic": "ask",
-     "why": "recursive force delete of /, home, . or ..",
+     "why": "recursive force delete of a protected target (/, home, . or ..)",
      "program": ["rm"], "flags": [["-r", "-R", "--recursive"], ["-f", "--force"]],
      "targets": ["/", "/*", "~", "~/*", "$HOME", "${HOME}", "$HOME/*", ".", ".."]},
     {"id": "mkfs", "tier": "deny", "why": "creates a filesystem (erases the device)",

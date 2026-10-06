@@ -36,6 +36,8 @@ DENY = [
     ":(){ :|:& };:",
     # a heredoc fed to a shell is code
     "bash <<'EOF'\nrm -rf ~\nEOF",
+    # quoted `<<EOF` with no closing line must not hide the next lines
+    "python3 -c '\nprint(\"cat <<EOF\")\n'\nrm -rf ~",
 ]
 
 ASK = [
@@ -61,6 +63,8 @@ PASS = [
     "cat > f <<'EOF'\ngit push -f origin main\nrm -rf ~\nEOF",
     "git commit -m \"$(cat <<'EOF'\nrm -rf ~ isn't run\nEOF\n)\"",
     "python3 - <<'EOF'\nprint('rm -rf ~')\nEOF",
+    # `<<EOF` inside quoted text with no closing line is not a heredoc (replay false positive)
+    "rm -f x.tmp; python3 -c '\nprint(\"cat <<EOF\")\n'",
 ]
 
 # Documented bypasses (hook header). Expected decision, never "deny".

@@ -35,20 +35,22 @@ HEREDOC = re.compile(r"(?<!<)<<(-?)[ \t]*(['\"]?)\\?([A-Za-z_][\w.-]*)\2")
 
 
 def strip_heredocs(cmd):
-    """Replace each heredoc operator with `<< __hdN__` and drop its body. Return (cmd, bodies)."""
-    out, bodies, pending = [], [], []
+    """Replace each heredoc operator with `<< __hdN__` and drop its body. Return (cmd, bodies).
+    An operator with no closing delimiter line is left alone: it is quoted text, not a heredoc."""
+    lines, out, bodies, i = cmd.split("\n"), [], [], 0
 
     def placeholder(m):
-        pending.append((m[1], m[3], len(bodies)))
-        bodies.append([])
+        nonlocal i
+        end = next((k for k in range(i, len(lines)) if (lines[k].lstrip("\t") if m[1] else lines[k]) == m[3]), None)
+        if end is None:
+            return m[0]
+        bodies.append("\n".join(lines[i:end]))
+        i = end + 1
         return f"<< __hd{len(bodies) - 1}__"
-    for line in cmd.split("\n"):
-        if pending:
-            dash, delim, i = pending[0]
-            pending.pop(0) if (line.lstrip("\t") if dash else line) == delim else bodies[i].append(line)
-        else:
-            out.append(HEREDOC.sub(placeholder, line))
-    return "\n".join(out), ["\n".join(b) for b in bodies]
+    while i < len(lines):
+        i += 1
+        out.append(HEREDOC.sub(placeholder, lines[i - 1]))
+    return "\n".join(out), bodies
 
 
 class _Lines(io.StringIO):
