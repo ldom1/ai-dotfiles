@@ -181,9 +181,8 @@ def main():
         return
     tier, rid, why = hit
     reason = f"hardline-check {rid}: {why}."
-    if tier == "deny":
-        shown = cmd if len(cmd) <= 200 and "\n" not in cmd else "<command>"
-        reason += f" Not run. If the user wants it, they run it themselves with `! {shown}`."
+    if tier == "deny":  # never echo the command: a ready-to-paste `! <cmd>` would be a copy-paste wipe
+        reason += " Not run. If this is intended, the user runs it themselves with ! after checking the target."
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": tier,
                                              "permissionDecisionReason": reason}}))
 

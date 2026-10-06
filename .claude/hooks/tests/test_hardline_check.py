@@ -99,12 +99,22 @@ def test_documented_bypass_is_not_caught(command, expected, tmp_path):
     assert decision(command, tmp_path) == expected
 
 
+def reason(command: str, tmp_path: Path) -> str:
+    out = subprocess.run([str(HOOK)], input=json.dumps({"tool_input": {"command": command}}), capture_output=True,
+                         text=True, check=True, env={"PATH": "/usr/bin:/bin", "HOME": str(tmp_path)}).stdout
+    return json.loads(out)["hookSpecificOutput"]["permissionDecisionReason"]
+
+
 def test_deny_reason_names_the_rule_and_the_bang_escape(tmp_path):
-    event = {"tool_input": {"command": "rm -rf ~"}}
-    out = subprocess.run([str(HOOK)], input=json.dumps(event), capture_output=True, text=True, check=True,
-                         env={"PATH": "/usr/bin:/bin", "HOME": str(tmp_path)}).stdout
-    reason = json.loads(out)["hookSpecificOutput"]["permissionDecisionReason"]
-    assert "rm-recursive-force-root" in reason and "! rm -rf ~" in reason
+    assert reason("rm -rf ~", tmp_path) == (
+        "hardline-check rm-recursive-force-root: recursive force delete of a protected target (/, home, . or ..)."
+        " Not run. If this is intended, the user runs it themselves with ! after checking the target.")
+
+
+@pytest.mark.parametrize("command", DENY + ["sudo /bin/rm -r -f /"])
+def test_deny_reason_never_echoes_the_command(command, tmp_path):
+    # A ready-to-paste `! <cmd>` would turn the tripwire into a copy-paste wipe.
+    assert command not in reason(command, tmp_path)
 
 
 def test_template_runs_the_hook_first_and_asks_for_infra_commands():
