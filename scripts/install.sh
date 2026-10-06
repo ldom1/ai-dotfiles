@@ -84,6 +84,8 @@ bash "$DOTFILES/scripts/build-agent-rules.sh"
 mkdir -p "$HOME/.vibe"
 ln -sfn "$DOTFILES/.vibe/AGENTS.md" "$HOME/.vibe/AGENTS.md"
 log "$HOME/.vibe/AGENTS.md → ai-dotfiles/.vibe/AGENTS.md (Vibe user-level instructions)"
+ln -sfn "$DOTFILES/.vibe/user-hooks.toml" "$HOME/.vibe/hooks.toml"
+log "$HOME/.vibe/hooks.toml → ai-dotfiles/.vibe/user-hooks.toml (Vibe hooks: hardline, commit-scope, stop-check)"
 
 # ── 2. Generate settings.json from template ────────────────────────────────────
 header "Generating settings.json"
