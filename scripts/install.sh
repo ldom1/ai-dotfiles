@@ -152,13 +152,15 @@ fi
 # ── 5. ai-dotfiles CLI ────────────────────────────────────────────────────────
 header "Installing ai-dotfiles CLI"
 
-CLI_SRC="$DOTFILES/bin/ai-dotfiles"
-CLI_DST="$HOME/.local/bin/ai-dotfiles"
-
 mkdir -p "$HOME/.local/bin"
-chmod +x "$CLI_SRC"
-ln -sfn "$CLI_SRC" "$CLI_DST"
-log "ai-dotfiles CLI → $CLI_DST (ensure ~/.local/bin is on PATH)"
+for cli in ai-dotfiles stop-check-trust; do
+  chmod +x "$DOTFILES/bin/$cli"
+  ln -sfn "$DOTFILES/bin/$cli" "$HOME/.local/bin/$cli"
+  log "$cli → $HOME/.local/bin/$cli (ensure ~/.local/bin is on PATH)"
+done
+
+# Approve this repo's own Stop check once, so the trust gate stays quiet here.
+"$DOTFILES/bin/stop-check-trust" "$DOTFILES" >/dev/null
 
 # ── 6. Hook permissions ────────────────────────────────────────────────────────
 header "Setting hook and script permissions"

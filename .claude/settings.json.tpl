@@ -10,7 +10,9 @@
       "Bash(git checkout . *)",
       "Bash(git checkout -- *)",
       "Bash(git clean -f *)",
-      "Bash(rm -rf *)"
+      "Bash(rm -rf *)",
+      "Bash(stop-check-trust *)",
+      "Bash(*/stop-check-trust *)"
     ]
   },
   "hooks": {

@@ -22,6 +22,7 @@
 .claude/telemetry/
 .claude/statsig/
 .claude/logs/
+.claude/stop-check-trust
 .claude/usage-data/
 .claude/history.jsonl
 .claude/.last-cleanup*
