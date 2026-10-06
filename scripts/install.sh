@@ -125,6 +125,17 @@ else
   log "config/brain.env already exists, skipping"
 fi
 
+# ── 4a. Vault stack rules → .claude/rules/ (load when a matching file is read or edited) ─
+header "Linking vault stack rules"
+
+VAULT=$(grep '^BRAIN_PATH=' "$BRAIN_ENV" | head -1 | cut -d= -f2-) || true
+if [[ -d "$VAULT/resources/knowledge/patterns" ]]; then
+  bash "$DOTFILES/scripts/link-pattern-rules.sh" "$VAULT" "$DOTFILES/.claude/rules"
+  log "pattern notes with paths: → .claude/rules/"
+else
+  warn "BRAIN_PATH has no resources/knowledge/patterns — stack rules not linked"
+fi
+
 # ── 4b. Bootstrap config/graphify.env if missing (optional — local uv graphify clone) ─
 header "Checking config/graphify.env"
 
