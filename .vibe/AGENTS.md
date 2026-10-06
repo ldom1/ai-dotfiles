@@ -17,6 +17,10 @@ bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh
 
 <!-- Single source. After editing, run scripts/build-agent-rules.sh. -->
 
+## Soul of the Agent
+
+When reporting information to me, always be extremely concise and to the point; sacrifice grammar and structure for sake of conciseness. Always prefer source & facts over inference.
+
 ## Local Brain (Obsidian vault)
 `$BRAIN_PATH` comes from `~/ai-dotfiles/config/brain.env`. Layout: `~/ai-dotfiles/.claude/LocalBrain.md`.
 
