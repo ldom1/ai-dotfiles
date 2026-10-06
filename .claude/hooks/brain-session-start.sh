@@ -68,13 +68,12 @@ if [[ "$INPUT" =~ \"source\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
 fi
 
 if [[ "$SOURCE" == "startup" || "$SOURCE" == "resume" ]]; then
-  # Show last exit log before pulling (so user sees what happened on /exit)
+  # Summarize the last exit log before pulling (so user sees what happened on /exit)
+  # One status line (+ ≤ 5 notable lines); the full log stays readable as .prev.
   EXIT_LOG="$HOME/.claude/logs/brain-sync-end.log"
   if [[ -f "$EXIT_LOG" ]]; then
-    echo "--- LAST EXIT (brain-sync) ---"
-    tail -30 "$EXIT_LOG"
-    echo "--- END LAST EXIT ---"
-    rm -f "$EXIT_LOG"
+    python3 "$AI_DOTFILES/scripts/summarize-sync-log.py" "$EXIT_LOG" || tail -5 "$EXIT_LOG"
+    mv -f "$EXIT_LOG" "$EXIT_LOG.prev"
   fi
   "$SYNC" start >>"$LOG_FILE" 2>&1 || true
   bash "$AI_DOTFILES/scripts/log-skill-usage.sh" brain-sync "claude:sessionStart" 2>/dev/null || true
