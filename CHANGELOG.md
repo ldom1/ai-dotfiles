@@ -6,9 +6,14 @@
 - `brain-audit:promote`: after `compile`, counts `**Pitfall hit:**` lines per rule id (`skills/brain-audit/scripts/count-pitfall-hits.py`, retired ids mapped) and drafts a sensor in vault `inbox/sensors/` for each rule hit in 2 or more sessions. It never installs anything. The digest lists the drafts.
 - Stack rules load by path: `install.sh` runs `scripts/link-pattern-rules.sh`, which symlinks each vault `*-patterns.md` note with `paths:` frontmatter into `.claude/rules/` (gitignored). Claude Code loads a rule when Read, Write or Edit touches a matching file in the working directory. Bash commands do not trigger it.
 - Vault: `paths:` added to the docker, python, deployment, observability, infisical, claude-code, shell and git pattern notes. The pitfalls header now says "Stack rules load when a matching file is read or edited".
+- `.claude/agents/lookup.md` (Haiku) and `.claude/agents/reviewer.md` (Sonnet): read-only subagents with fixed models. `lookup` answers grep, find and fact questions. `reviewer` reports findings on a diff and never edits.
+- `settings.json.tpl` sets `env.CLAUDE_CODE_SUBAGENT_MODEL` to `sonnet`. Delegations without a `model` key, including `general-purpose`, run on Sonnet. `install.sh` merges the key into live settings.
+- `.claude/hooks/tests/test_agent_files.py` checks the agent frontmatter and the template `env` key.
+- Limit: agent files set the model of a delegation. They do not make the main model delegate.
 
 ### Changed
 - `AGENTS.md`: new "Soul of the Agent" section — reports to the user are extremely concise, facts and sources over inference. Cursor and Vibe copies rebuilt.
+- `AGENTS.md` FinOps: keeps the "state the model you are on" rule, points Claude Code to `.claude/agents/` and `CLAUDE_CODE_SUBAGENT_MODEL`, and keeps the Haiku/Sonnet/Opus list for Cursor and Vibe only. `.cursor/rules/agents.mdc` and `.vibe/AGENTS.md` regenerated.
 - `install.sh` merges `permissions.deny`, `permissions.ask`, `env` and `hooks` from the template into an existing `settings.json`, not only plugins and marketplaces. The merge is `scripts/merge-settings.py` (stdlib, replaces the `jq` block).
   - It adds missing template entries and keeps local-only entries.
   - It writes atomically and keeps `settings.json.bak` when it changes the file.

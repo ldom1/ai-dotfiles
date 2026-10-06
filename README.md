@@ -373,6 +373,7 @@ ai-dotfiles/
 │   ├── LocalBrain.md                # Vault layout pointer
 │   ├── RTK.md                       # RTK reference
 │   ├── skills/                      # symlinks → ../../skills/<name> (Claude Code, coe-* excluded)
+│   ├── agents/                      # Subagents: lookup (Haiku), reviewer (Sonnet)
 │   ├── rules/                       # symlinks → vault *-patterns.md notes with paths: (gitignored)
 │   ├── settings.json.tpl            # Settings template (HOME placeholder)
 │   ├── settings.local.json.example  # Machine-specific permissions template
