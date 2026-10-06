@@ -60,7 +60,7 @@ Project-specific traps discovered this session go to `CONTEXT.md` → `Gotchas` 
 
   Prefer Absorb: every new bullet competes for the same injected bytes.
 - Add one bullet under the matching `## <Topic>`: imperative rule + the mechanism in a clause, exact command when that is the fix. No dates, no project names, no narrative — the session log keeps the story.
-- End the bullet with its id: the section letter and the next free number, e.g. `^g15`. Letters: `v` Verification, `d` Diagnosis, `u` Working with the user, `s` Safety and secrets, `g` Git and GitHub, `o` Vault. Never renumber or reuse an id. A merge keeps the lower id and adds the other to `## Retired ids` as `^g7→^g2`.
+- End the bullet with its id: the section letter and the next free number, e.g. `^g15`. Letters in `pitfalls.md`: `v` Verification, `d` Diagnosis, `u` Working with the user, `s` Safety and secrets, `o` Vault. Letters in pattern notes: `g` git-patterns, `c` claude-code-patterns, `h` shell-patterns. A rule keeps its id when it moves between files. Never renumber or reuse an id. A merge keeps the lower id and adds the other to `## Retired ids` as `^g7→^g2`.
 - After every edit, run `bash ~/ai-dotfiles/scripts/check-pitfalls-budget.sh`. On exit 1, merge rules (Absorb) or move a stack section to a pattern note, then run it again. Do not leave step 4 while it fails.
 
   ```markdown
