@@ -86,3 +86,23 @@ def test_non_startup_source_leaves_the_exit_log(tmp_path):
     out = run_hook(env, source="clear")
     assert "[last exit]" not in out
     assert (Path(env["HOME"]) / ".claude/logs/brain-sync-end.log").exists()
+
+
+def test_oversized_pitfalls_names_dropped_sections_and_keeps_whole_rules(tmp_path):
+    out = run_hook(env_for(tmp_path, pitfalls(12_000), EXIT_LOG))
+    assert len(out.encode()) < BUDGET
+    note = [line for line in out.splitlines() if line.startswith("[truncated:")]
+    assert len(note) == 1 and "sections dropped: Section" in note[0]
+    printed = out.split("--- AI-AGENTS PITFALLS (constraints) ---", 1)[1]
+    for sec in printed.split("## Section ")[1:]:
+        assert sec.count("\n- rule ") == 5  # no section is cut in the middle
+
+
+def test_huge_project_note_leaves_only_the_pitfalls_note(tmp_path):
+    env = env_for(tmp_path, pitfalls(6000), EXIT_LOG)
+    big = "\n".join("N" * 300 for _ in range(30))  # 9 KB note: the room for pitfalls drops to 0
+    exe(Path(env["AI_DOTFILES"]) / "skills/brain-load/scripts/load.sh", f"cat <<'EOF'\n{big}\nEOF")
+    out = run_hook(env)
+    printed = out.split("--- AI-AGENTS PITFALLS (constraints) ---\n", 1)[1].split("--- END PITFALLS ---", 1)[0]
+    assert printed.splitlines() == [printed.strip()]  # only the one-line note, no rule
+    assert "sections dropped: (preamble), Section 0" in printed

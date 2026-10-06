@@ -111,11 +111,8 @@ if [[ -f "$PITFALLS" ]]; then
   PITFALLS_MAX_BYTES=$(( OUTPUT_MAX_BYTES - $(wc -c <"$OUT_BUF") - 200 ))
   (( PITFALLS_MAX_BYTES > 0 )) || PITFALLS_MAX_BYTES=0
   echo "--- AI-AGENTS PITFALLS (constraints) ---"
-  if (( $(wc -c <"$PITFALLS") > PITFALLS_MAX_BYTES )); then
-    head -c "$PITFALLS_MAX_BYTES" "$PITFALLS" | head -n -1   # drop the cut line
-    echo "[truncated at ${PITFALLS_MAX_BYTES} bytes (hook output budget) — merge rules or run /brain-audit; full file: $PITFALLS]"
-  else
-    cat "$PITFALLS"
-  fi
+  # Write-time gate: scripts/check-pitfalls-budget.sh. This is the last-resort cut: whole sections only.
+  python3 "$AI_DOTFILES/scripts/fit-sections.py" "$PITFALLS" "$PITFALLS_MAX_BYTES" \
+    || head -c "$PITFALLS_MAX_BYTES" "$PITFALLS"
   echo "--- END PITFALLS ---"
 fi
