@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- `config/brain-projects.tsv`: `telegram-to-notion` entry renamed to `notion-pilot` at `/home/lgiron/lab_perso/notion-pilot`. The repo was renamed on 2026-05-28, so `sync-project.sh --all` skipped it and its `.claude/memory` never synced to the vault.
+
 ## [0.8.1] - 2026-10-05
 
 ### Changed
