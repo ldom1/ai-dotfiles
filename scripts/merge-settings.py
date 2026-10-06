@@ -1,20 +1,12 @@
 #!/usr/bin/env python3
 """Merge settings.json.tpl into a live settings.json. Fail closed on semantic conflicts.
 
-Usage: merge-settings.py [--dry-run] TEMPLATE SETTINGS
-
-Owned keys: enabledPlugins, extraKnownMarketplaces, permissions.deny, permissions.ask, env, hooks.
-Template entries missing live are added. Live-only entries are kept. On a semantic conflict
-(env value differs; same hook command with another event, matcher or timeout; live disableAllHooks)
-it prints one CONFLICT line per conflict, writes nothing and exits 3.
-Template __HOME__ is rendered with $HOME. A missing SETTINGS is created from the template.
+Usage: merge-settings.py [--dry-run] TEMPLATE SETTINGS   (__HOME__ in TEMPLATE renders as $HOME)
+Owned keys: enabledPlugins, extraKnownMarketplaces, permissions.deny/ask, env, hooks. Adds missing
+template entries, keeps live-only ones. Semantic conflict (env value differs; same hook command with
+another event/matcher/timeout; live disableAllHooks): prints CONFLICT lines, writes nothing, exits 3.
 """
-import copy
-import json
-import os
-import shutil
-import sys
-import tempfile
+import copy, json, os, shutil, sys, tempfile  # noqa: E401
 
 
 def hook_entries(hooks):
@@ -101,7 +93,9 @@ def main(argv):
     if conflicts:
         print(f"{len(conflicts)} conflict(s): {path} unchanged. Resolve them, then run install.sh again.")
         return 3
-    if adds and not dry:
+    if not adds:
+        print(f"no changes: {path} has every template entry")
+    elif not dry:
         shutil.copy2(path, path + ".bak")
         write_atomic(path, out)
     return 0

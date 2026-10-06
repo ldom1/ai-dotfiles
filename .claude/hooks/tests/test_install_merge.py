@@ -74,7 +74,7 @@ def test_compatible_merge_adds_template_entries_keeps_local_and_is_idempotent(tm
     r2 = subprocess.run(["python3", str(MERGE), str(s.parent / "settings.json.tpl"), str(s)],
                         capture_output=True, text=True, env={"PATH": "/usr/bin:/bin", "HOME": str(tmp_path)})
     assert r2.returncode == 0 and sha(s) == before
-    assert "add " not in r2.stdout
+    assert "add " not in r2.stdout and "no changes:" in r2.stdout
 
 
 CMD = "__HOME__/.claude/hooks/check.sh"
