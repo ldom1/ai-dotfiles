@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- `brain-audit:promote`: after `compile`, counts `**Pitfall hit:**` lines per rule id (`skills/brain-audit/scripts/count-pitfall-hits.py`, retired ids mapped) and drafts a sensor in vault `inbox/sensors/` for each rule hit in 2 or more sessions. It never installs anything. The digest lists the drafts.
+
 ### Changed
 - `AGENTS.md`: new "Soul of the Agent" section — reports to the user are extremely concise, facts and sources over inference. Cursor and Vibe copies rebuilt.
 - `install.sh` merges `permissions.deny`, `permissions.ask`, `env` and `hooks` from the template into an existing `settings.json`, not only plugins and marketplaces. The merge is `scripts/merge-settings.py` (stdlib, replaces the `jq` block).
@@ -11,6 +14,7 @@
   - A template `deny`/`ask` rule also in live `allow` is added with a note. It is not a conflict.
 - `install.sh --dry-run-settings` prints the planned settings changes and conflicts, then exits. It changes no file.
 - SessionStart drift check: plugin or marketplace drift alone still auto-runs `install.sh`. Drift in permissions, `env` or hooks prints `[install-check] template adds: <keys> — run scripts/install.sh` and runs nothing. An auto-run that exits 3 prints its `CONFLICT` lines in the hook output.
+- `/capture` step 4 writes a `**Pitfall hit:** [[pitfalls#^<id>]]` line to the session log for each Absorb or Improve verdict.
 - Pitfalls budget is enforced at write time: `scripts/check-pitfalls-budget.sh` fails `/capture` and `brain-audit:compile` when `pitfalls.md` exceeds 6,000 B or a rule has no stable id (`^g3`).
 - SessionStart: the last-exit log is one `[last exit]` status line plus up to 5 warnings (was the last 30 lines, ~2.2 KB). The full log stays in `~/.claude/logs/brain-sync-end.log.prev`.
 - SessionStart: if pitfalls still exceed the room, whole sections are dropped and named in the truncation line (was a byte cut mid-rule).

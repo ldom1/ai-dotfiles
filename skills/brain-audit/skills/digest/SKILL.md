@@ -38,6 +38,7 @@ type: digest
 - connect: N knowledge files ([[<topic>-patterns]], …)
 - insights: N questions → [[YYYY-MM-DD]] (inbox/insights)
 - queries: [[YYYY-MM-DD-knowledge-gaps]], [[YYYY-MM-DD-roadmap]]
+- promote: N candidates → sensor drafts to review: [[YYYY-MM-DD-<slug>]], … (list every file in `inbox/sensors/`; "none" if empty)
 
 ## Key takeaways
 <2–3 sentences: the findings that need the user's attention>
