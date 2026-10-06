@@ -117,3 +117,17 @@ def test_dash_f_heredoc_allowed_with_reminder(tmp_path):
     out = json.loads(output(py_session(tmp_path), cmd))
     assert out["hookSpecificOutput"]["permissionDecision"] == "allow"
     assert "reminder" in out["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_message_forms_still_parsed(tmp_path):
+    s = py_session(tmp_path)
+    assert decision(s, 'git commit -m "fix(core): don\'t crash"') == "allow"
+    assert decision(s, "git commit -m 'fix(core): x' --no-verify") == "allow"
+    assert decision(s, 'git commit -am "bad message"') == "deny"
+    assert decision(s, "git commit --message='bad message'") == "deny"
+    assert decision(s, "GIT_AUTHOR_NAME=x git commit -m 'bad message'") == "deny"
+    assert decision(s, "git commit -m \"Merge branch 'main' into develop\"") == "allow"
+
+
+def test_unparsable_command_fails_open(tmp_path):
+    assert output(py_session(tmp_path), "git commit -m \"unterminated") == ""
