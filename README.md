@@ -286,6 +286,11 @@ All hooks are declared in `.claude/settings.json.tpl` and always on:
 
 - **SessionStart** `brain-session-start.sh`: settings drift check, vault pull, project note, pitfalls, vendored-skill update check, `/brain-audit` nudge. Output stays under 9.5 KB: Claude Code (observed on 2.1) swaps longer hook output for a file and a 2 KB preview, so pitfalls get only the bytes left and are cut at a line break. The last-exit log shrinks to one status line. Pitfalls are capped at 6,000 B when written (`scripts/check-pitfalls-budget.sh`); if the budget still runs out, whole sections are dropped and named.
 - **SessionEnd** `brain-session-end.sh`: vault commit + push, warning if today has no session log. It gives the model no turn: run `/capture` before you quit.
+- **PreToolUse (Bash)** `hardline-check.py` (runs first): a tripwire for a short list of destructive commands. It is not a security boundary: it does not see variables, other interpreters or scripts written to a file.
+  - Tier 1 (`deny`, in every mode): `rm -rf` on `/` or home, `mkfs`, `dd` or a redirect to a device, `find -delete` from `/` or home, a fork bomb. If you really want one, run it yourself with `! <command>`.
+  - Tier 2 (`ask`): force push to `main`/`master`, `git clean -x`/`-d` on the whole tree, `docker system|volume prune`, `docker volume rm`, `chmod -R 777`, a download piped to a shell. A tier-1 shape with a `$` or backtick target also asks.
+  - Rules: `.claude/hooks/hardline-rules.json`. The hook header lists the known bypasses, and the tests assert that they pass.
+  - `scripts/replay-bash-rules.py --days 14` replays past Bash calls through the rules and the template `ask` list. It prints the prompts per rule, session and day, and every prompt with an empty TP/FP label column.
 - **PreToolUse (Bash)** `rtk-rewrite.sh`: rewrites commands to shrink their output.
 - **PreToolUse (Bash)** `git-commit-check.sh`: rejects an off-list `type(scope)` in a `git commit -m` message. A heredoc or file message only gets a reminder.
 - **PreToolUse (Skill)** `log-skill-usage.sh`: appends to `~/.claude/skill-usage.log`.
@@ -391,6 +396,8 @@ ai-dotfiles/
 │   └── hooks/
 │       ├── brain-session-start.sh   # SessionStart: vault pull, project note, pitfalls (≤ 9.5 KB)
 │       ├── brain-session-end.sh     # SessionEnd: vault commit + push, session-log warning
+│       ├── hardline-check.py        # PreToolUse: deny/ask tripwire for destructive commands
+│       ├── hardline-rules.json      # Rules for hardline-check.py
 │       ├── rtk-rewrite.sh           # PreToolUse: rtk rewrite + tail cap on noisy output
 │       ├── git-commit-check.sh      # PreToolUse: reject off-list commit scopes
 │       ├── log-skill-usage.sh       # PreToolUse (Skill): append to ~/.claude/skill-usage.log
@@ -463,6 +470,7 @@ ai-dotfiles/
     ├── upgrade-project.sh           # Add missing files, backfill frontmatter + sections
     ├── merge-memory.sh              # Backfill OKF frontmatter + missing sections only
     ├── merge-memory-md.py           # Per-file merge: adds frontmatter + ## headers non-destructively
+    ├── replay-bash-rules.py         # Replay past Bash calls through hardline-check (prompt count)
     ├── sync-project.sh              # Bidirectional rsync for registered projects
     └── update-wiki.sh               # Commit/push local .wiki/ changes
 ```

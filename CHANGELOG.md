@@ -17,6 +17,13 @@
 - `bin/stop-check-trust [path]` approves the command with no prompt and prints the command and hash. `--list` prints the store. `--revoke [path]` removes the approvals of a repo. `install.sh` links it into `~/.local/bin`.
 - Template `permissions.deny` blocks `Bash(stop-check-trust *)` and `Bash(*/stop-check-trust *)`, so the agent cannot approve. The user runs `! stop-check-trust`.
 - `install.sh` approves this repo's own `.claude/stop-check` once.
+- `PreToolUse` (Bash) `hardline-check.py`, first in the list: a tripwire for destructive commands, not a security boundary. Rules are data in `hardline-rules.json`.
+  - It reads the command with `shlex`. It drops heredoc bodies, except a body fed to `bash`/`sh`/`zsh`. It skips `VAR=x` and wrappers (`sudo`, `env`, `timeout`, `rtk proxy`, …) and parses `bash -c` one level deep.
+  - Tier 1 `deny`: `rm -rf` on `/`, home, `.` or `..`; `mkfs`; `dd of=/dev/*`; a redirect to `/dev/sd*` or `/dev/nvme*`; `find -delete` from `/` or home; a fork bomb. The reason tells the user to run it with `! <command>`.
+  - Tier 2 `ask`: force push to `main`/`master`, `git clean -x`/`-d` without a path, docker prune and volume removal, `chmod -R 777`, `curl|wget … | sh`. A tier-1 shape with a `$` or backtick target asks too. Unbalanced quotes ask only near `rm`, `dd` or `mkfs`.
+  - Known bypasses (variables, other interpreters, scripts in a file, nested `bash -c`, aliases and functions) are listed in the hook header and tested as passing.
+- `permissions.ask` in the template: `ansible-playbook`, `kubectl apply|delete`, `docker compose down`, `terraform apply|destroy`.
+- `scripts/replay-bash-rules.py [--days N]`: replays past Bash calls from `~/.claude/projects` through the hook and the template `ask` list. It prints prompts per rule, session and day, and every prompt with an empty TP/FP label column.
 
 ### Changed
 - `AGENTS.md`: new "Soul of the Agent" section — reports to the user are extremely concise, facts and sources over inference. Cursor and Vibe copies rebuilt.
