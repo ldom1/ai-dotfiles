@@ -11,7 +11,7 @@ Manual vault maintenance. Pick the subskill that matches the request; "run brain
 | User says | Subskill |
 |-----------|----------|
 | "compile my notes", "promote pitfalls", "review inbox" | `compile` |
-| "promote to sensors", "which rules keep recurring" | `promote` |
+| "draft sensors", "turn recurring pitfalls into hooks", "which rules keep recurring" | `promote` |
 | "find connections", "link my notes", "synthesize patterns" | `connect` |
 | "insights", "what patterns", "what blockers" | `insights` |
 | "knowledge gaps", "what to document", "roadmap", "where are my projects" | `queries` |

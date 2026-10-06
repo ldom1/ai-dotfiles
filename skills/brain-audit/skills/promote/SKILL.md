@@ -4,7 +4,7 @@ description: >-
   Counts how often each pitfall rule was hit in recent session logs and drafts
   a sensor (hook, stop check, lint rule or test) for each rule hit in two or
   more sessions. Writes drafts to inbox/sensors/ and never installs anything.
-  Use when: "promote pitfalls to sensors", "which rules keep recurring", or
+  Use when: "draft sensors", "turn recurring pitfalls into hooks", "which rules keep recurring", or
   after compile in a full brain-audit.
 user-invocable: true
 ---
