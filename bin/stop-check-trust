@@ -32,8 +32,8 @@ fi
 
 FILE="$ROOT/.claude/stop-check"
 [[ -f "$FILE" ]] || { echo "stop-check-trust: no .claude/stop-check in $ROOT" >&2; exit 1; }
-# Normalize: drop comment and blank lines, strip trailing whitespace and CR.
-CMD=$(grep -v '^[[:space:]]*#' "$FILE" | sed 's/[[:space:]]*$//; /^$/d' || true)
+# Normalize: drop comment and blank lines, strip leading and trailing whitespace (CR included).
+CMD=$(grep -v '^[[:space:]]*#' "$FILE" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; /^$/d' || true)
 [[ -n "$CMD" ]] || { echo "stop-check-trust: .claude/stop-check holds no command" >&2; exit 1; }
 HASH=$(printf '%s' "$CMD" | sha256sum | cut -d' ' -f1)
 

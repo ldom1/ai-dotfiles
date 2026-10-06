@@ -22,8 +22,8 @@ def make_repo(path: Path, check: str | None = None) -> Path:
 
 
 def normalize(text: str) -> str:
-    lines = [line.rstrip() for line in text.splitlines()]
-    return "\n".join(line for line in lines if line and not line.lstrip().startswith("#"))
+    lines = [line.strip() for line in text.splitlines()]
+    return "\n".join(line for line in lines if line and not line.startswith("#"))
 
 
 def repo_id(repo: Path) -> str:
@@ -139,6 +139,34 @@ def test_comment_blank_line_trailing_space_and_crlf_edits_stay_trusted(tmp_path)
     for text in ("# new comment\n\nexit 1\n", "exit 1   \n", "exit 1\r\n", "\n\n# only comments\nexit 1\n\n"):
         check.write_bytes(text.encode())
         assert fire(repo, tmp_path)["decision"] == "block", repr(text)
+
+
+def test_indentation_only_edit_stays_trusted(tmp_path):
+    repo = dirty_repo(tmp_path, "exit 1")
+    approve(repo, tmp_path)
+    (repo / ".claude" / "stop-check").write_text("    exit 1\n")
+    assert fire(repo, tmp_path)["decision"] == "block"
+
+
+def test_missing_trust_script_warns_once_per_session_and_never_blocks(tmp_path):
+    hooks = tmp_path / "copy" / ".claude" / "hooks"
+    hooks.mkdir(parents=True)
+    (hooks / "stop-check.sh").write_text(HOOK.read_text())
+    repo = dirty_repo(tmp_path, "exit 1")
+    approve(repo, tmp_path)
+
+    def fire_copy(session: str) -> dict:
+        event = {"cwd": str(repo), "stop_hook_active": False, "session_id": session}
+        out = subprocess.run(["bash", str(hooks / "stop-check.sh")], input=json.dumps(event), capture_output=True,
+                             text=True, check=True, env={"PATH": "/usr/bin:/bin", "HOME": str(tmp_path),
+                                                         "TMPDIR": str(tmp_path / "tmp")}).stdout
+        return json.loads(out) if out.strip() else {}
+
+    (tmp_path / "tmp").mkdir(exist_ok=True)
+    first = fire_copy("m1")
+    assert first == {"systemMessage": "[stop-check] skipped: cannot verify trust (bin/stop-check-trust not found)"}
+    assert fire_copy("m1") == {}
+    assert "systemMessage" in fire_copy("m2")
 
 
 def test_two_approved_hashes_for_one_repo_both_run(tmp_path):

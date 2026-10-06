@@ -314,7 +314,7 @@ stop-check-trust --revoke   # remove the approvals of this repo
 ```
 
 - Before approval, the hook skips the check, never blocks, and shows one message per session.
-- The approval covers the command, not the file. A new command needs a new approval. Comment, blank-line and CRLF edits do not.
+- The approval covers the command, not the file. A new command needs a new approval. Comment, blank-line, indentation and CRLF edits do not.
 - Approvals live in `~/.claude/stop-check-trust` (`<sha256> <repo id>`). Worktrees of one repo share them.
 - The template denies `stop-check-trust` to the agent. Read the command before you approve it.
 

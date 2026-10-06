@@ -28,19 +28,23 @@ CHECK_FILE="$ROOT/.claude/stop-check"
 [[ -f "$CHECK_FILE" ]] || exit 0
 [[ -n "$(git -C "$ROOT" status --porcelain 2>/dev/null)" ]] || exit 0
 
+WARNED="${TMPDIR:-/tmp}/stop-check-warned-$SID"
+
+# warn_once <dedupe key> <message>: print one systemMessage per key per session; never blocks.
+warn_once() {
+  grep -qxF "$1" "$WARNED" 2>/dev/null && exit 0
+  printf '%s\n' "$1" >>"$WARNED"
+  python3 -c 'import json, sys; print(json.dumps({"systemMessage": sys.argv[1]}))' "$2"
+  exit 0
+}
+
+[[ -x "$TRUST_BIN" ]] || warn_once "no-trust-bin" "[stop-check] skipped: cannot verify trust (bin/stop-check-trust not found)"
+
 CMD=$("$TRUST_BIN" --command "$ROOT" 2>/dev/null) || exit 0
 KEY=$("$TRUST_BIN" --key "$ROOT" 2>/dev/null) || exit 0
 
-if ! grep -qxF "$KEY" "$STORE" 2>/dev/null; then
-  WARNED="${TMPDIR:-/tmp}/stop-check-warned-$SID"
-  grep -qxF "$KEY" "$WARNED" 2>/dev/null && exit 0
-  printf '%s\n' "$KEY" >>"$WARNED"
-  python3 -c '
-import json, sys
-print(json.dumps({"systemMessage": f"[stop-check] skipped: command not approved: {sys.argv[1]}. To approve, the user runs: ! stop-check-trust"}))' \
-    "$(head -n1 <<<"$CMD")"
-  exit 0
-fi
+grep -qxF "$KEY" "$STORE" 2>/dev/null ||
+  warn_once "$KEY" "[stop-check] skipped: command not approved: $(head -n1 <<<"$CMD"). To approve, the user runs: ! stop-check-trust"
 
 OUT=$(cd "$ROOT" && timeout "$TIMEOUT_S" bash -c "$CMD" 2>&1)
 RC=$?
