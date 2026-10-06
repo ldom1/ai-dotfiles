@@ -4,6 +4,8 @@
 
 ### Added
 - `brain-audit:promote`: after `compile`, counts `**Pitfall hit:**` lines per rule id (`skills/brain-audit/scripts/count-pitfall-hits.py`, retired ids mapped) and drafts a sensor in vault `inbox/sensors/` for each rule hit in 2 or more sessions. It never installs anything. The digest lists the drafts.
+- Stack rules load by path: `install.sh` runs `scripts/link-pattern-rules.sh`, which symlinks each vault `*-patterns.md` note with `paths:` frontmatter into `.claude/rules/` (gitignored). Claude Code loads a rule when Read, Write or Edit touches a matching file in the working directory. Bash commands do not trigger it.
+- Vault: `paths:` added to the docker, python, deployment, observability, infisical, claude-code, shell and git pattern notes. The pitfalls header now says "Stack rules load when a matching file is read or edited".
 
 ### Changed
 - `AGENTS.md`: new "Soul of the Agent" section — reports to the user are extremely concise, facts and sources over inference. Cursor and Vibe copies rebuilt.
