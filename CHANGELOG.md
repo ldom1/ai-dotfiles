@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-07
+
 ### Added
 - `brain-audit:promote`: after `compile`, counts `**Pitfall hit:**` lines per rule id (`skills/brain-audit/scripts/count-pitfall-hits.py`, retired ids mapped) and drafts a sensor in vault `inbox/sensors/` for each rule hit in 2 or more sessions. It never installs anything. The digest lists the drafts.
 - Stack rules load by path: `install.sh` runs `scripts/link-pattern-rules.sh`, which symlinks each vault `*-patterns.md` note with `paths:` frontmatter into `.claude/rules/` (gitignored). Claude Code loads a rule when Read, Write or Edit touches a matching file in the working directory. Bash commands do not trigger it.
