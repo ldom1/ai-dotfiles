@@ -1,0 +1,36 @@
+{
+  "_doc": "Rules for hardline-check.py. Tier deny: irreversible. Tier ask: recoverable. Fields: hardline-check.py header.",
+  "skip": ["sudo", "env", "command", "nohup", "timeout", "nice", "rtk proxy",
+           "if", "then", "else", "elif", "do", "while", "until", "time", "!", "{"],
+  "shells": ["bash", "sh", "zsh"],
+  "rules": [
+    {"id": "rm-recursive-force-root", "tier": "deny", "dynamic": "ask",
+     "why": "recursive force delete of a protected target (/, home, . or ..)",
+     "program": ["rm"], "flags": [["-r", "-R", "--recursive"], ["-f", "--force"]],
+     "targets": ["/", "/*", "~", "~/*", "$HOME", "${HOME}", "$HOME/*", ".", ".."]},
+    {"id": "mkfs", "tier": "deny", "why": "creates a filesystem (erases the device)",
+     "program": ["mkfs*"]},
+    {"id": "dd-to-device", "tier": "deny", "dynamic": "ask", "why": "dd writes to a device",
+     "program": ["dd"], "target_prefix": "of=", "target_globs": ["/dev/*"]},
+    {"id": "redirect-to-block-device", "tier": "deny", "why": "redirect writes to a block device",
+     "redirect_globs": ["/dev/sd*", "/dev/nvme*"]},
+    {"id": "find-delete-root", "tier": "deny", "dynamic": "ask", "why": "find -delete from / or home",
+     "program": ["find"], "flags": [["-delete"]], "leading_only": true,
+     "targets": ["/", "~", "$HOME", "${HOME}"]},
+    {"id": "fork-bomb", "tier": "deny", "why": "fork bomb", "raw_regex": ":\\s*\\(\\s*\\)\\s*\\{"},
+
+    {"id": "git-force-push-main", "tier": "ask", "why": "force push to main or master",
+     "program": ["git"], "option_values": ["-C", "-c"], "subcommand": [["push"]],
+     "flags": [["-f", "--force", "--force-with-lease"]],
+     "target_globs": ["main", "master", "+main", "+master", "*:main", "*:master"]},
+    {"id": "git-clean-untracked", "tier": "ask", "why": "git clean -x/-d on the whole tree",
+     "program": ["git"], "option_values": ["-C", "-c"], "subcommand": [["clean"]],
+     "flags": [["-x", "-d"]], "unless": ["-n", "--dry-run"], "no_targets": true},
+    {"id": "docker-prune", "tier": "ask", "why": "docker prune or volume removal",
+     "program": ["docker"], "subcommand": [["system", "prune"], ["volume", "prune"], ["volume", "rm"]]},
+    {"id": "chmod-777-recursive", "tier": "ask", "why": "recursive chmod 777",
+     "program": ["chmod"], "flags": [["-R", "--recursive"]], "targets": ["777", "0777"]},
+    {"id": "download-to-shell", "tier": "ask", "why": "download piped to a shell",
+     "pipe_from": ["curl", "wget"]}
+  ]
+}

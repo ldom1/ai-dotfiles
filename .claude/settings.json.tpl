@@ -13,6 +13,14 @@
       "Bash(rm -rf *)",
       "Bash(stop-check-trust *)",
       "Bash(*/stop-check-trust *)"
+    ],
+    "ask": [
+      "Bash(ansible-playbook *)",
+      "Bash(kubectl apply *)",
+      "Bash(kubectl delete *)",
+      "Bash(docker compose down *)",
+      "Bash(terraform apply *)",
+      "Bash(terraform destroy *)"
     ]
   },
   "hooks": {
@@ -38,6 +46,15 @@
       }
     ],
     "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.claude/hooks/hardline-check.py"
+          }
+        ]
+      },
       {
         "matcher": "Bash",
         "hooks": [
