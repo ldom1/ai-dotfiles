@@ -64,7 +64,11 @@ When reporting information to me, always be extremely concise and to the point; 
 - Before editing nginx/Docker/Tailscale/Authelia config, find every config location and which one is live (`nginx -T` or equivalent).
 
 ## FinOps
-Before a multi-step task, state the model you are on and why. When delegating: Haiku for grep/rename/format/lookups, Sonnet for implementation/tests/review (default), Opus for architecture, multi-file refactors, hard debugging. Details: `$BRAIN_PATH/resources/operational/ai-agents/claude-finops.md`.
+Before a multi-step task, state the model you are on and why.
+- Claude Code: delegation models are set in `.claude/agents/` and `CLAUDE_CODE_SUBAGENT_MODEL`.
+- Cursor / Vibe, when delegating: Haiku for grep/rename/format/lookups, Sonnet for implementation/tests/review (default), Opus for architecture, multi-file refactors, hard debugging.
+
+Details: `$BRAIN_PATH/resources/operational/ai-agents/claude-finops.md`.
 
 ## ai-dotfiles init
 `ai-dotfiles init <path>` means the user already ran the script: invoke the `brain-init-project` skill with the path. Do not use the `init` skill, which writes CLAUDE.md files.

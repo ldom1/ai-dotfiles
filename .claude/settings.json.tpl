@@ -1,5 +1,8 @@
 {
   "model": "opus[1m]",
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
+  },
   "permissions": {
     "deny": [
       "Bash(git push --force *)",
