@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# stop-check-trust — approve a repo's .claude/stop-check command so the Stop hook may run it.
+# Usage: stop-check-trust [path]            approve the normalized command (no prompt: typing this is the approval)
+#        stop-check-trust --list            print the store
+#        stop-check-trust --revoke [path]   remove every approval of that repo
+#        stop-check-trust --command [path]  print the normalized command (used by stop-check.sh)
+#        stop-check-trust --key [path]      print "<sha256 of command> <repo id>" (used by stop-check.sh)
+# Store: ~/.claude/stop-check-trust, one "<hash> <repo id>" per line. Approvals are only appended.
+# Repo id: absolute path of `git rev-parse --git-common-dir`, so worktrees share approvals.
+set -euo pipefail
+
+STORE="$HOME/.claude/stop-check-trust"
+MODE=approve
+case "${1:-}" in
+  --list)    cat "$STORE" 2>/dev/null || true; exit 0 ;;
+  --revoke)  MODE=revoke; shift ;;
+  --command) MODE=cmd; shift ;;
+  --key)     MODE=key; shift ;;
+esac
+DIR="${1:-.}"
+
+ROOT=$(git -C "$DIR" rev-parse --show-toplevel 2>/dev/null) || { echo "stop-check-trust: not a git repo: $DIR" >&2; exit 1; }
+ID=$(cd "$ROOT" && cd "$(git rev-parse --git-common-dir)" && pwd -P)
+
+if [[ "$MODE" == revoke ]]; then
+  [[ -f "$STORE" ]] || exit 0
+  awk -v id="$ID" '{ if (substr($0, index($0, " ") + 1) != id) print }' "$STORE" >"$STORE.tmp"
+  mv "$STORE.tmp" "$STORE"
+  echo "revoked: $ID"
+  exit 0
+fi
+
+FILE="$ROOT/.claude/stop-check"
+[[ -f "$FILE" ]] || { echo "stop-check-trust: no .claude/stop-check in $ROOT" >&2; exit 1; }
+# Normalize: drop comment and blank lines, strip leading and trailing whitespace (CR included).
+CMD=$(grep -v '^[[:space:]]*#' "$FILE" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; /^$/d' || true)
+[[ -n "$CMD" ]] || { echo "stop-check-trust: .claude/stop-check holds no command" >&2; exit 1; }
+HASH=$(printf '%s' "$CMD" | sha256sum | cut -d' ' -f1)
+
+case "$MODE" in
+  cmd) printf '%s\n' "$CMD"; exit 0 ;;
+  key)     printf '%s %s\n' "$HASH" "$ID"; exit 0 ;;
+esac
+
+printf '%s\n' "$CMD"
+echo "sha256: $HASH"
+echo "repo:   $ID"
+mkdir -p "$(dirname "$STORE")"
+if grep -qxF "$HASH $ID" "$STORE" 2>/dev/null; then
+  echo "already approved"
+else
+  printf '%s %s\n' "$HASH" "$ID" >>"$STORE"
+  echo "approved"
+fi

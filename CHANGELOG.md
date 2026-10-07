@@ -10,6 +10,13 @@
 - `settings.json.tpl` sets `env.CLAUDE_CODE_SUBAGENT_MODEL` to `sonnet`. Delegations without a `model` key, including `general-purpose`, run on Sonnet. `install.sh` merges the key into live settings.
 - `.claude/hooks/tests/test_agent_files.py` checks the agent frontmatter and the template `env` key.
 - Limit: agent files set the model of a delegation. They do not make the main model delegate.
+- Stop-check trust gate. `stop-check.sh` runs `.claude/stop-check` only if the hash of its normalized command is approved for the repo in `~/.claude/stop-check-trust`.
+  - Normalized means: no comment or blank lines, no leading or trailing whitespace, no `\r`. A comment or indentation edit keeps the approval.
+  - The repo id is the absolute `git rev-parse --git-common-dir`, so worktrees share approvals. Several hashes per repo are valid.
+  - An unapproved command never runs and never blocks. The hook shows one `systemMessage` per repo and hash per session (marker `$TMPDIR/stop-check-warned-<session_id>`). The model gets no `reason`.
+- `bin/stop-check-trust [path]` approves the command with no prompt and prints the command and hash. `--list` prints the store. `--revoke [path]` removes the approvals of a repo. `install.sh` links it into `~/.local/bin`.
+- Template `permissions.deny` blocks `Bash(stop-check-trust *)` and `Bash(*/stop-check-trust *)`, so the agent cannot approve. The user runs `! stop-check-trust`.
+- `install.sh` approves this repo's own `.claude/stop-check` once.
 
 ### Changed
 - `AGENTS.md`: new "Soul of the Agent" section — reports to the user are extremely concise, facts and sources over inference. Cursor and Vibe copies rebuilt.

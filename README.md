@@ -305,7 +305,18 @@ Opt a project into the Stop check:
 echo 'ruff check . && pytest -x -q' > .claude/stop-check   # this repo uses shellcheck on changed *.sh
 ```
 
-`.claude/stop-check` is a shell command that runs with your user's permissions at the end of every agent turn that left changes. A cloned repo can ship one: read it before you let an agent work there.
+`.claude/stop-check` is a shell command that runs with your user's permissions at the end of every agent turn that left changes. A cloned repo can ship one, so the hook runs it only after you approve it:
+
+```bash
+! stop-check-trust          # in the Claude Code prompt, from the repo: prints the command, records the approval
+stop-check-trust --list     # show all approvals
+stop-check-trust --revoke   # remove the approvals of this repo
+```
+
+- Before approval, the hook skips the check, never blocks, and shows one message per session.
+- The approval covers the command, not the file. A new command needs a new approval. Comment, blank-line, indentation and CRLF edits do not.
+- Approvals live in `~/.claude/stop-check-trust` (`<sha256> <repo id>`). Worktrees of one repo share them.
+- The template denies `stop-check-trust` to the agent. Read the command before you approve it.
 
 Tests: `.claude/hooks/tests/` (part of the git-promotion gate).
 
@@ -442,7 +453,8 @@ ai-dotfiles/
 ├── CONTRIBUTING.md
 ├── prompts/
 ├── bin/
-│   └── ai-dotfiles                  # CLI: init / upgrade / sync / merge-memory
+│   ├── ai-dotfiles                  # CLI: init / upgrade / sync / merge-memory
+│   └── stop-check-trust             # approve a repo's .claude/stop-check command
 └── scripts/
     ├── cursor-agent-brain.sh        # prewarm inject rule + agent (turn-1 reliable)
     ├── brain-hooks-prewarm.sh       # write alwaysApply inject + sidecar
