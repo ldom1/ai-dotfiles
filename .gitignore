@@ -36,6 +36,9 @@
 # Local permissions — machine-specific, do not track
 .claude/settings.local.json
 
+# Vault stack rules — symlinks to this machine's vault (scripts/link-pattern-rules.sh)
+.claude/rules/*-patterns.md
+
 # Runtime reports from finops-audit / token-watch
 .claude/reports/
 

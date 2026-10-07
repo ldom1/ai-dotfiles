@@ -313,6 +313,17 @@ Tests: `.claude/hooks/tests/` (part of the git-promotion gate).
 
 `AGENTS.md` at the repo root is the single source of the rules Claude Code, Cursor and Mistral Vibe share. `.claude/CLAUDE.md` imports it (`@~/ai-dotfiles/AGENTS.md`) and adds Claude-only lines. `scripts/build-agent-rules.sh` (run by `install.sh`) generates `.cursor/rules/agents.mdc` (alwaysApply) and `.vibe/AGENTS.md` (`.vibe/bootstrap.md` + `AGENTS.md`); `install.sh` links `~/.vibe/AGENTS.md` to it, so Vibe gets the rules in every project. CI fails if a generated copy is stale. Edit `AGENTS.md`, never the generated files.
 
+### Stack rules by path (Claude Code)
+
+Stack rules live in the vault at `resources/knowledge/patterns/*-patterns.md`. A note with a `paths:` list in its frontmatter becomes a Claude Code rule:
+
+- `install.sh` runs `scripts/link-pattern-rules.sh`. It symlinks each such note into `.claude/rules/<name>.md` (gitignored) and removes links whose note lost `paths:`.
+- Claude Code loads the rule when Read, Write or Edit touches a matching file under the session's working directory. It does not load at launch, so SessionStart output does not grow.
+- A Bash command such as `cat Dockerfile` or `git add .gitignore` does not trigger a rule. A file outside the working directory does not trigger a user-level rule.
+- The links point at the notes, so rule edits are live. Run `install.sh` again after you add or remove `paths:` on a note.
+
+Cursor and Vibe get no equivalent.
+
 ### Cursor Agent CLI brain hooks
 
 Cursor **user hooks** (`.cursor/hooks.json`) run brain sync on the **Agent CLI** — not IDE Agent, not Cloud/remote IDE (`CURSOR_CODE_REMOTE=true` → skip).
@@ -362,6 +373,7 @@ ai-dotfiles/
 │   ├── LocalBrain.md                # Vault layout pointer
 │   ├── RTK.md                       # RTK reference
 │   ├── skills/                      # symlinks → ../../skills/<name> (Claude Code, coe-* excluded)
+│   ├── rules/                       # symlinks → vault *-patterns.md notes with paths: (gitignored)
 │   ├── settings.json.tpl            # Settings template (HOME placeholder)
 │   ├── settings.local.json.example  # Machine-specific permissions template
 │   └── hooks/
