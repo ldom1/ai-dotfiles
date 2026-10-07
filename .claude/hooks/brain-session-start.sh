@@ -19,40 +19,32 @@ OUT_BUF=$(mktemp)
 exec 3>&1 >"$OUT_BUF"
 trap 'exec 1>&3; cat "$OUT_BUF"; rm -f "$OUT_BUF"' EXIT
 
-# ── Auto-heal settings.json if it's behind settings.json.tpl (e.g. after a
-# git pull that enabled new plugins but install.sh wasn't re-run). Only
-# checks keys install.sh actually templates (enabledPlugins,
-# extraKnownMarketplaces); install.sh's generation step (as of the merge fix)
-# only ever touches those same two keys once settings.json exists, so
-# local-only additions in settings.json are left untouched. Takes effect from
-# the *next* session — Claude Code has already read settings.json by the time
-# this hook runs.
+# ── Settings drift (e.g. after a git pull that changed settings.json.tpl).
+# merge-settings.py --dry-run lists what install.sh would add. Plugin and
+# marketplace drift alone auto-runs install.sh. Drift in permissions, env or
+# hooks is only reported: it changes behavior, so the user runs install.sh.
+# Changes take effect from the *next* session — Claude Code has already read
+# settings.json by the time this hook runs.
 TPL_FILE="$AI_DOTFILES/.claude/settings.json.tpl"
 SETTINGS_FILE="$AI_DOTFILES/.claude/settings.json"
-if [[ -f "$TPL_FILE" ]]; then
-  DRIFT=$(python3 - "$TPL_FILE" "$SETTINGS_FILE" 2>/dev/null <<'EOF' || true
-import json, sys
-tpl_path, cur_path = sys.argv[1], sys.argv[2]
-tpl = json.load(open(tpl_path))
-try:
-    cur = json.load(open(cur_path))
-except (FileNotFoundError, json.JSONDecodeError):
-    cur = {}
-missing = []
-for name, enabled in tpl.get("enabledPlugins", {}).items():
-    if cur.get("enabledPlugins", {}).get(name) != enabled:
-        missing.append(name)
-for name in tpl.get("extraKnownMarketplaces", {}):
-    if name not in cur.get("extraKnownMarketplaces", {}):
-        missing.append(f"marketplace:{name}")
-print(",".join(missing))
-EOF
-  )
-  if [[ -n "$DRIFT" ]]; then
-    echo "[install-check] settings.json missing: $DRIFT — running scripts/install.sh" | tee -a "$LOG_FILE"
-    bash "$AI_DOTFILES/scripts/install.sh" >>"$LOG_FILE" 2>&1 \
-      && echo "[install-check] install.sh done — new plugins active from next session" \
-      || echo "[install-check] install.sh failed — see $LOG_FILE"
+MERGE="$AI_DOTFILES/scripts/merge-settings.py"
+if [[ -f "$TPL_FILE" && -f "$MERGE" ]]; then
+  # Key paths of planned additions, e.g. enabledPlugins.x, permissions.deny, hooks.Stop
+  ADDS=$(python3 "$MERGE" --dry-run "$TPL_FILE" "$SETTINGS_FILE" 2>/dev/null | sed -n 's/^add \([^:]*\):.*/\1/p' | awk '!seen[$0]++' || true)
+  NEW_KEYS=$(grep -v -E '^(enabledPlugins|extraKnownMarketplaces)\.' <<<"$ADDS" | paste -sd, - | sed 's/,/, /g' || true)
+  if [[ -n "$NEW_KEYS" ]]; then
+    echo "[install-check] template adds: $NEW_KEYS — run scripts/install.sh" | tee -a "$LOG_FILE"
+  elif [[ -n "$ADDS" ]]; then
+    echo "[install-check] settings.json missing: $(paste -sd, - <<<"$ADDS") — running scripts/install.sh" | tee -a "$LOG_FILE"
+    RC=0
+    RUN_OUT=$(bash "$AI_DOTFILES/scripts/install.sh" 2>&1) || RC=$?
+    echo "$RUN_OUT" >>"$LOG_FILE"
+    if (( RC == 0 )); then
+      echo "[install-check] install.sh done — new plugins active from next session"
+    else
+      grep '^CONFLICT ' <<<"$RUN_OUT" || true
+      echo "[install-check] install.sh failed (exit $RC) — see $LOG_FILE"
+    fi
   fi
 fi
 

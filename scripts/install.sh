@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 # install.sh — Set up ai-dotfiles on a new machine
-# Usage: bash ~/ai-dotfiles/scripts/install.sh
+# Usage: bash ~/ai-dotfiles/scripts/install.sh [--dry-run-settings]
+#   --dry-run-settings  print the planned settings.json changes and conflicts, change nothing, exit
 set -euo pipefail
 
 DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+MERGE_SETTINGS=(python3 "$DOTFILES/scripts/merge-settings.py" "$DOTFILES/.claude/settings.json.tpl" "$DOTFILES/.claude/settings.json")
+
+if [[ "${1:-}" == "--dry-run-settings" ]]; then
+  exec "${MERGE_SETTINGS[@]}" --dry-run
+fi
 BOLD='\033[1m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; RESET='\033[0m'
 
 log()    { echo -e "${GREEN}✓${RESET} $*"; }
@@ -82,28 +88,16 @@ log "$HOME/.vibe/AGENTS.md → ai-dotfiles/.vibe/AGENTS.md (Vibe user-level inst
 # ── 2. Generate settings.json from template ────────────────────────────────────
 header "Generating settings.json"
 
-TPL="$DOTFILES/.claude/settings.json.tpl"
-OUT="$DOTFILES/.claude/settings.json"
-TPL_RENDERED="$(sed "s|__HOME__|$HOME|g" "$TPL")"
-
-if [[ ! -f "$OUT" ]]; then
-  echo "$TPL_RENDERED" > "$OUT"
-  log "settings.json generated (HOME=$HOME)"
-else
-  # settings.json commonly carries machine-local additions the template never
-  # defines (extra permissions, extra hooks, effortLevel, pluginConfigs, ...).
-  # Only merge the two keys the template actually owns — enabledPlugins and
-  # extraKnownMarketplaces — instead of overwriting the whole file, so those
-  # local-only additions survive a re-run.
-  cp "$OUT" "$OUT.bak"
-  MERGED=$(jq -n --argjson tpl "$TPL_RENDERED" --argjson cur "$(cat "$OUT")" '
-    $cur
-    | .enabledPlugins = ((.enabledPlugins // {}) + ($tpl.enabledPlugins // {}))
-    | .extraKnownMarketplaces = ((.extraKnownMarketplaces // {}) + ($tpl.extraKnownMarketplaces // {}))
-  ') || { echo "ERROR: jq merge failed for $OUT (backup at $OUT.bak)" >&2; exit 1; }
-  echo "$MERGED" > "$OUT"
-  log "settings.json merged from template (HOME=$HOME, backup: $OUT.bak)"
-fi
+# merge-settings.py adds the template's owned keys (plugins, marketplaces,
+# permissions.deny/ask, env, hooks) to settings.json and keeps local-only
+# entries. On a change it keeps settings.json.bak. A semantic conflict
+# writes nothing and exits 3.
+"${MERGE_SETTINGS[@]}" || {
+  rc=$?
+  echo "ERROR: settings.json not changed. Resolve the CONFLICT lines above, then run install.sh again." >&2
+  exit "$rc"
+}
+log "settings.json up to date with the template (HOME=$HOME)"
 
 # ── 3. Bootstrap settings.local.json if missing ───────────────────────────────
 header "Checking settings.local.json"

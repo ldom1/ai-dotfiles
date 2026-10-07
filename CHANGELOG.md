@@ -4,6 +4,13 @@
 
 ### Changed
 - `AGENTS.md`: new "Soul of the Agent" section — reports to the user are extremely concise, facts and sources over inference. Cursor and Vibe copies rebuilt.
+- `install.sh` merges `permissions.deny`, `permissions.ask`, `env` and `hooks` from the template into an existing `settings.json`, not only plugins and marketplaces. The merge is `scripts/merge-settings.py` (stdlib, replaces the `jq` block).
+  - It adds missing template entries and keeps local-only entries.
+  - It writes atomically and keeps `settings.json.bak` when it changes the file.
+  - A semantic conflict stops it before writing, with exit 3 and one `CONFLICT` line per conflict. Conflicts: an `env` value differs; the same hook command has another event, matcher or timeout; live `disableAllHooks: true`.
+  - A template `deny`/`ask` rule also in live `allow` is added with a note. It is not a conflict.
+- `install.sh --dry-run-settings` prints the planned settings changes and conflicts, then exits. It changes no file.
+- SessionStart drift check: plugin or marketplace drift alone still auto-runs `install.sh`. Drift in permissions, `env` or hooks prints `[install-check] template adds: <keys> — run scripts/install.sh` and runs nothing. An auto-run that exits 3 prints its `CONFLICT` lines in the hook output.
 
 ### Fixed
 - `git-commit-check.sh`: commit detection now looks only at simple commands that start with `git [-C dir | -c k=v | --no-pager] commit` (split on `&& || ; |` and newlines outside quotes and heredoc bodies). Commit-like text inside heredocs, quoted strings, `echo` or `grep` arguments no longer triggers a block. `-m "$(cat <<'EOF' … EOF)"` still yields the heredoc as the message. The scope is checked on the subject line only. Parse failure still fails open. New regression tests in `test_git_commit_check.py`.
