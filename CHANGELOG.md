@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-10-07
+
 ### Fixed
 - `install.sh` exits with code 2 on an unknown argument and in a linked git worktree, before it changes anything. Before, an older copy in a worktree ignored `--dry-run-settings`, ran a full install and linked `~/.claude`, `~/.cursor` and `~/.vibe/AGENTS.md` into the worktree. The links broke when the worktree was removed. Tests: `.claude/hooks/tests/test_install_guard.py`.
 
