@@ -1,14 +1,26 @@
 #!/usr/bin/env bash
 # install.sh — Set up ai-dotfiles on a new machine
-# Usage: bash ~/ai-dotfiles/scripts/install.sh [--dry-run-settings]
+# Usage: bash ~/ai-dotfiles/scripts/install.sh [--dry-run-settings]  (main checkout only, not a worktree)
 #   --dry-run-settings  print the planned settings.json changes and conflicts, change nothing, exit
 set -euo pipefail
 
 DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MERGE_SETTINGS=(python3 "$DOTFILES/scripts/merge-settings.py" "$DOTFILES/.claude/settings.json.tpl" "$DOTFILES/.claude/settings.json")
 
-if [[ "${1:-}" == "--dry-run-settings" ]]; then
-  exec "${MERGE_SETTINGS[@]}" --dry-run
+case "${1:-}" in
+  "") ;;
+  --dry-run-settings) exec "${MERGE_SETTINGS[@]}" --dry-run ;;
+  *) echo "install.sh: unknown argument: $1 (usage: install.sh [--dry-run-settings])" >&2; exit 2 ;;
+esac
+
+# Links point at $DOTFILES: from a linked worktree they would follow it and break when it is removed.
+if GIT_DIRS=$(git -C "$DOTFILES" rev-parse --absolute-git-dir --git-common-dir 2>/dev/null); then
+  { read -r GIT_DIR; read -r COMMON_DIR; } <<<"$GIT_DIRS"
+  COMMON_DIR=$(cd "$DOTFILES" && cd "$COMMON_DIR" && pwd)
+  if [[ "$GIT_DIR" != "$COMMON_DIR" ]]; then
+    echo "install.sh: $DOTFILES is a linked git worktree. Run install.sh from the main checkout: $(dirname "$COMMON_DIR")" >&2
+    exit 2
+  fi
 fi
 BOLD='\033[1m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; RESET='\033[0m'
 
