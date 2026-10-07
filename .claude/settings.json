@@ -10,7 +10,17 @@
       "Bash(git checkout . *)",
       "Bash(git checkout -- *)",
       "Bash(git clean -f *)",
-      "Bash(rm -rf *)"
+      "Bash(rm -rf *)",
+      "Bash(stop-check-trust *)",
+      "Bash(*/stop-check-trust *)"
+    ],
+    "ask": [
+      "Bash(ansible-playbook *)",
+      "Bash(kubectl apply *)",
+      "Bash(kubectl delete *)",
+      "Bash(docker compose down *)",
+      "Bash(terraform apply *)",
+      "Bash(terraform destroy *)"
     ]
   },
   "model": "opus[1m]",
@@ -61,6 +71,15 @@
           {
             "type": "command",
             "command": "/home/lgiron/.claude/hooks/log-skill-usage.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.claude/hooks/hardline-check.py"
           }
         ]
       }
@@ -169,5 +188,8 @@
       "**Org-specific CLIs**: infisical, aws, vercel, tailscale, rtk (token proxy wrapper from ~/ai-dotfiles)",
       "**routine under lgiron/ prefix**: brain-vault writes under $BRAIN_PATH/inbox/daily/{implementation,specs,plans}/server-setup/ per ~/.claude/CLAUDE.md conventions"
     ]
+  },
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
   }
 }
