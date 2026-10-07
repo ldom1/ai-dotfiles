@@ -1,7 +1,8 @@
 {
   "model": "opus[1m]",
   "env": {
-    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
+    "GRAPHIFY_NO_AUTO_REFRESH": "1"
   },
   "permissions": {
     "deny": [
