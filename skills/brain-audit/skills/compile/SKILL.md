@@ -12,7 +12,7 @@ user-invocable: true
 
 # brain-audit:compile
 
-Promote cross-project rules from `inbox/daily/` into `resources/operational/ai-agents/pitfalls.md`. That file is injected into every session (it shares the SessionStart hook's ~9.5 KB output budget with the project note and is truncated past it), so it holds distilled rules, not incidents. Vault references are `[[slug]]` wikilinks.
+Promote cross-project rules from `inbox/daily/` into `resources/operational/ai-agents/pitfalls.md`. That file is injected into every session (its 6,000 B cap is enforced by `scripts/check-pitfalls-budget.sh`), so it holds distilled rules, not incidents. Vault references are `[[slug]]` wikilinks.
 
 ## 1 — Find recent notes
 
@@ -30,7 +30,7 @@ Stop and tell the user if `BRAIN_PATH` is missing.
 
 For each notable mistake, decision or working approach:
 
-- **Cross-project and cross-stack** (would recur in a different project on a different stack) → search `pitfalls.md`; sharpen the rule that already covers it, otherwise add one bullet under the matching `## <Topic>`: imperative rule + the mechanism in a clause, exact command when that is the fix. No dates, project names or narrative — the session log keeps the story. Merge rules to stay under 6 KB.
+- **Cross-project and cross-stack** (would recur in a different project on a different stack) → search `pitfalls.md`; sharpen the rule that already covers it, otherwise add one bullet under the matching `## <Topic>`: imperative rule + the mechanism in a clause, exact command when that is the fix. No dates, project names or narrative — the session log keeps the story. Give it the next free id for its section (letters and rules: /capture step 4). After each edit, run `bash ~/ai-dotfiles/scripts/check-pitfalls-budget.sh`; on exit 1, merge rules or move a stack section to a pattern note until it passes.
 - **Stack-specific** (one tool or platform: Docker/Coolify, Python/Postgres/pandas, Ansible/network, Prometheus) → add it to the `## Rules` list of the matching `resources/knowledge/patterns/*-patterns.md`, not to `pitfalls.md`.
 - **Project-specific** → skip; it belongs in that project's `.claude/memory/CONTEXT.md` Gotchas or DECISIONS.
 - **Ambiguous** → ask before moving on:
@@ -43,7 +43,7 @@ For each notable mistake, decision or working approach:
 
 ## 3 — Audit existing rules
 
-Re-read `pitfalls.md` (not `archive/` — those logs are frozen). Flag rules that name a specific client/repo, duplicate another rule, or are no longer true; propose remove / merge / keep for each.
+Re-read `pitfalls.md` (not `archive/` — those logs are frozen). Flag rules that name a specific client/repo, duplicate another rule, or are no longer true; propose remove / merge / keep for each. Finish with `bash ~/ai-dotfiles/scripts/check-pitfalls-budget.sh`: it must print `— ok`.
 
 ## 4 — Report
 

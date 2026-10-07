@@ -11,6 +11,10 @@
   - A template `deny`/`ask` rule also in live `allow` is added with a note. It is not a conflict.
 - `install.sh --dry-run-settings` prints the planned settings changes and conflicts, then exits. It changes no file.
 - SessionStart drift check: plugin or marketplace drift alone still auto-runs `install.sh`. Drift in permissions, `env` or hooks prints `[install-check] template adds: <keys> — run scripts/install.sh` and runs nothing. An auto-run that exits 3 prints its `CONFLICT` lines in the hook output.
+- Pitfalls budget is enforced at write time: `scripts/check-pitfalls-budget.sh` fails `/capture` and `brain-audit:compile` when `pitfalls.md` exceeds 6,000 B or a rule has no stable id (`^g3`).
+- SessionStart: the last-exit log is one `[last exit]` status line plus up to 5 warnings (was the last 30 lines, ~2.2 KB). The full log stays in `~/.claude/logs/brain-sync-end.log.prev`.
+- SessionStart: if pitfalls still exceed the room, whole sections are dropped and named in the truncation line (was a byte cut mid-rule).
+- Vault: the "Git and GitHub", "Claude Code" and "Shell" pitfalls sections moved to `git-patterns`, `claude-code-patterns` and `shell-patterns`; the Wi-Fi scan rule moved to `deployment-patterns`. Six rules were merged (no fact dropped). Every rule has a stable id. `pitfalls.md` is 5,106 B.
 
 ### Fixed
 - `git-commit-check.sh`: commit detection now looks only at simple commands that start with `git [-C dir | -c k=v | --no-pager] commit` (split on `&& || ; |` and newlines outside quotes and heredoc bodies). Commit-like text inside heredocs, quoted strings, `echo` or `grep` arguments no longer triggers a block. `-m "$(cat <<'EOF' … EOF)"` still yields the heredoc as the message. The scope is checked on the subject line only. Parse failure still fails open. New regression tests in `test_git_commit_check.py`.

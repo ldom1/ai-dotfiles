@@ -68,13 +68,12 @@ if [[ "$INPUT" =~ \"source\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
 fi
 
 if [[ "$SOURCE" == "startup" || "$SOURCE" == "resume" ]]; then
-  # Show last exit log before pulling (so user sees what happened on /exit)
+  # Summarize the last exit log before pulling (so user sees what happened on /exit)
+  # One status line (+ ≤ 5 notable lines); the full log stays readable as .prev.
   EXIT_LOG="$HOME/.claude/logs/brain-sync-end.log"
   if [[ -f "$EXIT_LOG" ]]; then
-    echo "--- LAST EXIT (brain-sync) ---"
-    tail -30 "$EXIT_LOG"
-    echo "--- END LAST EXIT ---"
-    rm -f "$EXIT_LOG"
+    python3 "$AI_DOTFILES/scripts/summarize-sync-log.py" "$EXIT_LOG" || tail -5 "$EXIT_LOG"
+    mv -f "$EXIT_LOG" "$EXIT_LOG.prev"
   fi
   "$SYNC" start >>"$LOG_FILE" 2>&1 || true
   bash "$AI_DOTFILES/scripts/log-skill-usage.sh" brain-sync "claude:sessionStart" 2>/dev/null || true
@@ -112,11 +111,8 @@ if [[ -f "$PITFALLS" ]]; then
   PITFALLS_MAX_BYTES=$(( OUTPUT_MAX_BYTES - $(wc -c <"$OUT_BUF") - 200 ))
   (( PITFALLS_MAX_BYTES > 0 )) || PITFALLS_MAX_BYTES=0
   echo "--- AI-AGENTS PITFALLS (constraints) ---"
-  if (( $(wc -c <"$PITFALLS") > PITFALLS_MAX_BYTES )); then
-    head -c "$PITFALLS_MAX_BYTES" "$PITFALLS" | head -n -1   # drop the cut line
-    echo "[truncated at ${PITFALLS_MAX_BYTES} bytes (hook output budget) — merge rules or run /brain-audit; full file: $PITFALLS]"
-  else
-    cat "$PITFALLS"
-  fi
+  # Write-time gate: scripts/check-pitfalls-budget.sh. This is the last-resort cut: whole sections only.
+  python3 "$AI_DOTFILES/scripts/fit-sections.py" "$PITFALLS" "$PITFALLS_MAX_BYTES" \
+    || head -c "$PITFALLS_MAX_BYTES" "$PITFALLS"
   echo "--- END PITFALLS ---"
 fi
