@@ -6,6 +6,7 @@
 - `AGENTS.md`: new "Soul of the Agent" section — reports to the user are extremely concise, facts and sources over inference. Cursor and Vibe copies rebuilt.
 
 ### Fixed
+- `git-commit-check.sh`: commit detection now looks only at simple commands that start with `git [-C dir | -c k=v | --no-pager] commit` (split on `&& || ; |` and newlines outside quotes and heredoc bodies). Commit-like text inside heredocs, quoted strings, `echo` or `grep` arguments no longer triggers a block. `-m "$(cat <<'EOF' … EOF)"` still yields the heredoc as the message. The scope is checked on the subject line only. Parse failure still fails open. New regression tests in `test_git_commit_check.py`.
 - `config/brain-projects.tsv`: `telegram-to-notion` entry renamed to `notion-pilot` at `/home/lgiron/lab_perso/notion-pilot`. The repo was renamed on 2026-05-28, so `sync-project.sh --all` skipped it and its `.claude/memory` never synced to the vault.
 
 ## [0.8.1] - 2026-10-05
