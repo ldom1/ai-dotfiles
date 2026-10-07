@@ -12,6 +12,23 @@
         "type": "git-root-dir",
         "color": "white",
         "bold": true
+      },
+      {
+        "id": "3",
+        "type": "git-branch",
+        "color": "magenta"
+      },
+      {
+        "id": "4",
+        "type": "git-changes",
+        "color": "yellow"
+      },
+      {
+        "id": "5",
+        "type": "custom-command",
+        "commandPath": "/home/lgiron/.claude/statusline-health.sh",
+        "timeout": 1000,
+        "preserveColors": true
       }
     ],
     [
@@ -31,21 +48,45 @@
         }
       },
       {
-        "id": "c2",
-        "type": "tokens-total",
-        "color": "cyan",
-        "merge": "no-padding"
-      },
-      {
-        "id": "c3",
-        "type": "custom-text",
-        "customText": " tok used",
-        "color": "brightBlack"
-      },
-      {
         "id": "c4",
         "type": "session-cost",
         "color": "green"
+      },
+      {
+        "id": "c5l",
+        "type": "custom-text",
+        "customText": "effort ",
+        "color": "brightBlack",
+        "merge": "no-padding"
+      },
+      {
+        "id": "c5",
+        "type": "thinking-effort",
+        "color": "brightMagenta"
+      },
+      {
+        "id": "c6l",
+        "type": "custom-text",
+        "customText": "cache ",
+        "color": "brightBlack",
+        "merge": "no-padding"
+      },
+      {
+        "id": "c6",
+        "type": "cache-hit-rate",
+        "color": "cyan"
+      },
+      {
+        "id": "c7l",
+        "type": "custom-text",
+        "customText": "compacted ",
+        "color": "brightBlack",
+        "merge": "no-padding"
+      },
+      {
+        "id": "c7",
+        "type": "compaction-counter",
+        "color": "yellow"
       }
     ],
     [
@@ -65,7 +106,7 @@
       {
         "id": "s2",
         "type": "custom-text",
-        "customText": " reset ",
+        "customText": " resets ",
         "color": "brightBlack",
         "merge": "no-padding"
       },
@@ -93,7 +134,7 @@
       {
         "id": "s6",
         "type": "custom-text",
-        "customText": "resets ",
+        "customText": " resets ",
         "color": "brightBlack",
         "merge": "no-padding"
       },
@@ -104,6 +145,15 @@
         "metadata": {
           "compact": "true"
         }
+      }
+    ],
+    [
+      {
+        "id": "k1",
+        "type": "custom-command",
+        "commandPath": "/home/lgiron/.claude/statusline-counts.sh",
+        "timeout": 1000,
+        "preserveColors": true
       }
     ]
   ],
@@ -126,5 +176,6 @@
     "endCaps": [],
     "autoAlign": false,
     "continueThemeAcrossLines": false
-  }
+  },
+  "customCommandCacheTtlSeconds": 10
 }

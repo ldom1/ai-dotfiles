@@ -112,8 +112,9 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "npx -y ccstatusline@latest --config __HOME__/.claude/ccstatusline-settings.json",
-    "padding": 2
+    "command": "__HOME__/.local/bin/ccstatusline --config __HOME__/.claude/ccstatusline-settings.json",
+    "padding": 2,
+    "refreshInterval": 10
   },
   "enabledPlugins": {
     "superpowers@claude-plugins-official": true,
