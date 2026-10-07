@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### Changed
+- `graphify` skill synced from `v0.9.49` to upstream `v0.9.79` (Graphify-Labs/graphify).
+  - `.graphify_root` is written without shell interpolation, and `--watch` reads it instead of the raw `INPUT_PATH` (shell-injection fix).
+  - Fully cached reruns still run the Step B3 merge (fixes the missing `.graphify_semantic.json` crash) and clear stale chunk files.
+  - `--update` loads the old graph with `graphify.paths.load_node_link_graph`, which keeps edge direction.
+  - The ai-dotfiles additions (`GRAPHIFY_PROJECT` local-clone fallback, Step 8.5 agent-MCP auto-wiring, `reference/` dir name) are re-applied. `.graphify_version` tracks `0.9.79`.
+- `settings.json.tpl` sets `env.GRAPHIFY_NO_AUTO_REFRESH` to `1`. Since `0.9.72`, any `graphify` CLI run copies the upstream `SKILL.md` over an older installed skill, which would erase the ai-dotfiles additions. The variable applies to Claude Code only, not to Cursor or Vibe.
+- `ponytail` pin bumped to `v4.13.0`. The vendored `SKILL.md` is unchanged upstream since `v4.9.0`. `.claude-plugin/plugin.json` follows the pin.
+- `marketingskills` pin bumped to `v2.11.18` (six vendored skills).
+  - `copywriting` adds a "No AI Tells" rule set (`references/ai-tells.md`).
+  - `competitors` adds evidence discipline and a competitive asset audit.
+  - `directory-submissions` puts the official MCP Registry first and adds a pre-submission safety gate.
+  - `launch` adds `references/site-launch-qa.md`. It mentions `conversion-tracking` and `site-architecture`, which are not vendored.
+  - `product-marketing` and `marketing-psychology` are unchanged. The Introw link in `launch/SKILL.md` stays pinned to the release tag.
+
 ## [0.9.0] - 2026-10-07
 
 ### Added
