@@ -135,7 +135,7 @@ Invocations append to `~/.claude/skill-usage.log` (`date skill [source]`):
 | `claude:sessionStart` / `cursor:sessionStart` / … | Hook-driven `brain-sync` / `brain-load` via `scripts/log-skill-usage.sh` |
 | `cursor:skill-read` | Cursor Agent `preToolUse`/`Read` of a `**/skills/**/SKILL.md` (heuristic — exploratory reads count too) |
 
-**Not counted:** alwaysApply `.mdc` rules, SessionStart prompt injection, memory-only follow-through, Vibe (no hook yet). Cursor counts are approximate; do not delete skills from Cursor lines alone.
+**Not counted:** alwaysApply `.mdc` rules, SessionStart prompt injection, memory-only follow-through, Vibe (its hooks do not log skill use). Cursor counts are approximate; do not delete skills from Cursor lines alone.
 
 B0 observation artifacts: `spikes/cursor-b0-*` (logger + live sample).
 
@@ -353,6 +353,30 @@ agent   # from anywhere
 
 Prewarm writes a global user rule `~/.cursor/rules/brain-hooks-session-inject.mdc` (alwaysApply) + sidecar. It does **not** touch repo-root `AGENTS.md` (the single source of shared rules). Verify: quote `[brain-hooks] sessionStart OK` without Reading files.
 
+### Mistral Vibe hooks
+
+`install.sh` links `~/.vibe/hooks.toml` to `.vibe/user-hooks.toml`. Vibe then runs three Claude Code sensors:
+
+| Vibe hook | Type | Claude Code hook |
+|-----------|------|------------------|
+| `hardline` | `pre_tool` (bash), `strict` | `hardline-check.py` |
+| `commit-scope` | `pre_tool` (bash), `strict` | `git-commit-check.sh` |
+| `stop-check` | `post_agent`, 180 s | `stop-check.sh` |
+
+`scripts/vibe-claude-hook.py <hook>` runs each one and translates the protocol:
+
+- A Claude `deny` or Stop `block` becomes a Vibe `deny`. Exit 2 also becomes a `deny`, with stderr as the reason.
+- A Claude `ask` becomes a `deny` that tells the model to ask the user. Vibe has no ask decision.
+- `allow` and empty output pass. `systemMessage` becomes `system_message`.
+- Any other output, or another exit code, is an adapter error (exit 1, details on stderr). The two `strict` hooks then deny the bash call.
+
+Differences from Claude Code:
+
+- A `stop-check` deny injects a retry message. Vibe allows 3 retries per hook per turn, then ends the turn.
+- Vibe has no session-start hook. The vault sync and load stay manual (`.vibe/bootstrap.md`).
+
+The file is not named `.vibe/hooks.toml`. In this trusted repo, Vibe would load it twice and warn about each duplicate hook name.
+
 ---
 
 ## Personal setup (quick start)
@@ -411,7 +435,8 @@ ai-dotfiles/
 │   └── skills/                      # symlinks → ../skills/<name> (Cursor, coe-* excluded)
 ├── .vibe/
 │   ├── AGENTS.md                    # generated: bootstrap.md + AGENTS.md (~/.vibe/AGENTS.md links here)
-│   ├── bootstrap.md                 # Vibe-only sync/load steps (Vibe has no hooks)
+│   ├── bootstrap.md                 # Vibe-only sync/load steps (Vibe has no session-start hook)
+│   ├── user-hooks.toml              # Vibe hooks (~/.vibe/hooks.toml links here): hardline, commit-scope, stop-check
 │   ├── README.md                    # Vibe skill discovery and trust
 │   └── skills/                      # symlinks → skills/* (Mistral Vibe, coe-* excluded)
 ├── skills/
@@ -471,6 +496,7 @@ ai-dotfiles/
     ├── merge-memory.sh              # Backfill OKF frontmatter + missing sections only
     ├── merge-memory-md.py           # Per-file merge: adds frontmatter + ## headers non-destructively
     ├── replay-bash-rules.py         # Replay past Bash calls through hardline-check (prompt count)
+    ├── vibe-claude-hook.py          # Run a Claude Code hook as a Vibe hook (protocol adapter)
     ├── sync-project.sh              # Bidirectional rsync for registered projects
     └── update-wiki.sh               # Commit/push local .wiki/ changes
 ```

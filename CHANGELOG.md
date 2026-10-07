@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-07
+
 ### Added
 - `brain-audit:promote`: after `compile`, counts `**Pitfall hit:**` lines per rule id (`skills/brain-audit/scripts/count-pitfall-hits.py`, retired ids mapped) and drafts a sensor in vault `inbox/sensors/` for each rule hit in 2 or more sessions. It never installs anything. The digest lists the drafts.
 - Stack rules load by path: `install.sh` runs `scripts/link-pattern-rules.sh`, which symlinks each vault `*-patterns.md` note with `paths:` frontmatter into `.claude/rules/` (gitignored). Claude Code loads a rule when Read, Write or Edit touches a matching file in the working directory. Bash commands do not trigger it.
@@ -23,6 +25,11 @@
   - Tier 2 `ask`: force push to `main`/`master`, `git clean -x`/`-d` without a path, docker prune and volume removal, `chmod -R 777`, `curl|wget … | sh`. A tier-1 shape with a `$` or backtick target asks too. Unbalanced quotes ask only near `rm`, `dd` or `mkfs`.
   - Known bypasses (variables, other interpreters, scripts in a file, nested `bash -c`, aliases and functions) are listed in the hook header and tested as passing.
 - `permissions.ask` in the template: `ansible-playbook`, `kubectl apply|delete`, `docker compose down`, `terraform apply|destroy`.
+- Mistral Vibe hooks: `.vibe/user-hooks.toml` runs `hardline-check.py` and `git-commit-check.sh` as strict `pre_tool` (bash) hooks, and `stop-check.sh` as a `post_agent` hook (180 s). `install.sh` links `~/.vibe/hooks.toml` to it.
+  - `scripts/vibe-claude-hook.py <hook>` adapts the protocol. A Claude `deny`, Stop `block` or exit 2 becomes a Vibe `deny`. A Claude `ask` becomes a `deny` that tells the model to ask the user.
+  - Any other output or exit code is an adapter error (exit 1, details on stderr). The strict hooks then deny the bash call.
+  - A `stop-check` deny injects a retry message. Vibe allows 3 retries per hook per turn.
+  - Vibe has no session-start hook: the vault sync and load stay manual (`.vibe/bootstrap.md`).
 - `scripts/replay-bash-rules.py [--days N]`: replays past Bash calls from `~/.claude/projects` through the hook and the template `ask` list. It prints prompts per rule, session and day, and every prompt with an empty TP/FP label column.
 
 ### Changed

@@ -2,7 +2,7 @@
 
 # Vibe bootstrap (Local Brain)
 
-Vibe does not run hooks. Before your first substantive action on a codebase or on the vault:
+Vibe has no session-start hook. Before your first substantive action on a codebase or on the vault:
 
 ```bash
 bash ~/ai-dotfiles/skills/brain-sync/scripts/sync.sh start

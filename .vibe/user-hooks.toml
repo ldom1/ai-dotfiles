@@ -1,0 +1,25 @@
+# Mistral Vibe user hooks. install.sh links ~/.vibe/hooks.toml to this file.
+# Not named .vibe/hooks.toml: in this trusted repo Vibe would load it twice and warn on each duplicate name.
+# Each hook runs a Claude Code hook through scripts/vibe-claude-hook.py. Vibe runs `command` in a shell,
+# so `~` expands. strict = true: an adapter error denies the bash call.
+
+[[hooks]]
+name = "hardline"
+type = "pre_tool"
+match = "bash"
+strict = true
+command = "python3 ~/ai-dotfiles/scripts/vibe-claude-hook.py ~/ai-dotfiles/.claude/hooks/hardline-check.py"
+
+[[hooks]]
+name = "commit-scope"
+type = "pre_tool"
+match = "bash"
+strict = true
+command = "python3 ~/ai-dotfiles/scripts/vibe-claude-hook.py ~/ai-dotfiles/.claude/hooks/git-commit-check.sh"
+
+# A deny injects the failure as a retry message. Vibe caps it at 3 retries per hook per turn.
+[[hooks]]
+name = "stop-check"
+type = "post_agent"
+timeout = 180.0
+command = "python3 ~/ai-dotfiles/scripts/vibe-claude-hook.py ~/ai-dotfiles/.claude/hooks/stop-check.sh"
