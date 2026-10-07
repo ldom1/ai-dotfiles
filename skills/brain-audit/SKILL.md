@@ -11,12 +11,13 @@ Manual vault maintenance. Pick the subskill that matches the request; "run brain
 | User says | Subskill |
 |-----------|----------|
 | "compile my notes", "promote pitfalls", "review inbox" | `compile` |
+| "draft sensors", "turn recurring pitfalls into hooks", "which rules keep recurring" | `promote` |
 | "find connections", "link my notes", "synthesize patterns" | `connect` |
 | "insights", "what patterns", "what blockers" | `insights` |
 | "knowledge gaps", "what to document", "roadmap", "where are my projects" | `queries` |
 | "sync qmd", "reindex vault" | `qmd-sync` |
 | "weekly digest", "reset audit clock" | `digest` |
 
-**Full run order:** `qmd-sync` → `compile` → `queries` → `connect` → `insights` → `digest` (pass the compile/connect/insights counts to `digest`). `compile` and `queries` read files directly; `connect` and `insights` need a fresh QMD index.
+**Full run order:** `qmd-sync` → `compile` → `promote` → `queries` → `connect` → `insights` → `digest` (pass the compile/connect/insights counts to `digest`). `compile`, `promote` and `queries` read files directly; `connect` and `insights` need a fresh QMD index.
 
 Each subskill is `skills/<name>/SKILL.md` under this skill's root (`~/ai-dotfiles/skills/brain-audit/`). Claude Code exposes them as `brain-audit:<name>`; Cursor CLI and Mistral Vibe only see this router, so read the file at that path instead — don't report the subskill as missing.
