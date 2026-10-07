@@ -43,6 +43,12 @@ def make_repo(path: Path, check: str) -> Path:
     return path
 
 
+def trust(repo: Path, tmp_path: Path) -> None:
+    """Approve the repo's stop-check in the temp HOME, as the user does with `! stop-check-trust`."""
+    subprocess.run(["bash", str(REPO / "bin" / "stop-check-trust"), str(repo)], check=True, capture_output=True,
+                   env={"PATH": ENV_PATH, "HOME": str(tmp_path)})
+
+
 # Real hooks
 
 def test_bad_commit_message_is_denied(tmp_path):
@@ -70,6 +76,7 @@ def test_tier2_command_needs_confirmation(tmp_path):
 
 def test_failing_stop_check_is_denied_without_its_tag(tmp_path):
     repo = make_repo(tmp_path / "p", "echo 'E501 line too long'; exit 1")
+    trust(repo, tmp_path)
     out = decision(adapt(HOOKS / "stop-check.sh", post_agent(repo), tmp_path))
     assert out["decision"] == "deny"
     assert "E501 line too long" in out["reason"]
@@ -78,6 +85,7 @@ def test_failing_stop_check_is_denied_without_its_tag(tmp_path):
 
 def test_passing_stop_check_is_silent(tmp_path):
     repo = make_repo(tmp_path / "p", "true")
+    trust(repo, tmp_path)
     assert decision(adapt(HOOKS / "stop-check.sh", post_agent(repo), tmp_path)) == {}
 
 
