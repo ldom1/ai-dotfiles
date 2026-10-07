@@ -112,8 +112,9 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "npx -y ccstatusline@latest --config /home/lgiron/.claude/ccstatusline-settings.json",
-    "padding": 2
+    "command": "/home/lgiron/.local/bin/ccstatusline --config /home/lgiron/.claude/ccstatusline-settings.json",
+    "padding": 2,
+    "refreshInterval": 10
   },
   "enabledPlugins": {
     "superpowers@claude-plugins-official": true,

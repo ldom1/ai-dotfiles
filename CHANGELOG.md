@@ -6,6 +6,20 @@
 - `install.sh` exits with code 2 on an unknown argument and in a linked git worktree, before it changes anything. Before, an older copy in a worktree ignored `--dry-run-settings`, ran a full install and linked `~/.claude`, `~/.cursor` and `~/.vibe/AGENTS.md` into the worktree. The links broke when the worktree was removed. Tests: `.claude/hooks/tests/test_install_guard.py`.
 
 ### Changed
+- Statusline runs a pinned `ccstatusline@2.2.30` from `~/.local/bin` instead of `npx -y ccstatusline@latest`.
+  - `npx` resolved the package on every repaint: about 1 s. The pinned binary takes about 0.35 s.
+  - `install.sh` installs it with `npm i -g --prefix ~/.local`. No sudo is necessary.
+  - `statusLine.refreshInterval` is `10`, so the reset timers update while the session is idle.
+- `.claude/ccstatusline-settings.json`:
+  - Line 1 adds the `git-branch` and `git-changes` widgets.
+  - Line 2 drops `tok used`, which overlapped with the context bar.
+  - Line 3 fixes the missing space in `3.0%resets`. Both timers now read `resets`.
+  - Line 1 adds a harness check: `.claude/statusline-health.sh` (custom-command widget). It shows a green `✓ harness`, or a red `✗ N hooks missing` / `✗ vault ↑N`. It checks that each hook script in `settings.json` is executable, and counts unpushed vault commits.
+  - Line 2 adds `effort` (thinking effort), `cache` (prompt cache hit rate for the last turn) and `compacted` (compaction count).
+  - Line 4 adds `.claude/statusline-counts.sh`. It shows `skills used N/M` (Skill calls / skills loaded), the last skill, `mcp N` (MCP servers loaded) and a red `✗ <server> failed`.
+    - It reads the session transcript. `skill_listing` and `deferred_tools_delta` are undocumented Claude Code records (checked on 2.1.293), so a Claude Code update can break it.
+    - A skill run through a typed slash command is not counted, only Skill tool calls.
+  - `customCommandCacheTtlSeconds` is `10`: ccstatusline adds about 0.15 s per custom command, and the cache keeps a repaint at about 0.35 s.
 - `graphify` skill synced from `v0.9.49` to upstream `v0.9.79` (Graphify-Labs/graphify).
   - `.graphify_root` is written without shell interpolation, and `--watch` reads it instead of the raw `INPUT_PATH` (shell-injection fix).
   - Fully cached reruns still run the Step B3 merge (fixes the missing `.graphify_semantic.json` crash) and clear stale chunk files.

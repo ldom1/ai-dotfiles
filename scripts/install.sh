@@ -173,6 +173,16 @@ for cli in ai-dotfiles stop-check-trust; do
   log "$cli → $HOME/.local/bin/$cli (ensure ~/.local/bin is on PATH)"
 done
 
+# Statusline: pinned user-prefix install; npx resolves the package on every repaint (~1 s).
+CCSTATUSLINE_VERSION=2.2.30
+if command -v npm >/dev/null 2>&1; then
+  npm i -g --prefix "$HOME/.local" "ccstatusline@$CCSTATUSLINE_VERSION" >/dev/null \
+    && log "ccstatusline@$CCSTATUSLINE_VERSION → $HOME/.local/bin/ccstatusline" \
+    || warn "ccstatusline install failed — statusline will be empty"
+else
+  warn "npm not found — install Node, then re-run for the ccstatusline statusline"
+fi
+
 # Approve this repo's own Stop check once, so the trust gate stays quiet here.
 "$DOTFILES/bin/stop-check-trust" "$DOTFILES" >/dev/null
 
@@ -188,6 +198,8 @@ chmod +x \
   "$DOTFILES/.claude/hooks/stop-check.sh" \
   "$DOTFILES/.claude/hooks/compact-nudge.sh" \
   "$DOTFILES/.claude/hooks/precompact-checkpoint.sh" \
+  "$DOTFILES/.claude/statusline-health.sh" \
+  "$DOTFILES/.claude/statusline-counts.sh" \
   "$DOTFILES/scripts/build-agent-rules.sh" \
   "$DOTFILES/git-hooks/pre-commit" \
   "$DOTFILES/scripts/init-project.sh" \
