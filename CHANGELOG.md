@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-10-08
+
 ### Fixed
 - Central `graphify` MCP server runs `uvx --from "graphifyy[mcp]==0.9.79"` instead of `uv run --project <project>`.
   - Before, it failed to connect in every project without `graphifyy` in its own uv environment.
