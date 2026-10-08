@@ -89,6 +89,15 @@ def test_clone_excludes_untracked_and_ignored(tmp_path):
     assert ".env" not in listing and ".venv" not in listing and ".github" in listing
 
 
+def test_clone_is_standalone_inside_the_job(tmp_path):
+    """The job container cannot see the host repo: the clone must not borrow its objects (alternates)."""
+    repo, sha = make_repo(tmp_path)
+    act = fake_act(tmp_path, body=f'test ! -e .git/objects/info/alternates && git cat-file -e "HEAD^{{tree}}" '
+                                  f'&& touch "{tmp_path}/standalone"; echo "== 3 passed in 0.1s =="')
+    run(tmp_path, repo, sha, "--record-baseline", act=act)
+    assert (tmp_path / "standalone").exists()
+
+
 def test_clone_has_submodule_offline(tmp_path):
     sub = tmp_path / "sub"
     git(tmp_path, "init", "-q", "-b", "main", str(sub))

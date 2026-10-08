@@ -20,6 +20,7 @@
 - `scripts/check-ci-runner-drift.sh`: SessionStart prints one warning when the runner manifest differs from the latest `ubuntu24` release. It caches for 7 days and never edits the manifest.
 
 ### Fixed
+- `bin/local-ci`: the clean clone no longer borrows the host repo's objects (`--shared`). Inside the job container the host `.git` is absent, so every `git` step failed.
 - `bin/local-ci`: an interrupt (SIGINT, SIGTERM, SIGHUP) now removes every `act-*` container and network before exit.
 - `bin/local-ci`: a second signal during cleanup is ignored, so the `failure` status is always posted. `uv run` forwards SIGINT, so Ctrl-C and `timeout -s INT` send two.
 - `bin/local-ci`: a `pull_request` run checks out submodules after the merge, so it tests the merge commit's submodule commits.
