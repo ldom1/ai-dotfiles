@@ -121,3 +121,55 @@ def test_job_timeout_kills_act_and_fails(tmp_path):
     r = run(tmp_path, repo, sha, "--record-baseline", act=fake_act(tmp_path, body="sleep 30"))
     assert r.returncode == 1
     assert "timed out" in r.stdout
+
+
+def test_pytest_summary_counts_are_parsed_and_recorded(tmp_path):
+    repo, sha = make_repo(tmp_path)
+    act = fake_act(tmp_path, body='echo "[ci/check] | ===== 436 passed, 2 skipped, 3 warnings in 7.23s ====="')
+    r = run(tmp_path, repo, sha, "--record-baseline", act=act)
+    assert r.returncode == 0, r.stdout + r.stderr
+    state = tmp_path / "home" / "acme__widget"
+    rec = json.loads((state / "results.jsonl").read_text().splitlines()[-1])
+    assert rec["sha"] == sha and rec["result"] == "success" and rec["event"] == "push" and rec["tier"] == "full"
+    assert rec["jobs"]["ci.yml/check"]["counts"] == {"passed": 436, "skipped": 2}
+    assert json.loads((state / "baseline.json").read_text())["ci.yml/check"] == {"skipped": 2}
+
+
+def test_more_skips_than_baseline_fails(tmp_path):
+    repo, sha = make_repo(tmp_path)
+    run(tmp_path, repo, sha, "--record-baseline", act=fake_act(tmp_path, body='echo "== 5 passed, 1 skipped in 1s =="'))
+    git(repo, "commit", "-q", "--allow-empty", "-m", "next")
+    sha2 = git(repo, "rev-parse", "HEAD")
+    r = run(tmp_path, repo, sha2, act=fake_act(tmp_path, body='echo "== 4 passed, 2 skipped in 1s =="'))
+    assert r.returncode == 1
+    assert "skipped 2 > baseline 1" in r.stdout
+
+
+def test_missing_baseline_fails_closed(tmp_path):
+    repo, sha = make_repo(tmp_path)
+    r = run(tmp_path, repo, sha, act=fake_act(tmp_path, body='echo "== 5 passed in 1s =="'))
+    assert r.returncode == 1
+    assert "no skip baseline" in r.stdout
+
+
+def test_passed_commit_is_not_rerun_but_a_later_failure_wins(tmp_path):
+    repo, sha = make_repo(tmp_path)
+    assert run(tmp_path, repo, sha, "--record-baseline").returncode == 0
+    calls = len((tmp_path / "act-calls").read_text().splitlines())
+    assert run(tmp_path, repo, sha).returncode == 0
+    assert len((tmp_path / "act-calls").read_text().splitlines()) == calls  # skipped: same sha, event, tier, img
+    state = tmp_path / "home" / "acme__widget"
+    with open(state / "results.jsonl", "a") as fh:
+        fh.write(json.dumps({"sha": sha, "event": "push", "tier": "full", "base": "", "img": "abababababab",
+                             "result": "failure", "duration": "1s", "jobs": {}, "ts": 0}) + "\n")
+    run(tmp_path, repo, sha)
+    assert len((tmp_path / "act-calls").read_text().splitlines()) > calls  # newest record is a failure: re-run
+
+
+def test_fast_tier_runs_only_fast_jobs_and_says_partial(tmp_path):
+    repo, sha = make_repo(tmp_path)
+    git(repo, "config", "local-ci.fast-jobs", "check")
+    r = run(tmp_path, repo, sha, "--tier", "fast", "--record-baseline")
+    assert r.returncode == 0
+    assert [c.split(" -j ")[1].split()[0] for c in (tmp_path / "act-calls").read_text().splitlines()] == ["check"]
+    assert "partial — not a merge gate" in r.stdout
