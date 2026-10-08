@@ -20,6 +20,9 @@ check git "git version $GIT_VERSION" git --version
 check git-lfs "git-lfs/$GIT_LFS_VERSION" git lfs version
 check gh "gh version $GH_VERSION" gh --version
 check jq "jq-$JQ_VERSION" jq --version
+check python "Python $PYTHON_VERSION" python3 --version
+check shellcheck "version: $SHELLCHECK_VERSION" sh -c 'shellcheck --version | sed -n 2p'
+check apt-install ok sh -c 'apt-get install -s shellcheck >/dev/null 2>&1 && echo ok'
 check uid 1001 id -u
 check user runner id -un
 check sudo ok sh -c 'sudo -n true && echo ok'
