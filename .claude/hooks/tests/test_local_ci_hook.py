@@ -28,8 +28,9 @@ def installed(tmp_path):
     repo, sha = make_repo(tmp_path)
     subprocess.run([str(LOCAL_CI), "install", "--repo", str(repo), "--workflows", "ci.yml", "--fast-jobs", "check"],
                    check=True, env=hook_env(tmp_path))
-    subprocess.run([str(LOCAL_CI), "run", "--repo", str(repo), "--record-baseline", sha], check=True,
-                   env=hook_env(tmp_path), capture_output=True)
+    for branch in ("main", "feat/x", "feat/new"):  # the skip baseline is per ref
+        subprocess.run([str(LOCAL_CI), "run", "--repo", str(repo), "--ref", f"refs/heads/{branch}", "--record-baseline",
+                        sha], check=True, env=hook_env(tmp_path), capture_output=True)
     (tmp_path / "act-calls").unlink()
     return repo, sha
 

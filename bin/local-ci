@@ -32,6 +32,9 @@ HOME = Path(os.environ.get("LOCAL_CI_HOME", Path.home() / ".cache" / "local-ci")
 ACT = os.environ.get("LOCAL_CI_ACT", "act")
 DEFAULT_TIMEOUT_MIN = 360  # GitHub's default job timeout
 GH = os.environ.get("LOCAL_CI_GH", "gh")
+DOCKER = os.environ.get("LOCAL_CI_DOCKER", "docker")
+# A `git --git-dir=... push` runs the hook with these set: `git -C <clone>` would then act on the user's repo.
+GIT_REPO_ENV = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES")
 CONTEXT = "local-ci/pull_request"
 
 
@@ -91,9 +94,13 @@ def image_digest() -> str:
 
 
 def clean_clone(repo, sha, dest: Path) -> None:
-    """Exact tree of `sha`, no untracked or ignored files; submodules from the source repo's objects, offline."""
+    """Exact tree of `sha`, no untracked or ignored files. Submodules come later: init_submodules."""
     subprocess.run(["git", "clone", "-q", "--shared", "--no-checkout", str(repo), str(dest)], check=True)
     git(dest, "checkout", "-q", "--detach", sha)
+
+
+def init_submodules(repo, dest: Path) -> None:
+    """Check out the submodule commits of the clone's final HEAD, from the source repo's objects, offline."""
     if (dest / ".gitmodules").exists():
         git(dest, "submodule", "init")
         modules = Path(git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir")) / "modules"
@@ -155,14 +162,14 @@ def run_job(cmd, cwd, timeout_s, log: Path) -> tuple[int, bool]:
 
 
 def cleanup_act_containers() -> None:
-    if not shutil.which("docker") or os.environ.get("LOCAL_CI_IMAGE_ID"):  # tests stub Docker out
-        return
-    ids = subprocess.run(["docker", "ps", "-aq", "--filter", "name=^act-"], capture_output=True, text=True).stdout.split()
+    if not shutil.which(DOCKER) or (os.environ.get("LOCAL_CI_IMAGE_ID") and "LOCAL_CI_DOCKER" not in os.environ):
+        return  # tests stub Docker out, unless they pass a docker stub
+    ids = subprocess.run([DOCKER, "ps", "-aq", "--filter", "name=^act-"], capture_output=True, text=True).stdout.split()
     if ids:
-        subprocess.run(["docker", "rm", "-f", *ids], capture_output=True)
-    nets = subprocess.run(["docker", "network", "ls", "-q", "--filter", "name=^act-"], capture_output=True, text=True).stdout.split()
+        subprocess.run([DOCKER, "rm", "-f", *ids], capture_output=True)
+    nets = subprocess.run([DOCKER, "network", "ls", "-q", "--filter", "name=^act-"], capture_output=True, text=True).stdout.split()
     if nets:
-        subprocess.run(["docker", "network", "rm", *nets], capture_output=True)
+        subprocess.run([DOCKER, "network", "rm", *nets], capture_output=True)
 
 
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
@@ -189,10 +196,12 @@ def pytest_counts(text: str) -> dict[str, int] | None:
     return totals
 
 
-def check_baseline(state: Path, key: str, counts: dict[str, int] | None, record: bool) -> str | None:
-    """Return an error message when the skip count rises above the stored baseline, or no baseline exists."""
+def check_baseline(state: Path, job: str, ref: str, counts: dict[str, int] | None, record: bool) -> str | None:
+    """Return an error message when the skip count rises above the stored baseline, or no baseline exists.
+    The key is `<wf>/<job>@<ref>` (the executed steps depend on the ref); a plain `<wf>/<job>` key is the fallback."""
     if counts is None:
         return None
+    key = f"{job}@{ref}"
     path = state / "baseline.json"
     base = json.loads(path.read_text()) if path.exists() else {}
     skipped = counts.get("skipped", 0)
@@ -200,10 +209,11 @@ def check_baseline(state: Path, key: str, counts: dict[str, int] | None, record:
         base[key] = {"skipped": skipped}
         path.write_text(json.dumps(base, indent=2, sort_keys=True))
         return None
-    if key not in base:
-        return f"no skip baseline for {key}: run `local-ci run --record-baseline` after a parity run"
-    if skipped > base[key]["skipped"]:
-        return f"skipped {skipped} > baseline {base[key]['skipped']}"
+    stored = base.get(key) or base.get(job)
+    if stored is None:
+        return f"no skip baseline for {key}: run `local-ci run --ref <ref> --record-baseline` after a parity run"
+    if skipped > stored["skipped"]:
+        return f"skipped {skipped} > baseline {stored['skipped']}"
     return None
 
 
@@ -212,20 +222,26 @@ def record(state: Path, **rec) -> None:
         fh.write(json.dumps({**rec, "ts": time.time()}) + "\n")
 
 
-def already_passed(state: Path, sha, event, tier, base, img) -> dict | None:
-    """The newest record for (sha, event, base, img) decides: return it when it is a success, else None.
-    A full success also covers fast."""
+SAME = ("sha", "event", "base", "img", "ref", "workflows")
+
+
+def already_passed(state: Path, ident: dict) -> dict | None:
+    """The newest record with the same SAME fields and a covering tier decides: return it when it is a success.
+    A full success covers fast; a fast record covers fast only with the same fast-jobs."""
     path = state / "results.jsonl"
     if not path.exists():
         return None
     for line in reversed(path.read_text().splitlines()):
         r = json.loads(line)
-        if (r["sha"], r["event"], r["base"], r["img"]) == (sha, event, base, img) and (r["tier"] == tier or r["tier"] == "full"):
-            return r if r["result"] == "success" else None
+        if any(r.get(k) != ident[k] for k in SAME):
+            continue
+        if r.get("tier") == "full" or (r.get("tier") == ident["tier"] and r.get("fast_jobs") == ident["fast_jobs"]):
+            return r if r.get("result") == "success" else None
     return None
 
 
-def execute(repo, args, sha, state, img, workflows, pr, base) -> int:
+def execute(repo, args, ident, state, pr) -> int:
+    sha, base = ident["sha"], ident["base"]
     logs = state / f"{sha}-{args.event}-{args.tier}"
     logs.mkdir(parents=True, exist_ok=True)
     start = time.monotonic()
@@ -234,22 +250,25 @@ def execute(repo, args, sha, state, img, workflows, pr, base) -> int:
         clean_clone(repo, sha, clone)
         if pr and not build_merge(clone, base, sha):
             print(f"local-ci: merge conflict with base {base[:12]}")
-            record(state, sha=sha, event=args.event, tier=args.tier, base=base, img=img,
-                   result="failure", duration="0s", jobs={})
+            record(state, **ident, result="failure", duration="0s", jobs={})
             return 1
+        init_submodules(repo, clone)  # after the merge: a PR run tests the merge commit's submodule commits
         payload = Path(tmp) / "event.json"
         if pr:
             write_pr_payload(payload, pr["number"], pr["headRefName"], sha, pr["baseRefName"], base)
         else:
-            write_push_payload(payload, args.ref or f"refs/heads/{git(repo, 'rev-parse', '--abbrev-ref', 'HEAD')}",
-                               args.before or ZERO, sha)
-        jobs = list_jobs(clone, workflows)
-        fast = cfg(repo, "fast-jobs").split()
+            write_push_payload(payload, ident["ref"], args.before or ZERO, sha)
+        jobs = list_jobs(clone, ident["workflows"].split())
+        fast = ident["fast_jobs"].split()
         if args.tier == "fast" and fast:
             jobs = [j for j in jobs if j[1] in fast]
             if not jobs:
                 print(f"local-ci: fast-jobs {' '.join(fast)} matches no job", file=sys.stderr)
                 return 1
+        if not jobs:
+            print("local-ci: no job to run", file=sys.stderr)
+            return 1
+        baseline_ref = "pull_request" if pr else ident["ref"]
         results = {}
         failed = []
         for wf, job, timeout_s in jobs:
@@ -258,7 +277,7 @@ def execute(repo, args, sha, state, img, workflows, pr, base) -> int:
             cleanup_act_containers()
             counts = pytest_counts(log.read_text(errors="replace"))
             problem = None if code == 0 else ("timed out" if timed_out else f"failed (exit {code})")
-            problem = problem or check_baseline(state, f"{wf}/{job}", counts, args.record_baseline)
+            problem = problem or check_baseline(state, f"{wf}/{job}", baseline_ref, counts, args.record_baseline)
             results[f"{wf}/{job}"] = {"result": "failure" if problem else "success", "counts": counts or {}}
             print(f"local-ci: {wf}/{job}: {problem or 'ok'} {counts or ''}  log: {log}")
             if problem:
@@ -266,9 +285,8 @@ def execute(repo, args, sha, state, img, workflows, pr, base) -> int:
     duration = f"{time.monotonic() - start:.0f}s"
     if args.tier == "fast":
         print("local-ci: fast tier — partial — not a merge gate")
-    record(state, sha=sha, event=args.event, tier=args.tier, base=base, img=img,
-           result="failure" if failed else "success", duration=duration, jobs=results)
-    print(f"local-ci: {'FAILED ' + ', '.join(failed) if failed else 'success'} in {duration} (img {img})")
+    record(state, **ident, result="failure" if failed else "success", duration=duration, jobs=results)
+    print(f"local-ci: {'FAILED ' + ', '.join(failed) if failed else 'success'} in {duration} (img {ident['img']})")
     return 1 if failed else 0
 
 
@@ -288,11 +306,14 @@ def run(args) -> int:
                 pass
         args.sha = pr["headRefOid"]
         args.tier = "full"
+        args.ref = f"refs/pull/{args.pr}/merge"
+    elif not args.ref:
+        raise SystemExit("local-ci: a push run needs its ref: pass --ref refs/heads/<branch>")
     if pr:
         sha = args.sha  # may be absent locally: the missing-commit check below posts failure for it
     else:
         sha = git(repo, "rev-parse", "--verify", f"{args.sha}^{{commit}}")
-    workflows = cfg(repo, "workflows").split()
+    workflows = " ".join(cfg(repo, "workflows").split())
     if not workflows:
         raise SystemExit("local-ci: set `git config local-ci.workflows ci.yml` (the workflows to run)")
     if not shutil.which(ACT) and not Path(ACT).is_file():
@@ -302,7 +323,9 @@ def run(args) -> int:
     state = HOME / repo_slug(repo).replace("/", "__")
     state.mkdir(parents=True, exist_ok=True)
     base = pr["base"] if pr else ""
-    passed = None if args.record_baseline else already_passed(state, sha, args.event, args.tier, base, img)
+    ident = {"sha": sha, "event": args.event, "tier": args.tier, "base": base, "img": img, "ref": args.ref,
+             "workflows": workflows, "fast_jobs": " ".join(cfg(repo, "fast-jobs").split())}
+    passed = None if args.record_baseline else already_passed(state, ident)
     if passed:
         print(f"local-ci: {sha[:12]} already passed ({args.event}, {args.tier}, img {img}): not re-run")
         # A failed final POST leaves GitHub at `pending` while the record says success: post it again.
@@ -315,8 +338,8 @@ def run(args) -> int:
     def on_signal(signum, _frame):
         raise SystemExit(128 + signum)
 
-    signal.signal(signal.SIGTERM, on_signal)
-    signal.signal(signal.SIGINT, on_signal)
+    for signum in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+        signal.signal(signum, on_signal)
     started = time.monotonic()
     code = 1  # stays 1 on any exception or signal: the finally then posts `failure`
     try:
@@ -325,8 +348,9 @@ def run(args) -> int:
         if pr and not (has_commit(repo, sha) and has_commit(repo, base)):
             print(f"local-ci: PR head {sha[:12]} or base {base[:12]} missing locally after fetch")
         else:
-            code = execute(repo, args, sha, state, img, workflows, pr, base)
+            code = execute(repo, args, ident, state, pr)
     finally:  # never `return` here: it would swallow a SystemExit from a signal
+        cleanup_act_containers()  # a signal skips the per-job cleanup; the global lock is still held
         posted = not pr or try_post(repo, sha, "success" if code == 0 else "failure",
                                     f"full base={base} img={img} {time.monotonic() - started:.0f}s")
     return code if posted else code or 1
@@ -377,6 +401,8 @@ def pre_push(args) -> int:
 
 
 def main() -> int:
+    for var in GIT_REPO_ENV:
+        os.environ.pop(var, None)
     ap = argparse.ArgumentParser(prog="local-ci")
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run")
