@@ -7,6 +7,8 @@
   "permissions": {
     "deny": [
       "Bash(git push --force *)",
+      "Bash(git push --no-verify*)",
+      "Bash(git push * --no-verify*)",
       "Bash(git reset --hard *)",
       "Bash(git checkout . *)",
       "Bash(git checkout -- *)",
@@ -53,6 +55,15 @@
           {
             "type": "command",
             "command": "__HOME__/.claude/hooks/hardline-check.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.claude/hooks/local-ci-merge-guard.py"
           }
         ]
       },

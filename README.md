@@ -401,6 +401,19 @@ Run `install.sh` from the main checkout only. It exits with code 2 in a linked g
 
 `install.sh` merges the template's plugins, marketplaces, `permissions.deny`/`ask`, `env` and `hooks` into an existing `settings.json` (`scripts/merge-settings.py`). It keeps local-only entries and `settings.json.bak`. A semantic conflict (different `env` value, same hook command with another event/matcher/timeout, `disableAllHooks: true`) stops the install with exit 3 and leaves `settings.json` unchanged. Run `bash scripts/install.sh --dry-run-settings` to see the planned changes and conflicts without writing anything.
 
+## Local CI
+
+Run a repo's GitHub workflows locally with `act`, in a clean clone of one commit.
+
+```bash
+bash scripts/install-act.sh
+bash scripts/build-ci-runner.sh
+bin/local-ci install --repo <path> --workflows ci.yml
+bin/local-ci run --event pull_request --pr <N>
+```
+
+The merge guard is off until `git config local-ci.guard true`.
+
 ## Design principle
 
 **The AI tools never know about ai-dotfiles.** Files inside `.claude/`, `.cursor/`, `.vibe/` are written as if they are the native config directories (`~/.claude`, `~/.cursor`, etc.). They contain no references to the repo structure, no "ai-dotfiles" framing, no awareness of the versioning layer. Skills invoke scripts via `~/ai-dotfiles/skills/…` because that's the real filesystem path — but config files never explain *why* things are at that path.

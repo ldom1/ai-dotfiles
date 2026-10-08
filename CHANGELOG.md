@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### Added
+- `bin/local-ci`: runs a repo's listed GitHub workflows locally with `act` v0.2.89 in `local-ci-runner:24.04`, on a clean clone of one commit. Spec: vault `2026-10-07-local-ci-replication-design` (rev 5).
+  - `local-ci install --workflows ci.yml` adds a `pre-push` hook. A push to a deploy branch (`main`, `preprod`) runs the `full` tier. Other branches run the `fast` tier, which is partial and never a merge gate.
+  - A push run keeps a local record only (`~/.cache/local-ci/<owner>__<repo>/results.jsonl`). GitHub returns 422 for a status on a commit it does not have.
+  - `local-ci run --event pull_request --pr N` tests the merge commit. It posts `local-ci/pull_request`: `pending`, then always `success` or `failure`.
+  - A `pull_request` run that already passed re-posts its `success` status. A failed final status post exits non-zero.
+  - Skip counts above the recorded baseline fail the run. The run reads skip counts from pytest summaries with or without `=` padding (`pytest -q`).
+  - A fast-tier `fast-jobs` list that matches no job fails.
+- `docker/ci-runner.Dockerfile` and `docker/ci-runner.manifest`: a slim runner image (Node, Git, Git LFS, GitHub CLI and jq at the versions of `actions/runner-images` `ubuntu24/20261004.327`). `scripts/build-ci-runner.sh` checks every version. `scripts/install-act.sh` installs `act` after a checksum check.
+  - The image builds git with `NO_RUST=1` and installs gh with `--ignore-depends=git`, because git comes from source.
+- `.claude/hooks/local-ci-merge-guard.py`: denies a Claude `gh pr merge` unless the PR head has a fresh `local-ci/pull_request` success. Fresh means same base tip, same image and the `gh` user as creator. It is off until `git config local-ci.guard true`. It guards only merges run by Claude Code.
+  - The guard denies a `gh pr merge` it cannot parse (subshell, `bash -c`, `sudo`, `$(...)`, unbalanced quotes).
+  - It denies a `cd` or `pushd` before the merge, `-R`, `--repo` or `GH_REPO` for another repo, and any error.
+- Template `permissions.deny`: `git push --no-verify` for Claude.
+
 ## [0.10.1] - 2026-10-08
 
 ### Fixed
