@@ -128,19 +128,24 @@ def cleanup_act_containers() -> None:
 
 
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
-SUMMARY = re.compile(r"=+ (.+?) in [\d.]+s(?: \([^)]*\))? =+")
-COUNT = re.compile(r"(\d+) (passed|failed|skipped|errors?|xfailed|xpassed)\b")
+KIND = r"(?:passed|failed|skipped|errors?|xfailed|xpassed|warnings?|deselected)"
+ITEMS = rf"\d+ {KIND}(?:, \d+ {KIND})*"
+# A whole line: optional act prefix `[job] | `, optional `=` padding (absent with `pytest -q`), items, duration.
+SUMMARY = re.compile(rf"^(?:\[[^\]]*\]\s*\|\s*)?(?:=+ )?({ITEMS}) in [\d.]+s(?: \([^)]*\))?(?: =+)?\s*$")
+COUNT = re.compile(rf"(\d+) ({KIND})")
 
 
 def pytest_counts(text: str) -> dict[str, int] | None:
     """Sum every pytest summary line of one job log; None when the job ran no pytest."""
     totals = None
     for line in ANSI.sub("", text).splitlines():
-        m = SUMMARY.search(line)
+        m = SUMMARY.match(line)
         if not m:
             continue
         totals = totals or {}
         for n, kind in COUNT.findall(m.group(1)):
+            if kind.startswith("warning") or kind == "deselected":
+                continue
             kind = "errors" if kind.startswith("error") else kind
             totals[kind] = totals.get(kind, 0) + int(n)
     return totals
@@ -211,6 +216,9 @@ def run(args) -> int:
         fast = cfg(repo, "fast-jobs").split()
         if args.tier == "fast" and fast:
             jobs = [j for j in jobs if j[1] in fast]
+            if not jobs:
+                print(f"local-ci: fast-jobs {' '.join(fast)} matches no job", file=sys.stderr)
+                return 1
         results = {}
         failed = []
         for wf, job, timeout_s in jobs:

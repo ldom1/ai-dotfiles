@@ -173,3 +173,28 @@ def test_fast_tier_runs_only_fast_jobs_and_says_partial(tmp_path):
     assert r.returncode == 0
     assert [c.split(" -j ")[1].split()[0] for c in (tmp_path / "act-calls").read_text().splitlines()] == ["check"]
     assert "partial — not a merge gate" in r.stdout
+
+
+def test_quiet_pytest_summary_with_act_prefix_is_counted(tmp_path):
+    repo, sha = make_repo(tmp_path)
+    act = fake_act(tmp_path, body='printf "[ci/check]   | \\033[32m436 passed\\033[0m, 2 skipped, 1 warning in 7.23s (0:00:07)\\n"')
+    assert run(tmp_path, repo, sha, "--record-baseline", act=act).returncode == 0
+    rec = json.loads((tmp_path / "home" / "acme__widget" / "results.jsonl").read_text().splitlines()[-1])
+    assert rec["jobs"]["ci.yml/check"]["counts"] == {"passed": 436, "skipped": 2}
+
+
+def test_non_summary_lines_are_not_counted(tmp_path):
+    repo, sha = make_repo(tmp_path)
+    act = fake_act(tmp_path, body='echo "Downloaded 3 packages in 0.5s"; echo "ok 3 passed in review"; echo "see 3 passed in 0.5s"')
+    assert run(tmp_path, repo, sha, "--record-baseline", act=act).returncode == 0
+    rec = json.loads((tmp_path / "home" / "acme__widget" / "results.jsonl").read_text().splitlines()[-1])
+    assert rec["jobs"]["ci.yml/check"]["counts"] == {}
+
+
+def test_fast_jobs_matching_no_job_fails(tmp_path):
+    repo, sha = make_repo(tmp_path)
+    git(repo, "config", "local-ci.fast-jobs", "chekc")
+    r = run(tmp_path, repo, sha, "--tier", "fast", "--record-baseline")
+    assert r.returncode == 1
+    assert "fast-jobs chekc matches no job" in r.stderr
+    assert not (tmp_path / "act-calls").exists()
