@@ -9,6 +9,8 @@
       "Bash(git push --force *)",
       "Bash(git push --no-verify*)",
       "Bash(git push * --no-verify*)",
+      "Bash(git -C * push*--no-verify*)",
+      "Bash(git -c core.hooksPath*)",
       "Bash(git reset --hard *)",
       "Bash(git checkout . *)",
       "Bash(git checkout -- *)",
