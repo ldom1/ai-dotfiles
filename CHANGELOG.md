@@ -10,8 +10,9 @@
   - A `pull_request` run that already passed re-posts its `success` status. A failed final status post exits non-zero.
   - Skip counts above the recorded baseline fail the run. The run reads skip counts from pytest summaries with or without `=` padding (`pytest -q`).
   - A fast-tier `fast-jobs` list that matches no job fails.
-- `docker/ci-runner.Dockerfile` and `docker/ci-runner.manifest`: a slim runner image (Node, Git, Git LFS, GitHub CLI and jq at the versions of `actions/runner-images` `ubuntu24/20261004.327`). `scripts/build-ci-runner.sh` checks every version. `scripts/install-act.sh` installs `act` after a checksum check.
-  - The image builds git with `NO_RUST=1` and installs gh with `--ignore-depends=git`, because git comes from source.
+- `docker/ci-runner.Dockerfile` and `docker/ci-runner.manifest`: a slim runner image (Node, Git, Git LFS, GitHub CLI, jq, Python 3.12.3 and ShellCheck 0.9.0 at the versions of `actions/runner-images` `ubuntu24/20261004.327`). `scripts/build-ci-runner.sh` checks every version. `scripts/install-act.sh` installs `act` after a checksum check.
+- `local-ci-runner` keeps its apt lists, as GitHub's image does: a workflow step `sudo apt-get install <pkg>` without `apt-get update` works.
+  - The image builds git with `NO_RUST=1` and installs gh from its release tarball, because git comes from source. The gh `.deb` depends on the apt `git`, and a forced install made every later `apt-get install` fail.
 - `.claude/hooks/local-ci-merge-guard.py`: denies a Claude `gh pr merge` unless the PR head has a fresh `local-ci/pull_request` success. Fresh means same base tip, same image and the `gh` user as creator. It is off until `git config local-ci.guard true`. It guards only merges run by Claude Code.
   - The guard denies a `gh pr merge` it cannot parse (subshell, `bash -c`, `sudo`, `$(...)`, unbalanced quotes).
   - It denies a `cd` or `pushd` before the merge, `-R`, `--repo` or `GH_REPO` for another repo, and any error.
@@ -19,6 +20,7 @@
 - `scripts/check-ci-runner-drift.sh`: SessionStart prints one warning when the runner manifest differs from the latest `ubuntu24` release. It caches for 7 days and never edits the manifest.
 
 ### Fixed
+- `bin/local-ci`: the clean clone no longer borrows the host repo's objects (`--shared`). Inside the job container the host `.git` is absent, so every `git` step failed.
 - `bin/local-ci`: an interrupt (SIGINT, SIGTERM, SIGHUP) now removes every `act-*` container and network before exit.
 - `bin/local-ci`: a second signal during cleanup is ignored, so the `failure` status is always posted. `uv run` forwards SIGINT, so Ctrl-C and `timeout -s INT` send two.
 - `bin/local-ci`: a `pull_request` run checks out submodules after the merge, so it tests the merge commit's submodule commits.

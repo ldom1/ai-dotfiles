@@ -95,7 +95,7 @@ def image_digest() -> str:
 
 def clean_clone(repo, sha, dest: Path) -> None:
     """Exact tree of `sha`, no untracked or ignored files. Submodules come later: init_submodules."""
-    subprocess.run(["git", "clone", "-q", "--shared", "--no-checkout", str(repo), str(dest)], check=True)
+    subprocess.run(["git", "clone", "-q", "--no-checkout", str(repo), str(dest)], check=True)
     git(dest, "checkout", "-q", "--detach", sha)
 
 
