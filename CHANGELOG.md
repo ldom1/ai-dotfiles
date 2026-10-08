@@ -20,6 +20,7 @@
 
 ### Fixed
 - `bin/local-ci`: an interrupt (SIGINT, SIGTERM, SIGHUP) now removes every `act-*` container and network before exit.
+- `bin/local-ci`: a second signal during cleanup is ignored, so the `failure` status is always posted. `uv run` forwards SIGINT, so Ctrl-C and `timeout -s INT` send two.
 - `bin/local-ci`: a `pull_request` run checks out submodules after the merge, so it tests the merge commit's submodule commits.
 - `bin/local-ci`: the "already passed" record now also matches the ref, the `workflows` list and, for the fast tier, `fast-jobs`.
   - A push run needs `--ref refs/heads/<branch>`. A `pull_request` run uses `refs/pull/<N>/merge`.

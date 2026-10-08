@@ -353,6 +353,9 @@ def run(args) -> int:
         else:
             code = execute(repo, args, ident, state, pr)
     finally:  # never `return` here: it would swallow a SystemExit from a signal
+        # uv forwards SIGINT, so Ctrl-C or `timeout -s INT` sends a second one: let cleanup and the post finish.
+        for signum in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+            signal.signal(signum, signal.SIG_IGN)
         cleanup_act_containers()  # a signal skips the per-job cleanup; the global lock is still held
         posted = not pr or try_post(repo, sha, "success" if code == 0 else "failure",
                                     f"full base={base} img={img} {time.monotonic() - started:.0f}s")

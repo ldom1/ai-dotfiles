@@ -390,13 +390,15 @@ def act_count(tmp_path):
     return len(p.read_text().splitlines()) if p.exists() else 0
 
 
-def fake_docker(tmp_path):
-    """A `docker` stub: logs every call; one act container `c1` and one act network `n1` exist."""
+def fake_docker(tmp_path, ps_delay=0):
+    """A `docker` stub: logs every call; one act container `c1` and one act network `n1` exist.
+
+    `ps_delay` seconds make `docker ps` slow, as a real cleanup is."""
     p = tmp_path / "docker"
     p.write_text(f"""#!/usr/bin/env bash
 echo "$*" >> "{tmp_path}/docker-calls"
 case "$*" in
-  "ps -aq"*) echo c1;;
+  "ps -aq"*) sleep {ps_delay}; echo c1;;
   "network ls"*) echo n1;;
 esac
 """)
@@ -418,6 +420,31 @@ def test_signal_removes_act_containers_and_networks(tmp_path):
     assert p.returncode != 0
     calls = (tmp_path / "docker-calls").read_text().splitlines() if (tmp_path / "docker-calls").exists() else []
     assert "rm -f c1" in calls and "network rm n1" in calls, calls
+
+
+def test_second_sigint_during_cleanup_still_posts_failure(tmp_path):
+    # `timeout -s INT` or Ctrl-C: uv forwards SIGINT, so Python gets two ~0.2 s apart; the second lands in `finally`.
+    repo, base, head = pr_repo(tmp_path)
+    act = fake_act(tmp_path, body=f'echo $$ > "{tmp_path}/act-pid"; sleep 30')
+    env = base_env(tmp_path, act, LOCAL_CI_GH=str(fake_gh(tmp_path, head, base)),
+                   LOCAL_CI_DOCKER=str(fake_docker(tmp_path, ps_delay=1)))
+    p = subprocess.Popen([str(LOCAL_CI), "run", "--repo", str(repo), "--event", "pull_request", "--pr", "7", head],
+                         env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    deadline = time.time() + 20
+    while not (tmp_path / "act-pid").exists() and time.time() < deadline:
+        time.sleep(0.2)
+    pid = int((tmp_path / "act-pid").read_text())
+    p.send_signal(signal.SIGINT)
+    time.sleep(0.2)
+    p.send_signal(signal.SIGINT)
+    p.wait(timeout=30)
+    assert p.returncode != 0
+    assert "state=failure" in statuses(tmp_path)[-1], statuses(tmp_path)
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return
+    raise AssertionError(f"stub act {pid} still running")
 
 
 def test_pr_run_uses_the_merge_commits_submodule_commit(tmp_path):
