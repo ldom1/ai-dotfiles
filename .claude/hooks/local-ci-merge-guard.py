@@ -2,6 +2,8 @@
 """PreToolUse (Bash): deny `gh pr merge` unless the PR head has a fresh `local-ci/pull_request` success.
 
 Active only in repos with `git config local-ci.guard true`. Any error, gap or mismatch denies (fail closed).
+In every directory, guard on or off, it denies a merge aimed at another repo (`-R`, `GH_REPO`, `cd`) and a merge
+through `gh api`: the guard value comes from the session directory, so these forms would bypass it.
 Scope: this guards merges that Claude Code runs through Bash. The GitHub web UI, a human `gh` and other tools are
 not guarded, and GitHub Free private repos enforce nothing. Spec: vault [[2026-10-07-local-ci-replication-design]] §5, §7.
 """
@@ -28,8 +30,12 @@ def deny(reason: str) -> None:
 
 
 MERGE_RE = re.compile(r"\bgh\b.*\bpr\b.*\bmerge\b", re.S)
+API_MERGE_RE = re.compile(r"pulls/\d+/merge|mergePullRequest", re.I)
 CD_RE = re.compile(r"(?:^|[\s(])(?:cd|pushd)(?:\s|$)")
+# In a command the parser cannot check: any repo flag, GH_REPO or directory change, anywhere.
+REDIRECT_RE = re.compile(r"(?:^|[\s(;&|'\"`])(?:-R|--repo\b|GH_REPO=|(?:cd|pushd)(?:[\s;)'\"]|$))")
 ASSIGN_RE = re.compile(r"^\w+=")
+REDIRECT = "run gh pr merge from the repo directory, without -R/GH_REPO/cd"
 
 
 def parse(command: str) -> tuple[list[list[str]], list[str], bool, bool]:
@@ -73,8 +79,9 @@ def gh(cwd, *args) -> str:
     return subprocess.run([GH, *args], cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
 
 
-def check(cwd: str, args: list[str], env_repos: list[str]) -> None:
-    selector, repos, i = None, list(env_repos), 0
+def split_args(args: list[str]) -> tuple[str | None, list[str]]:
+    """(PR selector, `-R`/`--repo` values) of the arguments after `gh pr merge`."""
+    selector, repos, i = None, [], 0
     while i < len(args):
         a = args[i]
         if a in VALUE_OPTS:
@@ -89,14 +96,20 @@ def check(cwd: str, args: list[str], env_repos: list[str]) -> None:
         elif not a.startswith("-") and selector is None:
             selector = a
         i += 1
+    return selector, repos
+
+
+def origin_slug(cwd: str) -> str | None:
     url = subprocess.run(["git", "-C", cwd, "remote", "get-url", "origin"], capture_output=True, text=True).stdout
     m = re.search(r"github\.com[:/]([^/]+)/(.+?)(?:\.git)?\s*$", url)
-    if not m:
+    return f"{m.group(1)}/{m.group(2)}" if m else None
+
+
+def check(cwd: str, args: list[str]) -> None:
+    selector, _repos = split_args(args)  # main() has checked the repos
+    slug = origin_slug(cwd)
+    if not slug:
         deny("cannot read the origin GitHub URL")
-    slug = f"{m.group(1)}/{m.group(2)}"
-    for repo in repos:
-        if repo.lower() != slug.lower():
-            deny(f"run gh pr merge from the repo directory without -R or GH_REPO ({repo} is not {slug})")
     pr = json.loads(gh(cwd, "pr", "view", *([selector] if selector else []), "--json", "number,headRefOid,baseRefName"))
     head = pr["headRefOid"]
     base_tip = gh(cwd, "api", f"repos/{slug}/branches/{pr['baseRefName']}", "-q", ".commit.sha")
@@ -104,7 +117,7 @@ def check(cwd: str, args: list[str], env_repos: list[str]) -> None:
     if combined.get("sha") != head:
         deny(f"combined status is for {combined.get('sha')}, not the PR head {head}")
     statuses = combined.get("statuses") or []
-    if combined.get("total_count", 0) > len(statuses):
+    if combined["total_count"] > len(statuses):
         deny(f"incomplete status response ({len(statuses)} of {combined.get('total_count')})")
     mine = [s for s in statuses if str(s.get("context", "")).lower() == CONTEXT]
     if not mine:
@@ -127,27 +140,42 @@ def check(cwd: str, args: list[str], env_repos: list[str]) -> None:
         deny(f"status creator {(s.get('creator') or {}).get('login')} is not the gh user")
 
 
-def main() -> None:
-    data = json.loads(sys.stdin.read() or "{}")
+def main(raw: str) -> None:
+    data = json.loads(raw or "{}")
     if data.get("tool_name") != "Bash":
         return
     cwd = data.get("cwd") or os.getcwd()
-    calls, env_repos, uncheckable, cd_before = parse(data.get("tool_input", {}).get("command", ""))
+    command = data.get("tool_input", {}).get("command", "")
+    if API_MERGE_RE.search(command):
+        deny("merge PRs with a plain `gh pr merge <N>` from the repo directory")
+    calls, env_repos, uncheckable, cd_before = parse(command)
     if not calls and not uncheckable:
         return
+    # Before the guard value: it is read from the session directory, which these forms leave.
+    if cd_before or (uncheckable and REDIRECT_RE.search(command)):
+        deny(REDIRECT)
+    repos = env_repos + [r for args in calls for r in split_args(args)[1]]
+    if repos:
+        slug = origin_slug(cwd)
+        other = [r for r in repos if not slug or r.lower() != slug.lower()]
+        if other:
+            deny(f"{REDIRECT} ({other[0]} is not {slug or 'the origin of ' + cwd})")
     on = subprocess.run(["git", "-C", cwd, "config", "--get", "local-ci.guard"], capture_output=True, text=True)
     if on.stdout.strip() != "true":
         return
     if uncheckable:
         deny("cannot parse this gh pr merge command; run it as a plain `gh pr merge <N>` line")
-    if cd_before:
-        deny("run gh pr merge from the repo directory, without cd (the guard checks the session directory)")
     for args in calls:
         try:
-            check(cwd, args, env_repos)
+            check(cwd, args)
         except Exception as e:  # SystemExit from deny() is not an Exception; anything else must deny, never crash open
             deny(f"cannot verify the local-ci status ({type(e).__name__}): denied")
 
 
 if __name__ == "__main__":
-    main()
+    stdin = sys.stdin.read()
+    try:
+        main(stdin)
+    except Exception as e:  # bad input or a bug outside check(): deny what may be a merge, allow the rest
+        if MERGE_RE.search(stdin) or API_MERGE_RE.search(stdin):
+            deny(f"cannot read the hook input ({type(e).__name__}): denied")
