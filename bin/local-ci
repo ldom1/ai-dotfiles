@@ -199,9 +199,11 @@ def pytest_counts(text: str) -> dict[str, int] | None:
     return totals
 
 
-def check_baseline(state: Path, job: str, ref: str, counts: dict[str, int] | None, record: bool) -> str | None:
+def check_baseline(state: Path, job: str, ref: str, counts: dict[str, int] | None, record: bool,
+                   feature: bool = False) -> str | None:
     """Return an error message when the skip count rises above the stored baseline, or no baseline exists.
-    The key is `<wf>/<job>@<ref>` (the executed steps depend on the ref); a plain `<wf>/<job>` key is the fallback."""
+    The key is `<wf>/<job>@<ref>` (the executed steps depend on the ref). A push run on a feature branch (`feature`)
+    also records and reads `<wf>/<job>@branch`, shared by all feature branches. A plain `<wf>/<job>` key is the last fallback."""
     if counts is None:
         return None
     key = f"{job}@{ref}"
@@ -210,9 +212,11 @@ def check_baseline(state: Path, job: str, ref: str, counts: dict[str, int] | Non
     skipped = counts.get("skipped", 0)
     if record:
         base[key] = {"skipped": skipped}
+        if feature:
+            base[f"{job}@branch"] = {"skipped": skipped}
         path.write_text(json.dumps(base, indent=2, sort_keys=True))
         return None
-    stored = base.get(key) or base.get(job)
+    stored = base.get(key) or (base.get(f"{job}@branch") if feature else None) or base.get(job)
     if stored is None:
         return f"no skip baseline for {key}: run `local-ci run --ref <ref> --record-baseline` after a parity run"
     if skipped > stored["skipped"]:
@@ -272,6 +276,8 @@ def execute(repo, args, ident, state, pr) -> int:
             print("local-ci: no job to run", file=sys.stderr)
             return 1
         baseline_ref = "pull_request" if pr else ident["ref"]
+        deploy = cfg(repo, "deploy-branches", "main preprod").split()
+        feature = not pr and baseline_ref.startswith("refs/heads/") and baseline_ref[len("refs/heads/"):] not in deploy
         results = {}
         failed = []
         for wf, job, timeout_s in jobs:
@@ -280,7 +286,7 @@ def execute(repo, args, ident, state, pr) -> int:
             cleanup_act_containers()
             counts = pytest_counts(log.read_text(errors="replace"))
             problem = None if code == 0 else ("timed out" if timed_out else f"failed (exit {code})")
-            problem = problem or check_baseline(state, f"{wf}/{job}", baseline_ref, counts, args.record_baseline)
+            problem = problem or check_baseline(state, f"{wf}/{job}", baseline_ref, counts, args.record_baseline, feature)
             results[f"{wf}/{job}"] = {"result": "failure" if problem else "success", "counts": counts or {}}
             print(f"local-ci: {wf}/{job}: {problem or 'ok'} {counts or ''}  log: {log}")
             if problem:

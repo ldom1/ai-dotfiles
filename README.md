@@ -413,7 +413,7 @@ bin/local-ci run --repo <path> --ref refs/heads/<branch> --record-baseline <sha>
 bin/local-ci run --event pull_request --pr <N>
 ```
 
-Record the skip baseline once per branch, after a parity check against the GitHub run of `<sha>`. The baseline key is `<workflow>/<job>@<ref>`. A `pull_request` run uses the key `<workflow>/<job>@pull_request`: record it once with `--event pull_request --pr <N> --record-baseline`. A key without `@<ref>` is the fallback. Until you record a baseline, a push to that branch fails with "no skip baseline". A push run always needs `--ref`; the `pre-push` hook passes it.
+First run: record the skip baseline once, after a parity check against the GitHub run of `<sha>`. The baseline key is `<workflow>/<job>@<ref>`. One `--record-baseline` on any feature branch also writes `<workflow>/<job>@branch`, which covers all feature branches. Deploy branches (`local-ci.deploy-branches`, default `main preprod`) and pull requests need their own baseline. A `pull_request` run uses the key `<workflow>/<job>@pull_request`: record it once with `--event pull_request --pr <N> --record-baseline`. The lookup order is `@<ref>`, then `@branch` (feature-branch push runs only), then a key without `@<ref>`. Until a baseline matches, the run fails with "no skip baseline". A push run always needs `--ref`; the `pre-push` hook passes it.
 
 The job gets an empty `GITHUB_TOKEN`: your `gh` token never reaches the workflow. Logs are in `~/.cache/local-ci/<owner>__<repo>/<sha>-<ref>-<event>-<tier>/`, with `/` in the ref replaced by `_`.
 

@@ -546,6 +546,80 @@ def test_exact_baseline_wins_and_job_baseline_is_the_fallback(tmp_path):
     assert "ci.yml/frontend: skipped 3 > baseline 1" in r.stdout
 
 
+def skips(tmp_path, n):
+    return fake_act(tmp_path, body=f'echo "== 5 passed, {n} skipped in 1s =="')
+
+
+def baselines(tmp_path):
+    return json.loads((tmp_path / "home" / "acme__widget" / "baseline.json").read_text())
+
+
+def test_recording_on_a_feature_branch_also_writes_the_branch_class_key(tmp_path):
+    repo, sha = make_repo(tmp_path)
+    assert run(tmp_path, repo, sha, "--ref", "refs/heads/feat/a", "--record-baseline", act=skips(tmp_path, 1)).returncode == 0
+    b = baselines(tmp_path)
+    assert b["ci.yml/check@refs/heads/feat/a"] == {"skipped": 1} and b["ci.yml/check@branch"] == {"skipped": 1}
+
+
+def test_a_new_feature_branch_uses_the_branch_class_baseline(tmp_path):
+    repo, sha = make_repo(tmp_path)
+    run(tmp_path, repo, sha, "--ref", "refs/heads/feat/a", "--record-baseline", act=skips(tmp_path, 1))
+    r = run(tmp_path, repo, sha, "--ref", "refs/heads/feat/b", act=skips(tmp_path, 1))
+    assert r.returncode == 0, r.stdout
+    assert "ci.yml/check: ok" in r.stdout
+
+
+def test_skips_above_the_branch_class_baseline_fail(tmp_path):
+    repo, sha = make_repo(tmp_path)
+    run(tmp_path, repo, sha, "--ref", "refs/heads/feat/a", "--record-baseline", act=skips(tmp_path, 1))
+    r = run(tmp_path, repo, sha, "--ref", "refs/heads/feat/b", act=skips(tmp_path, 2))
+    assert r.returncode == 1
+    assert "skipped 2 > baseline 1" in r.stdout
+
+
+def test_exact_ref_baseline_wins_over_the_branch_class(tmp_path):
+    repo, sha = make_repo(tmp_path)
+    state = tmp_path / "home" / "acme__widget"
+    state.mkdir(parents=True)
+    (state / "baseline.json").write_text(json.dumps({"ci.yml/check@branch": {"skipped": 1},
+                                                     "ci.yml/check@refs/heads/feat/b": {"skipped": 3}}))
+    r = run(tmp_path, repo, sha, "--ref", "refs/heads/feat/b", act=skips(tmp_path, 3))
+    assert "ci.yml/check: ok" in r.stdout, r.stdout
+
+
+def test_a_deploy_branch_never_uses_the_branch_class_baseline(tmp_path):
+    repo, sha = make_repo(tmp_path)
+    run(tmp_path, repo, sha, "--ref", "refs/heads/feat/a", "--record-baseline", act=skips(tmp_path, 1))
+    r = run(tmp_path, repo, sha, "--ref", "refs/heads/main", act=skips(tmp_path, 1))
+    assert r.returncode == 1
+    assert "no skip baseline for ci.yml/check@refs/heads/main" in r.stdout
+
+
+def test_recording_on_a_deploy_branch_writes_no_branch_class_key(tmp_path):
+    repo, sha = make_repo(tmp_path)
+    git(repo, "config", "local-ci.deploy-branches", "main release")
+    for ref in ("refs/heads/main", "refs/heads/release"):
+        assert run(tmp_path, repo, sha, "--ref", ref, "--record-baseline", act=skips(tmp_path, 1)).returncode == 0
+    assert "ci.yml/check@branch" not in baselines(tmp_path)
+
+
+def test_a_pull_request_run_never_uses_the_branch_class_baseline(tmp_path):
+    repo, base, head = pr_repo(tmp_path)
+    run(tmp_path, repo, head, "--ref", "refs/heads/feat/a", "--record-baseline", act=skips(tmp_path, 1))
+    r = run(tmp_path, repo, head, "--event", "pull_request", "--pr", "7", act=skips(tmp_path, 1),
+            extra_env={"LOCAL_CI_GH": str(fake_gh(tmp_path, head, base))})
+    assert r.returncode == 1
+    assert "no skip baseline for ci.yml/check@pull_request" in r.stdout
+
+
+def test_recording_a_pull_request_run_writes_no_branch_class_key(tmp_path):
+    repo, base, head = pr_repo(tmp_path)
+    r = run(tmp_path, repo, head, "--event", "pull_request", "--pr", "7", "--record-baseline",
+            extra_env={"LOCAL_CI_GH": str(fake_gh(tmp_path, head, base))})
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "ci.yml/check@branch" not in baselines(tmp_path)
+
+
 def test_git_dir_from_the_environment_is_ignored(tmp_path):
     repo, first = make_repo(tmp_path)
     git(repo, "commit", "-q", "--allow-empty", "-m", "second")

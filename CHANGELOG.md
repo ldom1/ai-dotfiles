@@ -38,6 +38,7 @@
 - `docker/ci-runner.Dockerfile`: `/opt/hostedtoolcache` is owned by `runner` and `AGENT_TOOLSDIRECTORY` points to it, as on GitHub. Before, `actions/setup-node` failed with `EACCES`. `scripts/build-ci-runner.sh` checks that the directory is writable.
 - `bin/local-ci`: the log directory name contains the ref (`<sha>-refs_heads_<branch>-<event>-<tier>`), so runs of one commit on two refs keep separate logs.
 - `bin/local-ci`: it sets `UV_LINK_MODE=copy` in the job, which removes the uv hardlink warning.
+- `bin/local-ci`: a baseline recorded on a feature branch also covers new feature branches (`@branch` key). Deploy branches and PR runs keep their own keys.
 - Merge guard: in every directory, it denies a PR URL for another repo, `env -C`/`--chdir` before the merge, and a `gh api` merge through a variable (`pulls/$N/merge`).
 
 ## [0.10.1] - 2026-10-08
