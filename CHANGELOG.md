@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-08
+
 ### Added
 - git-commit: `compose` project type (detected by `docker-compose.yml` / `compose.yml`), scopes `core`, `alerts`, `dashboards`, `config`, `tests`, `docs`, `ci`.
 
