@@ -18,6 +18,21 @@
 - Template `permissions.deny`: `git push --no-verify` for Claude.
 - `scripts/check-ci-runner-drift.sh`: SessionStart prints one warning when the runner manifest differs from the latest `ubuntu24` release. It caches for 7 days and never edits the manifest.
 
+### Fixed
+- `bin/local-ci`: an interrupt (SIGINT, SIGTERM, SIGHUP) now removes every `act-*` container and network before exit.
+- `bin/local-ci`: a `pull_request` run checks out submodules after the merge, so it tests the merge commit's submodule commits.
+- `bin/local-ci`: the "already passed" record now also matches the ref, the `workflows` list and, for the fast tier, `fast-jobs`.
+  - A push run needs `--ref refs/heads/<branch>`. A `pull_request` run uses `refs/pull/<N>/merge`.
+- `bin/local-ci`: the skip baseline key is `<workflow>/<job>@<ref>` (`@pull_request` for PR runs). A plain `<workflow>/<job>` key is the fallback.
+- `bin/local-ci`: it ignores `GIT_DIR` and related variables, so `git --git-dir=… push` cannot move the source repo's HEAD.
+- `bin/local-ci`: a run with no job left after filtering fails with "no job to run".
+- Merge guard: in every directory, it denies a merge with `-R`/`GH_REPO` for another repo or a `cd` before it.
+- Merge guard: in every directory, it denies a merge through `gh api` (`pulls/<N>/merge` or the GraphQL merge mutation).
+- Merge guard: a crash on bad input denies when the input looks like a merge. A status response without `total_count` denies.
+- `scripts/check-ci-runner-drift.sh`: the `gh` call stops after 5 s, so SessionStart cannot hang.
+- `scripts/install-act.sh`: it creates `~/.local/bin` when it is missing.
+- Template `permissions.deny`: `git -C <dir> push --no-verify` and `git -c core.hooksPath` for Claude.
+
 ## [0.10.1] - 2026-10-08
 
 ### Fixed
