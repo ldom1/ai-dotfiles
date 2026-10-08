@@ -1,8 +1,10 @@
 """bin/local-ci run: clean clone of one commit, push payload, one act call per listed job, fail closed."""
 import json
 import os
+import signal
 import stat
 import subprocess
+import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
@@ -198,3 +200,122 @@ def test_fast_jobs_matching_no_job_fails(tmp_path):
     assert r.returncode == 1
     assert "fast-jobs chekc matches no job" in r.stderr
     assert not (tmp_path / "act-calls").exists()
+
+
+def fake_gh(tmp_path, head, base_sha, base_ref="main"):
+    """A `gh` stub: answers pr view and branch lookups, logs every status POST."""
+    p = tmp_path / "gh"
+    p.write_text(f"""#!/usr/bin/env bash
+echo "$*" >> "{tmp_path}/gh-calls"
+case "$*" in
+  "pr view"*) echo '{{"number":7,"headRefOid":"{head}","headRefName":"feat/x","baseRefName":"{base_ref}"}}';;
+  *"/branches/{base_ref}"*) echo "{base_sha}";;
+  *"/statuses/"*) ;;
+  *) echo "unexpected gh call: $*" >&2; exit 2;;
+esac
+""")
+    p.chmod(p.stat().st_mode | stat.S_IEXEC)
+    return p
+
+
+def pr_repo(tmp_path):
+    repo, base = make_repo(tmp_path)
+    git(repo, "checkout", "-q", "-b", "feat/x")
+    (repo / "a.txt").write_text("a")
+    git(repo, "add", ".")
+    git(repo, "commit", "-q", "-m", "feat")
+    return repo, base, git(repo, "rev-parse", "HEAD")
+
+
+def statuses(tmp_path):
+    return [l for l in (tmp_path / "gh-calls").read_text().splitlines() if "/statuses/" in l]
+
+
+def test_pr_run_tests_the_merge_commit_and_posts_pending_then_success(tmp_path):
+    repo, base, head = pr_repo(tmp_path)
+    gh = fake_gh(tmp_path, head, base)
+    act = fake_act(tmp_path, body='test -f a.txt && test -f .github/workflows/ci.yml && echo "== 1 passed in 1s =="')
+    r = run(tmp_path, repo, head, "--event", "pull_request", "--pr", "7", "--record-baseline", act=act,
+            extra_env={"LOCAL_CI_GH": str(gh)})
+    assert r.returncode == 0, r.stdout + r.stderr
+    s = statuses(tmp_path)
+    assert len(s) == 2 and "state=pending" in s[0] and "state=success" in s[1]
+    assert all(f"repos/acme/widget/statuses/{head}" in x and "context=local-ci/pull_request" in x for x in s)
+    assert f"description=full base={base} img=abababababab " in s[1]
+    payload = json.loads((tmp_path / "payload.json").read_text())
+    assert payload["pull_request"]["head"]["sha"] == head and payload["pull_request"]["base"]["sha"] == base
+
+
+def test_pr_run_failure_posts_failure(tmp_path):
+    repo, base, head = pr_repo(tmp_path)
+    gh = fake_gh(tmp_path, head, base)
+    r = run(tmp_path, repo, head, "--event", "pull_request", "--pr", "7", "--record-baseline",
+            act=fake_act(tmp_path, body="exit 1"), extra_env={"LOCAL_CI_GH": str(gh)})
+    assert r.returncode == 1
+    assert "state=failure" in statuses(tmp_path)[-1]
+
+
+def test_pr_run_killed_posts_failure_not_pending(tmp_path):
+    repo, base, head = pr_repo(tmp_path)
+    gh = fake_gh(tmp_path, head, base)
+    env = {**os.environ, **GIT_ENV, "LOCAL_CI_ACT": str(fake_act(tmp_path, body="sleep 30")),
+           "LOCAL_CI_HOME": str(tmp_path / "home"), "LOCAL_CI_IMAGE_ID": "sha256:" + "ab" * 32, "LOCAL_CI_GH": str(gh)}
+    p = subprocess.Popen([str(LOCAL_CI), "run", "--repo", str(repo), "--event", "pull_request", "--pr", "7", head],
+                         env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    deadline = time.time() + 20
+    while not (tmp_path / "act-calls").exists() and time.time() < deadline:
+        time.sleep(0.2)
+    p.send_signal(signal.SIGINT)
+    p.wait(timeout=30)
+    assert p.returncode != 0
+    assert "state=failure" in statuses(tmp_path)[-1]
+
+
+def test_pr_merge_conflict_posts_failure(tmp_path):
+    repo, base, head = pr_repo(tmp_path)
+    git(repo, "checkout", "-q", "main")
+    (repo / "a.txt").write_text("conflict")
+    git(repo, "add", ".")
+    git(repo, "commit", "-q", "-m", "main change")
+    new_base = git(repo, "rev-parse", "HEAD")
+    gh = fake_gh(tmp_path, head, new_base)
+    r = run(tmp_path, repo, head, "--event", "pull_request", "--pr", "7", "--record-baseline",
+            extra_env={"LOCAL_CI_GH": str(gh)})
+    assert r.returncode == 1
+    assert "merge conflict" in r.stdout
+    assert "state=failure" in statuses(tmp_path)[-1]
+
+
+def test_pr_missing_commit_after_fetch_posts_failure(tmp_path):
+    repo, base, head = pr_repo(tmp_path)
+    gh = fake_gh(tmp_path, "c" * 40, base)  # head sha absent locally; origin is unreachable, so the fetch fails
+    r = run(tmp_path, repo, head, "--event", "pull_request", "--pr", "7", "--record-baseline",
+            extra_env={"LOCAL_CI_GH": str(gh)})
+    assert r.returncode == 1
+    assert "missing" in r.stdout
+    assert "state=failure" in statuses(tmp_path)[-1] and f"statuses/{'c' * 40}" in statuses(tmp_path)[-1]
+    assert not (tmp_path / "act-calls").exists()
+
+
+def test_sigterm_kills_act_and_exits_non_zero(tmp_path):
+    repo, sha = make_repo(tmp_path)
+    act = fake_act(tmp_path, body=f'echo $$ > "{tmp_path}/act-pid"; sleep 30')
+    env = {**os.environ, **GIT_ENV, "LOCAL_CI_ACT": str(act), "LOCAL_CI_HOME": str(tmp_path / "home"),
+           "LOCAL_CI_IMAGE_ID": "sha256:" + "ab" * 32}
+    p = subprocess.Popen([str(LOCAL_CI), "run", "--repo", str(repo), "--record-baseline", sha],
+                         env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    deadline = time.time() + 20
+    while not (tmp_path / "act-pid").exists() and time.time() < deadline:
+        time.sleep(0.2)
+    pid = int((tmp_path / "act-pid").read_text())
+    p.send_signal(signal.SIGTERM)
+    p.wait(timeout=30)
+    assert p.returncode != 0
+    deadline = time.time() + 5
+    while time.time() < deadline:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return
+        time.sleep(0.1)
+    raise AssertionError(f"stub act {pid} still running")

@@ -31,6 +31,8 @@ ZERO = "0" * 40
 HOME = Path(os.environ.get("LOCAL_CI_HOME", Path.home() / ".cache" / "local-ci"))
 ACT = os.environ.get("LOCAL_CI_ACT", "act")
 DEFAULT_TIMEOUT_MIN = 360  # GitHub's default job timeout
+GH = os.environ.get("LOCAL_CI_GH", "gh")
+CONTEXT = "local-ci/pull_request"
 
 
 def git(repo, *args) -> str:
@@ -40,6 +42,27 @@ def git(repo, *args) -> str:
 def cfg(repo, key, default="") -> str:
     r = subprocess.run(["git", "-C", str(repo), "config", "--get", f"local-ci.{key}"], capture_output=True, text=True)
     return r.stdout.strip() if r.returncode == 0 else default
+
+
+def gh(repo, *args) -> str:
+    return subprocess.run([GH, *args], cwd=repo, check=True, capture_output=True, text=True).stdout.strip()
+
+
+def post_status(repo, slug, sha, state, description) -> None:
+    gh(repo, "api", "-X", "POST", f"repos/{slug}/statuses/{sha}", "-f", f"state={state}",
+       "-f", f"context={CONTEXT}", "-f", f"description={description}")
+
+
+def has_commit(repo, sha) -> bool:
+    return subprocess.run(["git", "-C", str(repo), "cat-file", "-e", f"{sha}^{{commit}}"], capture_output=True).returncode == 0
+
+
+def build_merge(clone: Path, base: str, head: str) -> bool:
+    """Check out `base` and merge `head` with --no-ff, as GitHub tests a PR. False on conflict."""
+    git(clone, "checkout", "-q", "--detach", base)
+    r = subprocess.run(["git", "-C", str(clone), "-c", "user.name=local-ci", "-c", "user.email=local-ci@localhost",
+                        "merge", "-q", "--no-ff", "--no-edit", head], capture_output=True, text=True)
+    return r.returncode == 0
 
 
 def repo_slug(repo) -> str:
@@ -83,6 +106,11 @@ def list_jobs(clone: Path, workflows: list[str]) -> list[tuple[str, str, int]]:
 
 def write_push_payload(path: Path, ref: str, before: str, sha: str) -> None:
     path.write_text(json.dumps({"ref": ref, "before": before, "after": sha, "head_commit": {"id": sha}}))
+
+
+def write_pr_payload(path: Path, number: int, head_ref, head, base_ref, base) -> None:
+    path.write_text(json.dumps({"action": "synchronize", "number": number, "pull_request": {
+        "number": number, "head": {"ref": head_ref, "sha": head}, "base": {"ref": base_ref, "sha": base}}}))
 
 
 def act_cmd(event, wf, job, payload: Path, state: Path) -> list[str]:
@@ -186,32 +214,24 @@ def already_passed(state: Path, sha, event, tier, base, img) -> bool:
     return False
 
 
-def run(args) -> int:
-    repo = Path(args.repo).resolve()
-    sha = git(repo, "rev-parse", "--verify", f"{args.sha}^{{commit}}")
-    workflows = cfg(repo, "workflows").split()
-    if not workflows:
-        raise SystemExit("local-ci: set `git config local-ci.workflows ci.yml` (the workflows to run)")
-    if not shutil.which(ACT) and not Path(ACT).is_file():
-        print(f"local-ci: act not found ({ACT}): run scripts/install-act.sh", file=sys.stderr)
-        return 1
-    img = image_digest()
-    state = HOME / repo_slug(repo).replace("/", "__")
-    state.mkdir(parents=True, exist_ok=True)
-    if not args.record_baseline and already_passed(state, sha, args.event, args.tier, "", img):
-        print(f"local-ci: {sha[:12]} already passed ({args.event}, {args.tier}, img {img}): not re-run")
-        return 0
-    lock = open(HOME / "global.lock", "w")
-    fcntl.flock(lock, fcntl.LOCK_EX)  # one local-ci run per machine: it owns all act-* containers
+def execute(repo, args, sha, state, img, workflows, pr, base) -> int:
     logs = state / f"{sha}-{args.event}-{args.tier}"
     logs.mkdir(parents=True, exist_ok=True)
     start = time.monotonic()
     with tempfile.TemporaryDirectory(prefix="local-ci-") as tmp:
         clone = Path(tmp) / "repo"
         clean_clone(repo, sha, clone)
+        if pr and not build_merge(clone, base, sha):
+            print(f"local-ci: merge conflict with base {base[:12]}")
+            record(state, sha=sha, event=args.event, tier=args.tier, base=base, img=img,
+                   result="failure", duration="0s", jobs={})
+            return 1
         payload = Path(tmp) / "event.json"
-        write_push_payload(payload, args.ref or f"refs/heads/{git(repo, 'rev-parse', '--abbrev-ref', 'HEAD')}",
-                           args.before or ZERO, sha)
+        if pr:
+            write_pr_payload(payload, pr["number"], pr["headRefName"], sha, pr["baseRefName"], base)
+        else:
+            write_push_payload(payload, args.ref or f"refs/heads/{git(repo, 'rev-parse', '--abbrev-ref', 'HEAD')}",
+                               args.before or ZERO, sha)
         jobs = list_jobs(clone, workflows)
         fast = cfg(repo, "fast-jobs").split()
         if args.tier == "fast" and fast:
@@ -235,10 +255,67 @@ def run(args) -> int:
     duration = f"{time.monotonic() - start:.0f}s"
     if args.tier == "fast":
         print("local-ci: fast tier — partial — not a merge gate")
-    record(state, sha=sha, event=args.event, tier=args.tier, base="", img=img,
+    record(state, sha=sha, event=args.event, tier=args.tier, base=base, img=img,
            result="failure" if failed else "success", duration=duration, jobs=results)
     print(f"local-ci: {'FAILED ' + ', '.join(failed) if failed else 'success'} in {duration} (img {img})")
     return 1 if failed else 0
+
+
+def run(args) -> int:
+    repo = Path(args.repo).resolve()
+    pr = None
+    if args.event == "pull_request":
+        if not args.pr:
+            raise SystemExit("local-ci: --event pull_request needs --pr N")
+        pr = json.loads(gh(repo, "pr", "view", str(args.pr), "--json", "number,headRefOid,headRefName,baseRefName"))
+        pr["base"] = gh(repo, "api", f"repos/{repo_slug(repo)}/branches/{pr['baseRefName']}", "-q", ".commit.sha")
+        if not (has_commit(repo, pr["headRefOid"]) and has_commit(repo, pr["base"])):
+            try:  # only when a commit is missing locally; tests stay offline
+                subprocess.run(["git", "-C", str(repo), "fetch", "-q", "origin", pr["baseRefName"], f"pull/{args.pr}/head"],
+                               capture_output=True, timeout=60, env={**os.environ, "GIT_TERMINAL_PROMPT": "0"})
+            except subprocess.TimeoutExpired:
+                pass
+        args.sha = pr["headRefOid"]
+        args.tier = "full"
+    if pr:
+        sha = args.sha  # may be absent locally: the missing-commit check below posts failure for it
+    else:
+        sha = git(repo, "rev-parse", "--verify", f"{args.sha}^{{commit}}")
+    workflows = cfg(repo, "workflows").split()
+    if not workflows:
+        raise SystemExit("local-ci: set `git config local-ci.workflows ci.yml` (the workflows to run)")
+    if not shutil.which(ACT) and not Path(ACT).is_file():
+        print(f"local-ci: act not found ({ACT}): run scripts/install-act.sh", file=sys.stderr)
+        return 1
+    img = image_digest()
+    state = HOME / repo_slug(repo).replace("/", "__")
+    state.mkdir(parents=True, exist_ok=True)
+    base = pr["base"] if pr else ""
+    if not args.record_baseline and already_passed(state, sha, args.event, args.tier, base, img):
+        print(f"local-ci: {sha[:12]} already passed ({args.event}, {args.tier}, img {img}): not re-run")
+        return 0
+    lock = open(HOME / "global.lock", "w")
+    fcntl.flock(lock, fcntl.LOCK_EX)  # one local-ci run per machine: it owns all act-* containers
+
+    def on_signal(signum, _frame):
+        raise SystemExit(128 + signum)
+
+    signal.signal(signal.SIGTERM, on_signal)
+    signal.signal(signal.SIGINT, on_signal)
+    started = time.monotonic()
+    code = 1  # stays 1 on any exception or signal: the finally then posts `failure`
+    try:
+        if pr:
+            post_status(repo, repo_slug(repo), sha, "pending", f"full base={base} img={img} running")
+            if not (has_commit(repo, sha) and has_commit(repo, base)):
+                print(f"local-ci: PR head {sha[:12]} or base {base[:12]} missing locally after fetch")
+                return 1
+        code = execute(repo, args, sha, state, img, workflows, pr, base)
+        return code
+    finally:
+        if pr:
+            post_status(repo, repo_slug(repo), sha, "success" if code == 0 else "failure",
+                        f"full base={base} img={img} {time.monotonic() - started:.0f}s")
 
 
 def main() -> int:
@@ -247,11 +324,12 @@ def main() -> int:
     r = sub.add_parser("run")
     r.add_argument("--repo", default=".")
     r.add_argument("--tier", choices=["fast", "full"], default="full")
-    r.add_argument("--event", choices=["push"], default="push")
+    r.add_argument("--event", choices=["push", "pull_request"], default="push")
     r.add_argument("--ref")
     r.add_argument("--before")
     r.add_argument("--record-baseline", action="store_true")
-    r.add_argument("sha")
+    r.add_argument("--pr", type=int)
+    r.add_argument("sha", nargs="?")
     args = ap.parse_args()
     return run(args)
 
