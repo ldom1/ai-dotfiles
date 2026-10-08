@@ -133,7 +133,10 @@ def write_pr_payload(path: Path, number: int, head_ref, head, base_ref, base) ->
 def act_cmd(event, wf, job, payload: Path, state: Path) -> list[str]:
     return [ACT, event, "-W", f".github/workflows/{wf}", "-j", job, "-e", str(payload),
             "-P", f"ubuntu-latest={IMAGE}", "-P", f"ubuntu-24.04={IMAGE}", "--pull=false",
-            "--env", "ImageOS=ubuntu24", "--container-daemon-socket", "-",
+            "--env", "ImageOS=ubuntu24", "--env", "UV_LINK_MODE=copy", "--container-daemon-socket", "-",
+            # An empty GITHUB_TOKEN stops act from running `gh auth token`: the user's token never reaches the job.
+            # Public actions still clone anonymously (act sends credentials only for a non-empty token).
+            "-s", "GITHUB_TOKEN=",
             "--cache-server-path", str(state / "actcache"),
             "--container-options", "-v local-ci-uv:/home/runner/.cache/uv -v local-ci-npm:/home/runner/.npm"]
 
@@ -242,7 +245,7 @@ def already_passed(state: Path, ident: dict) -> dict | None:
 
 def execute(repo, args, ident, state, pr) -> int:
     sha, base = ident["sha"], ident["base"]
-    logs = state / f"{sha}-{args.event}-{args.tier}"
+    logs = state / f"{sha}-{re.sub(r'[^A-Za-z0-9._-]', '_', ident['ref'])}-{args.event}-{args.tier}"
     logs.mkdir(parents=True, exist_ok=True)
     start = time.monotonic()
     with tempfile.TemporaryDirectory(prefix="local-ci-") as tmp:

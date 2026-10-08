@@ -415,6 +415,8 @@ bin/local-ci run --event pull_request --pr <N>
 
 Record the skip baseline once per branch, after a parity check against the GitHub run of `<sha>`. The baseline key is `<workflow>/<job>@<ref>`. A `pull_request` run uses the key `<workflow>/<job>@pull_request`: record it once with `--event pull_request --pr <N> --record-baseline`. A key without `@<ref>` is the fallback. Until you record a baseline, a push to that branch fails with "no skip baseline". A push run always needs `--ref`; the `pre-push` hook passes it.
 
+The job gets an empty `GITHUB_TOKEN`: your `gh` token never reaches the workflow. Logs are in `~/.cache/local-ci/<owner>__<repo>/<sha>-<ref>-<event>-<tier>/`, with `/` in the ref replaced by `_`.
+
 The merge guard is off until `git config local-ci.guard true`. In every directory, it denies a `gh pr merge` with `-R`, `GH_REPO` or `cd`, and a merge through `gh api`.
 
 ## Design principle

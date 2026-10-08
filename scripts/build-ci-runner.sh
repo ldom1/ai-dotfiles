@@ -23,4 +23,5 @@ check jq "jq-$JQ_VERSION" jq --version
 check uid 1001 id -u
 check user runner id -un
 check sudo ok sh -c 'sudo -n true && echo ok'
+check toolcache ok sh -c 'test -w /opt/hostedtoolcache && echo ok'
 echo "image $(docker image inspect -f '{{.Id}}' "$IMAGE")"

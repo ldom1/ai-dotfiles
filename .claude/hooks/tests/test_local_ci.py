@@ -115,6 +115,24 @@ def test_push_payload_ref(tmp_path):
     assert payload["after"] == sha and payload["before"] == "0" * 40
 
 
+def test_act_gets_an_empty_github_token(tmp_path):
+    """Without a GITHUB_TOKEN secret act runs `gh auth token` and hands the user's token to the job."""
+    repo, sha = make_repo(tmp_path)
+    assert run(tmp_path, repo, sha, "--record-baseline").returncode == 0
+    for c in (tmp_path / "act-calls").read_text().splitlines():
+        assert f" {c} ".count(" -s GITHUB_TOKEN= ") == 1, c
+        assert "--env UV_LINK_MODE=copy" in c, c
+
+
+def test_log_dir_is_per_ref(tmp_path):
+    repo, sha = make_repo(tmp_path)
+    run(tmp_path, repo, sha, "--ref", "refs/heads/feat/x", "--record-baseline")
+    run(tmp_path, repo, sha, "--ref", "refs/heads/main", "--record-baseline")
+    state = tmp_path / "home" / "acme__widget"
+    assert (state / f"{sha}-refs_heads_feat_x-push-full" / "ci__check.log").is_file()
+    assert (state / f"{sha}-refs_heads_main-push-full" / "ci__check.log").is_file()
+
+
 def test_missing_act_fails_closed(tmp_path):
     repo, sha = make_repo(tmp_path)
     r = run(tmp_path, repo, sha, act=tmp_path / "no-such-act")

@@ -24,5 +24,9 @@ RUN userdel -r ubuntu 2>/dev/null || true \
  && useradd -m -u 1001 -s /bin/bash runner \
  && echo 'runner ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/runner \
  && mkdir -p /home/runner/.cache/uv /home/runner/.npm && chown -R runner:runner /home/runner
+# Tool cache of setup-* actions, writable by runner as on GitHub. act mounts the `act-toolcache` volume here and sets
+# RUNNER_TOOL_CACHE; an empty volume takes this directory's owner. AGENT_TOOLSDIRECTORY is set by GitHub's image only.
+RUN mkdir -p /opt/hostedtoolcache && chown runner:runner /opt/hostedtoolcache
+ENV AGENT_TOOLSDIRECTORY=/opt/hostedtoolcache
 USER runner
 WORKDIR /home/runner

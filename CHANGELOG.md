@@ -32,6 +32,10 @@
 - `scripts/check-ci-runner-drift.sh`: the `gh` call stops after 5 s, so SessionStart cannot hang.
 - `scripts/install-act.sh`: it creates `~/.local/bin` when it is missing.
 - Template `permissions.deny`: `git -C <dir> push --no-verify` and `git -c core.hooksPath` for Claude.
+- `bin/local-ci`: it passes `-s GITHUB_TOKEN=` to `act`. Without it, act v0.2.89 runs `gh auth token` and gives the user's token to the job as `secrets.GITHUB_TOKEN` and `github.token`. Public actions still download without a token.
+- `docker/ci-runner.Dockerfile`: `/opt/hostedtoolcache` is owned by `runner` and `AGENT_TOOLSDIRECTORY` points to it, as on GitHub. Before, `actions/setup-node` failed with `EACCES`. `scripts/build-ci-runner.sh` checks that the directory is writable.
+- `bin/local-ci`: the log directory name contains the ref (`<sha>-refs_heads_<branch>-<event>-<tier>`), so runs of one commit on two refs keep separate logs.
+- `bin/local-ci`: it sets `UV_LINK_MODE=copy` in the job, which removes the uv hardlink warning.
 
 ## [0.10.1] - 2026-10-08
 
