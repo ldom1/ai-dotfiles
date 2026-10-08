@@ -417,7 +417,7 @@ Record the skip baseline once per branch, after a parity check against the GitHu
 
 The job gets an empty `GITHUB_TOKEN`: your `gh` token never reaches the workflow. Logs are in `~/.cache/local-ci/<owner>__<repo>/<sha>-<ref>-<event>-<tier>/`, with `/` in the ref replaced by `_`.
 
-The merge guard is off until `git config local-ci.guard true`. In every directory, it denies a `gh pr merge` with `-R`, `GH_REPO` or `cd`, and a merge through `gh api`.
+The merge guard is off until `git config local-ci.guard true`. In every directory, it denies a `gh pr merge` with `-R`, `GH_REPO`, `cd`, `env -C` or a PR URL for another repo, and a merge through `gh api`.
 
 ## Design principle
 

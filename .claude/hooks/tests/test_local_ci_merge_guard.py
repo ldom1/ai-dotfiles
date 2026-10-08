@@ -213,6 +213,42 @@ def test_repo_flag_for_this_repo_is_allowed_when_guard_is_off(tmp_path):
     assert guard(tmp_path, "gh pr merge 7 -R acme/widget", fake_gh(tmp_path, []), guard_on=False) is None
 
 
+@pytest.mark.parametrize("selector", [
+    "https://github.com/x/y/pull/5",
+    "github.com/x/y/pull/5",
+    "HTTPS://GitHub.com/X/Y/pull/5/files",
+    "https://ghe.example.com/x/y/pull/5",
+])
+def test_url_selector_for_another_repo_denies_even_when_guard_is_off(tmp_path, selector):
+    assert REPO_DIR in guard(tmp_path, f"gh pr merge {selector} --squash", fake_gh(tmp_path, []), guard_on=False)
+
+
+@pytest.mark.parametrize("selector", ["https://github.com/acme/widget/pull/7", "github.com/ACME/Widget/pull/7"])
+def test_url_selector_for_this_repo_behaves_like_a_number(tmp_path, selector):
+    assert guard(tmp_path, f"gh pr merge {selector}", fake_gh(tmp_path, [status()])) is None
+    (tmp_path / "off").mkdir()
+    assert guard(tmp_path / "off", f"gh pr merge {selector}", fake_gh(tmp_path / "off", []), guard_on=False) is None
+
+
+def test_url_selector_for_this_repo_still_needs_a_fresh_success(tmp_path):
+    assert "no local-ci/pull_request status" in guard(tmp_path, "gh pr merge https://github.com/acme/widget/pull/7",
+                                                      fake_gh(tmp_path, []))
+
+
+def test_url_in_a_non_merge_command_is_ignored(tmp_path):
+    assert guard(tmp_path, "gh pr view https://github.com/x/y/pull/5", fake_gh(tmp_path, [])) is None
+
+
+@pytest.mark.parametrize("command", [
+    "env -C /tmp gh pr merge 7",
+    "env --chdir=/tmp gh pr merge 7",
+    "env --chdir /tmp gh pr merge 7",
+    "env -C/tmp gh pr merge 7",
+])
+def test_env_chdir_before_merge_denies_even_when_guard_is_off(tmp_path, command):
+    assert REPO_DIR in guard(tmp_path, command, fake_gh(tmp_path, []), guard_on=False)
+
+
 API_MERGE = "merge PRs with a plain `gh pr merge <N>` from the repo directory"
 
 
@@ -220,6 +256,10 @@ API_MERGE = "merge PRs with a plain `gh pr merge <N>` from the repo directory"
     "gh api -X PUT repos/ldom1/notion-pilot/pulls/5/merge",
     "gh api graphql -f query='mutation { mergePullRequest(input: {pullRequestId: \"x\"}) { clientMutationId } }'",
     "gh api graphql -f query=@q.graphql # MERGEPULLREQUEST",
+    "gh api -X PUT repos/o/r/pulls/$N/merge",
+    "gh api -X PUT repos/o/r/pulls/${N}/merge",
+    'gh api -X PUT "repos/o/r/pulls/$N/merge"',
+    "gh api -X PUT repos/o/r/PULLS/$(n)/merge",
 ])
 def test_api_merge_denies_even_when_guard_is_off(tmp_path, command):
     assert API_MERGE in guard(tmp_path, command, fake_gh(tmp_path, []), guard_on=False)

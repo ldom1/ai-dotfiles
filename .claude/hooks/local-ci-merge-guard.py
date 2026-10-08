@@ -2,7 +2,7 @@
 """PreToolUse (Bash): deny `gh pr merge` unless the PR head has a fresh `local-ci/pull_request` success.
 
 Active only in repos with `git config local-ci.guard true`. Any error, gap or mismatch denies (fail closed).
-In every directory, guard on or off, it denies a merge aimed at another repo (`-R`, `GH_REPO`, `cd`) and a merge
+In every directory, guard on or off, it denies a merge aimed at another repo (`-R`, `GH_REPO`, `cd`, `env -C`, a URL for another repo) and a merge
 through `gh api`: the guard value comes from the session directory, so these forms would bypass it.
 Scope: this guards merges that Claude Code runs through Bash. The GitHub web UI, a human `gh` and other tools are
 not guarded, and GitHub Free private repos enforce nothing. Spec: vault [[2026-10-07-local-ci-replication-design]] §5, §7.
@@ -30,12 +30,14 @@ def deny(reason: str) -> None:
 
 
 MERGE_RE = re.compile(r"\bgh\b.*\bpr\b.*\bmerge\b", re.S)
-API_MERGE_RE = re.compile(r"pulls/\d+/merge|mergePullRequest", re.I)
+API_MERGE_RE = re.compile(r"pulls/[^/\s\"']+/merge|mergePullRequest", re.I)
 CD_RE = re.compile(r"(?:^|[\s(])(?:cd|pushd)(?:\s|$)")
 # In a command the parser cannot check: any repo flag, GH_REPO or directory change, anywhere.
-REDIRECT_RE = re.compile(r"(?:^|[\s(;&|'\"`])(?:-R|--repo\b|GH_REPO=|(?:cd|pushd)(?:[\s;)'\"]|$))")
+REDIRECT_RE = re.compile(r"(?:^|[\s(;&|'\"`])(?:-R|-C|--repo\b|--chdir\b|GH_REPO=|(?:cd|pushd)(?:[\s;)'\"]|$))")
+# A PR URL selector (`https://github.com/o/r/pull/5`, scheme optional) names the repo, like -R.
+URL_SELECTOR_RE = re.compile(r"^(?:https?://)?([^/\s]+)/([^/\s]+)/([^/\s]+)/pull/", re.I)
 ASSIGN_RE = re.compile(r"^\w+=")
-REDIRECT = "run gh pr merge from the repo directory, without -R/GH_REPO/cd"
+REDIRECT = "run gh pr merge from the repo directory, without -R/GH_REPO/cd or a URL for another repo"
 
 
 def parse(command: str) -> tuple[list[list[str]], list[str], bool, bool]:
@@ -80,7 +82,7 @@ def gh(cwd, *args) -> str:
 
 
 def split_args(args: list[str]) -> tuple[str | None, list[str]]:
-    """(PR selector, `-R`/`--repo` values) of the arguments after `gh pr merge`."""
+    """(PR selector, repos named by `-R`/`--repo` or by a URL selector) of the arguments after `gh pr merge`."""
     selector, repos, i = None, [], 0
     while i < len(args):
         a = args[i]
@@ -96,6 +98,10 @@ def split_args(args: list[str]) -> tuple[str | None, list[str]]:
         elif not a.startswith("-") and selector is None:
             selector = a
         i += 1
+    url = URL_SELECTOR_RE.match(selector or "")
+    if url:  # a host other than github.com stays in the name, so it never equals the origin slug
+        host, owner, name = url.groups()
+        repos.append(f"{owner}/{name}" if host.lower() == "github.com" else f"{host}/{owner}/{name}")
     return selector, repos
 
 
