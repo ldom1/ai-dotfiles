@@ -332,6 +332,50 @@ def run(args) -> int:
     return code if posted else code or 1
 
 
+HOOK = """#!/usr/bin/env bash
+# Installed by `local-ci install`. Runs the previous pre-push hook (pre-push.local), then `local-ci pre-push`.
+set -euo pipefail
+input=$(cat)
+dir=$(dirname "$0")
+if [[ -x "$dir/pre-push.local" ]]; then "$dir/pre-push.local" "$@" <<<"$input"; fi
+exec "$HOME/ai-dotfiles/bin/local-ci" pre-push "$@" <<<"$input"
+"""
+
+
+def install(args) -> int:
+    repo = Path(args.repo).resolve()
+    hooks = Path(git(repo, "rev-parse", "--path-format=absolute", "--git-path", "hooks"))
+    hooks.mkdir(parents=True, exist_ok=True)
+    hook = hooks / "pre-push"
+    if hook.exists() and "local-ci pre-push" not in hook.read_text():
+        hook.rename(hooks / "pre-push.local")
+    hook.write_text(HOOK)
+    hook.chmod(0o755)
+    for key, value in (("enabled", "true"), ("workflows", args.workflows), ("fast-jobs", args.fast_jobs),
+                       ("deploy-branches", args.deploy_branches)):
+        git(repo, "config", f"local-ci.{key}", value)
+    print(f"local-ci: installed {hook}")
+    return 0
+
+
+def pre_push(args) -> int:
+    repo = Path(".").resolve()
+    lines = sys.stdin.read().splitlines()
+    if cfg(repo, "enabled") != "true":
+        return 0
+    deploy = set(cfg(repo, "deploy-branches", "main preprod").split())
+    rc = 0
+    for line in lines:
+        _local_ref, local_sha, remote_ref, remote_sha = line.split()
+        if local_sha == ZERO or not remote_ref.startswith("refs/heads/"):
+            continue  # branch delete or tag
+        branch = remote_ref.removeprefix("refs/heads/")
+        ns = argparse.Namespace(repo=str(repo), tier="full" if branch in deploy else "fast", event="push",
+                                ref=remote_ref, before=remote_sha, record_baseline=False, sha=local_sha, pr=None)
+        rc |= run(ns)
+    return rc
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(prog="local-ci")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -344,8 +388,16 @@ def main() -> int:
     r.add_argument("--record-baseline", action="store_true")
     r.add_argument("--pr", type=int)
     r.add_argument("sha", nargs="?")
+    i = sub.add_parser("install")
+    i.add_argument("--repo", default=".")
+    i.add_argument("--workflows", required=True)
+    i.add_argument("--fast-jobs", default="")
+    i.add_argument("--deploy-branches", default="main preprod")
+    pp = sub.add_parser("pre-push")
+    pp.add_argument("remote")
+    pp.add_argument("url")
     args = ap.parse_args()
-    return run(args)
+    return {"run": run, "install": install, "pre-push": pre_push}[args.cmd](args)
 
 
 if __name__ == "__main__":
