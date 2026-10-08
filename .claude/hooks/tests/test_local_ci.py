@@ -202,14 +202,15 @@ def test_fast_jobs_matching_no_job_fails(tmp_path):
     assert not (tmp_path / "act-calls").exists()
 
 
-def fake_gh(tmp_path, head, base_sha, base_ref="main"):
-    """A `gh` stub: answers pr view and branch lookups, logs every status POST."""
+def fake_gh(tmp_path, head, base_sha, base_ref="main", fail_state=None):
+    """A `gh` stub: answers pr view and branch lookups, logs every status POST. `fail_state` makes that POST fail."""
     p = tmp_path / "gh"
     p.write_text(f"""#!/usr/bin/env bash
 echo "$*" >> "{tmp_path}/gh-calls"
 case "$*" in
   "pr view"*) echo '{{"number":7,"headRefOid":"{head}","headRefName":"feat/x","baseRefName":"{base_ref}"}}';;
   *"/branches/{base_ref}"*) echo "{base_sha}";;
+  *"/statuses/"*"state={fail_state}"*) echo "HTTP 502 boom" >&2; exit 1;;
   *"/statuses/"*) ;;
   *) echo "unexpected gh call: $*" >&2; exit 2;;
 esac
@@ -319,3 +320,36 @@ def test_sigterm_kills_act_and_exits_non_zero(tmp_path):
             return
         time.sleep(0.1)
     raise AssertionError(f"stub act {pid} still running")
+
+
+def test_passed_pr_is_not_rerun_but_its_success_status_is_reposted(tmp_path):
+    repo, base, head = pr_repo(tmp_path)
+    gh = fake_gh(tmp_path, head, base)
+    env = {"LOCAL_CI_GH": str(gh)}
+    args = ("--event", "pull_request", "--pr", "7")
+    assert run(tmp_path, repo, head, *args, "--record-baseline", extra_env=env).returncode == 0
+    acts, before = len((tmp_path / "act-calls").read_text().splitlines()), statuses(tmp_path)
+    r = run(tmp_path, repo, head, *args, extra_env=env)
+    assert r.returncode == 0 and "already passed" in r.stdout
+    assert len((tmp_path / "act-calls").read_text().splitlines()) == acts
+    after = statuses(tmp_path)
+    assert len(after) == len(before) + 1 and "state=success" in after[-1]
+    assert f"description=full base={base} img=abababababab " in after[-1]
+
+
+def test_failed_final_post_fails_a_successful_run(tmp_path):
+    repo, base, head = pr_repo(tmp_path)
+    gh = fake_gh(tmp_path, head, base, fail_state="success")
+    r = run(tmp_path, repo, head, "--event", "pull_request", "--pr", "7", "--record-baseline", extra_env={"LOCAL_CI_GH": str(gh)})
+    assert r.returncode != 0
+    assert "could not post success status: HTTP 502 boom" in r.stderr
+    assert "state=pending" in statuses(tmp_path)[0]
+
+
+def test_failed_final_post_keeps_a_failed_run_result(tmp_path):
+    repo, base, head = pr_repo(tmp_path)
+    gh = fake_gh(tmp_path, head, base, fail_state="failure")
+    r = run(tmp_path, repo, head, "--event", "pull_request", "--pr", "7", "--record-baseline",
+            act=fake_act(tmp_path, body="exit 1"), extra_env={"LOCAL_CI_GH": str(gh)})
+    assert r.returncode == 1
+    assert "could not post failure status" in r.stderr and "FAILED" in r.stdout

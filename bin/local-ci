@@ -53,6 +53,16 @@ def post_status(repo, slug, sha, state, description) -> None:
        "-f", f"context={CONTEXT}", "-f", f"description={description}")
 
 
+def try_post(repo, sha, state, description) -> bool:
+    """post_status that reports a failure on stderr instead of raising. True when posted."""
+    try:
+        post_status(repo, repo_slug(repo), sha, state, description)
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"local-ci: could not post {state} status: {(e.stderr or '').strip()}", file=sys.stderr)
+        return False
+
+
 def has_commit(repo, sha) -> bool:
     return subprocess.run(["git", "-C", str(repo), "cat-file", "-e", f"{sha}^{{commit}}"], capture_output=True).returncode == 0
 
@@ -202,16 +212,17 @@ def record(state: Path, **rec) -> None:
         fh.write(json.dumps({**rec, "ts": time.time()}) + "\n")
 
 
-def already_passed(state: Path, sha, event, tier, base, img) -> bool:
-    """The newest record for (sha, event, base, img) decides. A full success also covers fast."""
+def already_passed(state: Path, sha, event, tier, base, img) -> dict | None:
+    """The newest record for (sha, event, base, img) decides: return it when it is a success, else None.
+    A full success also covers fast."""
     path = state / "results.jsonl"
     if not path.exists():
-        return False
+        return None
     for line in reversed(path.read_text().splitlines()):
         r = json.loads(line)
         if (r["sha"], r["event"], r["base"], r["img"]) == (sha, event, base, img) and (r["tier"] == tier or r["tier"] == "full"):
-            return r["result"] == "success"
-    return False
+            return r if r["result"] == "success" else None
+    return None
 
 
 def execute(repo, args, sha, state, img, workflows, pr, base) -> int:
@@ -291,8 +302,12 @@ def run(args) -> int:
     state = HOME / repo_slug(repo).replace("/", "__")
     state.mkdir(parents=True, exist_ok=True)
     base = pr["base"] if pr else ""
-    if not args.record_baseline and already_passed(state, sha, args.event, args.tier, base, img):
+    passed = None if args.record_baseline else already_passed(state, sha, args.event, args.tier, base, img)
+    if passed:
         print(f"local-ci: {sha[:12]} already passed ({args.event}, {args.tier}, img {img}): not re-run")
+        # A failed final POST leaves GitHub at `pending` while the record says success: post it again.
+        if pr and not try_post(repo, sha, "success", f"full base={base} img={img} {passed['duration']}"):
+            return 1
         return 0
     lock = open(HOME / "global.lock", "w")
     fcntl.flock(lock, fcntl.LOCK_EX)  # one local-ci run per machine: it owns all act-* containers
@@ -307,15 +322,14 @@ def run(args) -> int:
     try:
         if pr:
             post_status(repo, repo_slug(repo), sha, "pending", f"full base={base} img={img} running")
-            if not (has_commit(repo, sha) and has_commit(repo, base)):
-                print(f"local-ci: PR head {sha[:12]} or base {base[:12]} missing locally after fetch")
-                return 1
-        code = execute(repo, args, sha, state, img, workflows, pr, base)
-        return code
-    finally:
-        if pr:
-            post_status(repo, repo_slug(repo), sha, "success" if code == 0 else "failure",
-                        f"full base={base} img={img} {time.monotonic() - started:.0f}s")
+        if pr and not (has_commit(repo, sha) and has_commit(repo, base)):
+            print(f"local-ci: PR head {sha[:12]} or base {base[:12]} missing locally after fetch")
+        else:
+            code = execute(repo, args, sha, state, img, workflows, pr, base)
+    finally:  # never `return` here: it would swallow a SystemExit from a signal
+        posted = not pr or try_post(repo, sha, "success" if code == 0 else "failure",
+                                    f"full base={base} img={img} {time.monotonic() - started:.0f}s")
+    return code if posted else code or 1
 
 
 def main() -> int:
