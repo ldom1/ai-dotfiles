@@ -1,0 +1,186 @@
+#!/usr/bin/env -S uv run --quiet --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ["pyyaml>=6"]
+# ///
+"""local-ci: run a repo's GitHub workflows locally with act, on a clean clone of one commit.
+
+Spec: vault [[2026-10-07-local-ci-replication-design]] (rev 5). A push run keeps a local record only.
+A full pull_request run also posts the commit status `local-ci/pull_request` (Task 4).
+local-ci owns every Docker container and network named `act-*` while it holds the global lock.
+"""
+from __future__ import annotations
+
+import argparse
+import fcntl
+import json
+import os
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
+
+import yaml
+
+IMAGE = "local-ci-runner:24.04"
+ZERO = "0" * 40
+HOME = Path(os.environ.get("LOCAL_CI_HOME", Path.home() / ".cache" / "local-ci"))
+ACT = os.environ.get("LOCAL_CI_ACT", "act")
+DEFAULT_TIMEOUT_MIN = 360  # GitHub's default job timeout
+
+
+def git(repo, *args) -> str:
+    return subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True, text=True).stdout.strip()
+
+
+def cfg(repo, key, default="") -> str:
+    r = subprocess.run(["git", "-C", str(repo), "config", "--get", f"local-ci.{key}"], capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else default
+
+
+def repo_slug(repo) -> str:
+    m = re.search(r"github\.com[:/]([^/]+)/(.+?)(?:\.git)?$", git(repo, "remote", "get-url", "origin"))
+    if not m:
+        raise SystemExit("local-ci: origin is not a GitHub URL")
+    return f"{m.group(1)}/{m.group(2)}"
+
+
+def image_digest() -> str:
+    image_id = os.environ.get("LOCAL_CI_IMAGE_ID") or subprocess.run(
+        ["docker", "image", "inspect", "-f", "{{.Id}}", IMAGE], capture_output=True, text=True).stdout.strip()
+    if not image_id.startswith("sha256:"):
+        raise SystemExit(f"local-ci: image {IMAGE} not found: run scripts/build-ci-runner.sh")
+    return image_id[7:19]
+
+
+def clean_clone(repo, sha, dest: Path) -> None:
+    """Exact tree of `sha`, no untracked or ignored files; submodules from the source repo's objects, offline."""
+    subprocess.run(["git", "clone", "-q", "--shared", "--no-checkout", str(repo), str(dest)], check=True)
+    git(dest, "checkout", "-q", "--detach", sha)
+    if (dest / ".gitmodules").exists():
+        git(dest, "submodule", "init")
+        modules = Path(git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir")) / "modules"
+        for line in git(dest, "config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$").splitlines():
+            key, path = line.split(" ", 1)
+            name = key[len("submodule."):-len(".path")]
+            if (modules / name).is_dir():
+                git(dest, "config", f"submodule.{name}.url", str(modules / name))
+        git(dest, "-c", "protocol.file.allow=always", "submodule", "update", "-q", "--recursive")
+
+
+def list_jobs(clone: Path, workflows: list[str]) -> list[tuple[str, str, int]]:
+    jobs = []
+    for wf in workflows:
+        doc = yaml.safe_load((clone / ".github" / "workflows" / wf).read_text())
+        for job_id, job in (doc.get("jobs") or {}).items():
+            jobs.append((wf, job_id, max(1, round(float(job.get("timeout-minutes", DEFAULT_TIMEOUT_MIN)) * 60))))
+    return jobs
+
+
+def write_push_payload(path: Path, ref: str, before: str, sha: str) -> None:
+    path.write_text(json.dumps({"ref": ref, "before": before, "after": sha, "head_commit": {"id": sha}}))
+
+
+def act_cmd(event, wf, job, payload: Path, state: Path) -> list[str]:
+    return [ACT, event, "-W", f".github/workflows/{wf}", "-j", job, "-e", str(payload),
+            "-P", f"ubuntu-latest={IMAGE}", "-P", f"ubuntu-24.04={IMAGE}", "--pull=false",
+            "--env", "ImageOS=ubuntu24", "--container-daemon-socket", "-",
+            "--cache-server-path", str(state / "actcache"),
+            "--container-options", "-v local-ci-uv:/home/runner/.cache/uv -v local-ci-npm:/home/runner/.npm"]
+
+
+def run_job(cmd, cwd, timeout_s, log: Path) -> tuple[int, bool]:
+    """Run act in its own process group; on timeout kill the whole group. Returns (exit code, timed_out)."""
+    with open(log, "w") as fh:
+        try:
+            p = subprocess.Popen(cmd, cwd=cwd, stdout=fh, stderr=subprocess.STDOUT, start_new_session=True)
+        except FileNotFoundError:
+            raise SystemExit(f"local-ci: act not found ({cmd[0]}): run scripts/install-act.sh")
+        try:
+            return p.wait(timeout=timeout_s), False
+        except subprocess.TimeoutExpired:
+            os.killpg(p.pid, signal.SIGTERM)
+            try:
+                p.wait(timeout=30)
+            except subprocess.TimeoutExpired:
+                os.killpg(p.pid, signal.SIGKILL)
+                p.wait()
+            return 124, True
+        except BaseException:  # SIGINT/SIGTERM in local-ci: never leave act running
+            os.killpg(p.pid, signal.SIGKILL)
+            p.wait()
+            raise
+
+
+def cleanup_act_containers() -> None:
+    if not shutil.which("docker") or os.environ.get("LOCAL_CI_IMAGE_ID"):  # tests stub Docker out
+        return
+    ids = subprocess.run(["docker", "ps", "-aq", "--filter", "name=^act-"], capture_output=True, text=True).stdout.split()
+    if ids:
+        subprocess.run(["docker", "rm", "-f", *ids], capture_output=True)
+    nets = subprocess.run(["docker", "network", "ls", "-q", "--filter", "name=^act-"], capture_output=True, text=True).stdout.split()
+    if nets:
+        subprocess.run(["docker", "network", "rm", *nets], capture_output=True)
+
+
+def run(args) -> int:
+    repo = Path(args.repo).resolve()
+    sha = git(repo, "rev-parse", "--verify", f"{args.sha}^{{commit}}")
+    workflows = cfg(repo, "workflows").split()
+    if not workflows:
+        raise SystemExit("local-ci: set `git config local-ci.workflows ci.yml` (the workflows to run)")
+    if not shutil.which(ACT) and not Path(ACT).is_file():
+        print(f"local-ci: act not found ({ACT}): run scripts/install-act.sh", file=sys.stderr)
+        return 1
+    img = image_digest()
+    state = HOME / repo_slug(repo).replace("/", "__")
+    state.mkdir(parents=True, exist_ok=True)
+    lock = open(HOME / "global.lock", "w")
+    fcntl.flock(lock, fcntl.LOCK_EX)  # one local-ci run per machine: it owns all act-* containers
+    logs = state / f"{sha}-{args.event}-{args.tier}"
+    logs.mkdir(parents=True, exist_ok=True)
+    start = time.monotonic()
+    with tempfile.TemporaryDirectory(prefix="local-ci-") as tmp:
+        clone = Path(tmp) / "repo"
+        clean_clone(repo, sha, clone)
+        payload = Path(tmp) / "event.json"
+        write_push_payload(payload, args.ref or f"refs/heads/{git(repo, 'rev-parse', '--abbrev-ref', 'HEAD')}",
+                           args.before or ZERO, sha)
+        jobs = list_jobs(clone, workflows)
+        failed = []
+        for wf, job, timeout_s in jobs:
+            log = logs / f"{wf.removesuffix('.yml')}__{job}.log"
+            code, timed_out = run_job(act_cmd(args.event, wf, job, payload, state), clone, timeout_s, log)
+            cleanup_act_containers()
+            status = "timed out" if timed_out else ("ok" if code == 0 else f"failed (exit {code})")
+            print(f"local-ci: {wf}/{job}: {status}  log: {log}")
+            if code != 0:
+                failed.append(f"{wf}/{job}")
+    duration = f"{time.monotonic() - start:.0f}s"
+    if args.tier == "fast":
+        print("local-ci: fast tier — partial — not a merge gate")
+    print(f"local-ci: {'FAILED ' + ', '.join(failed) if failed else 'success'} in {duration} (img {img})")
+    return 1 if failed else 0
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="local-ci")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    r = sub.add_parser("run")
+    r.add_argument("--repo", default=".")
+    r.add_argument("--tier", choices=["fast", "full"], default="full")
+    r.add_argument("--event", choices=["push"], default="push")
+    r.add_argument("--ref")
+    r.add_argument("--before")
+    r.add_argument("--record-baseline", action="store_true")
+    r.add_argument("sha")
+    args = ap.parse_args()
+    return run(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
