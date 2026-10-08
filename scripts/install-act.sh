@@ -9,5 +9,6 @@ curl -fsSL -o "$TMP/$ASSET" "$BASE/$ASSET"
 curl -fsSL -o "$TMP/checksums.txt" "$BASE/checksums.txt"
 (cd "$TMP" && grep " $ASSET\$" checksums.txt | sha256sum -c -)
 tar -xzf "$TMP/$ASSET" -C "$TMP" act
+mkdir -p "$HOME/.local/bin"
 install -m 755 "$TMP/act" "$HOME/.local/bin/act"
 "$HOME/.local/bin/act" --version

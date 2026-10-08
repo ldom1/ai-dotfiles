@@ -2,6 +2,7 @@
 import os
 import stat
 import subprocess
+import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
@@ -25,3 +26,13 @@ def test_newer_release_is_reported(tmp_path):
 
 def test_same_release_prints_nothing(tmp_path):
     assert run(tmp_path, "ubuntu24/20261004.327") == ""
+
+
+def test_hanging_gh_is_cut_and_prints_nothing(tmp_path):
+    gh = tmp_path / "gh"
+    gh.write_text("#!/usr/bin/env bash\nexec sleep 30\n")
+    gh.chmod(gh.stat().st_mode | stat.S_IEXEC)
+    start = time.monotonic()
+    r = subprocess.run(["bash", str(SCRIPT)], capture_output=True, text=True, timeout=20,
+                       env={**os.environ, "LOCAL_CI_GH": str(gh), "LOCAL_CI_HOME": str(tmp_path)})
+    assert r.stdout == "" and time.monotonic() - start < 15
