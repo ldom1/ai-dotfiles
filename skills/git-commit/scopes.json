@@ -138,6 +138,21 @@
         "ci",
         "config"
       ]
+    },
+    "compose": {
+      "detect": [
+        "docker-compose.yml",
+        "compose.yml"
+      ],
+      "scopes": [
+        "core",
+        "alerts",
+        "dashboards",
+        "config",
+        "tests",
+        "docs",
+        "ci"
+      ]
     }
   }
 }
