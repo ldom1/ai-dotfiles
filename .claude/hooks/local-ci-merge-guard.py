@@ -30,12 +30,13 @@ def deny(reason: str) -> None:
 
 
 MERGE_RE = re.compile(r"\bgh\b.*\bpr\b.*\bmerge\b", re.S)
-API_MERGE_RE = re.compile(r"pulls/[^/\s\"']+/merge|mergePullRequest", re.I)
+API_MERGE_RE = re.compile(r"pulls/[^/]*/merge|mergePullRequest", re.I)
 CD_RE = re.compile(r"(?:^|[\s(])(?:cd|pushd)(?:\s|$)")
 # In a command the parser cannot check: any repo flag, GH_REPO or directory change, anywhere.
-REDIRECT_RE = re.compile(r"(?:^|[\s(;&|'\"`])(?:-R|-C|--repo\b|--chdir\b|GH_REPO=|(?:cd|pushd)(?:[\s;)'\"]|$))")
+REDIRECT_RE = re.compile(r"(?:^|[\s(;&|'\"`])(?:-R|-[A-Za-z0-9]*C|--repo\b|--c(?:h(?:d(?:ir?)?)?)?(?![A-Za-z0-9-])|GH_REPO=|(?:cd|pushd)(?:[\s;)'\"]|$))")
 # A PR URL selector (`https://github.com/o/r/pull/5`, scheme optional) names the repo, like -R.
 URL_SELECTOR_RE = re.compile(r"^(?:https?://)?([^/\s]+)/([^/\s]+)/([^/\s]+)/pull/", re.I)
+SHELL_BUILT_RE = re.compile(r"[$`]")
 ASSIGN_RE = re.compile(r"^\w+=")
 REDIRECT = "run gh pr merge from the repo directory, without -R/GH_REPO/cd or a URL for another repo"
 
@@ -166,6 +167,10 @@ def main(raw: str) -> None:
     # Before the guard value: it is read from the session directory, which these forms leave.
     if cd_before or (uncheckable and REDIRECT_RE.search(command)):
         deny(REDIRECT)
+    for args in calls:  # a selector or repo built by the shell cannot be checked
+        selector, repos_ = split_args(args)
+        if any(SHELL_BUILT_RE.search(v) for v in [selector or "", *repos_]):
+            deny("cannot check a PR selector built by the shell; use a plain number")
     repos = env_repos + [r for args in calls for r in split_args(args)[1]]
     if repos:
         slug = origin_slug(cwd)

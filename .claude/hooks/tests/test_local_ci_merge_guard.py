@@ -249,6 +249,37 @@ def test_env_chdir_before_merge_denies_even_when_guard_is_off(tmp_path, command)
     assert REPO_DIR in guard(tmp_path, command, fake_gh(tmp_path, []), guard_on=False)
 
 
+@pytest.mark.parametrize("command", [
+    "env -iC /tmp gh pr merge 7",
+    "env -vC /tmp gh pr merge 7",
+    "env -0C /tmp gh pr merge 7",
+    "env --chd /tmp gh pr merge 7",
+    "env --chd=/tmp gh pr merge 7",
+    "env --ch=/tmp gh pr merge 7",
+    "env --chdi /tmp gh pr merge 7",
+])
+def test_bundled_or_abbreviated_env_chdir_denies_even_when_guard_is_off(tmp_path, command):
+    assert REPO_DIR in guard(tmp_path, command, fake_gh(tmp_path, []), guard_on=False)
+
+
+SHELL_SELECTOR = "cannot check a PR selector built by the shell; use a plain number"
+
+
+@pytest.mark.parametrize("command", [
+    "gh pr merge $URL",
+    'gh pr merge "$URL"',
+    "gh pr merge ${U}",
+    "gh pr merge $(cat u)",
+    "gh pr merge `cat u`",
+    "U=https://github.com/x/y/pull/5; gh pr merge $U",
+    "gh pr merge 7 -R $R",
+    "gh pr merge 7 --repo=$R",
+    "gh pr merge 7 -R$R",
+])
+def test_shell_built_selector_denies_even_when_guard_is_off(tmp_path, command):
+    assert SHELL_SELECTOR in guard(tmp_path, command, fake_gh(tmp_path, []), guard_on=False)
+
+
 API_MERGE = "merge PRs with a plain `gh pr merge <N>` from the repo directory"
 
 
@@ -260,6 +291,11 @@ API_MERGE = "merge PRs with a plain `gh pr merge <N>` from the repo directory"
     "gh api -X PUT repos/o/r/pulls/${N}/merge",
     'gh api -X PUT "repos/o/r/pulls/$N/merge"',
     "gh api -X PUT repos/o/r/PULLS/$(n)/merge",
+    "gh api -X PUT repos/o/r/pulls/$(git x)/merge",
+    'gh api -X PUT "repos/o/r/pulls/"$N"/merge"',
+    "gh api -X PUT 'repos/o/r/pulls/'$N'/merge'",
+    'gh api -X PUT repos/o/r/pulls/"$N"/merge',
+    "gh api -X PUT repos/o/r/pulls/`echo 5`/merge",
 ])
 def test_api_merge_denies_even_when_guard_is_off(tmp_path, command):
     assert API_MERGE in guard(tmp_path, command, fake_gh(tmp_path, []), guard_on=False)
