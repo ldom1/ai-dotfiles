@@ -5,6 +5,7 @@ import stat
 import subprocess
 from pathlib import Path
 
+import pytest
 from test_local_ci import GIT_ENV, git, make_repo
 
 HOOK = Path(__file__).resolve().parents[1] / "local-ci-merge-guard.py"
@@ -16,9 +17,9 @@ def status(state="success", desc=f"full base={B} img=abababababab 42s", context=
     return {"state": state, "context": context, "description": desc, "creator": {"login": login}}
 
 
-def fake_gh(tmp_path, statuses, total=None, head=H, base_tip=B):
+def fake_gh(tmp_path, statuses, total=None, head=H, base_tip=B, sha=None):
     p = tmp_path / "gh"
-    combined = {"sha": head, "total_count": len(statuses) if total is None else total, "statuses": statuses}
+    combined = {"sha": sha or head, "total_count": len(statuses) if total is None else total, "statuses": statuses}
     (tmp_path / "combined.json").write_text(json.dumps(combined))
     p.write_text(f"""#!/usr/bin/env bash
 case "$*" in
@@ -101,3 +102,69 @@ def test_other_creator_denies(tmp_path):
 def test_repo_flag_for_another_repo_denies(tmp_path):
     reason = guard(tmp_path, "gh pr merge 7 -R other/repo", fake_gh(tmp_path, [status()]))
     assert "run gh pr merge from the repo directory" in reason
+
+
+PARSE_FAIL = "cannot parse this gh pr merge command"
+REPO_DIR = "run gh pr merge from the repo directory"
+
+
+def test_merge_on_a_later_line_is_checked(tmp_path):
+    assert "no local-ci/pull_request status" in guard(tmp_path, "echo hi\ngh pr merge 7", fake_gh(tmp_path, []))
+
+
+def test_next_line_is_not_an_argument(tmp_path):
+    assert guard(tmp_path, "gh pr merge 7 --squash\ngit status", fake_gh(tmp_path, [status()])) is None
+
+
+@pytest.mark.parametrize("command", [
+    "(gh pr merge 7)",
+    "if true; then gh pr merge 7; fi",
+    "bash -c 'gh pr merge 7'",
+    "echo $(gh pr merge 7)",
+    "sudo gh pr merge 7",
+    "cat <<EOF\nit's\nEOF\ngh pr merge 7",
+    "gh pr \\\nmerge 7",
+])
+def test_unparseable_merge_forms_deny(tmp_path, command):
+    assert PARSE_FAIL in guard(tmp_path, command, fake_gh(tmp_path, [status()]))
+
+
+def test_unparseable_merge_is_allowed_when_guard_is_off(tmp_path):
+    assert guard(tmp_path, "bash -c 'gh pr merge 7'", fake_gh(tmp_path, []), guard_on=False) is None
+
+
+def test_glued_repo_flag_denies(tmp_path):
+    assert REPO_DIR in guard(tmp_path, "gh pr merge 7 -Rother/repo", fake_gh(tmp_path, [status()]))
+
+
+def test_repo_equals_flag_for_another_repo_denies(tmp_path):
+    assert REPO_DIR in guard(tmp_path, "gh pr merge 7 --repo=other/repo", fake_gh(tmp_path, [status()]))
+
+
+def test_gh_repo_env_for_another_repo_denies(tmp_path):
+    assert REPO_DIR in guard(tmp_path, "GH_REPO=o/r gh pr merge 7", fake_gh(tmp_path, [status()]))
+
+
+def test_gh_repo_env_for_this_repo_allows(tmp_path):
+    assert guard(tmp_path, "GH_REPO=acme/widget gh pr merge 7", fake_gh(tmp_path, [status()])) is None
+
+
+@pytest.mark.parametrize("command", ["cd /tmp && gh pr merge 7", "pushd /tmp; gh pr merge 7", "(cd /tmp; gh pr merge 7)"])
+def test_cd_before_merge_denies(tmp_path, command):
+    assert "without cd" in guard(tmp_path, command, fake_gh(tmp_path, [status()]))
+
+
+def test_cd_after_merge_is_fine(tmp_path):
+    assert guard(tmp_path, "gh pr merge 7 && cd /tmp", fake_gh(tmp_path, [status()])) is None
+
+
+def test_cd_without_merge_is_ignored(tmp_path):
+    assert guard(tmp_path, "cd /tmp && gh pr view 7", fake_gh(tmp_path, [])) is None
+
+
+def test_trailing_newline_in_description_denies(tmp_path):
+    assert "description" in guard(tmp_path, "gh pr merge 7", fake_gh(tmp_path, [status(desc=f"full base={B} img=abababababab 42s\n")]))
+
+
+def test_combined_status_for_another_sha_denies(tmp_path):
+    assert "not the PR head" in guard(tmp_path, "gh pr merge 7", fake_gh(tmp_path, [status()], sha="d" * 40))
