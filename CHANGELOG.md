@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+- Central `graphify` MCP server runs `uvx --from "graphifyy[mcp]==0.9.79"` instead of `uv run --project <project>`.
+  - Before, it failed to connect in every project without `graphifyy` in its own uv environment.
+  - Now it starts in any project. Without `graphify-out/graph.json` it starts but has no graph.
+  - Bump the pin together with `skills/graphify/.graphify_version`.
+
 ## [0.10.0] - 2026-10-08
 
 ### Added
