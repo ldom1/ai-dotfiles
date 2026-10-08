@@ -1,0 +1,9 @@
+# Tool versions of the GitHub runner image that local-ci-runner copies.
+# Source: actions/runner-images, images/ubuntu/Ubuntu2404-Readme.md at tag ubuntu24/20261004.327 (Image Version 20261004.327.1).
+# Change this file only in a commit, then re-run the parity check (spec section 2).
+RUNNER_IMAGE_TAG=ubuntu24/20261004.327
+NODE_VERSION=22.23.3
+GIT_VERSION=2.55.0
+GIT_LFS_VERSION=3.8.0
+GH_VERSION=2.102.0
+JQ_VERSION=1.7

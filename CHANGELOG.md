@@ -2,6 +2,46 @@
 
 ## [Unreleased]
 
+### Added
+- `bin/local-ci`: runs a repo's listed GitHub workflows locally with `act` v0.2.89 in `local-ci-runner:24.04`, on a clean clone of one commit. Spec: vault `2026-10-07-local-ci-replication-design` (rev 5).
+  - `local-ci install --workflows ci.yml` adds a `pre-push` hook. A push to a deploy branch (`main`, `preprod`) runs the `full` tier. Other branches run the `fast` tier, which is partial and never a merge gate.
+  - A push run keeps a local record only (`~/.cache/local-ci/<owner>__<repo>/results.jsonl`). GitHub returns 422 for a status on a commit it does not have.
+  - `local-ci run --event pull_request --pr N` tests the merge commit. It posts `local-ci/pull_request`: `pending`, then always `success` or `failure`.
+  - A `pull_request` run that already passed re-posts its `success` status. A failed final status post exits non-zero.
+  - Skip counts above the recorded baseline fail the run. The run reads skip counts from pytest summaries with or without `=` padding (`pytest -q`).
+  - A fast-tier `fast-jobs` list that matches no job fails.
+- `docker/ci-runner.Dockerfile` and `docker/ci-runner.manifest`: a slim runner image (Node, Git, Git LFS, GitHub CLI and jq at the versions of `actions/runner-images` `ubuntu24/20261004.327`). `scripts/build-ci-runner.sh` checks every version. `scripts/install-act.sh` installs `act` after a checksum check.
+  - The image builds git with `NO_RUST=1` and installs gh with `--ignore-depends=git`, because git comes from source.
+- `.claude/hooks/local-ci-merge-guard.py`: denies a Claude `gh pr merge` unless the PR head has a fresh `local-ci/pull_request` success. Fresh means same base tip, same image and the `gh` user as creator. It is off until `git config local-ci.guard true`. It guards only merges run by Claude Code.
+  - The guard denies a `gh pr merge` it cannot parse (subshell, `bash -c`, `sudo`, `$(...)`, unbalanced quotes).
+  - It denies a `cd` or `pushd` before the merge, `-R`, `--repo` or `GH_REPO` for another repo, and any error.
+- Template `permissions.deny`: `git push --no-verify` for Claude.
+- `scripts/check-ci-runner-drift.sh`: SessionStart prints one warning when the runner manifest differs from the latest `ubuntu24` release. It caches for 7 days and never edits the manifest.
+
+### Fixed
+- `bin/local-ci`: an interrupt (SIGINT, SIGTERM, SIGHUP) now removes every `act-*` container and network before exit.
+- `bin/local-ci`: a second signal during cleanup is ignored, so the `failure` status is always posted. `uv run` forwards SIGINT, so Ctrl-C and `timeout -s INT` send two.
+- `bin/local-ci`: a `pull_request` run checks out submodules after the merge, so it tests the merge commit's submodule commits.
+- `bin/local-ci`: the "already passed" record now also matches the ref, the `workflows` list and, for the fast tier, `fast-jobs`.
+  - A push run needs `--ref refs/heads/<branch>`. A `pull_request` run uses `refs/pull/<N>/merge`.
+- `bin/local-ci`: the skip baseline key is `<workflow>/<job>@<ref>` (`@pull_request` for PR runs). A plain `<workflow>/<job>` key is the fallback.
+- `bin/local-ci`: it ignores `GIT_DIR` and related variables, so `git --git-dir=… push` cannot move the source repo's HEAD.
+- `bin/local-ci`: a run with no job left after filtering fails with "no job to run".
+- Merge guard: in every directory, it denies a merge with `-R`/`GH_REPO` for another repo or a `cd` before it.
+- Merge guard: in every directory, it denies a merge through `gh api` (`pulls/<N>/merge` or the GraphQL merge mutation).
+- Merge guard: a crash on bad input denies when the input looks like a merge. A status response without `total_count` denies.
+- `scripts/check-ci-runner-drift.sh`: the `gh` call stops after 5 s, so SessionStart cannot hang.
+- Merge guard: it reads the status creator from `commits/<sha>/statuses` (entry with the same `id`). The combined status has no `creator`, so every success was denied.
+- `scripts/install-act.sh`: it creates `~/.local/bin` when it is missing.
+- Template `permissions.deny`: `git -C <dir> push --no-verify` and `git -c core.hooksPath` for Claude.
+- `bin/local-ci`: it passes `-s GITHUB_TOKEN=` to `act`. Without it, act v0.2.89 runs `gh auth token` and gives the user's token to the job as `secrets.GITHUB_TOKEN` and `github.token`. Public actions still download without a token.
+- `docker/ci-runner.Dockerfile`: `/opt/hostedtoolcache` is owned by `runner` and `AGENT_TOOLSDIRECTORY` points to it, as on GitHub. Before, `actions/setup-node` failed with `EACCES`. `scripts/build-ci-runner.sh` checks that the directory is writable.
+- `bin/local-ci`: the log directory name contains the ref (`<sha>-refs_heads_<branch>-<event>-<tier>`), so runs of one commit on two refs keep separate logs.
+- `bin/local-ci`: it sets `UV_LINK_MODE=copy` in the job, which removes the uv hardlink warning.
+- `bin/local-ci`: a baseline recorded on a feature branch also covers new feature branches (`@branch` key). Deploy branches and PR runs keep their own keys.
+- Merge guard: in every directory, it denies a PR URL for another repo, `env -C`/`--chdir` before the merge, and a `gh api` merge through a variable (`pulls/$N/merge`).
+- Merge guard: in every directory, it denies bundled or abbreviated `env` options (`-iC`, `--chd`), a PR selector or repo built by the shell (`$URL`, `$(...)`), and quoted `gh api` merge paths.
+
 ## [0.10.1] - 2026-10-08
 
 ### Fixed
