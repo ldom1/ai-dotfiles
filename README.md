@@ -302,7 +302,7 @@ All hooks are declared in `.claude/settings.json.tpl` and always on:
 |-------|--------|--------------|
 | Stop | `stop-check.sh` | If the repo has `.claude/stop-check` (one shell command) and the git tree has changes, runs it (`STOP_CHECK_TIMEOUT`, default 120 s). On failure it blocks the stop and returns the last 40 lines to the agent. It never blocks twice in a row (`stop_hook_active`); a timeout warns only. Runs are logged to `~/.claude/logs/stop-check.log`. |
 | Stop | `compact-nudge.sh` | Reads the last request's context size from the transcript. Past 250k tokens (`COMPACT_NUDGE_START`), then every 100k (`COMPACT_NUDGE_STEP`), shows a one-line `/compact` reminder. Once per step per session. |
-| PreCompact | `precompact-checkpoint.sh` | Appends trigger, context size, branch, changed files and the last 3 human prompts to `$BRAIN_PATH/inbox/daily/checkpoints/<slug>/YYYY-MM-DD.md`. `/capture` folds it into the session log, then deletes it. |
+| PreCompact | `precompact-checkpoint.sh` | Appends a resume note to `$BRAIN_PATH/inbox/daily/checkpoints/<slug>/YYYY-MM-DD.md`: trigger, context size, branch, recent and unpushed commits, changed and edited files, running background agents, a recent tool error, user decisions, the last 5 requests with the assistant text they answer, and the last assistant message. Tokens are masked. `/capture` folds it into the session log, then deletes it. |
 
 Opt a project into the Stop check:
 

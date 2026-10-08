@@ -42,6 +42,16 @@
 - Merge guard: in every directory, it denies a PR URL for another repo, `env -C`/`--chdir` before the merge, and a `gh api` merge through a variable (`pulls/$N/merge`).
 - Merge guard: in every directory, it denies bundled or abbreviated `env` options (`-iC`, `--chd`), a PR selector or repo built by the shell (`$URL`, `$(...)`), and quoted `gh api` merge paths.
 
+### Changed
+- `precompact-checkpoint.sh` writes a resume note, not a breadcrumb. It now adds:
+  - the last 8 commits and the unpushed count;
+  - the files edited through Edit or Write;
+  - the background agents still running;
+  - a recent tool error and the AskUserQuestion answers;
+  - the last 5 requests, each after the assistant text it answers;
+  - the last assistant message.
+  It masks GitHub and `sk-` tokens and skips the compaction summary.
+
 ## [0.10.1] - 2026-10-08
 
 ### Fixed
