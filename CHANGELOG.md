@@ -16,6 +16,7 @@
   - The guard denies a `gh pr merge` it cannot parse (subshell, `bash -c`, `sudo`, `$(...)`, unbalanced quotes).
   - It denies a `cd` or `pushd` before the merge, `-R`, `--repo` or `GH_REPO` for another repo, and any error.
 - Template `permissions.deny`: `git push --no-verify` for Claude.
+- `scripts/check-ci-runner-drift.sh`: SessionStart prints one warning when the runner manifest differs from the latest `ubuntu24` release. It caches for 7 days and never edits the manifest.
 
 ## [0.10.1] - 2026-10-08
 

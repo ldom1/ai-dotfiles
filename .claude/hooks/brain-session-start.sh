@@ -96,6 +96,9 @@ bash "$AI_DOTFILES/scripts/log-skill-usage.sh" brain-load "claude:sessionStart" 
 # Vendored skill pins vs GitHub latest (cached ≤24h, fail-open)
 bash "$AI_DOTFILES/scripts/check-vendored-skill-updates.sh" --inject 2>>"$LOG_FILE" || true
 
+# local-ci runner manifest vs latest ubuntu24 release (cached 7d, report only, fail-open)
+bash "$AI_DOTFILES/scripts/check-ci-runner-drift.sh" 2>/dev/null || true
+
 # Maintenance nudge: /brain-audit is manual; its digest step writes meta/last-maintenance.md.
 LAST_MAINT=$(grep -oP '\*\*Epoch Seconds:\*\* \K[0-9]+' "${BRAIN_PATH}/meta/last-maintenance.md" 2>/dev/null || echo 0)
 if (( $(date +%s) - LAST_MAINT > 7 * 86400 )); then
