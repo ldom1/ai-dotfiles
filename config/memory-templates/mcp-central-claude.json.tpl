@@ -12,9 +12,9 @@
       "args": ["code-index-mcp", "--project-path", "${CLAUDE_PROJECT_DIR:-.}"]
     },
     "graphify": {
-      "command": "uv",
+      "command": "uvx",
       "args": [
-        "run", "--project", "${CLAUDE_PROJECT_DIR:-.}",
+        "--from", "graphifyy[mcp]==0.9.79",
         "python", "-m", "graphify.serve",
         "${CLAUDE_PROJECT_DIR:-.}/graphify-out/graph.json"
       ]
