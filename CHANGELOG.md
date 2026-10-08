@@ -30,6 +30,7 @@
 - Merge guard: in every directory, it denies a merge through `gh api` (`pulls/<N>/merge` or the GraphQL merge mutation).
 - Merge guard: a crash on bad input denies when the input looks like a merge. A status response without `total_count` denies.
 - `scripts/check-ci-runner-drift.sh`: the `gh` call stops after 5 s, so SessionStart cannot hang.
+- Merge guard: it reads the status creator from `commits/<sha>/statuses` (entry with the same `id`). The combined status has no `creator`, so every success was denied.
 - `scripts/install-act.sh`: it creates `~/.local/bin` when it is missing.
 - Template `permissions.deny`: `git -C <dir> push --no-verify` and `git -c core.hooksPath` for Claude.
 - `bin/local-ci`: it passes `-s GITHUB_TOKEN=` to `act`. Without it, act v0.2.89 runs `gh auth token` and gives the user's token to the job as `secrets.GITHUB_TOKEN` and `github.token`. Public actions still download without a token.

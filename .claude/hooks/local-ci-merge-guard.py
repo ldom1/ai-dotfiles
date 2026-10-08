@@ -136,8 +136,14 @@ def check(cwd: str, args: list[str]) -> None:
         ["docker", "image", "inspect", "-f", "{{.Id}}", IMAGE], capture_output=True, text=True).stdout.strip()
     if image_id[7:19] != d.group(2):
         deny(f"image changed since the run (status {d.group(2)}, local {image_id[7:19] or 'missing'}): re-run local-ci")
-    if (s.get("creator") or {}).get("login") != gh(cwd, "api", "user", "-q", ".login"):
-        deny(f"status creator {(s.get('creator') or {}).get('login')} is not the gh user")
+    # The combined status has no `creator`: read it from the statuses list entry with the same id.
+    listed = json.loads(gh(cwd, "api", f"repos/{slug}/commits/{head}/statuses?per_page=100"))
+    entry = next((e for e in listed if e.get("id") == s["id"]), None)
+    if entry is None:
+        deny(f"status {s['id']} is not in the statuses list of {head[:12]}")
+    creator = (entry.get("creator") or {}).get("login")
+    if creator != gh(cwd, "api", "user", "-q", ".login"):
+        deny(f"status creator {creator} is not the gh user")
 
 
 def main(raw: str) -> None:

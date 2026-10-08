@@ -13,19 +13,24 @@ H, B = "a" * 40, "b" * 40
 IMG = "sha256:" + "ab" * 32
 
 
-def status(state="success", desc=f"full base={B} img=abababababab 42s", context="local-ci/pull_request", login="ldom1"):
-    return {"state": state, "context": context, "description": desc, "creator": {"login": login}}
+def status(state="success", desc=f"full base={B} img=abababababab 42s", context="local-ci/pull_request", sid=1):
+    """A status as the combined-status endpoint returns it: `id`, no `creator`."""
+    return {"id": sid, "state": state, "context": context, "description": desc}
 
 
-def fake_gh(tmp_path, statuses, total=None, head=H, base_tip=B, sha=None):
+def fake_gh(tmp_path, statuses, total=None, head=H, base_tip=B, sha=None, listed=None, login="ldom1"):
+    """`listed` is the `/statuses` list (the only endpoint with `creator`); default: `statuses` created by `login`."""
     p = tmp_path / "gh"
     combined = {"sha": sha or head, "total_count": len(statuses) if total is None else total, "statuses": statuses}
     (tmp_path / "combined.json").write_text(json.dumps(combined))
+    listed = [{**s, "creator": {"login": login}} for s in statuses] if listed is None else listed
+    (tmp_path / "listed.json").write_text(json.dumps(listed))
     p.write_text(f"""#!/usr/bin/env bash
 case "$*" in
   "pr view"*) echo '{{"number":7,"headRefOid":"{head}","baseRefName":"main"}}';;
   *"/branches/main"*) echo "{base_tip}";;
-  *"/status"*) cat "{tmp_path}/combined.json";;
+  *"/commits/{head}/statuses?per_page=100"*) cat "{tmp_path}/listed.json";;
+  *"/commits/{head}/status?per_page=100"*) cat "{tmp_path}/combined.json";;
   "api user"*) echo ldom1;;
   *) exit 2;;
 esac
@@ -95,8 +100,15 @@ def test_context_is_case_insensitive_but_must_be_unique(tmp_path):
     assert "exactly one" in guard(tmp_path / "two", "gh pr merge 7", fake_gh(tmp_path / "two", two))
 
 
-def test_other_creator_denies(tmp_path):
-    assert "creator" in guard(tmp_path, "gh pr merge 7", fake_gh(tmp_path, [status(login="someone")]))
+def test_other_creator_in_the_statuses_list_denies(tmp_path):
+    reason = guard(tmp_path, "gh pr merge 7", fake_gh(tmp_path, [status()], login="someone"))
+    assert "status creator someone is not the gh user" in reason
+
+
+def test_status_id_missing_from_the_statuses_list_denies(tmp_path):
+    other = [{**status(sid=2), "creator": {"login": "ldom1"}}]
+    assert "status 1 is not in the statuses list" in guard(tmp_path, "gh pr merge 7",
+                                                           fake_gh(tmp_path, [status()], listed=other))
 
 
 def test_repo_flag_for_another_repo_denies(tmp_path):
