@@ -134,11 +134,93 @@ def test_next_line_is_not_an_argument(tmp_path):
     "bash -c 'gh pr merge 7'",
     "echo $(gh pr merge 7)",
     "sudo gh pr merge 7",
+    "git -c alias.m='!gh pr merge 7' m",
+    "gh alias set m 'pr merge 7'",
+    "gh pr --squash merge 7",
+    "python3 -c \"import os; os.system('gh pr merge 7')\"",
+    "echo x | xargs gh pr merge",
     "cat <<EOF\nit's\nEOF\ngh pr merge 7",
     "gh pr \\\nmerge 7",
 ])
 def test_unparseable_merge_forms_deny(tmp_path, command):
     assert PARSE_FAIL in guard(tmp_path, command, fake_gh(tmp_path, [status()]))
+
+
+GPM, API = "gh pr merge 7", "repos/o/r/pulls/5/merge"
+
+
+@pytest.mark.parametrize("command", [
+    # a `<<` that bash does not read as a heredoc, or an escaped delimiter
+    f'echo "<<EOF"\n{GPM}\nEOF',
+    f"true # <<EOF\n{GPM}\nEOF",
+    f"echo $((1<<X))\n{GPM}\nX",
+    f"cat <<E\\OF\nx\nEOF\n{GPM}",
+    f"echo '\"$(cat <<'EOF'\n'; {GPM}; echo '\nEOF\n)\"",
+    # a heredoc fed to code, now or later in the line
+    f"cat > /tmp/s.sh <<'EOF'\n{GPM}\nEOF\nsh /tmp/s.sh",
+    f"cat <<'EOF' |\n{GPM}\nEOF\nsh",
+    f"bash <<'EOF'\n{GPM}\nEOF",
+    f"cat <<EOF | sh\n{GPM}\nEOF",
+    f"python3.12 <<'EOF'\nimport os; os.system('{GPM}')\nEOF",
+    f"$SHELL <<'EOF'\n{GPM}\nEOF",
+    f"\"b\"ash <<'EOF'\n{GPM}\nEOF",
+    f"awk -f /dev/stdin <<'EOF'\nBEGIN{{system(\"{GPM}\")}}\nEOF",
+    "gh api graphql -F query=@- <<'EOF'\nmutation { mergePullRequest(input:{pullRequestId:\"X\"}) { x } }\nEOF",
+    f"curl -K - <<'EOF'\nurl = \"https://api.github.com/{API}\"\nrequest = PUT\nEOF",
+    # data sent to an executor, an output process substitution, an assignment prefix
+    f"echo '{GPM}' | sh",
+    f"printf '{GPM}\\n' | bash",
+    f"echo {API} | xargs gh api -X PUT",
+    f"printf -v U '{API}'; gh api -X PUT \"$U\"",
+    f"echo {API} > /tmp/u; gh api -X PUT $(cat /tmp/u)",
+    f"echo x > >({GPM})",
+    f"echo >({GPM})",
+    f"GIT_EDITOR='{GPM} #' git commit --allow-empty",
+    f"BROWSER='sh -c \"{GPM}\"' gh pr view 7 --web",
+    f"echo merge;\n{GPM}",
+    # a line that plants a hook or a config entry, then runs git or gh
+    f"cp .git/hooks/pre-commit.sample .git/hooks/pre-commit\ncat > .git/hooks/pre-commit <<'EOF'\n#!/bin/sh\n{GPM}\nEOF\n"
+    "git commit --allow-empty -m 'ci(x): y'",
+    f"cat > .git/hooks/post-checkout <<'EOF'\n{GPM}\nEOF\ngit worktree add ../w",
+    f"echo '[core] pager = sh -c \"{GPM}\"' >> .git/config\ngit log -1",
+    f"cat >> .git/config <<'EOF'\n[core]\n\teditor = sh -c \"{GPM}\"\nEOF\ngit commit",
+    f"echo 'browser: sh -c \"{GPM}\"' > ~/.config/gh/config.yml; gh pr view 7 --web",
+])
+def test_data_shapes_that_still_run_a_merge_deny(tmp_path, command):
+    assert guard(tmp_path, command, fake_gh(tmp_path, [])) is not None
+
+
+def test_git_output_option_counts_as_a_write(tmp_path):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("merge_guard", HOOK)
+    g = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(g)
+    assert g.only_data("git log -1 && git show HEAD")
+    assert not g.only_data("git diff --output=.git/hooks/pre-commit HEAD~1 && git commit -m x")
+
+
+@pytest.mark.parametrize("command", [
+    "grep -E 'gh pr (merge|create)' notes.md",
+    "grep -rn 'gh pr merge' .claude/hooks 2>&1 | head -5",
+    "echo 'then run gh pr merge 7'",
+    "gh pr edit 7 --body 'after review: gh pr merge 7 --squash'",
+    "gh pr view 7 --json state --jq '.state' # gh pr merge later",
+    "git commit -m 'doc: explain gh pr merge'",
+    "git commit -m \"$(cat <<'EOF'\ndoc: explain the guard\n\ngh pr merge 7 needs local-ci\nEOF\n)\"",
+    "cat > notes.md <<'EOF'\nrun gh pr merge 7 --squash\nEOF",
+    "cat <<-'EOF' > n.md\n\tgh pr merge 7\n\tEOF\nwc -l n.md",
+    "cat >> $BRAIN_PATH/log.md <<\"EOF\"\ngh pr merge 7 landed\nEOF",
+    "gh pr create --base develop --title \"x\" --body \"$(cat <<'EOF'\nThen gh pr merge 7.\nEOF\n)\"",
+    "grep mergePullRequest notes.md",
+    "grep -n 'pulls/5/merge' log.txt",
+])
+def test_a_mention_of_a_merge_in_data_is_allowed(tmp_path, command):
+    assert guard(tmp_path, command, fake_gh(tmp_path, [])) is None
+
+
+def test_cd_with_a_merge_mention_in_data_is_allowed_when_guard_is_off(tmp_path):
+    command = "cd /tmp && gh pr comment 7 --body 'ok to merge: gh pr merge 7'"
+    assert guard(tmp_path, command, fake_gh(tmp_path, []), guard_on=False) is None
 
 
 def test_unparseable_merge_is_allowed_when_guard_is_off(tmp_path):
@@ -198,6 +280,7 @@ def raw_hook(cwd, stdin, gh="gh"):
     "bash -c 'gh pr merge 5 -R ldom1/notion-pilot'",
     "bash -c 'cd ~/lab_perso/notion-pilot && gh pr merge 5'",
     "env GH_REPO=ldom1/notion-pilot gh pr merge 5",
+    "gh pr -R ldom1/notion-pilot merge 5",
 ])
 def test_redirected_merge_denies_even_when_guard_is_off(tmp_path, command):
     assert REPO_DIR in guard(tmp_path, command, fake_gh(tmp_path, []), guard_on=False)
@@ -296,6 +379,8 @@ API_MERGE = "merge PRs with a plain `gh pr merge <N>` from the repo directory"
     "gh api -X PUT 'repos/o/r/pulls/'$N'/merge'",
     'gh api -X PUT repos/o/r/pulls/"$N"/merge',
     "gh api -X PUT repos/o/r/pulls/`echo 5`/merge",
+    "curl -X PUT -H 'Authorization: token x' https://api.github.com/repos/o/r/pulls/5/merge",
+    "echo $(gh api -X PUT repos/o/r/pulls/5/merge)",
 ])
 def test_api_merge_denies_even_when_guard_is_off(tmp_path, command):
     assert API_MERGE in guard(tmp_path, command, fake_gh(tmp_path, []), guard_on=False)

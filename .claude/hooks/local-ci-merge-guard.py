@@ -5,7 +5,9 @@ Active only in repos with `git config local-ci.guard true`. Any error, gap or mi
 In every directory, guard on or off, it denies a merge aimed at another repo (`-R`, `GH_REPO`, `cd`, `env -C`, a URL for another repo) and a merge
 through `gh api`: the guard value comes from the session directory, so these forms would bypass it.
 Scope: this guards merges that Claude Code runs through Bash. The GitHub web UI, a human `gh` and other tools are
-not guarded, and GitHub Free private repos enforce nothing. Spec: vault [[2026-10-07-local-ci-replication-design]] §5, §7.
+not guarded, and GitHub Free private repos enforce nothing.
+A command made only of data commands (`grep`, `echo`, `cat > file <<'EOF'`, `gh pr view|edit`, `git commit -m`) is
+allowed first: a merge named in its arguments is text. Every other command keeps the text-based, fail-closed check. Spec: vault [[2026-10-07-local-ci-replication-design]] §5, §7.
 """
 import json
 import os
@@ -39,6 +41,90 @@ URL_SELECTOR_RE = re.compile(r"^(?:https?://)?([^/\s]+)/([^/\s]+)/([^/\s]+)/pull
 SHELL_BUILT_RE = re.compile(r"[$`]")
 ASSIGN_RE = re.compile(r"^\w+=")
 REDIRECT = "run gh pr merge from the repo directory, without -R/GH_REPO/cd or a URL for another repo"
+# A command made only of these runs nothing from its arguments, so a merge named there is text (a grep pattern, a PR
+# body, a commit message). Anything else keeps the full check below: this list may only grow with commands that cannot
+# execute code from their arguments. `git` and `gh` run hooks and read config, so a line that also writes a file
+# (which could plant a hook or a config entry) is never data.
+DATA_COMMANDS = {"echo", "printf", "grep", "egrep", "fgrep", "cat", "head", "tail", "wc", "jq", "test", "[", "true",
+                 "cd", "pwd", "ls"}
+GH_DATA = {"view", "list", "create", "edit", "comment", "diff", "checks", "status"}
+GIT_DATA = {"commit", "log", "show", "diff", "status"}
+FD_DUP_RE = re.compile(r"\d*[<>]&(?:\d+|-)")
+# The only heredocs read as data: a quoted delimiter (no expansion in the body) and one of 2 exact line shapes.
+_FILE = r"[^\s;&|<>()`'\"]+"
+CAT_FILE_RE = re.compile(rf"\s*cat\s+(?:>>?\s*{_FILE}\s+<<-?\s*(['\"])(\w+)\1|<<-?\s*(['\"])(\w+)\3\s+>>?\s*{_FILE})\s*")
+SUBST_RE = re.compile(r"(.*)\"\$\(cat\s+<<-?\s*(['\"])(\w+)\2\s*")
+
+
+def collapse_heredocs(command: str) -> str | None:
+    """The command with each data heredoc collapsed to one line, or None when a `<<` has another shape."""
+    lines, out, i = command.split("\n"), [], 0
+    while i < len(lines):
+        line = lines[i]
+        if "<<" not in line:
+            out.append(line)
+            i += 1
+            continue
+        cat, subst = CAT_FILE_RE.fullmatch(line), SUBST_RE.fullmatch(line)
+        if not cat and not subst:
+            return None
+        if subst:  # an open quote before `"$(cat` would make the `<<` text, and the body lines code
+            try:
+                shlex.split(subst.group(1))
+            except ValueError:
+                return None
+            if "<<" in subst.group(1):
+                return None
+        delim, dash = (cat.group(2) or cat.group(4)) if cat else subst.group(3), "<<-" in line
+        end = next((j for j in range(i + 1, len(lines))
+                    if (lines[j].lstrip("\t") if dash else lines[j]) == delim), None)
+        if end is None:
+            return None
+        if cat:
+            out.append(line)
+            i = end + 1
+        else:  # `... "$(cat <<'EOF'` body `EOF` then `)"...`: one quoted word in place of the substitution
+            if end + 1 >= len(lines) or not lines[end + 1].startswith(')"'):
+                return None
+            out.append(subst.group(1) + '"heredoc"' + lines[end + 1][2:])
+            i = end + 2
+    return "\n".join(out)
+
+
+def is_data(words: list[str]) -> bool:
+    if not words or ASSIGN_RE.match(words[0]) or any(s in w for w in words for s in ("$(", "`", "<(", ">(")):
+        return False
+    cmd = words[0]
+    if cmd == "gh":
+        return len(words) > 2 and words[1] in ("pr", "issue") and words[2] in GH_DATA
+    if cmd == "git":
+        return len(words) > 1 and words[1] in GIT_DATA
+    return cmd in DATA_COMMANDS
+
+
+def only_data(command: str) -> bool:
+    """True when every simple command is a data command: then nothing in the line can run a merge."""
+    text = collapse_heredocs(command)
+    if text is None:
+        return False
+    text = FD_DUP_RE.sub(" ", text.replace("\\\n", ""))  # `2>&1`: its `&` is no separator
+    lex = shlex.shlex(text, posix=True, punctuation_chars=";&|\n")
+    lex.whitespace_split, lex.whitespace, lex.commenters = True, " \t\r", ""
+    try:
+        tokens = list(lex) + [";"]
+    except ValueError:
+        return False
+    cur, writes, runs_tool = [], False, False
+    for tok in tokens:
+        if not set(tok) <= set(";&|\n"):
+            cur.append(tok)
+            continue
+        if cur and not is_data(cur):
+            return False
+        writes = writes or any(">" in w or w.startswith("--output") for w in cur)  # `git log --output=<file>`
+        runs_tool = runs_tool or (bool(cur) and cur[0] in ("git", "gh"))
+        cur = []
+    return not (writes and runs_tool)
 
 
 def parse(command: str) -> tuple[list[list[str]], list[str], bool, bool]:
@@ -159,6 +245,8 @@ def main(raw: str) -> None:
         return
     cwd = data.get("cwd") or os.getcwd()
     command = data.get("tool_input", {}).get("command", "")
+    if only_data(command):  # every other command gets the full, text-based check below
+        return
     if API_MERGE_RE.search(command):
         deny("merge PRs with a plain `gh pr merge <N>` from the repo directory")
     calls, env_repos, uncheckable, cd_before = parse(command)
