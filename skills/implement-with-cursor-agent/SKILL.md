@@ -228,8 +228,11 @@ The PR is the review record for the note. It lands on the brain default branch. 
 ## Open issues: blockers, in this order
 
 1. **Sandbox first.** Until confinement is verified, `--force` is the main risk of this skill. Do not start an evaluation run before this blocker is closed: that run would expose the real repo and the shared vault for hours.
-   - Run Cursor with `--sandbox enabled` and a canary prompt that tries to write outside the 2 worktrees.
-   - Check that the write is blocked, and that `git push` and `gh pr create` still work. A sandbox that breaks the network will be bypassed by the first person in a hurry.
+   - **Tested 2026-10-12, result FAIL.** Setup: Cursor CLI 2026.10.01, WSL2 kernel 6.18 with Landlock ABI 7, a canary prompt, ground truth checked on disk.
+   - With `--sandbox enabled`, Cursor *requested* the policy `TYPE_WORKSPACE_READWRITE`, but did not enforce it. These writes all landed: `$HOME`, `~/ai-dotfiles/.git`, the vault's `.git`, and a file-tool write into `~/ai-dotfiles`. The result was the same with and without `--force`.
+   - `git push` and `gh pr create` worked.
+   - The control run, with `--sandbox disabled`, gave identical results. So Cursor's own sandbox gives no confinement here.
+   - Confinement must come from outside Cursor: a dedicated OS user that cannot write `~/ai-dotfiles` or the vault, or a container that mounts only the 2 worktrees. Re-run the same canary test against that setup.
 2. **Hook origin, in the same investigation.** Claude's commit-scope check fired inside Cursor, from an unknown source.
    - If Cursor loads `~/.claude` or `~/ai-dotfiles` config through symlinks, other hooks may also run with Cursor's rights. "Brain hooks off" may then be only half true.
    - Find the mechanism, and list every hook that runs inside Cursor.
