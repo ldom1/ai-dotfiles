@@ -323,7 +323,7 @@ stop-check-trust --revoke   # remove the approvals of this repo
 - Approvals live in `~/.claude/stop-check-trust` (`<sha256> <repo id>`). Worktrees of one repo share them.
 - The template denies `stop-check-trust` to the agent. Read the command before you approve it.
 
-Tests: `.claude/hooks/tests/` (part of the git-promotion gate).
+Tests: `.claude/hooks/tests/` (part of the git-promotion gate): `uvx -q pytest -q -p no:cacheprovider .claude/hooks/tests`. Pytest is not installed, and CI does not run these tests.
 
 ### Shared agent rules (AGENTS.md)
 
