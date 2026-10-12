@@ -12,6 +12,7 @@
   - `scripts/run-cursor.sh` reads the Cursor API key from `CURSOR_API_KEY` or `~/.config/cursor-agent/api-key` (mode 600) and passes it by name only. It pins `gpt-5.3-codex` and keeps brain hooks off.
   - It stops with exit 4 when the key is missing. It stops with exit 75 on a usage limit, without falling back to another model, and with exit 124 on a hang.
   - Cursor's own `--sandbox` confined nothing in headless mode. The same canary test passed through the container.
+  - The Cursor CLI also runs Claude Code hooks (`~/.claude/settings.json`, the project's `.claude/settings*.json`, Claude plugins). The container hides the host's hooks. The task repo's own hooks and the Cursor account plugins still run, as SKILL.md documents.
   - `test_cursor_dispatch.py` tests this mechanism only, not the code that Cursor writes.
 - Hook test sensor `test_skill_frontmatter.py` checks that each tracked skill `SKILL.md` starts with frontmatter, matches `name` to its directory, and has non-empty `description`.
 - `bin/local-ci`: runs a repo's listed GitHub workflows locally with `act` v0.2.89 in `local-ci-runner:24.04`, on a clean clone of one commit. Spec: vault `2026-10-07-local-ci-replication-design` (rev 5).
