@@ -3,6 +3,12 @@
 ## [Unreleased]
 
 ### Added
+- `implement-with-cursor-agent` skill (experimental, smoke-tested only): Claude dispatches one headless Cursor agent per task of a validated vault plan.
+  - Each agent opens a project PR and a vault PR. The vault PR holds an implementation note: choices, gaps, deviations, verification.
+  - Claude gates the work and runs a blind Opus review first. It sends findings back (at most 2 rounds), then squash-merges the project PR into the integration branch only (`develop`, or the first stage in `.git-promotion.json`). It never merges or promotes onto `main`. The vault note PR still lands on the brain default branch.
+  - Tasks that share a file, `CHANGELOG.md` included, run in sequence.
+  - `scripts/run-cursor.sh` pins `gpt-5.3-codex` and keeps brain hooks off. It stops with exit 75 on a usage limit, without falling back to another model, and with exit 124 on a hang.
+  - `test_cursor_dispatch.py` tests this mechanism only, not the code that Cursor writes.
 - Hook test sensor `test_skill_frontmatter.py` checks that each tracked skill `SKILL.md` starts with frontmatter, matches `name` to its directory, and has non-empty `description`.
 - `bin/local-ci`: runs a repo's listed GitHub workflows locally with `act` v0.2.89 in `local-ci-runner:24.04`, on a clean clone of one commit. Spec: vault `2026-10-07-local-ci-replication-design` (rev 5).
   - `local-ci install --workflows ci.yml` adds a `pre-push` hook. A push to a deploy branch (`main`, `preprod`) runs the `full` tier. Other branches run the `fast` tier, which is partial and never a merge gate.

@@ -38,6 +38,7 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 | git-promotion | Promote develop → preprod → main (or a PR straight onto main) with a semver tag and GitHub Release; stages, tag prefix, gate and changelog per repo in `.git-promotion.json` |
 | medium-writer | Draft a Medium article from real repo code into `articles/`, then write it onto its Notion task page |
 | ponytail | Lazy senior mode — YAGNI ladder, stdlib before deps, minimum code that works (`/ponytail`) |
+| implement-with-cursor-agent | Experimental, smoke-tested only. Claude runs a validated vault plan through headless Cursor agents (`gpt-5.3-codex`). Each task opens a project PR against the integration branch (`develop`, or the first `.git-promotion.json` stage) and a vault note PR. Claude reviews hard, squash-merges into that branch, and never merges or promotes onto `main` |
 | asd-ste100 | Rewrite a doc in ASD-STE100 Simplified Technical English (strict or STE-flavored), with a stdlib linter (`scripts/ste-lint.py`) |
 | sop-builder | Turn process notes into validated seven-section SOP documents |
 | photo-archive-triage | Non-destructive photo/video triage: exact dedup, corrupt screening, capture-date recovery |

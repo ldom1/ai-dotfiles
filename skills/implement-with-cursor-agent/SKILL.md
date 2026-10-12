@@ -1,0 +1,213 @@
+---
+name: implement-with-cursor-agent
+description: Experimental, smoke-tested only. Execute a validated implementation plan from the Local Brain vault with Cursor CLI agents as implementers and Claude as a hard, adversarial reviewer. One headless Cursor agent per plan task (gpt-5.3-codex) opens a project PR against the integration branch and a vault PR holding an implementation note (choices, gaps, deviations, verification). Claude gates, challenges, sends findings back, and squash-merges that project PR into the integration branch only (develop, or the first stage in .git-promotion.json). It never merges, pushes, or promotes onto main. Use this whenever the user says "implement with cursor", "/implement-with-cursor-agent", "hand the plan to cursor agents", "let Cursor implement and you review", or wants a vault plan executed by Cursor with Claude reviewing, even if they do not name the skill. Not for writing a plan (superpowers:writing-plans), for Claude-only execution (superpowers:subagent-driven-development), or for a release (git-promotion).
+---
+
+# Implement with Cursor agents
+
+You are the orchestrator and the reviewer. Cursor agents implement. You never write the implementation yourself: if you fix their code, the run no longer shows whether delegation works.
+
+**Never land project code on `main`.** Do not `gh pr merge` a project PR whose base is `main`. Do not push or fast-forward the project `main`. Do not run `promote.py` toward `main` or any later stage. A release is a separate `/git-promotion` run, and only when the user asks for one. The vault note still fast-forwards the brain default branch. That is not a project release.
+
+## Status and evidence
+
+**Stage: smoke-tested.** On 2026-10-12, 2 trivial tasks merged after 1 review round each ([[2026-10-12-implement-with-cursor-agent-skill]]). This shows only that nothing failed on a trivial case. It does not evaluate the kill criterion.
+
+| Stage | Entry condition |
+|---|---|
+| smoke-tested | One run merged end to end (current stage). |
+| evaluated | One plan with 3 or more tasks, and at least one non-trivial task: a logic change of ~100 lines or more, a dependency between tasks, or a shared file. The ledger has full metrics, including a measured Claude-alone baseline. |
+| validated | 3 evaluated plans, and no escaped high-severity defect within 14 days of each merge. |
+
+**Kill criterion** (applies from "evaluated" on). Stop the experiment if any of these holds:
+- The mean review rounds per task is above 2.
+- More than 1 task in 3 escalates.
+- An escaped high-severity defect appears: a defect found after merge, in code this skill merged.
+
+**Escalation** means any of these:
+- (a) A high or medium finding is still open after round 2.
+- (b) Cursor fails twice on one task: a non-zero rc, a hang (`124`) or a usage limit (`75`).
+- (c) Claude or the user edits a task branch by hand.
+- (d) A PR ends as a draft, or with `STATUS=blocked`.
+- (e) A merge precondition fails and needs a human: red local-ci, or a failed vault precondition.
+
+**What the evidence covers:**
+- `test_cursor_dispatch.py` tests the mechanism only: the model pin, the limit stop, the timeout, the resume and hooks off. It proves nothing about the code Cursor writes.
+- Correctness of that code rests on 2 things: the gate (failing-first tests, the full suite, CI) and the review.
+- "Review passed" does not mean "correct". Record every defect found after merge as **escaped**: that is the only measure of what the procedure misses.
+
+## 0. Preflight
+
+Stop and report on any failure.
+
+1. **Plan.** Expect a path under `$BRAIN_PATH/inbox/daily/plans/<project>/`. Read the whole plan. If the user has not said it is validated, ask once.
+2. **Project repo.** Work from the repo root: the merge guard reads the session directory. Run `git fetch origin`. Resolve the integration branch (`$base`). Stop if you cannot. Do not fall back to `main`.
+   - `.git-promotion.json` with two or more `stages`: `$base` is `stages[0]` (usually `develop`). Feature PRs merge only there. `git-promotion` fast-forwards later stages. This skill does not.
+   - No config, and `origin/develop` exists: `$base` is `develop`.
+   - One stage, no `origin/develop`, `$base` equal to `main`, or `$base` equal to the last stage: stop. A single-stage repo releases with `promote.py --pr`, which squash-merges onto `main`. That path is out of scope.
+   - `git rev-parse --verify origin/$base` must succeed.
+3. **Tools.**
+   - `agent --version`
+   - `agent --list-models | grep -w "${CURSOR_MODEL:-gpt-5.3-codex}"`
+   - `gh auth status`
+   - `git -C "$BRAIN_PATH" remote get-url origin`
+4. **Merge guard.** If `git config --get local-ci.guard` prints `true`, every merge needs a fresh `~/ai-dotfiles/bin/local-ci run --event pull_request --pr <N>` success.
+5. **Model.** State the model you are on (FinOps rule). Cursor runs `CURSOR_MODEL`, default `gpt-5.3-codex`. A Claude-family Cursor model removes the second-model property: say so if the user picks one.
+6. **Ledger** at `$R/ledger.md`, with `R=<scratchpad>/cursor-runs/<plan-slug>`. It is the trial report, so write it for a reader. Per task and per round, record:
+   - status, commit SHAs, PR URLs, model, wall time, Cursor tokens (the `usage` block of the result JSON);
+   - reviewer cost. Price its transcript `~/.claude/projects/<project>/<session>/subagents/agent-<id>.jsonl`: deduplicate by message id, and use output tokens = max(recorded, characters / 4), because the recorded value undercounts ([[claude-code-patterns#^c15]]);
+   - every command you ran, with its result line;
+   - brief conformance: status lines last (yes or no), note sections complete, commit scopes valid;
+   - every finding as `source | severity | path:line | issue | outcome`. The source is one of `gate`, `reviewer`, `orchestrator`, `author`. List all sources when several found it;
+   - rulings: `Ruling: <decision> — <why> — <cost if wrong>`;
+   - escalation (yes or no, with its letter from the list above);
+   - post-merge result.
+
+   In an evaluation run, also measure the baseline. Run a native Sonnet subagent on the same task in a throwaway worktree, with no PR, and record its cost and its gate result.
+
+## 1. Schedule
+
+- Run one Cursor agent per plan task.
+- Tasks that share **any** file run in sequence. That includes `CHANGELOG.md` and `README.md`. A clean textual merge does not prove a correct combined result. The later task starts from the updated integration branch after the earlier one merges.
+- Tasks with disjoint files run in parallel, at most 3. This holds only if `test_cmd` has no shared mutable state: fixed ports, a database, fixed temp paths or a shared build directory. If it does, run them in sequence.
+- If a task's plan section implies more than ~400 changed lines or 10 files, one review cannot cover it. Ask the plan author to split it.
+
+## 2. Dispatch one task
+
+```bash
+T=<n>; slug=<plan-slug>; run="$R/task$T"; br="cursor/$slug-t$T"; mkdir -p "$run"
+git fetch origin && git worktree add -b "$br" "$run/project" "origin/$base"
+git -C "$BRAIN_PATH" fetch origin && git -C "$BRAIN_PATH" worktree add -b "$br" "$run/vault" origin/main
+```
+
+Fill `references/cursor-brief.md` into `$run/brief.md`:
+- `task_text`: paste the task section verbatim.
+- `note_rel`: `inbox/daily/checkpoints/<project>/<date>-<slug>-task<T>.md`
+- `note_slug`: the same filename without `.md`.
+- `vault_commit`: `doc(inbox): add cursor note for <slug> task <T>`
+- `scopes`: the locked list for this repo's type in `~/ai-dotfiles/skills/git-commit/scopes.json`.
+- `base`: the integration branch from preflight. Never `main`.
+- `test_cmd`: the plan's global test command, or the repo's CI test command.
+
+Run Cursor in the background (Bash `run_in_background: true`), then wait for the notification:
+
+```bash
+bash ~/ai-dotfiles/skills/implement-with-cursor-agent/scripts/run-cursor.sh "$run" "$run/brief.md"
+```
+
+The script keeps Cursor's brain hooks off (you own vault sync). It times out a hang after 30 minutes (`rc=124`). On a credit or usage-limit error, it stops with `rc=75` and does not switch models: `auto` can route to a Claude model. Ask the user before you rerun with another `CURSOR_MODEL`.
+
+**Sandbox limits.** Cursor runs with `--force`. The brief's path limits are instructions to an LLM, not constraints. The checks in "Safety" detect a breach after the fact; they do not prevent it. Use this skill only on repos where a breach is recoverable: no production credentials, and nothing live that you cannot relink.
+
+## 3. Review
+
+Assume the work is wrong until evidence shows otherwise. The note and the final reply are claims, not evidence.
+
+### 3a. Gate: run commands before you read any prose
+
+1. `tail -1 $run/runs.log`:
+   - `rc=124` is a hang. `rc=75` is a usage limit.
+   - Any non-zero rc without both PRs means the attempt failed. Count it toward escalation (b).
+2. Grep `PROJECT_PR=`, `VAULT_PR=` and `STATUS=` in the result JSON's `result` field. If they are not the last 3 lines, record a brief non-conformance; do not hide it. For each PR, run `gh pr view <url> --json state,isDraft,headRefName,headRefOid,files`.
+3. In `$run/project`:
+   - Run `test_cmd` yourself, and read the pass and skip counts (^v3).
+   - Run `git diff --stat "origin/$base...HEAD"`. A file outside the task's file list is a scope finding. Confirm `gh pr view` `baseRefName` equals `$base`. A base of `main` is a stop.
+4. **Negative control** (^v5): the new tests must fail without the change, for the right reason.
+   - Use a temporary worktree at `origin/$base`. Copy into it only the test files the branch adds or changes, plus any fixture files the branch adds next to them.
+   - Run **only those test files**, not the global command.
+   - **Pass:** the new tests fail with assertion failures, or with the exact error the feature removes.
+   - **Inconclusive:** an import, collection or missing-file error. This is common when the test imports a module the branch creates. It is not a pass: record a Ruling and judge it by reading the test.
+   - **Sensor task** (a check of state that is already correct): it passes on base by design. Seed one mutation that the sensor must catch, see it fail, then revert.
+   - Remove the temporary worktree afterwards.
+5. **CI.** In a guarded repo, `local-ci run --event pull_request --pr <N>`. Otherwise, run the CI steps by hand. The hook suite does not catch everything: a CI step once caught stale generated files that the tests missed.
+6. **Note.**
+   - All sections are present.
+   - `[[wikilinks]]`, not paths.
+   - Its Verification counts match what you just ran.
+
+### 3b. Challenge
+
+1. **Fresh reviewer first,** before your own pass, so it cannot align with your view.
+   - Dispatch the `reviewer` agent with `model: opus`. Give it the plan task text, `gh pr diff <N>` and the note. Do not give it your findings or opinions.
+   - Ask for `VERDICT: APPROVE|REJECT` and findings as `path:line severity issue — expected`.
+   - Save its reply unedited to `$run/review-<round>.md`.
+   - Run it again on every round that fixed a high or medium finding.
+   - If it has not returned after ~15 minutes, treat it as failed and dispatch it once more.
+2. **Your own pass,** step by step against the plan:
+   - Is every step done, and does a test prove it?
+   - Hidden requirements: `CHANGELOG.md`, `README.md`, generated files, CI checks.
+   - The plan's edge cases, error paths, and fail-open or fail-closed behaviour.
+   - Each **Choice**: would you have accepted it in a design review?
+   - Each **Gap**: can it merge with that gap? A gap the note hides is a high finding.
+   - **Deviations**: is each one justified, or is it a silent change of scope?
+3. **Verify every finding yourself** at its `path:line` before you send it. Drop a finding you cannot reproduce, with the evidence, as a Ruling. Record the source of each finding. The reviewer's cost is justified only by findings the gate, you or the author did not already catch.
+
+### 3c. Verdict
+
+- **APPROVE** when no high or medium finding is left, and the gate is green.
+- **CHANGES** otherwise. Write numbered findings to `$run/findings-<round>.md`, one per line: `<path:line> — <severity> — <issue> — <expected>`. Then resume the same Cursor session:
+  ```bash
+  bash ~/ai-dotfiles/skills/implement-with-cursor-agent/scripts/run-cursor.sh "$run" "$run/findings-<round>.md" resume
+  ```
+  Re-run the full gate on the new push. Allow at most 2 rounds per task. If a task still fails after round 2, it escalates (a): stop it and report it with the ledger. Do not fix the code yourself.
+
+## 4. Land on the integration branch, in plan order
+
+**Project PR.** The PR base is `$base`. If `baseRefName` is `main`, or it is the last stage in `.git-promotion.json`, stop. Leave the PR open.
+
+1. Check `gh pr view <N> --json mergeable,mergeStateStatus,baseRefName`. `UNKNOWN` means GitHub is still computing: wait a few seconds and ask again.
+   - `CONFLICTING`: resume Cursor with "rebase `{branch}` onto origin/{base}, resolve conflicts, run the tests, `git push --force-with-lease`". Then re-run the gate.
+   - Behind but clean: test the combined state. `local-ci` tests the PR merge ref. For tests CI does not run, merge the branch into a temporary worktree at `origin/$base`, run `test_cmd` there, and remove the worktree.
+2. In a guarded repo, run `~/ai-dotfiles/bin/local-ci run --event pull_request --pr <N>` on the final head.
+3. Run `/git-commit` to build the squash subject. Append ` (#<N>)`, as in the repo history.
+4. Run `git worktree remove "$run/project"`. If the branch is still checked out in a worktree, `--delete-branch` fails locally, and gh then leaves the remote branch behind.
+5. From the repo root, run `gh pr merge <N> --squash --delete-branch --subject "<subject>"`. Do not use `-R`, `cd`, or `--admin`. This lands on `$base` only.
+6. Update the local integration branch: `git fetch origin && git merge --ff-only "origin/$base"`. `git pull` fails when `pull.rebase` is set and other sessions have uncommitted work in the checkout. Do not check out or update `main`.
+7. **Post-merge check:** run `test_cmd` on `$base` and record the result. Record any later defect in this code as escaped.
+8. **Stop there.** Do not promote. Do not run `~/ai-dotfiles/skills/git-promotion/scripts/promote.py`. Tell the user `$base` moved. A later stage (`preprod`, `main`) is `/git-promotion`, and only if the user asks.
+
+**Vault PR.** The PR is the review record for the note. It lands on the brain default branch. That push does not move the project `main`. The merge does not go through `gh pr merge`: the merge guard denies a merge aimed at another repo. Instead:
+
+1. **Review record.** Write the note verdict to `$run/vault-review.md`: sections checked, Verification counts matched, findings. Post it with `gh pr comment <VAULT_PR url> --body-file "$run/vault-review.md"`. You cannot approve your own PR, because Cursor pushes as the same GitHub user, so the comment is the record.
+2. **Preconditions.** All must hold. Otherwise stop, and give the PR to the user to merge in the web UI.
+   - The vault repo has no branch protection, ruleset or required check. `gh api repos/<owner>/<repo>/branches/main/protection` must return 404, or 403 "Upgrade to GitHub Pro" on a free private repo, where none can exist. Verified for `ldom1/developer-brain` on 2026-10-12.
+   - `gh pr view <url> --json headRefOid` equals the SHA you reviewed.
+   - `gh pr view <url> --json files` lists only the note file.
+3. **Merge.** Fast-forward only. Retry at most 3 times if `main` moves:
+   ```bash
+   for i in 1 2 3; do
+     git -C "$BRAIN_PATH" fetch origin || break
+     if ! git -C "$run/vault" merge-base --is-ancestor origin/main HEAD; then
+       git -C "$run/vault" rebase origin/main && git -C "$run/vault" push --force-with-lease origin "$br" || break
+       # the rebase must not change the note: compare `git -C "$run/vault" diff origin/main -- <note>` with the reviewed version
+     fi
+     git -C "$BRAIN_PATH" merge --ff-only "origin/$br" && git -C "$BRAIN_PATH" push origin main && ok=1 && break
+   done
+   ```
+   - If `ok` is not set after 3 tries, stop and report.
+   - Do not pre-check `index.lock`: that check races. Git takes the lock itself and fails atomically ("Another git process seems to be running"). Treat that failure as a stop, and retry later.
+   - Then run `git -C "$BRAIN_PATH" push origin --delete "$br"`. GitHub marks the PR merged, because its commits are now on `main`.
+
+**Clean up:** `git -C "$BRAIN_PATH" worktree remove "$run/vault" && git -C "$BRAIN_PATH" branch -D "$br"`.
+
+## 5. Close
+
+1. Report the ledger to the user. Per task: rounds, findings by source and severity, model, wall time, cost, conformance, merged PR links. Before the "evaluated" stage, never say the kill criterion passed. Say "smoke run: no failure signal".
+2. Run `/capture`. The session log links each note as `[[<note_slug>]]`. These notes stay in `checkpoints/`: they are not the PreCompact `<date>.md` file that `/capture` deletes.
+
+## Safety
+
+- After each Cursor run, check:
+  - `readlink -f ~/.claude ~/.cursor/hooks.json` still resolve into `~/ai-dotfiles`.
+  - `git -C ~/ai-dotfiles status --short` shows nothing unexpected.
+  - No stray files outside the two worktrees: compare against the note's Gaps.
+- Do not count on hooks. Claude's commit-scope check was seen firing inside Cursor, but no Cursor hook config declares it, so coverage is unknown.
+- Never merge on a red gate, a stale local-ci status or an unverified claim.
+- Never merge, push, or fast-forward the project `main`. A project PR whose base is `main` stays open.
+- Stop and ask before anything irreversible beyond these PRs: a force push to `main` or to `$base`, a branch you did not create, a deleted file outside the task.
+
+## Open issues (block "validated")
+
+- **No prevention sandbox.** An active test is needed. Run Cursor with `--sandbox enabled` and a canary prompt that tries to write outside the 2 worktrees. Check that the write is blocked, and that `git push` and `gh pr create` still work. Only then can the skill rely on it.
+- The source of the commit-scope hook inside Cursor is unknown.
+- No measured Claude-alone baseline yet.

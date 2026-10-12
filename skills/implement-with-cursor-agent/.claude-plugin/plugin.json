@@ -1,0 +1,10 @@
+{
+  "name": "implement-with-cursor-agent",
+  "version": "0.1.0",
+  "description": "Experimental: Claude runs a validated vault plan through headless Cursor agents, reviews each PR hard, and lands it on the integration branch only.",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles"
+}
