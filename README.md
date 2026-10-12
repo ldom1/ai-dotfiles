@@ -417,7 +417,7 @@ First run: record the skip baseline once, after a parity check against the GitHu
 
 The job gets an empty `GITHUB_TOKEN`: your `gh` token never reaches the workflow. Logs are in `~/.cache/local-ci/<owner>__<repo>/<sha>-<ref>-<event>-<tier>/`, with `/` in the ref replaced by `_`.
 
-The merge guard is off until `git config local-ci.guard true`. In every directory, it denies a `gh pr merge` with `-R`, `GH_REPO`, `cd`, `env -C` or a PR URL for another repo, and a merge through `gh api`.
+The merge guard is off until `git config local-ci.guard true`. In every directory, it denies a `gh pr merge` with `-R`, `GH_REPO`, `cd`, `env -C` or a PR URL for another repo, and a merge through `gh api`. A command made only of data commands (`grep`, `echo`, `cat > file <<'EOF'`, `gh pr view|edit|create`, `git commit -m`) passes, even when it names a merge as text. Run such a command in its own Bash call: one non-data command in the line brings back the full check.
 
 ## Design principle
 

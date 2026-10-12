@@ -21,6 +21,13 @@
 - `scripts/check-ci-runner-drift.sh`: SessionStart prints one warning when the runner manifest differs from the latest `ubuntu24` release. It caches for 7 days and never edits the manifest.
 
 ### Fixed
+- `local-ci-merge-guard.py` no longer denies a command that is made only of data commands, when the merge appears only as text in it.
+  - Data commands are on fixed allowlists: `grep`, `echo`, `printf`, `cat`, `head`, `tail`, `wc`, `jq`, `ls`, `cd`, `gh pr|issue view|create|edit|comment|...` and `git commit|log|show|diff|status`.
+  - A heredoc is data only in 2 shapes: `cat > file <<'EOF'`, and `"$(cat <<'EOF'` ... `)"`. Both need a quoted delimiter.
+  - A line that both writes a file and runs `git` or `gh` is never data, because the write could plant a hook or a config entry.
+  - Any other command keeps the old fail-closed text check, unchanged.
+  - Replay of 150 real commands that mention a merge: 6 of 16 false denials removed. Every command with a real merge call is still checked.
+  - 3 rounds of blind adversarial review: the first 2 found bypasses, which are now deny tests.
 - `bin/local-ci`: the clean clone no longer borrows the host repo's objects (`--shared`). Inside the job container the host `.git` is absent, so every `git` step failed.
 - `bin/local-ci`: an interrupt (SIGINT, SIGTERM, SIGHUP) now removes every `act-*` container and network before exit.
 - `bin/local-ci`: a second signal during cleanup is ignored, so the `failure` status is always posted. `uv run` forwards SIGINT, so Ctrl-C and `timeout -s INT` send two.
