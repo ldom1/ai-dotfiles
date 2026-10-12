@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- Hook test sensor `test_skill_frontmatter.py` checks that each tracked skill `SKILL.md` starts with frontmatter, matches `name` to its directory, and has non-empty `description`.
 - `bin/local-ci`: runs a repo's listed GitHub workflows locally with `act` v0.2.89 in `local-ci-runner:24.04`, on a clean clone of one commit. Spec: vault `2026-10-07-local-ci-replication-design` (rev 5).
   - `local-ci install --workflows ci.yml` adds a `pre-push` hook. A push to a deploy branch (`main`, `preprod`) runs the `full` tier. Other branches run the `fast` tier, which is partial and never a merge gate.
   - A push run keeps a local record only (`~/.cache/local-ci/<owner>__<repo>/results.jsonl`). GitHub returns 422 for a status on a commit it does not have.
