@@ -1,5 +1,8 @@
+"""Skill files must keep matching frontmatter names and descriptions."""
 from pathlib import Path
 import subprocess
+
+REPO = Path(__file__).resolve().parents[3]
 
 
 def _clean(value: str) -> str:
@@ -30,7 +33,7 @@ def _skill_files(root: Path) -> list[Path]:
     git = root / ".git"
     if git.exists():
         proc = subprocess.run(
-            ["git", "-C", str(root), "ls-files", "skills/*/SKILL.md"],
+            ["git", "-C", str(root), "ls-files", ":(glob)skills/*/SKILL.md"],
             check=True,
             capture_output=True,
             text=True,
@@ -52,8 +55,7 @@ def bad_skills(root: Path) -> list[str]:
 
 
 def test_repo_skills_have_matching_frontmatter():
-    repo = Path(__file__).resolve().parents[3]
-    assert bad_skills(repo) == []
+    assert bad_skills(REPO) == []
 
 
 def test_mismatch_is_reported(tmp_path: Path):
@@ -70,4 +72,6 @@ def test_mismatch_is_reported(tmp_path: Path):
     (skills / "empty" / "SKILL.md").write_text(
         "---\nname: empty\ndescription:\n---\nbody\n"
     )
+    subprocess.run(["git", "-C", str(tmp_path), "init"], check=True, capture_output=True, text=True)
+    subprocess.run(["git", "-C", str(tmp_path), "add", "skills"], check=True, capture_output=True, text=True)
     assert bad_skills(tmp_path) == ["bad", "empty"]
