@@ -4,10 +4,14 @@
 
 ### Added
 - `implement-with-cursor-agent` skill (experimental, smoke-tested only): Claude dispatches one headless Cursor agent per task of a validated vault plan.
-  - Each agent opens a project PR and a vault PR. The vault PR holds an implementation note: choices, gaps, deviations, verification.
-  - Claude gates the work and runs a blind Opus review first. It sends findings back (at most 2 rounds), then squash-merges the project PR into the integration branch only (`develop`, or the first stage in `.git-promotion.json`). It never merges or promotes onto `main`. The vault note PR still lands on the brain default branch.
+  - Each agent runs in a Docker container (`local-ci-runner:24.04`) that mounts only its run directory. The directory holds 2 clones: the project and the vault.
+  - The container has no GitHub credentials. The agent commits locally: code in the project clone, and an implementation note (choices, gaps, deviations, verification) in the vault clone.
+  - Claude gates the work and runs a blind Opus review first. It sends findings back (at most 2 rounds).
+  - After approval, Claude pushes and opens the project PR and the vault PR. It squash-merges the project PR into the integration branch only (`develop`, or the first stage in `.git-promotion.json`). It never merges or promotes onto `main`. The vault note still lands on the brain default branch.
   - Tasks that share a file, `CHANGELOG.md` included, run in sequence.
-  - `scripts/run-cursor.sh` pins `gpt-5.3-codex` and keeps brain hooks off. It stops with exit 75 on a usage limit, without falling back to another model, and with exit 124 on a hang.
+  - `scripts/run-cursor.sh` reads the Cursor API key from `CURSOR_API_KEY` or `~/.config/cursor-agent/api-key` (mode 600) and passes it by name only. It pins `gpt-5.3-codex` and keeps brain hooks off.
+  - It stops with exit 4 when the key is missing. It stops with exit 75 on a usage limit, without falling back to another model, and with exit 124 on a hang.
+  - Cursor's own `--sandbox` confined nothing in headless mode. The same canary test passed through the container.
   - `test_cursor_dispatch.py` tests this mechanism only, not the code that Cursor writes.
 - Hook test sensor `test_skill_frontmatter.py` checks that each tracked skill `SKILL.md` starts with frontmatter, matches `name` to its directory, and has non-empty `description`.
 - `bin/local-ci`: runs a repo's listed GitHub workflows locally with `act` v0.2.89 in `local-ci-runner:24.04`, on a clean clone of one commit. Spec: vault `2026-10-07-local-ci-replication-design` (rev 5).
