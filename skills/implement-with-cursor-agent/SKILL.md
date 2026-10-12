@@ -11,12 +11,15 @@ You are the orchestrator and the reviewer. Cursor agents implement. You never wr
 
 ## Status and evidence
 
-**Stage: smoke-tested.** On 2026-10-12, 2 trivial tasks merged after 1 review round each ([[2026-10-12-implement-with-cursor-agent-skill]]). This shows only that nothing failed on a trivial case. It does not evaluate the kill criterion.
+**Stage: smoke-tested, on an earlier flow.** On 2026-10-12, 2 trivial tasks merged after 1 review round each ([[2026-10-12-implement-with-cursor-agent-skill]]).
+- That run predates the integration-branch rule: its project PRs landed on `main`, which this version refuses.
+- The current flow, which merges into the integration branch, has not run yet.
+- The run shows only that nothing failed on a trivial case. It does not evaluate the kill criterion.
 
 | Stage | Entry condition |
 |---|---|
-| smoke-tested | One run merged end to end (current stage). |
-| evaluated | One plan with 3 or more tasks, and at least one non-trivial task: a logic change of ~100 lines or more, a dependency between tasks, or a shared file. The ledger has full metrics, including a measured Claude-alone baseline. |
+| smoke-tested | One run merged end to end. The current stage, reached on the earlier flow only. |
+| evaluated | The rules in "Evaluation protocol" are met. One plan with 3 or more tasks, and at least one non-trivial task: a logic change of ~100 lines or more, a dependency between tasks, or a shared file. |
 | validated | 3 evaluated plans, and no escaped high-severity defect within 14 days of each merge. |
 
 **Kill criterion** (applies from "evaluated" on). Stop the experiment if any of these holds:
@@ -30,6 +33,15 @@ You are the orchestrator and the reviewer. Cursor agents implement. You never wr
 - (c) Claude or the user edits a task branch by hand.
 - (d) A PR ends as a draft, or with `STATUS=blocked`.
 - (e) A merge precondition fails and needs a human: red local-ci, or a failed vault precondition.
+
+**Evaluation protocol.** Decide everything before the run, so the result cannot be rationalized afterwards.
+- **Pre-register.** Write an evaluation plan in the vault before the run. It fixes the failure thresholds (rounds, escalations, escaped defects) and the overhead you accept against Claude alone. It also fixes how the reviewer's value is judged.
+- **Baseline.** Measure the Claude-alone baseline on the same plan, never estimate it: estimating it means choosing the result.
+- **Try to falsify the reviewer.** For each finding, log whether the gate or your own pass alone would have caught it. The evaluation must be able to conclude "the fresh reviewer adds nothing".
+  - The trial leans that way. Both medium findings were also caught by the orchestrator. Reviewer-only findings were 6 low.
+- **Brief conformance is a safety indicator,** not a format detail. In the trial, Cursor put its status lines last in only 1 of 4 replies.
+  - If the agent ignores the output format, assume it can also ignore the brief's prohibitions: no `$HOME`, no `install.sh`.
+  - Report the conformance rate next to the safety results.
 
 **What the evidence covers:**
 - `test_cursor_dispatch.py` tests the mechanism only: the model pin, the limit stop, the timeout, the resume and hooks off. It proves nothing about the code Cursor writes.
@@ -166,7 +178,12 @@ Assume the work is wrong until evidence shows otherwise. The note and the final 
 7. **Post-merge check:** run `test_cmd` on `$base` and record the result. Record any later defect in this code as escaped.
 8. **Stop there.** Do not promote. Do not run `~/ai-dotfiles/skills/git-promotion/scripts/promote.py`. Tell the user `$base` moved. A later stage (`preprod`, `main`) is `/git-promotion`, and only if the user asks.
 
-**Vault PR.** The PR is the review record for the note. It lands on the brain default branch. That push does not move the project `main`. The merge does not go through `gh pr merge`: the merge guard denies a merge aimed at another repo. Instead:
+**Vault PR: not an independent gate.**
+- Claude reviews the note, and Claude merges it.
+- The preconditions below *require* that no server-side protection exists: the flow is built on the absence of an independent check.
+- This is acceptable only because the vault PR carries a documentation note, not code. Never present it as a second review.
+
+The PR is the review record for the note. It lands on the brain default branch. That push does not move the project `main`. The merge does not go through `gh pr merge`: the merge guard denies a merge aimed at another repo. Instead:
 
 1. **Review record.** Write the note verdict to `$run/vault-review.md`: sections checked, Verification counts matched, findings. Post it with `gh pr comment <VAULT_PR url> --body-file "$run/vault-review.md"`. You cannot approve your own PR, because Cursor pushes as the same GitHub user, so the comment is the record.
 2. **Preconditions.** All must hold. Otherwise stop, and give the PR to the user to merge in the web UI.
@@ -197,17 +214,24 @@ Assume the work is wrong until evidence shows otherwise. The note and the final 
 
 ## Safety
 
-- After each Cursor run, check:
-  - `readlink -f ~/.claude ~/.cursor/hooks.json` still resolve into `~/ai-dotfiles`.
-  - `git -C ~/ai-dotfiles status --short` shows nothing unexpected.
+- Base every safety check on raw values: exit codes, hashes, and paths compared inside the command. Never base one on displayed text. The RTK Bash hook rewrites command output, even when you redirect it to a file. For example, `diff` printed `[ok] Files are identical` in the trial. Use `rtk proxy '<cmd>'` when you must read output.
+- Before and after each Cursor run, record these values. They must match:
+  - `readlink -f ~/.claude ~/.cursor/hooks.json | md5sum`, and each path must start with `$HOME/ai-dotfiles/`. Check that with `case` or `grep -c`, using the exit code.
+  - `git -C ~/ai-dotfiles status --porcelain | md5sum`
+  - `git -C "$BRAIN_PATH" rev-parse HEAD`
   - No stray files outside the two worktrees: compare against the note's Gaps.
 - Do not count on hooks. Claude's commit-scope check was seen firing inside Cursor, but no Cursor hook config declares it, so coverage is unknown.
 - Never merge on a red gate, a stale local-ci status or an unverified claim.
 - Never merge, push, or fast-forward the project `main`. A project PR whose base is `main` stays open.
 - Stop and ask before anything irreversible beyond these PRs: a force push to `main` or to `$base`, a branch you did not create, a deleted file outside the task.
 
-## Open issues (block "validated")
+## Open issues: blockers, in this order
 
-- **No prevention sandbox.** An active test is needed. Run Cursor with `--sandbox enabled` and a canary prompt that tries to write outside the 2 worktrees. Check that the write is blocked, and that `git push` and `gh pr create` still work. Only then can the skill rely on it.
-- The source of the commit-scope hook inside Cursor is unknown.
-- No measured Claude-alone baseline yet.
+1. **Sandbox first.** Until confinement is verified, `--force` is the main risk of this skill. Do not start an evaluation run before this blocker is closed: that run would expose the real repo and the shared vault for hours.
+   - Run Cursor with `--sandbox enabled` and a canary prompt that tries to write outside the 2 worktrees.
+   - Check that the write is blocked, and that `git push` and `gh pr create` still work. A sandbox that breaks the network will be bypassed by the first person in a hurry.
+2. **Hook origin, in the same investigation.** Claude's commit-scope check fired inside Cursor, from an unknown source.
+   - If Cursor loads `~/.claude` or `~/ai-dotfiles` config through symlinks, other hooks may also run with Cursor's rights. "Brain hooks off" may then be only half true.
+   - Find the mechanism, and list every hook that runs inside Cursor.
+3. **Merge-guard false positives.** `local-ci-merge-guard.py` denied Bash calls that only *mentioned* a merge, 3 times in one session. Make it match the parsed command, not the text, before an evaluation run multiplies the blocks. Repeated workarounds end with someone turning the guard off.
+4. **Evaluation run,** in a repo with an integration branch, under the "Evaluation protocol" above.
