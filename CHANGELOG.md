@@ -54,6 +54,7 @@
   - the last 5 requests, each after the assistant text it answers;
   - the last assistant message.
   It masks GitHub and `sk-` tokens and skips the compaction summary.
+- README: documents the exact hook test command (`uvx -q pytest -q -p no:cacheprovider .claude/hooks/tests`) and states the repo does not install `pytest`, `uvx` fetches it, and CI does not run these tests.
 
 ## [0.10.1] - 2026-10-08
 
