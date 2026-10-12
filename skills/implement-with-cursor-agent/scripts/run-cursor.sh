@@ -32,6 +32,9 @@ if [ "$mode" = resume ]; then
   resume=(--resume "$sid")
 fi
 mkdir -p "$run/home"
+# Cursor installs the account's marketplace plugins (superpowers, ...) into $HOME/.cursor/plugins. An empty read-only
+# dir makes each install fail, so the delegated agent runs without them; the user's own Cursor keeps them.
+mkdir -p "$run/home/.cursor/plugins" && chmod 555 "$run/home/.cursor/plugins"
 name="cursor-$(basename "$run")-$n-$$"
 
 start=$(date +%s)

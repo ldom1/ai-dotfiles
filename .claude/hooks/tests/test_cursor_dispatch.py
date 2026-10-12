@@ -63,6 +63,8 @@ def test_container_sees_only_the_run_dir_and_gets_key_by_name(tmp_path):
     assert args[args.index("--model") + 1] == "gpt-5.3-codex"
     assert args[args.index("--workspace") + 1] == "/work/project"
     assert json.loads((tmp_path / "run" / "result-0.json").read_text())["session_id"] == "s-123"
+    plugins = tmp_path / "run" / "home" / ".cursor" / "plugins"  # read-only: account plugins cannot install
+    assert oct(plugins.stat().st_mode & 0o777) == "0o555" and not any(plugins.iterdir())
 
 
 def test_missing_key_stops_before_docker(tmp_path):

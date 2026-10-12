@@ -135,9 +135,11 @@ What the script does:
 - the Cursor API key;
 - open network access. Cursor can send out what it sees. It cannot push, because it has no credentials.
 
-**Hooks that run inside Cursor.** The Cursor CLI runs Claude Code hooks next to its own hooks, but never fail-closed. In the container, these hooks run:
+**Hooks that run inside Cursor.** The Cursor CLI runs Claude Code hooks next to its own hooks, but never fail-closed. In the container, these still load:
 - `claude-project` hooks: the task repo's own `.claude/settings.json` and `settings.local.json`, read from the clone. A hook command that points to a host path fails there.
-- Account plugins from the Cursor marketplace. Cursor downloads them into `$run/home` (seen: `superpowers` with a `sessionStart` hook, and `notion-workspace` with an MCP config). `superpowers` changes how the agent works, so record the plugin list in the ledger.
+- Cursor's built-in skills (such as `review-bugbot` and `create-rule`).
+
+Account plugins from the Cursor marketplace do not run. Cursor would install them into `$HOME/.cursor/plugins` (seen: `superpowers` with a `sessionStart` hook, and `notion-workspace` with an MCP config). `run-cursor.sh` creates that directory empty and read-only (mode 555), so each install fails. The user's own Cursor keeps its plugins. Canary F, run with the read-only directory, loaded none. Control G, run with a writable directory, loaded both.
 
 No host hook runs: the host's `~/.claude` and `~/.cursor` are not mounted, and `$run/home/.claude` does not exist. Never create it.
 
@@ -300,6 +302,6 @@ The PR is the review record for the note. It lands on the brain default branch. 
 
      Another module (`8192.index.js`) also loads the permissions from `.claude/settings.json`. On the host, every hook in `~/.claude/settings.json` therefore ran with Cursor's rights, and `BRAIN_AGENT_HOOKS=0` turned off only the brain hooks.
    - **Canary run E in the container**, with criteria written before the run: test hooks in `$run/home/.claude` and in the clone's `.claude/` both fired on `SessionStart`, `PreToolUse` and `PostToolUse`. `Stop` and `UserPromptSubmit` did not fire.
-   - **Conclusion:** the container removes the host hooks, because the host's `~/.claude` is not mounted. The repo's own hooks and the Cursor account plugins still run (see "Hooks that run inside Cursor" in step 2).
+   - **Conclusion:** the container removes the host hooks, because the host's `~/.claude` is not mounted. The repo's own hooks still run. Account plugins are blocked by a read-only plugin directory (see "Hooks that run inside Cursor" in step 2).
 3. **Merge-guard false positives.** `local-ci-merge-guard.py` denied Bash calls that only *mentioned* a merge, 3 times in one session. Make it match the parsed command, not the text, before an evaluation run multiplies the blocks. Repeated workarounds end with someone turning the guard off.
 4. **Evaluation run,** in a repo with an integration branch, under the "Evaluation protocol" above.
