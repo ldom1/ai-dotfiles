@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 ### Added
-- `implement-with-cursor-agent` skill (experimental, smoke-tested only): Claude dispatches one headless Cursor agent per task of a validated vault plan.
+- `implement-with-cursor-agent` skill (experimental, evaluated on one plan: same quality as Claude alone, about 2× the wall time, about 1× the Claude cost): Claude dispatches one headless Cursor agent per task of a validated vault plan.
   - Each agent runs in a Docker container (`local-ci-runner:24.04`) that mounts only its run directory. The directory holds 2 clones: the project and the vault.
   - The container has no GitHub credentials. The agent commits locally: code in the project clone, and an implementation note (choices, gaps, deviations, verification) in the vault clone.
   - Claude gates the work and runs a blind Opus review first. It sends findings back (at most 2 rounds).
@@ -15,6 +15,11 @@
   - The Cursor CLI also runs Claude Code hooks (`~/.claude/settings.json`, the project's `.claude/settings*.json`, Claude plugins). The container hides the host's hooks. The task repo's own hooks still run, as SKILL.md documents.
   - `run-cursor.sh` makes `$run/home/.cursor/plugins` empty and read-only. The Cursor account's marketplace plugins (`superpowers`, `notion-workspace`) then fail to install in the container. The user's own Cursor keeps them.
   - `test_cursor_dispatch.py` tests this mechanism only, not the code that Cursor writes.
+  - Review rules taken from the evaluation:
+    - a new test that passes on base needs a mutation that makes it fail;
+    - "Deviations: none" and each "fixed" are claims that the review checks against the diff;
+    - the brief forbids external API shapes that the plan's facts do not state, and behaviour the task does not ask for.
+  - A lean review mode (SKILL.md 3d) keeps the orchestrator small when the skill is used to spare the Claude usage window.
 - Hook test sensor `test_skill_frontmatter.py` checks that each tracked skill `SKILL.md` starts with frontmatter, matches `name` to its directory, and has non-empty `description`.
 - `bin/local-ci`: runs a repo's listed GitHub workflows locally with `act` v0.2.89 in `local-ci-runner:24.04`, on a clean clone of one commit. Spec: vault `2026-10-07-local-ci-replication-design` (rev 5).
   - `local-ci install --workflows ci.yml` adds a `pre-push` hook. A push to a deploy branch (`main`, `preprod`) runs the `full` tier. Other branches run the `fast` tier, which is partial and never a merge gate.

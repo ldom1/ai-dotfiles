@@ -1,6 +1,6 @@
 ---
 name: implement-with-cursor-agent
-description: Experimental, smoke-tested only. Execute a validated implementation plan from the Local Brain vault with Cursor CLI agents as implementers and Claude as a hard, adversarial reviewer. One headless Cursor agent per plan task (gpt-5.3-codex) runs in a container with no GitHub credentials and commits locally: code in a project clone, an implementation note (choices, gaps, deviations, verification) in a vault clone. Claude gates, challenges, sends findings back, then publishes a project PR against the integration branch and a vault PR, and squash-merges that project PR into the integration branch only (develop, or the first stage in .git-promotion.json). It never merges, pushes, or promotes onto main. Use this whenever the user says "implement with cursor", "/implement-with-cursor-agent", "hand the plan to cursor agents", "let Cursor implement and you review", or wants a vault plan executed by Cursor with Claude reviewing, even if they do not name the skill. Not for writing a plan (superpowers:writing-plans), for Claude-only execution (superpowers:subagent-driven-development), or for a release (git-promotion).
+description: Experimental, evaluated on one plan (same quality as Claude alone, about 2× the wall time). Execute a validated implementation plan from the Local Brain vault with Cursor CLI agents as implementers and Claude as a hard, adversarial reviewer. One headless Cursor agent per plan task (gpt-5.3-codex) runs in a container with no GitHub credentials and commits locally: code in a project clone, an implementation note (choices, gaps, deviations, verification) in a vault clone. Claude gates, challenges, sends findings back, then publishes a project PR against the integration branch and a vault PR, and squash-merges that project PR into the integration branch only (develop, or the first stage in .git-promotion.json). It never merges, pushes, or promotes onto main. Use this whenever the user says "implement with cursor", "/implement-with-cursor-agent", "hand the plan to cursor agents", "let Cursor implement and you review", or wants a vault plan executed by Cursor with Claude reviewing, even if they do not name the skill. Not for writing a plan (superpowers:writing-plans), for Claude-only execution (superpowers:subagent-driven-development), or for a release (git-promotion).
 ---
 
 # Implement with Cursor agents
@@ -11,15 +11,17 @@ You are the orchestrator and the reviewer. Cursor agents implement. You never wr
 
 ## Status and evidence
 
-**Stage: smoke-tested, on an earlier flow.** On 2026-10-12, 2 trivial tasks merged after 1 review round each ([[2026-10-12-implement-with-cursor-agent-skill]]).
-- That run predates the integration-branch rule: its project PRs landed on `main`, which this version refuses.
-- The current flow, which merges into the integration branch, has not run yet.
-- The run shows only that nothing failed on a trivial case. It does not evaluate the kill criterion.
+**Stage: evaluated, on one plan (2026-10-13).** The run was a replay of notion-pilot A5: 3 tasks in sequence, against a measured Claude-alone baseline ([[2026-10-12-cursor-agent-evaluation-protocol-design]] § Result).
+- **Verdict: keep, as an experiment.** No kill rule fired. Mean rounds were 1.67, with 0 escalations.
+- **Quality:** the blind cross-check found 0 high and 0 medium defects in both arms.
+- **Cost:** wall time was 1.99× the baseline, and Claude-side cost about 1×. There is no cost gain. The value comes from the review, not from the second model.
+- **Not run:** that replay published no PR and merged nothing, so steps 4 and 5 below have not run on the current flow. The 2026-10-12 smoke run merged on `main`, under an older flow.
+- **User decision (2026-10-13):** use the skill for long tasks, to keep implementation work off the Claude usage window. Run it in lean review mode (3d).
 
 | Stage | Entry condition |
 |---|---|
-| smoke-tested | One run merged end to end. The current stage, reached on the earlier flow only. |
-| evaluated | The rules in "Evaluation protocol" are met. One plan with 3 or more tasks, and at least one non-trivial task: a logic change of ~100 lines or more, a dependency between tasks, or a shared file. |
+| smoke-tested | One run merged end to end. Reached on the earlier flow, 2026-10-12. |
+| evaluated | The rules in "Evaluation protocol" are met. One plan with 3 or more tasks, and at least one non-trivial task: a logic change of ~100 lines or more, a dependency between tasks, or a shared file. The current stage, 2026-10-13. |
 | validated | 3 evaluated plans, and no escaped high-severity defect within 14 days of each merge. |
 
 **Kill criterion** (applies from "evaluated" on). Stop the experiment if any of these holds:
@@ -38,7 +40,7 @@ You are the orchestrator and the reviewer. Cursor agents implement. You never wr
 - **Pre-register.** Write an evaluation plan in the vault before the run. It fixes the failure thresholds (rounds, escalations, escaped defects) and the overhead you accept against Claude alone. It also fixes how the reviewer's value is judged.
 - **Baseline.** Measure the Claude-alone baseline on the same plan, never estimate it: estimating it means choosing the result.
 - **Try to falsify the reviewer.** For each finding, log whether the gate or your own pass alone would have caught it. The evaluation must be able to conclude "the fresh reviewer adds nothing".
-  - The trial leans that way. Both medium findings were also caught by the orchestrator. Reviewer-only findings were 6 low.
+  - In the A5 evaluation, the reviewer earned its place. It alone found 3 medium findings and 1 high one. The orchestrator also caught 2 high findings independently.
 - **Brief conformance is a safety indicator,** not a format detail. In the trial, Cursor put its status lines last in only 1 of 4 replies.
   - If the agent ignores the output format, assume it can also ignore the brief's prohibitions: no `$HOME`, no `install.sh`.
   - Report the conformance rate next to the safety results.
@@ -166,7 +168,11 @@ Everything in this section runs on the host, on Cursor's **local** commits. Noth
    - Run **only those test files**, not the global command.
    - **Pass:** the new tests fail with assertion failures, or with the exact error the feature removes.
    - **Inconclusive:** an import, collection or missing-file error. This is common when the test imports a module the branch creates. It is not a pass: record a Ruling and judge it by reading the test.
-   - **Sensor task** (a check of state that is already correct): it passes on base by design. Seed one mutation that the sensor must catch, see it fail, then revert.
+   - **A new test that passes on base** proves nothing about the change. A sensor task (a check of state that is already correct) passes on base by design, and so does a test the agent wrote too weakly.
+     - On the branch head, seed one mutation that undoes what the test claims to check: remove the new branch, the dedupe or the list entry. See the test fail, then revert.
+     - If no such mutation makes it fail, the test is vacuous. That is a medium finding.
+     - In the A5 replay, 2 of 3 tasks had such a test: one never asserted the removal it was named after.
+   - **Import the code you mean.** Run the tests with the base worktree as the working directory (`python -m pytest`, which puts the cwd first on `sys.path`). A venv borrowed from another clone imports that clone's code through its editable install, so the control "passes" on the old code.
    - Remove the temporary worktree afterwards.
 5. **CI.** Run the repo's CI steps by hand on `$run/project`. In a guarded repo, `local-ci` runs again on the published PR (step 5). The hook suite does not catch everything: a CI step once caught stale generated files that the tests missed.
 6. **Note.**
@@ -188,8 +194,13 @@ Everything in this section runs on the host, on Cursor's **local** commits. Noth
    - The plan's edge cases, error paths, and fail-open or fail-closed behaviour.
    - Each **Choice**: would you have accepted it in a design review?
    - Each **Gap**: can it merge with that gap? A gap the note hides is a high finding.
-   - **Deviations**: is each one justified, or is it a silent change of scope?
-3. **Verify every finding yourself** at its `path:line` before you send it. Drop a finding you cannot reproduce, with the evidence, as a Ruling. Record the source of each finding. The reviewer's cost is justified only by findings the gate, you or the author did not already catch.
+   - **Deviations**: is each one justified, or is it a silent change of scope? Treat "Deviations: none" as a claim. Read the task text against the diff:
+     - A behaviour the task does not ask for, missing from the note, is a medium finding.
+     - It is a high finding if it deletes or overwrites data.
+     - In the A5 replay, 3 of 3 notes said "none" while the diff deviated. One deviation was a refresh fallback that deleted the source databases.
+   - **API shapes**: flag any request field or external behaviour that the plan's facts and the existing code do not state. Cursor added a guessed `position` key in the A5 replay.
+3. **Check every `fixed`** in a later round against the fix diff and the finding's "expected" part. In the A5 replay, Cursor marked 2 findings fixed that were not.
+4. **Verify every finding yourself** at its `path:line` before you send it. Drop a finding you cannot reproduce, with the evidence, as a Ruling. Record the source of each finding. The reviewer's cost is justified only by findings the gate, you or the author did not already catch.
 
 ### 3c. Verdict
 
@@ -199,6 +210,18 @@ Everything in this section runs on the host, on Cursor's **local** commits. Noth
   bash ~/ai-dotfiles/skills/implement-with-cursor-agent/scripts/run-cursor.sh "$run" "$run/findings-<round>.md" resume
   ```
   Re-run the full gate on the new commits. Allow at most 2 rounds per task. If a task still fails after round 2, it escalates (a): stop it and report it with the ledger. Do not fix the code yourself.
+
+### 3d. Lean review: to spare the Claude usage window
+
+Use this mode when the user runs the skill to keep implementation work off the Claude 5-hour usage window. In the A5 replay, Claude-side usage was about the same as Claude alone (1.05× measured). The orchestrator's review rounds cost as much as the implementation they replaced. Window savings come only from a lean orchestrator:
+- **Fresh session.** Start the orchestrator in a new session, with only the plan and this skill. A long session re-reads its whole context on every turn.
+- **Files, not pastes.** Write the task text, the diff and the note to `$run/review/`, and give the reviewer the paths. Never paste a diff into your own context.
+- **Read only what decides.** Read the gate output tails (rc, counts), the reviewer's verdict, and the cited `path:line` of each finding. Your own pass covers 3 things:
+  - `git diff --stat` against the task's file list;
+  - the Deviations check in 3b;
+  - the API-shape check in 3b.
+- **Keep the gate and the Opus reviewer.** They found the defects that mattered. In the A5 replay, the reviewer alone found 3 medium findings and 1 high one.
+- Do not drop the negative control or the mutation check (3a, step 4). They are commands, not reading, so they cost little. In the A5 replay, they showed one test passing without its change, and proved that 2 fixed tests could fail.
 
 ## 4. Publish, after APPROVE only
 
@@ -303,5 +326,6 @@ The PR is the review record for the note. It lands on the brain default branch. 
      Another module (`8192.index.js`) also loads the permissions from `.claude/settings.json`. On the host, every hook in `~/.claude/settings.json` therefore ran with Cursor's rights, and `BRAIN_AGENT_HOOKS=0` turned off only the brain hooks.
    - **Canary run E in the container**, with criteria written before the run: test hooks in `$run/home/.claude` and in the clone's `.claude/` both fired on `SessionStart`, `PreToolUse` and `PostToolUse`. `Stop` and `UserPromptSubmit` did not fire.
    - **Conclusion:** the container removes the host hooks, because the host's `~/.claude` is not mounted. The repo's own hooks still run. Account plugins are blocked by a read-only plugin directory (see "Hooks that run inside Cursor" in step 2).
-3. **Merge-guard false positives.** `local-ci-merge-guard.py` denied Bash calls that only *mentioned* a merge, 3 times in one session. Make it match the parsed command, not the text, before an evaluation run multiplies the blocks. Repeated workarounds end with someone turning the guard off.
-4. **Evaluation run,** in a repo with an integration branch, under the "Evaluation protocol" above.
+3. **Merge-guard false positives (closed by #50, 2026-10-13).** A command made only of data commands now passes. Every other command keeps the old check.
+4. **Evaluation run (done, 2026-10-13).** Result: keep, with no cost gain (see "Status and evidence").
+5. **Open:** steps 4 and 5 (publish, then land on the integration branch) have not run on the current flow. The first real use exercises them. Watch it as closely as an evaluation.
