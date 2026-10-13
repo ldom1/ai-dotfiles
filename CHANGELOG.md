@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-13
+
 ### Added
 - `implement-with-cursor-agent` skill (experimental, evaluated on one plan: same quality as Claude alone, about 2× the wall time, about 1× the Claude cost): Claude dispatches one headless Cursor agent per task of a validated vault plan.
   - Each agent runs in a Docker container (`local-ci-runner:24.04`) that mounts only its run directory. The directory holds 2 clones: the project and the vault.
