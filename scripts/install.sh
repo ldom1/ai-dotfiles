@@ -89,6 +89,23 @@ for skill_dir in "$DOTFILES/skills"/*; do
   log "skills/$name → .claude/skills/ + .vibe/skills/ + .cursor/skills/"
 done
 
+# Private skills: a separate private repo cloned into private/ (gitignored). Each <tool>/skills/
+# gets an untracked, self-ignoring .gitignore listing their links, so the public repo never
+# tracks or names them (a nested .gitignore also beats .cursor/.gitignore's `!skills/**`).
+for skill_dir in "$DOTFILES/private/skills"/*; do
+  [[ -f "$skill_dir/SKILL.md" ]] || continue
+  name=$(basename "$skill_dir")
+  [[ -e "$DOTFILES/skills/$name" ]] && { warn "private/skills/$name skipped: skills/$name exists"; continue; }
+  for tool in .claude .vibe .cursor; do
+    ln -sfn "../../private/skills/$name" "$DOTFILES/$tool/skills/$name"
+    ignore="$DOTFILES/$tool/skills/.gitignore"
+    for entry in /.gitignore "/$name"; do
+      grep -qxF "$entry" "$ignore" 2>/dev/null || echo "$entry" >> "$ignore"
+    done
+  done
+  log "private/skills/$name → .claude/skills/ + .vibe/skills/ + .cursor/skills/ (private)"
+done
+
 # ── 1c. AGENTS.md → Cursor rule + Vibe user instructions ─────────────────────
 header "Building shared agent rules from AGENTS.md"
 

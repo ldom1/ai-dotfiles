@@ -48,6 +48,13 @@
       "source": "./skills/git-promotion",
       "category": "productivity",
       "homepage": "https://github.com/ldom1/ai-dotfiles"
+    },
+    {
+      "name": "search-console",
+      "description": "Read-only Google Search Console access: search queries, pages, CTR and position (TSV), URL inspection, sitemaps. Stdlib Python, your own OAuth client.",
+      "source": "./skills/search-console",
+      "category": "productivity",
+      "homepage": "https://github.com/ldom1/ai-dotfiles"
     }
   ]
 }

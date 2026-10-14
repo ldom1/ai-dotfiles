@@ -25,6 +25,7 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 /plugin install server-audit@ldom1/ai-dotfiles
 /plugin install graphify@ldom1/ai-dotfiles
 /plugin install finops-audit@ldom1/ai-dotfiles
+/plugin install search-console@ldom1/ai-dotfiles
 ```
 
 | Skill | Purpose |
@@ -36,7 +37,6 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 | capture | End-of-session workflow: session log, project memory snapshot, cross-project pitfall rules, sync |
 | grill-me | Stress-test plans through one-question-at-a-time design interrogation |
 | git-promotion | Promote develop → preprod → main (or a PR straight onto main) with a semver tag and GitHub Release; stages, tag prefix, gate and changelog per repo in `.git-promotion.json` |
-| medium-writer | Draft a Medium article from real repo code into `articles/`, then write it onto its Notion task page |
 | ponytail | Lazy senior mode — YAGNI ladder, stdlib before deps, minimum code that works (`/ponytail`) |
 | implement-with-cursor-agent | Experimental, evaluated on one plan: same quality as Claude alone, about 2× the wall time. Use it to keep long implementation work off the Claude usage window (lean review mode). Claude runs a validated vault plan through headless Cursor agents (`gpt-5.3-codex`). Each agent runs in a container with no GitHub credentials and commits locally. Needs a Cursor API key in `~/.config/cursor-agent/api-key` (mode 600). Claude reviews hard, then opens a project PR against the integration branch (`develop`, or the first `.git-promotion.json` stage) and a vault note PR. It squash-merges into that branch and never merges or promotes onto `main` |
 | asd-ste100 | Rewrite a doc in ASD-STE100 Simplified Technical English (strict or STE-flavored), with a stdlib linter (`scripts/ste-lint.py`) |
@@ -45,6 +45,7 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 | [server-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Server-Audit) | Infra audit: parallel checks and JSON reports |
 | [graphify](https://github.com/ldom1/ai-dotfiles/wiki/Skills/Graphify) | `/graphify` — folder → knowledge graph; also [graphify.net](https://graphify.net/) |
 | [finops-audit](https://github.com/ldom1/ai-dotfiles/wiki/Skills/FinOps-Audit) | Weekly token spend review → vault |
+| search-console | Read-only Google Search Console: queries, pages, CTR, position (TSV), URL inspection, sitemaps. Stdlib script `scripts/gsc.py`, your own OAuth client in `~/.config/gsc/` |
 | marketingpowers | `/marketingpowers` — router over six marketing sub-skills; enforces `product-marketing` first and the order the rest run in |
 
 `graphify` is vendored from [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) (the `SKILL.md` + `reference/` files, adapted with two local additions: the `GRAPHIFY_PROJECT` local-clone fallback and default-on agent-MCP auto-wiring via `scripts/setup_agent_mcp.py`). The synced upstream release is tracked in `skills/graphify/.graphify_version` — re-diff against that tag before syncing again to isolate local customizations from upstream changes.
@@ -126,7 +127,21 @@ Every skill under `skills/<name>/` is symlinked by `scripts/install.sh` into thr
 
 (Prior to this, `install.sh`'s skill loop had no `coe-*` filter at all — `.claude/skills`/`.vibe/skills` linked every skill unconditionally, and `.cursor/skills` was a single symlink to the whole `skills/` directory. `coe-*` was kept out of git via `.gitignore`, but a `coe-*` skill present locally was fully visible to all three tools at runtime. The filter above is what actually enforces the exclusion now, for all three.)
 
-### Skill usage log
+### Private skills
+
+Keep a skill out of this public repo, but share it across your machines, with a private git repo cloned into `private/` (gitignored):
+
+```bash
+git clone <your-private-repo> ~/ai-dotfiles/private   # holds skills/<name>/SKILL.md
+bash ~/ai-dotfiles/scripts/install.sh
+```
+
+- `install.sh` links each `private/skills/<name>` into `.claude/skills/`, `.vibe/skills/` and `.cursor/skills/`.
+- Each of those directories gets an untracked `.gitignore` that lists the private links and ignores itself. The public repo never tracks or names a private skill.
+- A private skill with the same name as a public `skills/<name>` is skipped with a warning.
+- After a `git pull` in `private/` that adds a skill, run `install.sh` again.
+- Moving a skill from `skills/` to `private/` does not remove it from the public git history.
+
 
 Invocations append to `~/.claude/skill-usage.log` (`date skill [source]`):
 

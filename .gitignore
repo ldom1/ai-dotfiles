@@ -81,6 +81,9 @@ __pycache__/
 *.pyc
 *.pyo
 
+# Private skills — separate private repo cloned here (scripts/install.sh links them)
+private/
+
 # Temporary files
 tmp/
 
