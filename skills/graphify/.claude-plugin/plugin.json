@@ -1,6 +1,6 @@
 {
   "name": "graphify",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Turn folders of code, docs, and media into a knowledge graph — HTML, JSON, Obsidian, GraphRAG queries. Trigger: /graphify",
   "author": {
     "name": "Louis Giron",

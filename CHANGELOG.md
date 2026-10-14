@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-10-14
+
+### Changed
+- Vendored skills re-synced to upstream (3-way merge: local copy, old pin, new tag; no conflicts; local patches kept):
+  - `asd-ste100` `32511c6992ec` → `3944283c183e`: `scripts/ste-lint.py` only.
+  - `graphify` `0.9.79` → `0.9.90`: `SKILL.md`, `reference/query.md`, `reference/update.md`. The central MCP server template now runs `graphifyy[mcp]==0.9.90`. Local patches kept: `GRAPHIFY_PROJECT` fallback, agent-MCP auto-wiring, `reference/` paths.
+  - `marketingskills` `v2.11.18` → `v2.11.29`: `copywriting`, `directory-submissions`, `launch`. New `launch/references/shipped-changes.md` (changelog and announcements from merged PRs). The Introw link now points at `v2.11.29`.
+  - `ponytail` `v4.13.0` → `v5.2.0` (major): rules rewritten and about half as long. The agent maps what a change must reach before it writes, and each reply ends with what it skipped and any risk. Skill name unchanged. The v5 session-start codebase map is an upstream hook and is not vendored.
+  - Plugin versions bumped: `asd-ste100` 0.5.0, `graphify` 1.1.0, `marketingpowers` 1.1.0, `ponytail` 5.2.0.
+
 ## [0.12.0] - 2026-10-14
 
 ### Added
