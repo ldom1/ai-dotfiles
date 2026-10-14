@@ -1,0 +1,10 @@
+{
+  "name": "search-console",
+  "version": "1.0.0",
+  "description": "Read-only Google Search Console access (queries, pages, URL inspection, sitemaps) through a stdlib Python script and your own OAuth client.",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles"
+}

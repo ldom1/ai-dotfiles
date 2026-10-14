@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Added
+- `search-console` skill: read-only Google Search Console access through `scripts/gsc.py` (Python stdlib, no install).
+  - Commands: `auth`, `sites`, `query` (TSV: dimensions, clicks, impressions, ctr, position), `inspect` (URL inspection), `sitemaps`.
+  - It uses the user's own OAuth "Desktop app" client in `~/.config/gsc/credentials.json` and the `webmasters.readonly` scope.
+  - `auth` catches the redirect on `127.0.0.1:8765`. On WSL, `auth --url '<redirect URL>'` is the fallback.
+  - Exit 3 means setup or re-auth is needed. A Testing-mode consent screen revokes the token after 7 days.
+- Private skills: `scripts/install.sh` links `private/skills/<name>` (a private git repo cloned into the gitignored `private/`) into `.claude/skills/`, `.vibe/skills/` and `.cursor/skills/`.
+  - Each tool's `skills/` gets an untracked, self-ignoring `.gitignore` that lists the private links. It also overrides `.cursor/.gitignore`'s `!skills/**`, which `.git/info/exclude` cannot.
+  - A private name that clashes with a public `skills/<name>` is skipped with a warning.
+
+### Removed
+- `medium-writer` skill moved out of this repo into the owner's private skills repo.
+
 ## [0.11.0] - 2026-10-13
 
 ### Added
