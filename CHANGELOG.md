@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-10-14
+
 ### Changed
 - Vendored skills re-synced to upstream (3-way merge: local copy, old pin, new tag; no conflicts; local patches kept):
   - `asd-ste100` `32511c6992ec` → `3944283c183e`: `scripts/ste-lint.py` only.
