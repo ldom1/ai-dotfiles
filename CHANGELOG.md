@@ -11,6 +11,7 @@
 - Private skills: `scripts/install.sh` links `private/skills/<name>` (a private git repo cloned into the gitignored `private/`) into `.claude/skills/`, `.vibe/skills/` and `.cursor/skills/`.
   - Each tool's `skills/` gets an untracked, self-ignoring `.gitignore` that lists the private links. It also overrides `.cursor/.gitignore`'s `!skills/**`, which `.git/info/exclude` cannot.
   - A private name that clashes with a public `skills/<name>` is skipped with a warning.
+- `git-commit`: a repo with a root `.ai-dotfiles-private` marker (the private skills repo) uses the `ai-dotfiles` scopes.
 
 ### Removed
 - `medium-writer` skill moved out of this repo into the owner's private skills repo.
