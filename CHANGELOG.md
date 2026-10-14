@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-14
+
 ### Added
 - `search-console` skill: read-only Google Search Console access through `scripts/gsc.py` (Python stdlib, no install).
   - Commands: `auth`, `sites`, `query` (TSV: dimensions, clicks, impressions, ctr, position), `inspect` (URL inspection), `sitemaps`.
