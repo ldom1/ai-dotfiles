@@ -9,6 +9,7 @@ import datetime as dt
 import http.server
 import json
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -121,11 +122,14 @@ def call(path, body=None):
         data=json.dumps(body).encode() if body is not None else None,
         headers={"Authorization": f"Bearer {access_token()}", "Content-Type": "application/json"},
     )
-    try:
-        with urllib.request.urlopen(req) as r:
-            return json.load(r)
-    except urllib.error.HTTPError as e:
-        die(f"{path} HTTP {e.code}: {e.read().decode()}")
+    for attempt in range(3):  # URL Inspection returns transient 500s
+        try:
+            with urllib.request.urlopen(req) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as e:
+            if e.code < 500 or attempt == 2:
+                die(f"{path} HTTP {e.code}: {e.read().decode()}")
+            time.sleep(2 * (attempt + 1))
 
 
 def site_path(site):

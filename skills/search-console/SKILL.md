@@ -49,3 +49,5 @@ Run `python3 scripts/gsc.py <cmd> --help` for all flags.
 - Wrong property string: `example.com` fails, use the value from `sites`.
 - Comparing windows of different length or including the last 2 days (incomplete data).
 - Summing `ctr` or `position` across rows: recompute CTR as clicks / impressions; position is an average.
+- `inspect` exits 1 with `HTTP 500` after 2 retries: Google fails some URLs on every call, while other URLs of the same property work. Report it, and suggest the Search Console UI for that URL.
+- A `--dimensions date` query also lists days with 0 impressions; a page query with no traffic returns 0 rows. Neither is an error.
