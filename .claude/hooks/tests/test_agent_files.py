@@ -24,7 +24,7 @@ def test_agent_frontmatter(name, model):
     assert meta["model"].strip() == model
     assert meta["description"].strip()
     tools = {t.strip() for t in meta["tools"].split(",")}
-    assert tools == {"Read", "Grep", "Glob", "Bash"}
+    assert tools == {"Read", "Grep", "Glob"}
 
 
 def test_template_sets_subagent_model():

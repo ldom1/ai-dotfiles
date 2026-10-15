@@ -183,7 +183,7 @@ Everything in this section runs on the host, on Cursor's **local** commits. Noth
 ### 3b. Challenge
 
 1. **Fresh reviewer first,** before your own pass, so it cannot align with your view.
-   - Dispatch the `reviewer` agent with `model: opus`. Give it the plan task text, `git -C "$run/project" diff "$base_sha...HEAD"` and the note. Do not give it your findings or opinions.
+   - Dispatch the `reviewer` agent with `model: opus`. It has no shell: write `git -C "$run/project" diff "$base_sha...HEAD" > "$run/diff-<round>.patch"` first. Give it the plan task text, that file path and the note. Do not give it your findings or opinions.
    - Ask for `VERDICT: APPROVE|REJECT` and findings as `path:line severity issue — expected`.
    - Save its reply unedited to `$run/review-<round>.md`.
    - Run it again on every round that fixed a high or medium finding.
