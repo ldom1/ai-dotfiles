@@ -1,6 +1,6 @@
 {
   "name": "implement-with-cursor-agent",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Experimental: Claude runs a validated vault plan through headless Cursor agents, reviews each PR hard, and lands it on the integration branch only.",
   "author": {
     "name": "Louis Giron",

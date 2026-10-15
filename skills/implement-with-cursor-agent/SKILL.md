@@ -172,6 +172,7 @@ Everything in this section runs on the host, on Cursor's **local** commits. Noth
      - On the branch head, seed one mutation that undoes what the test claims to check: remove the new branch, the dedupe or the list entry. See the test fail, then revert.
      - If no such mutation makes it fail, the test is vacuous. That is a medium finding.
      - In the A5 replay, 2 of 3 tasks had such a test: one never asserted the removal it was named after.
+   - **Mutation check, Python.** On the branch head, run `<repo test interpreter, e.g. .venv/bin/python> ~/ai-dotfiles/skills/python-tests/scripts/mutate.py --source <changed file> --lines <changed range> --test <new test node id>` for each changed source file. Exit 1 names a test that kills no mutant: a vacuous test, which is a medium finding. For other languages, seed the mutation by hand as above.
    - **Import the code you mean.** Run the tests with the base worktree as the working directory (`python -m pytest`, which puts the cwd first on `sys.path`). A venv borrowed from another clone imports that clone's code through its editable install, so the control "passes" on the old code.
    - Remove the temporary worktree afterwards.
 5. **CI.** Run the repo's CI steps by hand on `$run/project`. In a guarded repo, `local-ci` runs again on the published PR (step 5). The hook suite does not catch everything: a CI step once caught stale generated files that the tests missed.
