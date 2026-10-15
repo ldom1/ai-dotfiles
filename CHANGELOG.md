@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-15
+
 ### Added
 - `capture` 1.1.0: `scripts/check_log.py` checks the session log. It checks the filename, the required sections (Changes, Follow-ups) and their order, extra sections, folder links and, with `--vault`, broken wikilinks. Step 2 runs it until it prints `OK`.
 - `python-tests` skill 0.1.0: test-first playbook (red, green, full suite, lint, mutation check, CHANGELOG) with a 7-check Definition of done.
