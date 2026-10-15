@@ -93,13 +93,13 @@ def test_vacuous_test_fails(tmp_path):
 
 
 def test_strong_test_passes(tmp_path):
-    proc = run(project(tmp_path), "--test", "test_calc.py::test_boundary", "--lines", "4")
+    proc = run(project(tmp_path), "--test", "test_calc.py::test_boundary", "--lines", "5")
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert "test_calc.py::test_boundary\tkilled" in proc.stdout
 
 
 def test_regex_quantifier_mutant(tmp_path):
-    proc = run(project(tmp_path), "--test", "test_calc.py::test_slug", "--lines", "7")
+    proc = run(project(tmp_path), "--test", "test_calc.py::test_slug", "--lines", "9")
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert any(line.startswith("killed") and "regex" in line for line in proc.stdout.splitlines())
 
@@ -177,3 +177,15 @@ def test_bad_lines_exits_2(tmp_path):
     proc = run(project(tmp_path), "--test", "test_calc.py::test_boundary", "--lines", "x")
     assert proc.returncode == 2
     assert proc.stderr.startswith("error:")
+
+
+def test_lines_map_to_user_file_with_comments(tmp_path):
+    (tmp_path / "calc.py").write_text(
+        "import re\n\n\n# a comment\ndef is_adult(age):\n    # check\n    return age >= 18\n"
+    )
+    (tmp_path / "test_calc.py").write_text(
+        "from calc import is_adult\n\n\ndef test_boundary():\n    assert is_adult(18) and not is_adult(17)\n"
+    )
+    proc = run(tmp_path, "--test", "test_calc.py::test_boundary", "--lines", "7")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert any(line.startswith("killed   L7 ") for line in proc.stdout.splitlines()), proc.stdout

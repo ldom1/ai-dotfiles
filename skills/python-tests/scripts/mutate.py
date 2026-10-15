@@ -196,7 +196,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             normalized = ast.unparse(ast.parse(original.decode("utf-8"))) + "\n"
             selected_lines = _parse_lines(args.lines)
-            all_mutants = generate_mutants(normalized, selected_lines)
+            all_mutants = generate_mutants(original.decode("utf-8"), selected_lines)
         except (SyntaxError, UnicodeDecodeError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
