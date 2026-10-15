@@ -17,9 +17,9 @@ Goal: each new test fails before the change, passes after it, and kills at least
 6. **Mutation check.** Run this command. `--lines` covers the lines you changed:
 
    ```bash
-   python3 ~/ai-dotfiles/skills/python-tests/scripts/mutate.py \
+   .venv/bin/python ~/ai-dotfiles/skills/python-tests/scripts/mutate.py \
      --source <changed file> --lines <first>-<last> \
-     --test <new test node id> --pytest ".venv/bin/python -m pytest"
+     --test <new test node id>
    ```
 
    Repeat `--test` for each new test. Exit 0 means each new test killed a mutant. Exit 1 means a test killed none, so it does not check the change. Make that test assert the changed behaviour, then run step 6 again. Do not mutate files by hand.

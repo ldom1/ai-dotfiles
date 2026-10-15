@@ -55,15 +55,6 @@ def _set(obj: ast.AST, attr: str, value: object) -> Callable[[], None]:
     return lambda: setattr(obj, attr, value)
 
 
-def _is_docstring_constant(tree: ast.AST, node: ast.Constant) -> bool:
-    parent = getattr(node, "_parent", None)
-    if not isinstance(parent, ast.Expr) or parent.value is not node:
-        return False
-    grand = getattr(parent, "_parent", None)
-    body = getattr(grand, "body", None)
-    return isinstance(body, list) and bool(body) and body[0] is parent
-
-
 def _is_unescaped(value: str, index: int) -> bool:
     backslashes = 0
     j = index - 1
@@ -88,7 +79,7 @@ def _node_sites(node: ast.AST, regex_args: set[int], docstrings: set[int]) -> It
         new = ast.Or if isinstance(node.op, ast.And) else ast.And
         yield f"{type(node.op).__name__} -> {new.__name__}", _set(node, "op", new())
     elif isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
-        yield "not x -> not not x", _set(node, "operand", ast.UnaryOp(ast.Not(), node.operand))
+        yield "drop not", _set(node, "operand", ast.UnaryOp(ast.Not(), node.operand))
     elif isinstance(node, (ast.If, ast.While)):
         yield "negate condition", _set(node, "test", ast.UnaryOp(ast.Not(), node.test))
     elif isinstance(node, ast.Return) and node.value is not None and not (
@@ -108,15 +99,12 @@ def _node_sites(node: ast.AST, regex_args: set[int], docstrings: set[int]) -> It
                 for i, char in enumerate(value):
                     if char not in "+*?" or not _is_unescaped(value, i):
                         continue
-                    if char == "?" and i > 0 and value[i - 1] == "(":
+                    if char == "?" and i > 0 and value[i - 1] == "(" and _is_unescaped(value, i - 1):
                         continue
                     yield f"regex {value!r}: drop {char!r} at {i}", _set(node, "value", value[:i] + value[i + 1 :])
 
 
 def _collect(tree: ast.AST, lines: set[int] | None) -> list[tuple[int, str, Callable[[], None]]]:
-    for parent in ast.walk(tree):
-        for child in ast.iter_child_nodes(parent):
-            setattr(child, "_parent", parent)
     regex_args = {
         id(n.args[0])
         for n in ast.walk(tree)
@@ -126,7 +114,11 @@ def _collect(tree: ast.AST, lines: set[int] | None) -> list[tuple[int, str, Call
         and isinstance(n.func.value, ast.Name)
         and n.func.value.id == "re"
     }
-    docstrings = {id(n) for n in ast.walk(tree) if isinstance(n, ast.Constant) and isinstance(n.value, str) and _is_docstring_constant(tree, n)}
+    docstrings = {
+        id(n.value)
+        for n in ast.walk(tree)
+        if isinstance(n, ast.Expr) and isinstance(n.value, ast.Constant) and isinstance(n.value.value, str)
+    }
     sites = []
     for node in ast.walk(tree):
         line = getattr(node, "lineno", None)
@@ -197,22 +189,34 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {backup} exists: restore it to {source.name} or delete it", file=sys.stderr)
         return 2
 
-    cmd = shlex.split(args.pytest)
-    base = _outcomes(cmd, args.test, args.timeout)
-    if not isinstance(base, dict) or not base or not all(base.values()):
-        print("error: baseline: the tests must all pass on the unmutated source", file=sys.stderr)
-        return 2
-
     original = source.read_bytes()
-    mutants = generate_mutants(original.decode("utf-8"), _parse_lines(args.lines))[: args.max_mutants]
-    if not mutants:
-        print("error: no mutation site in the selected lines", file=sys.stderr)
-        return 2
-
-    kills = {test: 0 for test in base}
-    valid = invalid = 0
     backup.write_bytes(original)
     try:
+        cmd = shlex.split(args.pytest)
+        try:
+            normalized = ast.unparse(ast.parse(original.decode("utf-8"))) + "\n"
+            selected_lines = _parse_lines(args.lines)
+            all_mutants = generate_mutants(normalized, selected_lines)
+        except (SyntaxError, UnicodeDecodeError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+
+        source.write_text(normalized, encoding="utf-8")
+        base = _outcomes(cmd, args.test, args.timeout)
+        if not isinstance(base, dict) or not base or not all(base.values()):
+            print("error: baseline: the tests must all pass on the unmutated source", file=sys.stderr)
+            return 2
+
+        dropped = max(0, len(all_mutants) - args.max_mutants)
+        if dropped:
+            print(f"note: {dropped} mutants dropped by --max-mutants; narrow --lines", file=sys.stderr)
+        mutants = all_mutants[: args.max_mutants]
+        if not mutants:
+            print("error: no mutation site in the selected lines", file=sys.stderr)
+            return 2
+
+        kills = {test: 0 for test in base}
+        valid = invalid = 0
         for mutant in mutants:
             source.write_text(mutant.source, encoding="utf-8")
             result = _outcomes(cmd, args.test, args.timeout)
@@ -230,7 +234,8 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"survived L{mutant.lineno} {mutant.desc}")
     finally:
         source.write_bytes(original)
-        backup.unlink()
+        if backup.exists():
+            backup.unlink()
 
     print(f"mutants: {valid} valid, {invalid} invalid")
     for test, count in kills.items():
