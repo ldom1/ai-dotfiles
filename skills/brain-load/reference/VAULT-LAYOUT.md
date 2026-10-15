@@ -1,6 +1,6 @@
 # Brain Load — Vault Layout
 
-Full vault map: `~/ai-dotfiles/.claude/LocalBrain.md`. This file covers only what `load.sh` / `instantiate.sh` depend on.
+Full vault map: `~/ai-dotfiles/LocalBrain.md`. This file covers only what `load.sh` / `instantiate.sh` depend on.
 
 ```
 $BRAIN_PATH/                  (git repo, Obsidian vault)
