@@ -16,7 +16,8 @@
       "-p",
       "no:cacheprovider",
       "skills/git-promotion/scripts/tests",
-      ".claude/hooks/tests"
+      ".claude/hooks/tests",
+      "skills/capture/scripts/tests"
     ]
   ],
   "changelog": "CHANGELOG.md"
