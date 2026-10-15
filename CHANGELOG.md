@@ -4,6 +4,10 @@
 
 ### Added
 - `capture` 1.1.0: `scripts/check_log.py` checks the session log. It checks the filename, the required sections (Changes, Follow-ups) and their order, extra sections, folder links and, with `--vault`, broken wikilinks. Step 2 runs it until it prints `OK`.
+- `python-tests` skill 0.1.0: test-first playbook (red, green, full suite, lint, mutation check, CHANGELOG) with a 7-check Definition of done.
+  - `scripts/mutate.py` mutates one source file in place and reports, per test, how many mutants it kills. Exit 1 names each test that kills none.
+  - It mutates comparisons, arithmetic, boolean operators, conditions, returns, constants, strings and regex quantifiers.
+  - It restores the file in `finally` and refuses to start if a `.mutate-orig` backup is left over.
 
 ### Changed
 - `develop` is the integration branch. `.git-promotion.json` stages are `develop` then `main`, and CI runs on both. Feature PRs merge into `develop`; `/git-promotion` fast-forwards `main`.
