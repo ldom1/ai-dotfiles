@@ -1,5 +1,6 @@
 {
   "stages": [
+    "develop",
     "main"
   ],
   "tag_prefix": "v",

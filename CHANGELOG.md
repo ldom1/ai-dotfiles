@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- `develop` is the integration branch. `.git-promotion.json` stages are `develop` then `main`, and CI runs on both. Feature PRs merge into `develop`; `/git-promotion` fast-forwards `main`.
+
 ## [0.12.1] - 2026-10-14
 
 ### Changed
