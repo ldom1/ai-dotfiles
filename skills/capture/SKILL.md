@@ -31,6 +31,12 @@ date +%Y-%m-%d
 **Follow-ups:** <next steps, or "none">
 ```
 
+Check the log, then fix every `FAIL` line and run the check again until it prints `OK`:
+
+```bash
+python3 ~/ai-dotfiles/skills/capture/scripts/check_log.py "$BRAIN_PATH/inbox/daily/implementation/<slug>/<TODAY>-<topic>.md" --vault "$BRAIN_PATH"
+```
+
 This is the history. Details live here, not in the memory files below.
 
 If `$BRAIN_PATH/inbox/daily/checkpoints/<slug>/<TODAY>.md` exists (written by the PreCompact hook before each compaction), use it to recover what happened before the context was compacted. Fold the useful lines into the log, then delete the checkpoint file.

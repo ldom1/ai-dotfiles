@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- `capture` 1.1.0: `scripts/check_log.py` checks the session log. It checks the filename, the required sections (Changes, Follow-ups) and their order, extra sections, folder links and, with `--vault`, broken wikilinks. Step 2 runs it until it prints `OK`.
+
 ### Changed
 - `develop` is the integration branch. `.git-promotion.json` stages are `develop` then `main`, and CI runs on both. Feature PRs merge into `develop`; `/git-promotion` fast-forwards `main`.
 - `reviewer` and `lookup` agents are now really read-only: `tools: Read, Grep, Glob` (no `Bash`). A prompt that says "read-only" did not stop `Bash` from writing files.
