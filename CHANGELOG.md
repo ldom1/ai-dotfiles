@@ -10,6 +10,8 @@
   - It restores the file in `finally` and refuses to start if a `.mutate-orig` backup is left over.
 
 ### Changed
+- `LocalBrain.md` moved from `.claude/` to the repo root, next to `AGENTS.md`: it serves all three tools. `brain-load` 1.0.1 points to the new path.
+- AGENTS.md: chat brevity does not apply to docs or comments. Read only files related to the task. State the model only when delegating. Gitignore and reset changes go in one commit. Vault paths stay in `LocalBrain.md`. Docs heading is `ASD-STE100 inspired`.
 - AGENTS.md tells agents to run `/python-tests` explicitly for Python fixes: its auto-trigger missed 1 run in 4.
 - `implement-with-cursor-agent` 0.1.2: the gate runs `mutate.py` on new Python tests. A test that kills no mutant is a medium finding.
 - `develop` is the integration branch. `.git-promotion.json` stages are `develop` then `main`, and CI runs on both. Feature PRs merge into `develop`; `/git-promotion` fast-forwards `main`.

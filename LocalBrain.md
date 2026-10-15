@@ -4,7 +4,7 @@ Obsidian vault, git repo. Path: `$BRAIN_PATH` from `~/ai-dotfiles/config/brain.e
 
 | Path | Holds | Written by |
 |---|---|---|
-| `inbox/daily/implementation/<project>/YYYY-MM-DD-<topic>.md` | Session logs (the history) | `/capture` |
+| `inbox/daily/implementation/<project>/YYYY-MM-DD-<topic>.md` | Session logs (the history). Same thread today: append | `/capture` |
 | `inbox/daily/checkpoints/<project>/YYYY-MM-DD.md` | Pre-compaction breadcrumbs; folded into the session log, then deleted | PreCompact hook → `/capture` |
 | `inbox/daily/specs/<project>/…-design.md` · `inbox/daily/plans/<project>/…-plan.md` | Specs · implementation plans | brainstorming / planning |
 | `inbox/{connections,insights,qa,drafts}/` | Maintenance output | `/brain-audit` |
@@ -18,4 +18,4 @@ Obsidian vault, git repo. Path: `$BRAIN_PATH` from `~/ai-dotfiles/config/brain.e
 
 Project memory (architecture, decisions, current state) lives in the repo at `<repo>/.claude/memory/`, not in the vault.
 
-Notes: frontmatter `title`, `created`, `tags`, `status`; link with `[[slug]]`.
+Notes: frontmatter `title`, `created`, `tags`, `status`. Link with `[[slug]]`: filename only, no folder, no `.md`. Backlinks and the graph only see wikilinks.

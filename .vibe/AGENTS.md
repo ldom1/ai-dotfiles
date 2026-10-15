@@ -19,34 +19,28 @@ bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh
 
 ## Soul of the Agent
 
-When reporting information to me, always be extremely concise and to the point; sacrifice grammar and structure for sake of conciseness. Always prefer source & facts over inference.
+- Chat replies to me: extremely concise, to the point; sacrifice grammar and structure for brevity. Does not apply to docs or code comments.
+- Prefer sources and facts over inference. Cite the source when it matters; say "unverified" when it is a guess.
+- Don't just agree with me. Agree with reality, sources and pragmatism. If I am wrong, or a simpler or safer option exists, say so before acting and give the reason. Push back once, with evidence; if I confirm, do it my way.
+- No flattery, no filler. A correct "no" beats a polite "yes".
 
 ## Local Brain (Obsidian vault)
-`$BRAIN_PATH` comes from `~/ai-dotfiles/config/brain.env`. Layout: `~/ai-dotfiles/.claude/LocalBrain.md`.
+`$BRAIN_PATH` comes from `~/ai-dotfiles/config/brain.env`. Paths: `~/ai-dotfiles/LocalBrain.md`.
 
-- **Pitfalls** — `$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md` is a list of cross-project rules: treat them as constraints, and read it if no hook injected it. A user correction that would recur elsewhere becomes one rule there (format: `capture` skill). Stack rules go to `resources/knowledge/patterns/*-patterns.md`, project gotchas to `.claude/memory/CONTEXT.md`.
-- **Where to write** — in the vault, never in the project repo's `docs/`. Move a misplaced spec or plan there and tell the user.
-
-  | Kind | Path |
-  |---|---|
-  | Session log | `inbox/daily/implementation/<project>/YYYY-MM-DD-<topic>.md` (same thread today → append) |
-  | Spec / design doc | `inbox/daily/specs/<project>/YYYY-MM-DD-<topic>-design.md` |
-  | Implementation plan (step-by-step tasks) | `inbox/daily/plans/<project>/YYYY-MM-DD-<topic>-plan.md` |
-
-- **History only in session logs** — vault `projects/<slug>.md` notes and repo `.claude/memory/*` are snapshots rewritten in place. Never add a journal, changelog or dated-entry section to them.
-- **Links** — reference vault files with `[[slug]]` (filename, no folder, no `.md`), never a path. Obsidian backlinks and graph only see wikilinks.
-- **Session end** — finish substantive sessions with `/capture`.
-- **Maintenance** is manual: run `/brain-audit` when told it is due.
+- Pitfalls are constraints. Read `pitfalls.md` if no hook injected it. A correction that would recur elsewhere becomes one rule there (`capture`). Stack rules go to `resources/knowledge/patterns/*-patterns.md`. Project gotchas go to `.claude/memory/CONTEXT.md`.
+- Write specs, plans and session logs in the vault, never in the repo `docs/`. Move a misplaced one and tell the user.
+- History lives only in session logs. Vault `projects/<slug>.md` and repo `.claude/memory/*` are snapshots: rewrite them in place. Never add a journal, changelog or dated section.
+- Vault links are `[[slug]]` (filename only). Never a path.
+- End a substantive session with `/capture`. Run `/brain-audit` only when told it is due.
 
 ## Development
-- Occam's razor: fewest assumptions, smallest surface area. Structured, simple, readable code. No speculative abstractions. No backwards-compat shims for removed code.
-- Read only what the answer needs.
+- Occam's razor & YAGNI: fewest assumptions, smallest surface area, smallest change that works. Simple, structured, readable code (shortest solution that stays readable). No speculative abstractions, no backwards-compat shims for removed code. Reuse existing code, stdlib and installed deps before writing new code; use the `ponytail` skill on coding tasks.
+- Don't read files unrelated to the task.
 - When behavior, setup, commands or visible output change, update `CHANGELOG.md` in the same change (small infra/skill changes included). Update `README.md` when user-facing usage or structure changed.
 - If the repo root has `graphify-out*` (`graphify-out.md`/`.json`, `graphify-out/graph.json`), read it for architecture before inferring from the file tree. Never modify it: Graphify regenerates it.
-- Prefer the smallest change that works. Use the `ponytail` skill on coding tasks: YAGNI first, then reuse, stdlib, and already-installed deps before new code.
-- For a Python bug fix or a new Python behaviour, run `/python-tests` explicitly: its auto-trigger missed 1 run in 4.
+- For a Python bug fix or new Python behaviour, run `/python-tests` explicitly: its auto-trigger missed 1 run in 4.
 
-## Docs style (80% ASD-STE100)
+## Docs style (ASD-STE100 inspired)
 - Prose docs: sentences ≤ 20 words (procedures), ≤ 25 (descriptions).
 - Active voice. Simple tenses. One instruction per sentence.
 - Noun clusters ≤ 3 words. One term per concept.
@@ -58,14 +52,14 @@ When reporting information to me, always be extremely concise and to the point; 
 ## Git
 - Run the `/git-commit` skill before every `git commit`: it picks the scope from the locked per-project list.
 - Merge PRs with `gh pr merge <PR> --squash --delete-branch` (linear history).
-- For `rm --cached`, `.gitignore` changes and resets: check nested `.gitignore` files and confirm with a full `git status`. Prefer one clean commit over incremental fixes.
+- For `rm --cached`, `.gitignore` changes and resets: check nested `.gitignore` files and confirm with a full `git status`. Get it right in one commit; don't chain incremental fix commits.
 
 ## Remote servers
 - Verify a fix from the user's side (`curl` the endpoint, check the browser response). A config change alone is not success.
 - Before editing nginx/Docker/Tailscale/Authelia config, find every config location and which one is live (`nginx -T` or equivalent).
 
 ## FinOps
-Before a multi-step task, state the model you are on and why.
+When delegating to a subagent in a multi-step task, state the model and why.
 - Claude Code: delegation models are set in `.claude/agents/` and `CLAUDE_CODE_SUBAGENT_MODEL`.
 - Cursor / Vibe, when delegating: Haiku for grep/rename/format/lookups, Sonnet for implementation/tests/review (default), Opus for architecture, multi-file refactors, hard debugging.
 

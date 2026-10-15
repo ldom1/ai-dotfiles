@@ -1,6 +1,6 @@
 {
   "name": "brain-load",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Load your Local Brain project note into Claude context; auto-instantiate from template if missing",
   "author": {
     "name": "Louis Giron",

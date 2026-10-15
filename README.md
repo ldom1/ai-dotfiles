@@ -72,7 +72,7 @@ The six sub-skills under `skills/marketingpowers/skills/` — `product-marketing
 
 `ponytail` is vendored from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (`skills/ponytail/SKILL.md` only — on-demand skill, not the upstream alwaysApply Cursor rule). Pin: `skills/ponytail/.ponytail_version`. Re-sync: diff against the pinned tag, apply upstream, bump the pin (same pattern as graphify; no local patches today). The upstream `ponytail-review` / `-audit` / `-debt` / `-gain` / `-help` sub-skills are not vendored.
 
-`asd-ste100` is vendored from [danyuchn/asd-ste100-skill](https://github.com/danyuchn/asd-ste100-skill) (MIT): `SKILL.md`, `references/`, `examples/`, `scripts/ste-lint.py`, `LICENSE`. It ships no copy of ASD's dictionary (not redistributable). Upstream has no releases, so the pin `skills/asd-ste100/.ste100_version` is a commit SHA and `config/vendored-skills.json` tracks `"branch": "master"`: the update check compares the pin to the branch head. The always-on part of the docs style is the 6-line `## Docs style (80% ASD-STE100)` block in `AGENTS.md`; this skill is the on-demand rewrite pass.
+`asd-ste100` is vendored from [danyuchn/asd-ste100-skill](https://github.com/danyuchn/asd-ste100-skill) (MIT): `SKILL.md`, `references/`, `examples/`, `scripts/ste-lint.py`, `LICENSE`. It ships no copy of ASD's dictionary (not redistributable). Upstream has no releases, so the pin `skills/asd-ste100/.ste100_version` is a commit SHA and `config/vendored-skills.json` tracks `"branch": "master"`: the update check compares the pin to the branch head. The always-on part of the docs style is the `## Docs style (ASD-STE100 inspired)` block in `AGENTS.md`; this skill is the on-demand rewrite pass.
 
 ### Vendored skill update checks
 
@@ -445,9 +445,9 @@ The merge guard is off until `git config local-ci.guard true`. In every director
 ```
 ai-dotfiles/
 ├── AGENTS.md                        # Shared rules for all three tools (single source)
+├── LocalBrain.md                    # Vault layout: paths, who writes what
 ├── .claude/
 │   ├── CLAUDE.md                    # @~/ai-dotfiles/AGENTS.md + Claude-only rules (hooks, session)
-│   ├── LocalBrain.md                # Vault layout pointer
 │   ├── RTK.md                       # RTK reference
 │   ├── skills/                      # symlinks → ../../skills/<name> (Claude Code, coe-* excluded)
 │   ├── agents/                      # Subagents: lookup (Haiku), reviewer (Sonnet)
