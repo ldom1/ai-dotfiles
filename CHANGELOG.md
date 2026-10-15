@@ -4,6 +4,9 @@
 
 ### Changed
 - `develop` is the integration branch. `.git-promotion.json` stages are `develop` then `main`, and CI runs on both. Feature PRs merge into `develop`; `/git-promotion` fast-forwards `main`.
+- `reviewer` and `lookup` agents are now really read-only: `tools: Read, Grep, Glob` (no `Bash`). A prompt that says "read-only" did not stop `Bash` from writing files.
+  - `reviewer` reads a diff file or the files it is given. It asks for a diff it was not given.
+  - `implement-with-cursor-agent` (0.1.1) writes the diff to `$run/diff-<round>.patch` and passes that path to `reviewer`.
 
 ## [0.12.1] - 2026-10-14
 
