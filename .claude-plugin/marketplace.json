@@ -50,6 +50,13 @@
       "homepage": "https://github.com/ldom1/ai-dotfiles"
     },
     {
+      "name": "python-tests",
+      "description": "Test-first Python playbook: red, green, full suite, lint, per-test mutation check (mutate.py), CHANGELOG.",
+      "source": "./skills/python-tests",
+      "category": "productivity",
+      "homepage": "https://github.com/ldom1/ai-dotfiles"
+    },
+    {
       "name": "search-console",
       "description": "Read-only Google Search Console access: search queries, pages, CTR and position (TSV), URL inspection, sitemaps. Stdlib Python, your own OAuth client.",
       "source": "./skills/search-console",
