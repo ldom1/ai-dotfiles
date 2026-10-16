@@ -8,6 +8,7 @@
 - `laptop-management` project: `git-commit` scope registry entry and `config/brain-projects.tsv` line.
 
 ### Changed
+- `docker/ci-runner.manifest` follows runner image `ubuntu24/20261012.334`. The seven copied tool versions are unchanged; parity re-run.
 - Vendored skills re-synced (upstream diff applied on top of local patches; pins bumped):
   - `graphify` `0.9.90` → `0.9.91`: no skill-file change upstream (Python, tests, translations only). The central MCP server template now runs `graphifyy[mcp]==0.9.91`.
   - `marketingskills` `v2.11.29` → `v2.11.37`: `product-marketing` builds brand voice from evidence (new `references/brand-voice.md`), adds an optional paid-ads section and a learnings ledger; `copywriting` diagnoses before drafting, reads the ledger, supports point edits, and `references/ai-tells.md` gains build-a-writer and second-generation tells. Upstream `evals/` still dropped. The Introw link now points at `v2.11.37`.
