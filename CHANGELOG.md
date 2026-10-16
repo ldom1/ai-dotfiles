@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-16
+
+### Added
+- `laptop-management` project: `git-commit` scope registry entry and `config/brain-projects.tsv` line.
+
 ### Changed
 - Vendored skills re-synced (upstream diff applied on top of local patches; pins bumped):
   - `graphify` `0.9.90` → `0.9.91`: no skill-file change upstream (Python, tests, translations only). The central MCP server template now runs `graphifyy[mcp]==0.9.91`.
@@ -9,6 +14,7 @@
   - `ponytail` `v5.2.0` → `v5.3.1`: `argument-hint` adds `off`. The other upstream changes are in the band mod, which is not vendored.
 
 ### Fixed
+- `.cursor/mcp.json`: the `qmd` server reads the live `vault-qmd/index.sqlite` (from `QMD_INDEX_PATH`) instead of the stale `brain.db`.
 - `install.sh` strips the quotes around `BRAIN_PATH` from `config/brain.env` before it links the vault stack rules. Before, a quoted path failed the directory test and the rules were never linked into `.claude/rules/`.
 
 ## [0.13.0] - 2026-10-15
