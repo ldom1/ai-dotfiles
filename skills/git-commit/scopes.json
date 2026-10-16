@@ -154,6 +154,21 @@
         "docs",
         "ci"
       ]
+    },
+    "laptop-management": {
+      "detect": [
+        "scripts/idle-by-power.sh",
+        "scripts/seagate-wipe.sh"
+      ],
+      "scopes": [
+        "core",
+        "scripts",
+        "boot",
+        "disk",
+        "power",
+        "docs",
+        "config"
+      ]
     }
   }
 }

@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- `install.sh` strips the quotes around `BRAIN_PATH` from `config/brain.env` before it links the vault stack rules. Before, a quoted path failed the directory test and the rules were never linked into `.claude/rules/`.
+
 ## [0.13.0] - 2026-10-15
 
 ### Added
