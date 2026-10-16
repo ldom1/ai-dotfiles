@@ -14,7 +14,7 @@
     "graphify": {
       "command": "uvx",
       "args": [
-        "--from", "graphifyy[mcp]==0.9.90",
+        "--from", "graphifyy[mcp]==0.9.91",
         "python", "-m", "graphify.serve",
         "${CLAUDE_PROJECT_DIR:-.}/graphify-out/graph.json"
       ]
