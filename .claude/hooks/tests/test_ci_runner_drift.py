@@ -25,7 +25,7 @@ def test_newer_release_is_reported(tmp_path):
 
 
 def test_same_release_prints_nothing(tmp_path):
-    assert run(tmp_path, "ubuntu24/20261004.327") == ""
+    assert run(tmp_path, "ubuntu24/20261012.334") == ""
 
 
 def test_hanging_gh_is_cut_and_prints_nothing(tmp_path):

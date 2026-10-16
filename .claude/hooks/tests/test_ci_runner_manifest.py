@@ -14,8 +14,8 @@ def manifest():
 
 def test_manifest_pins_the_reference_runner_image():
     m = manifest()
-    assert m["RUNNER_IMAGE_TAG"] == "ubuntu24/20261004.327"
-    assert m == {"RUNNER_IMAGE_TAG": "ubuntu24/20261004.327", "NODE_VERSION": "22.23.3", "GIT_VERSION": "2.55.0",
+    assert m["RUNNER_IMAGE_TAG"] == "ubuntu24/20261012.334"
+    assert m == {"RUNNER_IMAGE_TAG": "ubuntu24/20261012.334", "NODE_VERSION": "22.23.3", "GIT_VERSION": "2.55.0",
                  "GIT_LFS_VERSION": "3.8.0", "GH_VERSION": "2.102.0", "JQ_VERSION": "1.7",
                  "PYTHON_VERSION": "3.12.3", "SHELLCHECK_VERSION": "0.9.0"}
 
