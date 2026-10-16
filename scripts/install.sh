@@ -159,7 +159,7 @@ fi
 # ── 4a. Vault stack rules → .claude/rules/ (load when a matching file is read or edited) ─
 header "Linking vault stack rules"
 
-VAULT=$(grep '^BRAIN_PATH=' "$BRAIN_ENV" | head -1 | cut -d= -f2-) || true
+VAULT=$(grep '^BRAIN_PATH=' "$BRAIN_ENV" | head -1 | cut -d= -f2- | tr -d '"') || true
 if [[ -d "$VAULT/resources/knowledge/patterns" ]]; then
   bash "$DOTFILES/scripts/link-pattern-rules.sh" "$VAULT" "$DOTFILES/.claude/rules"
   log "pattern notes with paths: → .claude/rules/"
