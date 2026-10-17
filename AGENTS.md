@@ -21,6 +21,7 @@
 ## Development
 - Occam's razor & YAGNI: fewest assumptions, smallest surface area, smallest change that works. Simple, structured, readable code (shortest solution that stays readable). No speculative abstractions, no backwards-compat shims for removed code. Reuse existing code, stdlib and installed deps before writing new code; use the `ponytail` skill on coding tasks.
 - Don't read files unrelated to the task.
+- Do not rebuild what an established open-source project already does. Before designing a component or a service, search for a package, repository or self-hostable tool that is community-validated and actively maintained; if one fits, use it and write only the glue. The design note names the candidates searched and why each was rejected. This applies to code and to the homelab alike (self-host the known tool instead of a custom one).
 - When behavior, setup, commands or visible output change, update `CHANGELOG.md` in the same change (small infra/skill changes included). Update `README.md` when user-facing usage or structure changed.
 - If the repo root has `graphify-out*` (`graphify-out.md`/`.json`, `graphify-out/graph.json`), read it for architecture before inferring from the file tree. Never modify it: Graphify regenerates it.
 - For a Python bug fix or new Python behaviour, run `/python-tests` explicitly: its auto-trigger missed 1 run in 4.
