@@ -6,7 +6,7 @@
 - `marketing-ops` project registered in `config/brain-projects.tsv`.
 
 ### Changed
-- `AGENTS.md` Development: new rule — do not rebuild what an established, actively maintained open-source project already does; search first, use it, write only the glue, and record the candidates in the design note. Applies to code and to the homelab.
+- `AGENTS.md`: new `## Builder` section — do not rebuild what an established, actively maintained open-source project already does; search first, use it, write only the glue, and record the candidates in the design note. Applies to code and to the homelab. Soul gains the line: one human cannot validate millions of lines, so new projects start from proven building blocks.
 
 ## [0.13.0] - 2026-10-15
 
