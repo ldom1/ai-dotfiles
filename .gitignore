@@ -33,6 +33,7 @@
 .claude/policy-limits.json
 .claude/feedback/
 .claude/remote-settings.json
+.claude/remote-settings.json.synced-at
 
 # Local permissions — machine-specific, do not track
 .claude/settings.local.json

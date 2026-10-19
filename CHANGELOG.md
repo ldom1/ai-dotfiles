@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- `.claude/settings.json` takes the template's `local-ci-merge-guard.py` PreToolUse hook and its `deny` for `git push --no-verify` and `git -c core.hooksPath`. The `env` block moves to the top. Local choices: `model: opus` (template: `opus[1m]`) and `kpi-dashboard@pratique-ia` enabled. `.gitignore` adds `.claude/remote-settings.json.synced-at`.
+
 ## [0.14.0] - 2026-10-19
 
 ### Added
