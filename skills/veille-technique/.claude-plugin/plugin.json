@@ -1,0 +1,11 @@
+{
+  "name": "veille-technique",
+  "version": "0.1.0",
+  "description": "AI / agent tech watch (veille) or skills audit (audit) against a target project: per-component verdict artifact in French, vault ledger, optional integration plan.",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles",
+  "skills": "./skills/"
+}

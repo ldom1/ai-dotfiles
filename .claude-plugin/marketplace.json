@@ -29,6 +29,13 @@
       "homepage": "https://github.com/ldom1/ai-dotfiles"
     },
     {
+      "name": "veille-technique",
+      "description": "AI / agent tech watch or skills audit: compare external sources (or a project's own skills, hooks and rules) with a target project, publish a reviewed per-component verdict artifact in French, then an optional integration plan in the vault.",
+      "source": "./skills/veille-technique",
+      "category": "productivity",
+      "homepage": "https://github.com/ldom1/ai-dotfiles"
+    },
+    {
       "name": "finops-audit",
       "description": "Weekly token spend review via ccusage — structured report appended to finops-history.md.",
       "source": "./skills/finops-audit",

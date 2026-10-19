@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- `veille-technique` 0.1.0: router plus two sub-skills, `veille` (external sources vs a target project) and `audit` (the target's own skills, hooks and rules, scored). The router holds the shared steps in four gates: step 0 asks the mode, the target project and the question; baseline read; analysis (one Sonnet subagent per source, or per 10 audited components); a per-component verdict artifact in French for review; one ledger row per component in `resources/knowledge/veille-technique.md`; an optional integration plan with `superpowers:writing-plans` in the vault. An `audit` scoped to one layer can run first and serve as the exact baseline of a `veille`. Sub-skills resolve as `veille-technique:<name>` in Claude Code; Cursor and Vibe read `skills/<name>/SKILL.md` directly.
+
 ## [0.14.0] - 2026-10-16
 
 ### Added
