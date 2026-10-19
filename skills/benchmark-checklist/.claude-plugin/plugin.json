@@ -1,0 +1,9 @@
+{
+  "name": "benchmark-checklist",
+  "version": "0.15.28",
+  "description": "Seven questions before trusting a performance number. Vendored verbatim from cursor/plugins pstack 0.15.28 (MIT). Trigger: /benchmark-checklist",
+  "author": {
+    "name": "Lauren Tan"
+  },
+  "homepage": "https://github.com/cursor/plugins/tree/main/pstack"
+}
