@@ -15,10 +15,12 @@ Find the history behind a code range. Then list what the planned change must kee
 1. Read the history of the range.
    - Lines: `git log -L <start>,<end>:<file> --format='%h %ad %s' --date=short -n 20`
    - Function: `git log -L :<function>:<file> --format='%h %ad %s' --date=short -n 20`
+   - If the function form fails with "no match", ask the user for a `<start>,<end>` range. Do not guess.
 2. Find the origin of each line.
-   - `git blame -w -C -L <start>,<end> <file>`
-   - For a function, use the line range that step 1 prints.
-3. Find the pull request of each relevant commit.
+   - Lines: `git blame -w -C -L <start>,<end> <file>`
+   - Function: `git blame -w -C -L :<function> <file>`
+3. Find the pull request of the commits that touched the range, newest first.
+   - Stop once you find the reason for the code.
    - `gh pr list --state merged --search <sha> --json number,title,url,body --limit 1`
    - If the result is empty, write "no PR" and continue.
 4. Search the vault. Skip this step if `BRAIN_PATH` is unset.
