@@ -73,7 +73,7 @@ pitfall: ^v3
 
 Pick the kind whose guarantee you can state exactly. If no sensor can check the rule, write `not mechanizable` with the reason and no code. The `pitfall:` field is how the counter finds the draft later, so keep it.
 
-Write a draft for a repo-history class too, with `pitfall:` set to a short kebab-case class name. The proof is the noise filter: grouping commit subjects is a judgment call, so a candidate becomes a draft only with a proof SHA. Without one, report it under `Candidates without proof` and write no draft. A `not mechanizable` draft writes `**Proof:** none` and has no code. The proof gate applies to every other Kind. Drafts written before 2.1.0 have no Proof line. Leave them as they are.
+Write a draft for a repo-history class too, with `pitfall:` set to a short kebab-case class name. The proof is the noise filter: grouping commit subjects is a judgment call, so a candidate becomes a draft only with a proof SHA. Without one, report it under `Candidates without proof` and write no draft. Never write an unproven class as `not mechanizable`: that Kind is only for a rule that no sensor can check. A repo-class draft lists all its SHAs in `**Cited in:**`, so the SHA grep finds it. A pitfall-id draft has no past SHA. It proves itself by running its code on the `match` and `not_match` examples, and its Proof line names that command and the result, with no SHA. The fails-on-SHA proof applies to repo-class drafts. A `not mechanizable` draft writes `**Proof:** none` and has no code. The proof gate applies to every other Kind. Drafts written before 2.1.0 have no Proof line. Leave them as they are.
 
 ## 3 — Report
 
