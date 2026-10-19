@@ -12,6 +12,7 @@
 - `reviewer` agent: adds a maintainability lens with four checks (file crossing 1000 lines, new branch or flag an abstraction could absorb, duplicated helper, avoidable complexity). It must not call a change sound only because it works, and proposes deletions or reuse, not restructures.
 
 ### Fixed
+- `test_ci_runner_manifest.py` and `test_ci_runner_drift.py` pin `ubuntu24/20261012.334`, the tag the manifest moved to in 0.14.0. Before, both failed and blocked the `git-promotion` gate.
 - `git-commit` scope registry: `ai-dotfiles` no longer detects on `.claude/skills`. Any repo with a project skill matched it and lost its own scopes.
 
 ## [0.14.0] - 2026-10-16
