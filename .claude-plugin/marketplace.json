@@ -69,6 +69,13 @@
       "source": "./skills/search-console",
       "category": "productivity",
       "homepage": "https://github.com/ldom1/ai-dotfiles"
+    },
+    {
+      "name": "why",
+      "description": "Find why a code range is the way it is (git history, blame, merged PRs, vault) and list the constraints a planned change must respect.",
+      "source": "./skills/why",
+      "category": "productivity",
+      "homepage": "https://github.com/ldom1/ai-dotfiles"
     }
   ]
 }

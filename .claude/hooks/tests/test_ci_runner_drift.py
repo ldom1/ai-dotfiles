@@ -21,11 +21,11 @@ def run(tmp_path, latest):
 
 
 def test_newer_release_is_reported(tmp_path):
-    assert "latest ubuntu24 release is ubuntu24/20261011.330" in run(tmp_path, "ubuntu24/20261011.330")
+    assert "latest ubuntu24 release is ubuntu24/20261020.340" in run(tmp_path, "ubuntu24/20261020.340")
 
 
 def test_same_release_prints_nothing(tmp_path):
-    assert run(tmp_path, "ubuntu24/20261004.327") == ""
+    assert run(tmp_path, "ubuntu24/20261012.334") == ""
 
 
 def test_hanging_gh_is_cut_and_prints_nothing(tmp_path):

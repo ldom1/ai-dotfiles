@@ -1,0 +1,10 @@
+{
+  "name": "why",
+  "version": "0.1.0",
+  "description": "Find why a code range is the way it is (git log -L, blame, merged PRs, vault) and list the constraints a planned change must respect",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles"
+}
