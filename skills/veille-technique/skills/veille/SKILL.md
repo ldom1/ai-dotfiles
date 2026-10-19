@@ -30,6 +30,11 @@ A source split into components by the subagent gets one verdict per component, n
 
 For each source, fetch the raw file yourself and quote the exact wording of the one claim the verdict rests on (a threshold, a default, a percentage and its measurement conditions). A subagent's paraphrase is not a quote.
 
+Raw text, by host:
+- GitHub: `gh api repos/<owner>/<repo>/contents/<path> --jq .content | base64 -d`.
+- Other pages: `npx -y firecrawl-cli@1.26.10 scrape "<url>" --only-main-content` prints Markdown to stdout. It needs no key and is rate-limited per IP. The page goes to Firecrawl's cloud: never use it for private or employer URLs.
+- If both fail, quote from `WebFetch` and label the quote `paraphrase`.
+
 ## Common mistakes
 
 - Treating a mirror or fork as the upstream: check `MIRROR.md`, `plugin.json` author and the commit log.

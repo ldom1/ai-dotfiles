@@ -60,7 +60,7 @@ Verify one claim per source yourself before synthesis (pitfall ^v10): a README p
 
 ## 3. Rapport (artifact, en français) — gate
 
-Load `artifact-design`, then publish one HTML artifact in French (icon `report`). Title: `Veille <YYYY-MM-DD>` or `Audit <slug> <YYYY-MM-DD>`. Sections, in this order:
+Load `artifact-design`, then publish one HTML artifact in French (icon `report`). Title: `Veille <sujet> <YYYY-MM-DD>` (the main source or theme, e.g. `Veille Firecrawl 2026-10-19`) or `Audit <slug> <YYYY-MM-DD>`: two runs on the same day must not share a title. Sections, in this order:
 
 1. **Verdict** — one table row per component: `Composant | Verdict | Plus petit changement | Cible | Effort S/M/L`. Verdict vocabulary comes from the subskill.
 2. **Par composant** — the step-2 block, plus the fit: which target and which layer (règle, skill, hook, capteur, MCP).
