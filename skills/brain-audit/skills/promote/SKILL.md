@@ -58,10 +58,10 @@ pitfall: ^v3
 # Sensor draft: <slug>
 
 **Rule:** <the rule text>
-**Cited in:** [[log-1]], [[log-2]]
+**Cited in:** pitfall id: [[log-1]], [[log-2]] | repo class: <repo> <sha>, <sha>, …
 **Kind:** PreToolUse hook | Stop check | lint rule | pytest | not mechanizable (<reason>)
 **Installs at:** <file or setting where it would live>
-**Proof:** fails on <sha> (the past mistake), passes on HEAD: <exact command>
+**Proof:** pitfall id: ran <cmd> on match/not_match: <result> | repo class: fails on <sha>, passes on HEAD: <cmd> | not mechanizable: none
 
 ## Draft (≤ 40 lines)
 <code>
@@ -73,7 +73,16 @@ pitfall: ^v3
 
 Pick the kind whose guarantee you can state exactly. If no sensor can check the rule, write `not mechanizable` with the reason and no code. The `pitfall:` field is how the counter finds the draft later, so keep it.
 
-Write a draft for a repo-history class too, with `pitfall:` set to a short kebab-case class name. The proof is the noise filter: grouping commit subjects is a judgment call, so a candidate becomes a draft only with a proof SHA. Without one, report it under `Candidates without proof` and write no draft. Never write an unproven class as `not mechanizable`: that Kind is only for a rule that no sensor can check. A repo-class draft lists all its SHAs in `**Cited in:**`, so the SHA grep finds it. A pitfall-id draft has no past SHA. It proves itself by running its code on the `match` and `not_match` examples, and its Proof line names that command and the result, with no SHA. The fails-on-SHA proof applies to repo-class drafts. A `not mechanizable` draft writes `**Proof:** none` and has no code. The proof gate applies to every other Kind. Drafts written before 2.1.0 have no Proof line. Leave them as they are.
+Write a draft for a repo-history class too, with `pitfall:` set to a short kebab-case class name. Keep one form per slot.
+
+- Noise filter: grouping commit subjects is a judgment call. A repo class becomes a draft only with a proof SHA.
+- No proof: report the class under `Candidates without proof` and write no draft.
+- `not mechanizable` is only for a rule that no sensor can check. Never use it for an unproven class.
+- Repo class: list all its SHAs in `**Cited in:**`. The SHA grep finds the draft by them.
+- Repo class proof: fails on the past SHA, passes on HEAD.
+- Pitfall id proof: run the draft code on the `match` and `not_match` examples. Name the command and the result, with no SHA.
+- A `not mechanizable` draft has no code and writes `**Proof:** none`.
+- Drafts written before 2.1.0 have no Proof line. Leave them as they are.
 
 ## 3 — Report
 
