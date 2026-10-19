@@ -2,25 +2,17 @@
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-19
+
 ### Added
 - `benchmark-checklist` skill, vendored verbatim from `cursor/plugins` (`pstack`, MIT) at a pinned SHA in `skills/benchmark-checklist/.pstack_version`. User-invoked only. Not in `config/vendored-skills.json`: the upstream repo moves daily.
-- `veille-technique` 0.1.0: router plus two sub-skills, `veille` (external sources vs a target project) and `audit` (the target's own skills, hooks and rules, scored). The router holds the shared steps in four gates: step 0 asks the mode, the target project and the question; baseline read; analysis (one Sonnet subagent per source, or per 10 audited components); a per-component verdict artifact in French for review; one ledger row per component in `resources/knowledge/veille-technique.md`; an optional integration plan with `superpowers:writing-plans` in the vault. An `audit` scoped to one layer can run first and serve as the exact baseline of a `veille`. Sub-skills resolve as `veille-technique:<name>` in Claude Code; Cursor and Vibe read `skills/<name>/SKILL.md` directly. Artifact titles are `Veille <sujet> <YYYY-MM-DD>`, so two runs on the same day do not collide. To quote raw text, `veille` uses `gh api` for GitHub and the keyless `npx -y firecrawl-cli@1.26.10 scrape` for other public pages, with a `WebFetch` paraphrase as the labelled fallback.
+- `veille-technique` 0.1.0: router plus two sub-skills, `veille` (external sources vs a target project) and `audit` (the target's own skills, hooks and rules, scored). The router holds the shared steps, with three pauses (cadrage, artifact review, plan): step 0 asks the mode, the target project and the question; baseline read; analysis (one Sonnet subagent per source, or per 10 audited components); a per-component verdict artifact in French for review; one ledger row per component in `resources/knowledge/veille-technique.md`; an optional integration plan with `superpowers:writing-plans` in the vault. An `audit` scoped to one layer can run first and serve as the exact baseline of a `veille`. Sub-skills resolve as `veille-technique:<name>` in Claude Code; Cursor and Vibe read `skills/<name>/SKILL.md` directly. Artifact titles are `Veille <sujet> <YYYY-MM-DD>`, so two runs on the same day do not collide. To quote raw text, `veille` uses `gh api` for GitHub and the keyless `npx -y firecrawl-cli@1.26.10 scrape` for other public pages, with a `WebFetch` paraphrase as the labelled fallback.
 - `why` skill 0.1.0: for a file range or function and a planned change, reads `git log -L`, `git blame -w -C` and merged PRs (`gh pr list --search <sha>`), plus the vault via `brain-search` when `BRAIN_PATH` is set. Outputs `Préserver` / `Changer` / `Éviter` / `Risque`, at most 15 bullets, each ending with its evidence or `inférence`. Idea from pstack `why` (MIT); text written from scratch.
+- `laptop-management` project: `git-commit` scope registry entry and `config/brain-projects.tsv` line.
 
 ### Changed
 - `brain-audit:promote` 2.1.0: new step `1b` lists `fix` and `Revert` commits of each repo in `config/brain-projects.tsv` and groups them into mistake classes. A class seen twice becomes a candidate. A class whose SHA is already in an `inbox/sensors/` draft is skipped. Every draft from 2.1.0 has a `**Proof:**` line. A repo class proves with "fails on a past SHA, passes on HEAD". A pitfall id proves with "the draft run on its match/not_match examples". A not mechanizable draft writes `none`. A class without proof goes to `Candidates without proof`. Drafts written before 2.1.0 stay valid.
 - `reviewer` agent: adds a maintainability lens with four checks (file crossing 1000 lines, new branch or flag an abstraction could absorb, duplicated helper, avoidable complexity). It must not call a change sound only because it works, and proposes deletions or reuse, not restructures.
-
-### Fixed
-- `test_ci_runner_manifest.py` and `test_ci_runner_drift.py` pin `ubuntu24/20261012.334`, the tag the manifest moved to in 0.14.0. Before, both failed and blocked the `git-promotion` gate.
-- `git-commit` scope registry: `ai-dotfiles` no longer detects on `.claude/skills`. Any repo with a project skill matched it and lost its own scopes.
-
-## [0.14.0] - 2026-10-16
-
-### Added
-- `laptop-management` project: `git-commit` scope registry entry and `config/brain-projects.tsv` line.
-
-### Changed
 - `docker/ci-runner.manifest` follows runner image `ubuntu24/20261012.334`. The seven copied tool versions are unchanged; parity re-run.
 - Vendored skills re-synced (upstream diff applied on top of local patches; pins bumped):
   - `graphify` `0.9.90` → `0.9.91`: no skill-file change upstream (Python, tests, translations only). The central MCP server template now runs `graphifyy[mcp]==0.9.91`.
@@ -28,6 +20,8 @@
   - `ponytail` `v5.2.0` → `v5.3.1`: `argument-hint` adds `off`. The other upstream changes are in the band mod, which is not vendored.
 
 ### Fixed
+- `test_ci_runner_manifest.py` and `test_ci_runner_drift.py` pin `ubuntu24/20261012.334`, the tag the manifest already follows. Before, both failed and blocked the `git-promotion` gate.
+- `git-commit` scope registry: `ai-dotfiles` no longer detects on `.claude/skills`. Any repo with a project skill matched it and lost its own scopes.
 - `.cursor/mcp.json`: the `qmd` server reads the live `vault-qmd/index.sqlite` (from `QMD_INDEX_PATH`) instead of the stale `brain.db`.
 - `install.sh` strips the quotes around `BRAIN_PATH` from `config/brain.env` before it links the vault stack rules. Before, a quoted path failed the directory test and the rules were never linked into `.claude/rules/`.
 
