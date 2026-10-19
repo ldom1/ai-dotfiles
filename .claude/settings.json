@@ -1,4 +1,8 @@
 {
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
+    "GRAPHIFY_NO_AUTO_REFRESH": "1"
+  },
   "permissions": {
     "allow": [
       "Write(/mnt/c/Users/louis/Documents/Local Brain/*)",
@@ -12,7 +16,11 @@
       "Bash(git clean -f *)",
       "Bash(rm -rf *)",
       "Bash(stop-check-trust *)",
-      "Bash(*/stop-check-trust *)"
+      "Bash(*/stop-check-trust *)",
+      "Bash(git push --no-verify*)",
+      "Bash(git push * --no-verify*)",
+      "Bash(git -C * push*--no-verify*)",
+      "Bash(git -c core.hooksPath*)"
     ],
     "ask": [
       "Bash(ansible-playbook *)",
@@ -23,7 +31,7 @@
       "Bash(terraform destroy *)"
     ]
   },
-  "model": "opus[1m]",
+  "model": "opus",
   "hooks": {
     "SessionStart": [
       {
@@ -82,6 +90,15 @@
             "command": "/home/lgiron/.claude/hooks/hardline-check.py"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.claude/hooks/local-ci-merge-guard.py"
+          }
+        ]
       }
     ],
     "Stop": [
@@ -122,7 +139,8 @@
     "skill-creator@claude-plugins-official": true,
     "vercel@claude-plugins-official": false,
     "impeccable@impeccable": false,
-    "taste-skill@taste-skill": false
+    "taste-skill@taste-skill": false,
+    "kpi-dashboard@pratique-ia": true
   },
   "extraKnownMarketplaces": {
     "pratique-ia": {
@@ -189,9 +207,5 @@
       "**Org-specific CLIs**: infisical, aws, vercel, tailscale, rtk (token proxy wrapper from ~/ai-dotfiles)",
       "**routine under lgiron/ prefix**: brain-vault writes under $BRAIN_PATH/inbox/daily/{implementation,specs,plans}/server-setup/ per ~/.claude/CLAUDE.md conventions"
     ]
-  },
-  "env": {
-    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
-    "GRAPHIFY_NO_AUTO_REFRESH": "1"
   }
 }
