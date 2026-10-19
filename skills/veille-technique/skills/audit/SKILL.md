@@ -50,7 +50,7 @@ Add one line `**Note :** T S D C R P` with 1–5 scores: Triggering (description
 
 Same artifact as the router's step 3, title `Audit <slug> <YYYY-MM-DD>`. The **Verdict** table is ordered by severity over effort: broken references and non-triggering skills first, style last. The **Transversal** section names patterns that touch 3+ components.
 
-When the audit precedes a `veille`, skip step 5 after the audit review: hand the artifact URL to the `veille` as baseline. The plan comes once, after the `veille` review.
+When the audit precedes a `veille`, hand the artifact URL to it as baseline and stop after step 4.
 
 ## Common mistakes
 

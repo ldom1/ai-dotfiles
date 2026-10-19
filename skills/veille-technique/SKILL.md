@@ -18,9 +18,9 @@ Each subskill is `skills/<name>/SKILL.md` under this skill's root (`~/ai-dotfile
 
 The steps below are shared. A subskill replaces only its own **Analyse** step.
 
-Flow: questions (step 0) → baseline, analysis and artifact (steps 1–3) → **pause: human review** → ledger and plan (steps 4–5). The review at the end of step 3 is the only stop. Never write the ledger or the plan before the user approves the verdicts.
+Gates: stop at the end of steps 0, 3 and 4. Never chain them.
 
-## 0. Cadrage
+## 0. Cadrage — gate
 
 `grill-me` style: one question at a time, a recommended answer each, skip a question the user already answered.
 
@@ -28,7 +28,7 @@ Flow: questions (step 0) → baseline, analysis and artifact (steps 1–3) → *
 2. **Target project.** Recommend the current one: `bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh --slug-only`. Several targets are allowed (e.g. a personal harness and an enterprise kit); each gets its own fit column.
 3. **Question behind the request.** What the user hopes to gain, and any hard constraint (no MCP, no new dependency, EU hosting, …).
 
-Restate the three answers in one line, then continue to step 1 without waiting.
+Restate the three answers in one line, then stop.
 
 ## 1. Baseline (read-only)
 
@@ -58,7 +58,7 @@ Follow the subskill. Both produce one block per component in this shape, ≤ 300
 
 Verify one claim per source yourself before synthesis (pitfall ^v10): a README promise or a `WebFetch` paraphrase is not a measurement. Fetch the raw file for the exact wording.
 
-## 3. Rapport (artifact, en français) — pause
+## 3. Rapport (artifact, en français) — gate
 
 Load `artifact-design`, then publish one HTML artifact in French (icon `report`). Title: `Veille <YYYY-MM-DD>` or `Audit <slug> <YYYY-MM-DD>`. Sections, in this order:
 
@@ -70,9 +70,9 @@ Load `artifact-design`, then publish one HTML artifact in French (icon `report`)
 
 Give the URL and ask the user to review. Stop. Apply review comments to the artifact (same `file_path`) until the user approves the verdicts.
 
-## 4. Trace
+## 4. Trace — gate
 
-Runs after the user approves the verdicts. Append one row per component to `$BP/resources/knowledge/veille-technique.md` (create it with the header on first use):
+Append one row per component to `$BP/resources/knowledge/veille-technique.md` (create it with the header on first use):
 
 ```markdown
 | Date | Composant | Verdict | Cible | Artifact |
@@ -80,17 +80,17 @@ Runs after the user approves the verdicts. Append one row per component to `$BP/
 | 2026-10-19 | pstack `why` | Adapter | ai-dotfiles | <url> |
 ```
 
-Then go to step 5. Skip it only when no component is retained (no Adopter / Adapter, no Réviser / Fusionner / Retirer) or the approval says "no plan".
+Ask: "Plan d'intégration pour les composants retenus ?" Stop. **No**, or nothing to integrate: done.
 
 ## 5. Plan d'intégration
 
-**REQUIRED SUB-SKILL:** `superpowers:writing-plans`. Scope: the retained components only. Save the plan in the vault, not in `docs/`: `$BP/inbox/daily/plans/<target-slug>/<YYYY-MM-DD>-<topic>-plan.md`. Scope it to the **Plus petit changement** column. New dependency: ask first. Code follows `ponytail`; prose follows the docs style in `AGENTS.md`.
+**REQUIRED SUB-SKILL:** `superpowers:writing-plans`. Save the plan in the vault, not in `docs/`: `$BP/inbox/daily/plans/<target-slug>/<YYYY-MM-DD>-<topic>-plan.md`. Scope it to the **Plus petit changement** column. New dependency: ask first. Code follows `ponytail`; prose follows the docs style in `AGENTS.md`.
 
 ## Done when
 
 - The artifact URL is in chat and the user approved the verdicts.
 - The ledger has one row per component.
-- The plan file exists in the vault, or no component was retained, or the user said "no plan".
+- Either the user declined a plan, or the plan file exists in the vault.
 
 ## Common mistakes
 
