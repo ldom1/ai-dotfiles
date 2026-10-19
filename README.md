@@ -41,6 +41,7 @@ A personal AI control centre with two jobs: **centralise** Claude Code / Cursor 
 | ponytail | Lazy senior mode — YAGNI ladder, stdlib before deps, minimum code that works (`/ponytail`) |
 | implement-with-cursor-agent | Experimental, evaluated on one plan: same quality as Claude alone, about 2× the wall time. Use it to keep long implementation work off the Claude usage window (lean review mode). Claude runs a validated vault plan through headless Cursor agents (`gpt-5.3-codex`). Each agent runs in a container with no GitHub credentials and commits locally. Needs a Cursor API key in `~/.config/cursor-agent/api-key` (mode 600). Claude reviews hard, then opens a project PR against the integration branch (`develop`, or the first `.git-promotion.json` stage) and a vault note PR. It squash-merges into that branch and never merges or promotes onto `main` |
 | asd-ste100 | Rewrite a doc in ASD-STE100 Simplified Technical English (strict or STE-flavored), with a stdlib linter (`scripts/ste-lint.py`) |
+| benchmark-checklist | Vet a perf measurement before you report it: limiter, tuning, errors, repeatability, relevance (`/benchmark-checklist`, user-invoked only) |
 | sop-builder | Turn process notes into validated seven-section SOP documents |
 | photo-archive-triage | Non-destructive photo/video triage: exact dedup, corrupt screening, capture-date recovery |
 | python-tests | Test-first Python playbook: red, green, full suite, lint, then `mutate.py` checks that each new test kills a mutant |
@@ -74,6 +75,8 @@ The six sub-skills under `skills/marketingpowers/skills/` — `product-marketing
 `ponytail` is vendored from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (`skills/ponytail/SKILL.md` only — on-demand skill, not the upstream alwaysApply Cursor rule). Pin: `skills/ponytail/.ponytail_version`. Re-sync: diff against the pinned tag, apply upstream, bump the pin (same pattern as graphify; no local patches today). The upstream `ponytail-review` / `-audit` / `-debt` / `-gain` / `-help` sub-skills are not vendored.
 
 `asd-ste100` is vendored from [danyuchn/asd-ste100-skill](https://github.com/danyuchn/asd-ste100-skill) (MIT): `SKILL.md`, `references/`, `examples/`, `scripts/ste-lint.py`, `LICENSE`. It ships no copy of ASD's dictionary (not redistributable). Upstream has no releases, so the pin `skills/asd-ste100/.ste100_version` is a commit SHA and `config/vendored-skills.json` tracks `"branch": "master"`: the update check compares the pin to the branch head. The always-on part of the docs style is the `## Docs style (ASD-STE100 inspired)` block in `AGENTS.md`; this skill is the on-demand rewrite pass.
+
+`benchmark-checklist` is vendored from [cursor/plugins](https://github.com/cursor/plugins) (MIT, © 2026 Lauren Tan): `pstack/skills/benchmark-checklist/SKILL.md` and `pstack/LICENSE`, copied verbatim with no local patch. The skill is user-invoked only (`disable-model-invocation`). Pin: `skills/benchmark-checklist/.pstack_version`, a commit SHA of the whole repo. It is not in `config/vendored-skills.json`: the update check compares the pin to the repo head, and `cursor/plugins` moves daily, so it would warn every session. Re-sync: clone at a new SHA, `diff` the file, copy it, bump the pin.
 
 ### Vendored skill update checks
 
