@@ -20,9 +20,9 @@ Find the history behind a code range. Then list what the planned change must kee
    - Lines: `git blame -w -C -L <start>,<end> <file>`
    - Function: `git blame -w -C -L :<function> <file>`
 3. Find the pull request of the commits that touched the range, newest first.
-   - Stop once you find the reason for the code.
+   - Stop the PR lookup once you find the reason for the code.
    - `gh pr list --state merged --search <sha> --json number,title,url,body --limit 1`
-   - If the result is empty, write "no PR" and continue.
+   - If the result is empty or `gh` fails, write "no PR" and continue.
 4. Search the vault. Skip this step if `BRAIN_PATH` is unset.
    - Run the `brain-search` skill with the file name and the component name.
    - Read the matching `DECISIONS.md` lines, specs and session logs.

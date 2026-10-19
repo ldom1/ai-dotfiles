@@ -8,7 +8,7 @@
 - `why` skill 0.1.0: for a file range or function and a planned change, reads `git log -L`, `git blame -w -C` and merged PRs (`gh pr list --search <sha>`), plus the vault via `brain-search` when `BRAIN_PATH` is set. Outputs `Préserver` / `Changer` / `Éviter` / `Risque`, at most 15 bullets, each ending with its evidence or `inférence`. Idea from pstack `why` (MIT); text written from scratch.
 
 ### Changed
-- `brain-audit:promote` 2.1.0: new step `1b` lists `fix` and `Revert` commits of each repo in `config/brain-projects.tsv` and groups them into mistake classes. A class seen twice becomes a candidate. A draft needs a `**Proof:**` line (a SHA that fails, a command that passes on HEAD); a class without proof goes to `Candidates without proof`. Drafts written before 2.1.0 stay valid.
+- `brain-audit:promote` 2.1.0: new step `1b` lists `fix` and `Revert` commits of each repo in `config/brain-projects.tsv` and groups them into mistake classes. A class seen twice becomes a candidate. A class whose SHA is already in an `inbox/sensors/` draft is skipped. Every draft from 2.1.0 has a `**Proof:**` line. A repo class proves with "fails on a past SHA, passes on HEAD". A pitfall id proves with "the draft run on its match/not_match examples". A not mechanizable draft writes `none`. A class without proof goes to `Candidates without proof`. Drafts written before 2.1.0 stay valid.
 - `reviewer` agent: adds a maintainability lens with four checks (file crossing 1000 lines, new branch or flag an abstraction could absorb, duplicated helper, avoidable complexity). It must not call a change sound only because it works, and proposes deletions or reuse, not restructures.
 
 ## [0.14.0] - 2026-10-16
