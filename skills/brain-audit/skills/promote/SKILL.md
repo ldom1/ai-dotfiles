@@ -30,13 +30,19 @@ Fix and revert commits record mistakes that no session log names. List them for 
 
 ```bash
 tail -n +2 ~/ai-dotfiles/config/brain-projects.tsv | cut -f2 | while read -r p; do
-  [ -d "$p/.git" ] || continue
+  [ -e "$p/.git" ] || continue
   echo "== $p"
-  git -C "$p" log --since="${BRAIN_AUDIT_LOOKBACK_DAYS:-30} days ago" --format='%h %s' -E --grep='^(fix|Revert)'
+  git -C "$p" log --no-merges --since="${BRAIN_AUDIT_LOOKBACK_DAYS:-30} days ago" --format='%h %s' -E --grep='^(fix|Revert)'
 done
 ```
 
-Group the subjects into mistake classes. A class seen twice, in any repo, is a `candidate`. Name each class and list its SHAs. If step 1 and step 1b found no candidate, report the counts and stop.
+Group the subjects into mistake classes. A class seen twice, in any repo, is a `candidate`. Name each class and list its SHAs. Skip a class if a draft already holds one of its SHAs:
+
+```bash
+grep -l <sha> "$BRAIN_PATH"/inbox/sensors/*.md
+```
+
+If step 1 and step 1b found no candidate, report the counts and stop.
 
 ## 2 — Draft
 
@@ -67,14 +73,14 @@ pitfall: ^v3
 
 Pick the kind whose guarantee you can state exactly. If no sensor can check the rule, write `not mechanizable` with the reason and no code. The `pitfall:` field is how the counter finds the draft later, so keep it.
 
-Write a draft for a repo-history class too, with `pitfall:` set to the class name. The proof is the noise filter: grouping commit subjects is a judgment call, so a candidate becomes a draft only with a proof SHA. Without one, report it under `Candidates without proof` and write no draft. Drafts written before 2.1.0 have no Proof line. Leave them as they are.
+Write a draft for a repo-history class too, with `pitfall:` set to a short kebab-case class name. The proof is the noise filter: grouping commit subjects is a judgment call, so a candidate becomes a draft only with a proof SHA. Without one, report it under `Candidates without proof` and write no draft. A `not mechanizable` draft writes `**Proof:** none` and has no code. The proof gate applies to every other Kind. Drafts written before 2.1.0 have no Proof line. Leave them as they are.
 
 ## 3 — Report
 
 ```
 brain-audit:promote complete
   Window: N days · ids with hits: N
-  Candidates: N · drafts written: N · skipped (draft or sensor exists): N
+  Candidates: N · drafts written: N · skipped (draft or sensor exists, classes included): N
   Repo classes: N · with proof: N · without proof: N
   Drafts: [[YYYY-MM-DD-<slug>]], …
 ```
