@@ -11,6 +11,9 @@
 - `brain-audit:promote` 2.1.0: new step `1b` lists `fix` and `Revert` commits of each repo in `config/brain-projects.tsv` and groups them into mistake classes. A class seen twice becomes a candidate. A class whose SHA is already in an `inbox/sensors/` draft is skipped. Every draft from 2.1.0 has a `**Proof:**` line. A repo class proves with "fails on a past SHA, passes on HEAD". A pitfall id proves with "the draft run on its match/not_match examples". A not mechanizable draft writes `none`. A class without proof goes to `Candidates without proof`. Drafts written before 2.1.0 stay valid.
 - `reviewer` agent: adds a maintainability lens with four checks (file crossing 1000 lines, new branch or flag an abstraction could absorb, duplicated helper, avoidable complexity). It must not call a change sound only because it works, and proposes deletions or reuse, not restructures.
 
+### Fixed
+- `git-commit` scope registry: `ai-dotfiles` no longer detects on `.claude/skills`. Any repo with a project skill matched it and lost its own scopes.
+
 ## [0.14.0] - 2026-10-16
 
 ### Added
