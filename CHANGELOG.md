@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- `s3-manager` project type (`s3.env.example` marker, scopes `core`, `docs`, `config`, `ci`): `git-commit` scope registry entry and `config/brain-projects.tsv` line for `cie-s3-garage-mngt`.
+
 ### Changed
 - `.claude/settings.json` takes the template's `local-ci-merge-guard.py` PreToolUse hook and its `deny` for `git push --no-verify` and `git -c core.hooksPath`. The `env` block moves to the top. Local choices: `model: opus` (template: `opus[1m]`) and `kpi-dashboard@pratique-ia` enabled. `.gitignore` adds `.claude/remote-settings.json.synced-at`.
 

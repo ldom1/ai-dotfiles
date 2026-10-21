@@ -168,6 +168,17 @@
         "docs",
         "config"
       ]
+    },
+    "s3-manager": {
+      "detect": [
+        "s3.env.example"
+      ],
+      "scopes": [
+        "core",
+        "docs",
+        "config",
+        "ci"
+      ]
     }
   }
 }
