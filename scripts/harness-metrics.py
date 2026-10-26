@@ -7,6 +7,7 @@
                                                <vault>/meta/harness-sessions/<YYYY-MM>-<host>.jsonl
   history --vault PATH [--projects DIR] [--skill-log FILE]
                                                one JSON aggregate over all transcripts, the skill log and the vault
+  changes --vault PATH [--days 7]              JSON list of /capture harness-change rows older than --days with no verdict
 
 Stdlib only. The record holds names, counts, durations, cost, ids and repo-relative paths.
 It never holds prompts, replies, tool inputs, file contents or hook message text.
@@ -21,7 +22,7 @@ import subprocess
 import sys
 import tempfile
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # Refusal prefix (after "PreToolUse:<tool> hook error: ") -> guard name. Only the name is stored.
@@ -340,6 +341,28 @@ def history(projects_dir: Path, skill_log: Path, vault: Path) -> dict:
     }
 
 
+def pending_changes(vault: Path, min_age_days: int = 7) -> list:
+    """Harness-change rows of session logs at least `min_age_days` old that have no verdict yet."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=min_age_days)).strftime("%Y-%m-%d")
+    out = []
+    for log in sorted(Path(vault).glob("inbox/daily/implementation/*/*.md")):
+        date = log.name[:10]
+        if not re.match(r"\d{4}-\d{2}-\d{2}-", log.name) or date > cutoff:
+            continue
+        in_rows = False
+        for n, line in enumerate(log.read_text(errors="replace").splitlines(), 1):
+            if line.startswith("**Harness changes:**"):
+                in_rows = True
+            elif in_rows and line.startswith("- "):
+                part = [p.strip() for p in line[2:].split(" · ")]
+                if (len(part) == 4 and part[2].startswith("expected: ") and part[3].startswith("check: ")):
+                    out.append({"log": str(log), "line": n, "date": date, "component": part[0], "change": part[1],
+                                "expected": part[2][10:], "check": part[3][7:]})
+            else:
+                in_rows = False
+    return out
+
+
 def compact(record: dict) -> str:
     cost = record["cost_usd"]
     return (f"{record['session_id'][:8]} {record['date'][:10]} {record['project']} "
@@ -373,7 +396,13 @@ def main(argv=None) -> int:
     h.add_argument("--vault", required=True)
     h.add_argument("--projects", default=os.environ.get("CLAUDE_PROJECTS_DIR") or "~/.claude/projects")
     h.add_argument("--skill-log", default="~/.claude/skill-usage.log")
+    c = sub.add_parser("changes")
+    c.add_argument("--vault", required=True)
+    c.add_argument("--days", type=int, default=7)
     args = ap.parse_args(argv)
+    if args.cmd == "changes":
+        print(json.dumps(pending_changes(Path(args.vault), args.days), ensure_ascii=False, indent=1))
+        return 0
     if args.cmd == "history":
         agg = history(Path(args.projects).expanduser(), Path(args.skill_log).expanduser(), Path(args.vault))
         print(json.dumps(agg, ensure_ascii=False, indent=1))

@@ -3,6 +3,8 @@ import importlib.util
 import json
 import os
 import subprocess
+import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -358,3 +360,37 @@ def test_arrow_in_definition_prose_counts(world):
     commit_pitfalls(vault, "- Link `a` → `b`. ^g9\n## Retired ids\n^v2→^v1 ^g4→^g2\n")
     h = hm.history(projects, log, vault)
     assert (h["rules"]["added"]["value"], h["rules"]["removed"]["value"]) == (1, 0)
+
+
+def day(n):
+    return (datetime.now(timezone.utc) - timedelta(days=n)).strftime("%Y-%m-%d")
+
+
+def write_log(vault, n, *rows, slug="proj"):
+    d = vault / "inbox/daily/implementation" / slug
+    d.mkdir(parents=True, exist_ok=True)
+    body = "**Goal:** g\n**Changes:**\n- not a harness row\n**Harness changes:** <optional>\n" + "".join(f"- {r}\n" for r in rows)
+    (d / f"{day(n)}-topic.md").write_text(body + "**Metrics:** x\n")
+
+
+def test_pending_changes_age_and_verdict(tmp_path):
+    row = "skill capture · add step · expected: fewer misses · check: skills.capture"
+    write_log(tmp_path, 10, row)
+    write_log(tmp_path, 10, f"{row} · verdict: helped (3 vs 5, {day(1)})", slug="other")
+    write_log(tmp_path, 2, row, slug="recent")
+    got = hm.pending_changes(tmp_path)
+    assert [(g["date"], g["line"], g["component"], g["change"], g["expected"], g["check"]) for g in got] == [
+        (day(10), 5, "skill capture", "add step", "fewer misses", "skills.capture")]
+    assert got[0]["log"].endswith(f"proj/{day(10)}-topic.md")
+
+
+def test_pending_changes_bad_row_skipped(tmp_path):
+    write_log(tmp_path, 10, "skill capture · add step · check: skills.capture", "just text")
+    assert hm.pending_changes(tmp_path) == []
+
+
+def test_cli_changes_prints_json(tmp_path):
+    write_log(tmp_path, 10, "hook x · tweak · expected: e · check: c")
+    out = subprocess.run([sys.executable, "-I", str(SCRIPT), "changes", "--vault", str(tmp_path), "--days", "7"],
+                         capture_output=True, text=True, check=True).stdout
+    assert json.loads(out)[0]["component"] == "hook x"
