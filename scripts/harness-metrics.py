@@ -33,6 +33,7 @@ GUARDS = {
 }
 HOOK_PREFIX = re.compile(r"^PreToolUse:\S+ hook error: ")
 RULE_ID = re.compile(r"\^([a-z]\d+)\b")
+RULE_DEF = re.compile(r"\^([a-z]\d+)\s*$")  # a definition ends its line; references and `^v2→^v1` do not
 EDIT_TOOLS = ("Edit", "Write", "MultiEdit")
 REPO_DIR = Path(__file__).resolve().parents[1]
 RULE_FILES = ("resources/operational/ai-agents/pitfalls.md", "resources/knowledge/patterns")
@@ -220,13 +221,14 @@ def _tally(records: list, key: str) -> dict:
     return dict(total.most_common())
 
 
-def _counts(records: list, key: str) -> dict:
-    return {"total": _leaf(sum(_tally(records, key).values()), "mesuré", "transcripts"),
-            "by_name": _leaf(_tally(records, key), "mesuré", "transcripts")}
+def _counts(records: list, key: str, label: str) -> dict:
+    return {"total": _leaf(sum(_tally(records, key).values()), label, "transcripts"),
+            "by_name": _leaf(_tally(records, key), label, "transcripts")}
 
 
 def _skill_log(path: Path, window: dict) -> dict:
     src = f"skill-usage.log ({path.name})"
+    label = "mesuré" if path.exists() else "incomplet"
     rows = []
     for line in path.read_text(errors="replace").splitlines() if path.exists() else []:
         parts = line.split()
@@ -235,11 +237,11 @@ def _skill_log(path: Path, window: dict) -> dict:
     inside = [r for r in rows if window["from"] and window["from"] <= r[0] <= window["to"]]
     days = sorted(r[0] for r in rows)
     return {"range": {"from": days[0] if days else None, "to": days[-1] if days else None},
-            "total": _leaf(len(rows), "mesuré", src),
-            "in_window": _leaf(len(inside), "mesuré", src),
-            "by_month": _leaf(dict(sorted(Counter(r[0][:7] for r in rows).items())), "mesuré", src),
-            "by_source": _leaf(dict(Counter(r[2] for r in rows).most_common()), "mesuré", src),
-            "by_skill_in_window": _leaf(dict(Counter(r[1] for r in inside).most_common()), "mesuré", src)}
+            "total": _leaf(len(rows), label, src),
+            "in_window": _leaf(len(inside), label, src),
+            "by_month": _leaf(dict(sorted(Counter(r[0][:7] for r in rows).items())), label, src),
+            "by_source": _leaf(dict(Counter(r[2] for r in rows).most_common()), label, src),
+            "by_skill_in_window": _leaf(dict(Counter(r[1] for r in inside).most_common()), label, src)}
 
 
 def _session_logs(vault: Path, window: dict) -> dict:
@@ -260,8 +262,11 @@ def _session_logs(vault: Path, window: dict) -> dict:
 
 
 def _rules(vault: Path, window: dict) -> dict:
-    cmd = f"git log --reverse -p -- {' '.join(RULE_FILES)}"
+    cmd = (f"git log --reverse -p -- {' '.join(RULE_FILES)}; rule definitions only (id ending a line); "
+           "a rule moved between files in one commit is neutral, across commits it counts removed then added")
     try:
+        if not (vault / ".git").exists():
+            raise OSError("not a repo root")
         out = subprocess.run(["git", "-C", str(vault), "log", "--reverse", "--format=%x00%ad", "--date=short",
                               "-p", "--", *RULE_FILES], capture_output=True, text=True, check=True).stdout
     except (OSError, subprocess.CalledProcessError):
@@ -272,8 +277,8 @@ def _rules(vault: Path, window: dict) -> dict:
     for chunk in out.split("\0")[1:]:
         day, _, diff = chunk.partition("\n")
         lines = [ln for ln in diff.splitlines() if ln.startswith(("+", "-")) and not ln.startswith(("+++", "---"))]
-        plus = {i for ln in lines if ln[0] == "+" for i in RULE_ID.findall(ln)}
-        minus = {i for ln in lines if ln[0] == "-" for i in RULE_ID.findall(ln)}
+        plus, minus = ({m[1] for ln in lines if ln[0] == c and "→" not in ln and (m := RULE_DEF.search(ln))}
+                       for c in "+-")
         added += [day] * len(plus - seen)
         removed += [day] * len((minus - plus) & present)
         seen |= plus
@@ -302,26 +307,27 @@ def history(projects_dir: Path, skill_log: Path, vault: Path) -> dict:
     days = sorted(r["date"][:10] for r in recs)
     window = {"from": days[0] if days else None, "to": days[-1] if days else None}
     n, captured = len(recs), sum(r["captured"] for r in recs)
+    lab = "incomplet" if failed or any(r["metrics_status"] == "partial" for r in recs) else "mesuré"
     costs = [r["cost_usd"] for r in recs if r["cost_usd"] is not None]
     return {
         "window": window,
         "sessions": {
-            "count": _leaf(n, "mesuré", "transcripts"),
+            "count": _leaf(n, lab, "transcripts"),
             "unreadable": _leaf(failed, "mesuré", "transcripts"),
             "partial": _leaf(sum(r["metrics_status"] == "partial" for r in recs), "mesuré", "transcripts"),
-            "user_turns": _leaf(sum(r["user_turns"] for r in recs), "mesuré", "transcripts"),
-            "duration_s": _leaf(sum(r["duration_s"] for r in recs), "mesuré", "transcripts"),
-            "cost_usd": _leaf(round(sum(costs), 2), "mesuré" if len(costs) == n else "incomplet", "transcripts"),
-            "by_project": _leaf(dict(Counter(r["project"] for r in recs).most_common()), "mesuré", "transcripts"),
+            "user_turns": _leaf(sum(r["user_turns"] for r in recs), lab, "transcripts"),
+            "duration_s": _leaf(sum(r["duration_s"] for r in recs), lab, "transcripts"),
+            "cost_usd": _leaf(round(sum(costs), 2), "mesuré" if len(costs) == n and lab == "mesuré" else "incomplet", "transcripts"),
+            "by_project": _leaf(dict(Counter(r["project"] for r in recs).most_common()), lab, "transcripts"),
         },
-        "capture_rate": _leaf(round(captured / n, 3) if n else None, "déduit",
-                              "transcripts: sessions with a capture skill call or an implementation-log write"),
-        "skills": _counts(recs, "skills"),
-        "mcp": _counts(recs, "mcp"),
-        "agents": _counts(recs, "agents"),
-        "hook_refusals": {**_counts(recs, "hook_refusals"),
-                          "by_guard": _leaf(_tally(recs, "hook_refusals"), "mesuré", "transcripts"),
-                          "permission": _leaf(sum(r["permission_refusals"] for r in recs), "mesuré", "transcripts")},
+        "capture_rate": _leaf(round(captured / n, 3) if n else None, "incomplet",
+                              "transcripts: sessions with a capture skill call or an implementation-log write; a log written through Bash is unseen, so a lower bound"),
+        "skills": _counts(recs, "skills", lab),
+        "mcp": _counts(recs, "mcp", lab),
+        "agents": _counts(recs, "agents", lab),
+        "hook_refusals": {**_counts(recs, "hook_refusals", lab),
+                          "by_guard": _leaf(_tally(recs, "hook_refusals"), lab, "transcripts"),
+                          "permission": _leaf(sum(r["permission_refusals"] for r in recs), lab, "transcripts")},
         "skill_log": _skill_log(Path(skill_log), window),
         "session_logs": _session_logs(Path(vault), window),
         "rules": _rules(Path(vault), window),

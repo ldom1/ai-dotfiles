@@ -237,7 +237,8 @@ def test_capture_rate_same_population(world):
     projects, log, vault = world
     h = hm.history(projects, log, vault)
     assert h["sessions"]["count"]["value"] == 2  # subagent transcript is not a session
-    assert h["capture_rate"]["value"] == 0.5 and h["capture_rate"]["label"] == "déduit"
+    assert h["capture_rate"]["value"] == 0.5 and h["capture_rate"]["label"] == "incomplet"  # Bash-written logs unseen
+    assert h["skills"]["total"]["label"] == "mesuré"
     assert h["skill_log"]["by_source"]["value"]["claude:sessionEnd"] == 10  # the log never feeds the rate
     assert h["skills"]["by_name"]["value"] == {"capture": 1, "git-commit": 1}
     assert h["agents"]["by_name"]["value"] == {"reviewer": 1}
@@ -259,7 +260,7 @@ def test_rules_from_git(world):
     commit_pitfalls(vault, "- rule two ^v2\n")
     h = hm.history(projects, log, vault)
     assert (h["rules"]["added"]["value"], h["rules"]["removed"]["value"]) == (2, 1)
-    assert h["rules"]["added"]["label"] == "mesuré"
+    assert h["rules"]["added"]["label"] == "mesuré" and "definitions only" in h["rules"]["added"]["source"]
     assert h["rules"]["added_in_window"]["value"] == 2
     commit_pitfalls(vault, "- rule two ^v2\n- three ^v3\n", day="2026-12-01")  # outside the window
     h = hm.history(projects, log, vault)
@@ -309,3 +310,44 @@ def test_cli_history_prints_json(world):
     assert list(json.loads(out.stdout)) == ["window", "sessions", "capture_rate", "skills", "mcp", "agents",
                                             "hook_refusals", "skill_log", "session_logs", "rules", "sensors",
                                             "harness_sessions"]
+
+
+def test_rule_references_do_not_count(world):
+    projects, log, vault = world
+    commit_pitfalls(vault, "- rule one ^v1\n- see [[pitfalls#^v5]]\n## Retired ids\n^v2→^v1 ^v8→^v5\n")
+    commit_pitfalls(vault, "- rule one ^v1\n- see [[pitfalls#^v7]] and ^v9 too.\n## Retired ids\n^v2→^v1 ^v3→^v7\n")
+    h = hm.history(projects, log, vault)
+    assert (h["rules"]["added"]["value"], h["rules"]["removed"]["value"]) == (1, 0)
+
+
+def test_retiring_a_rule_counts_as_removed(world):
+    projects, log, vault = world
+    commit_pitfalls(vault, "- one ^v1\n- two ^v2\n## Retired ids\n")
+    commit_pitfalls(vault, "- one ^v1\n## Retired ids\n^v2→^v1\n")
+    h = hm.history(projects, log, vault)
+    assert (h["rules"]["added"]["value"], h["rules"]["removed"]["value"]) == (2, 1)
+
+
+def test_unreadable_transcript_degrades_labels(world):
+    projects, log, vault = world
+    (projects / "p" / "empty.jsonl").write_text("")
+    h = hm.history(projects, log, vault)
+    assert h["sessions"]["unreadable"]["value"] == 1 and h["sessions"]["count"]["value"] == 2
+    for leaf in (h["sessions"]["count"], h["skills"]["total"], h["mcp"]["total"], h["agents"]["by_name"],
+                 h["hook_refusals"]["by_guard"], h["capture_rate"]):
+        assert leaf["label"] == "incomplet"
+
+
+def test_partial_transcript_degrades_labels(world):
+    projects, log, vault = world
+    with open(projects / "p" / "b.jsonl", "a") as f:
+        f.write('{"type": "assis')
+    h = hm.history(projects, log, vault)
+    assert h["sessions"]["partial"]["value"] == 1 and h["sessions"]["unreadable"]["value"] == 0
+    assert h["skills"]["total"]["label"] == h["sessions"]["count"]["label"] == "incomplet"
+
+
+def test_missing_skill_log_is_incomplete(world, tmp_path):
+    projects, _, vault = world
+    h = hm.history(projects, tmp_path / "absent.log", vault)
+    assert h["skill_log"]["total"]["label"] == "incomplet" and h["skill_log"]["total"]["value"] == 0
