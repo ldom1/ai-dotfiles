@@ -212,12 +212,13 @@ cmd_end() {
       export PATH="$NVM_BIN:$PATH"
     fi
 
-    _info "qmd" "updating brain index…"
-    INDEX_PATH="$QMD_INDEX_PATH" qmd update --collection brain 2>&1 | tee -a "$LOG" || \
-      _warn "qmd" "update failed — check $LOG"
-    _info "qmd" "refreshing brain embeddings…"
-    INDEX_PATH="$QMD_INDEX_PATH" qmd embed --collection brain 2>&1 | tee -a "$LOG" || \
-      _warn "qmd" "embed failed — check $LOG"
+    # Detached: Claude Code cancels the SessionEnd hook ~20 s after exit, which killed qmd mid-update.
+    # No inherited stdio, or the hook's pipe stays open until qmd ends.
+    _info "qmd" "updating brain index and embeddings in the background (log: $LOG)…"
+    local detach=(nohup); command -v setsid &>/dev/null && detach=(setsid nohup)
+    INDEX_PATH="$QMD_INDEX_PATH" "${detach[@]}" bash -c \
+      'qmd update --collection brain && qmd embed --collection brain || echo "qmd: update/embed failed"' \
+      >>"$LOG" 2>&1 </dev/null &
   fi
 
   local elapsed=$(( $(date +%s) - _SYNC_START_TS ))

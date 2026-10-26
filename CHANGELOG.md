@@ -8,6 +8,10 @@
 ### Changed
 - `AGENTS.md`: new `## Builder` section — do not rebuild what an established, actively maintained open-source project already does; search first, use it, write only the glue, and record the candidates in the design note. Applies to code and to the homelab. Soul gains the line: one human cannot validate millions of lines, so new projects start from proven building blocks.
 
+### Fixed
+- `harness-metrics.py` counts a slash command the user types (`/capture`, `/brain-search`) as a skill. Such a command is a `<command-name>` user message, not a `Skill` tool call, so it was missed: `/capture` gave `skills={}` and `captured=false`. Built-ins (`/clear`, `/compact`) stay out: a command counts only when the session's skill listing names it.
+- `brain-sync` `sync.sh end` runs `qmd update` and `qmd embed` detached, logging to `~/.claude/logs/brain-sync.log`. Claude Code cancels the SessionEnd hook about 20 s after exit ("Hook cancelled"), which killed `qmd update` after the push, so `qmd embed` never ran at session end.
+
 ## [0.15.0] - 2026-10-26
 
 ### Added
