@@ -1,6 +1,6 @@
 {
   "name": "brain-audit",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Vault maintenance pipeline: compile inbox notes, connect via QMD semantic search, generate insights, sync QMD index, produce weekly digest.",
   "author": {
     "name": "Louis Giron",

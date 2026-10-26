@@ -48,7 +48,7 @@ Add one line `**Note :** T S D C R P` with 1–5 scores: Triggering (description
 
 ## Output
 
-Same artifact as the router's step 3, title `Audit <slug> <YYYY-MM-DD>`. The **Verdict** table is ordered by severity over effort: broken references and non-triggering skills first, style last. The **Transversal** section names patterns that touch 3+ components.
+Same artifact as the router's step 3, title `Audit technique <sujet> <YYYY-MM-DD>` (`<sujet>` rule in the router). The **Verdict** table is ordered by severity over effort: broken references and non-triggering skills first, style last. The **Transversal** section names patterns that touch 3+ components.
 
 When the audit precedes a `veille`, hand the artifact URL to it as baseline and stop after step 4.
 

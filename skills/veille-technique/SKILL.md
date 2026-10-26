@@ -60,13 +60,30 @@ Verify one claim per source yourself before synthesis (pitfall ^v10): a README p
 
 ## 3. Rapport (artifact, en français) — gate
 
-Load `artifact-design`, then publish one HTML artifact in French (icon `report`). Title: `Veille <sujet> <YYYY-MM-DD>` (the main source or theme, e.g. `Veille Firecrawl 2026-10-19`) or `Audit <slug> <YYYY-MM-DD>`: two runs on the same day must not share a title. Sections, in this order:
+Load `artifact-design`, then publish one HTML artifact in French (icon `report`). This title convention overrides the 2–4-word naming rule of `artifact-design`.
 
-1. **Verdict** — one table row per component: `Composant | Verdict | Plus petit changement | Cible | Effort S/M/L`. Verdict vocabulary comes from the subskill.
-2. **Par composant** — the step-2 block, plus the fit: which target and which layer (règle, skill, hook, capteur, MCP).
-3. **Transversal** — overlaps between components, and what they say together about the target.
-4. **Questions ouvertes** — what blocks a verdict.
-5. **Sources** — numbered URLs or `path:line`.
+Title: `Veille technique <sujet> <YYYY-MM-DD>` or `Audit technique <sujet> <YYYY-MM-DD>`. Pick `<sujet>` by this rule:
+
+| Studied | `<sujet>` | Example |
+|---|---|---|
+| One tool, repo, paper or article | The object's own name, as its authors write it. Not the URL, not the owner. | `Veille technique Harness² 2026-10-26` |
+| Several sources on one theme | The theme in 2–4 French words | `Veille technique mémoire d'agent 2026-10-19` |
+| A whole target project | The target slug | `Audit technique ai-dotfiles 2026-10-19` |
+| One layer of a target | Slug, then the layer | `Audit technique ai-dotfiles hooks 2026-10-19` |
+
+Two runs on the same day must not share a title: add a distinguishing word to `<sujet>`.
+
+Under the title, before any section: a link to each studied source (repo, article, paper), with its name as link text. Audit: the target repo or path.
+
+Sections, in this order:
+
+1. **TL;DR** — 5 to 7 bullets for a human reader. Together they hold every important finding: what was studied, the verdict count, each Adopter or Adapter with its smallest change, the key measured claim with its conditions, the main risk or open question. One full sentence per bullet, ≤ 25 words. No jargon without a gloss.
+2. **Description** — what was studied, ≤ 150 words, before any verdict. Veille: what the object is and its purpose, who makes it, licence, maturity (first and last release, activity), how it works in 3–5 sentences, and its headline claim. Audit: the target, the layers and number of components audited, and why.
+3. **Verdict** — one table row per component: `Composant | Verdict | Plus petit changement | Cible | Effort S/M/L`. Verdict vocabulary comes from the subskill.
+4. **Par composant** — the step-2 block, plus the fit: which target and which layer (règle, skill, hook, capteur, MCP).
+5. **Transversal** — overlaps between components, and what they say together about the target.
+6. **Questions ouvertes** — what blocks a verdict.
+7. **Sources** — numbered URLs or `path:line`.
 
 Give the URL and ask the user to review. Stop. Apply review comments to the artifact (same `file_path`) until the user approves the verdicts.
 
@@ -94,6 +111,7 @@ Ask: "Plan d'intégration pour les composants retenus ?" Stop. **No**, or nothin
 
 ## Common mistakes
 
+- Opening the artifact on the verdict table: the reader does not yet know what was studied. TL;DR and Description come first.
 - Analysing the source before the baseline: produces "new" features the target already has.
 - Repeating the source's own numbers ("90% fewer tokens") without the measurement conditions.
 - Writing the plan into the artifact: the artifact is the analysis; the plan lives in the vault.

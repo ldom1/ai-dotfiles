@@ -43,7 +43,42 @@ Group the subjects into mistake classes. A class seen twice, in any repo, is a `
 grep -l <sha> "$BRAIN_PATH"/inbox/sensors/*.md
 ```
 
-If step 1 and step 1b found no candidate, report the counts and stop.
+## 1c — Harness changes
+
+`/capture` writes one `**Harness changes:**` row per harness change. A row has no verdict until this step adds one. List the rows older than 7 days with no verdict:
+
+```bash
+python3 -I ~/ai-dotfiles/scripts/harness-metrics.py changes --vault "$BRAIN_PATH"
+```
+
+The output is a JSON list. A row item holds `log`, `line`, `date`, `component`, `change`, `expected` and `check`. A malformed row holds `log`, `line` and `"malformed": true`. A malformed row never gets a verdict.
+
+List each malformed row as "fix the row in the log", with its log and line number. Ask the user to fix it. Count it as `malformed` in the report. If the list is empty, go on to step 2.
+
+For each row:
+
+1. Take the number that `check:` names, for the 14 days before and the 14 days after `date`. Take it from the source below.
+   - Guard refusals and skill calls: read `meta/harness-sessions/*.jsonl`.
+   - Rule hits: count the `**Pitfall hit:**` lines of the session logs with `count-pitfall-hits.py` (step 1). The jsonl files hold no rule hits.
+2. Count the sessions on each side, and note the project mix.
+3. List every other harness change dated inside that window. Find them in the session logs.
+4. Propose a provisional verdict with its numbers and these confounders.
+
+Pick the verdict word from this list:
+
+- `helped`: the number moved the expected way, with no confounder.
+- `hurt`: the number moved the opposite way, with no confounder.
+- `no observed effect`: the number did not move, on 5 sessions or more on each side.
+- `confounded`: another harness change falls inside the window.
+- `inconclusive`: under 5 sessions on either side, or a weak signal.
+
+If the 14-day after-window ends in the future, say so. The verdict is usually `inconclusive`.
+
+Never write `no observed effect` on a thin sample. A before/after contrast shows correlation, not cause. Say so in the proposal.
+
+Show the proposals to the user. Write only after approval. For each approved row, append ` · verdict: <word> (<numbers>, <today>)` to its line in the session log. Never edit the rest of the row. Skip a rejected row. It stays pending.
+
+If step 1, step 1b and step 1c found nothing, report the counts and stop. If only step 1c found rows, skip step 2.
 
 ## 2 — Draft
 
@@ -93,6 +128,7 @@ brain-audit:promote complete
   Window: N days · ids with hits: N
   Candidates: N · drafts written: N · skipped (draft or sensor exists, classes included): N
   Repo classes: N · with proof: N · without proof: N
+  Harness changes: pending N · verdicts written N · malformed N
   Drafts: [[YYYY-MM-DD-<slug>]], …
   Candidates without proof: <class> (<sha>, …)
 ```

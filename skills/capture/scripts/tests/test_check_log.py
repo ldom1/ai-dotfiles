@@ -111,3 +111,40 @@ def test_main_exit_codes(tmp_path, capsys):
     assert main([str(bad)]) == 1
     assert capsys.readouterr().out.startswith("FAIL extra section:")
     assert main([str(tmp_path / "missing.md")]) == 2
+
+
+HARNESS = """## Add a merge guard
+
+**Goal:** stop bad merges.
+**Changes:** hook added.
+**Follow-ups:** none
+**Harness changes:**
+- `.claude/hooks/merge-guard.sh` · block data-only merges · expected: fewer refusals · check: merge-guard refusals
+- `skills/capture/SKILL.md` · add metrics label · expected: Metrics line in logs · check: grep '**Metrics:**' inbox/daily
+**Metrics:** 1a2b3c4d · 42 min · 12 tool calls
+"""
+
+
+def test_harness_changes_and_metrics_labels_ok(tmp_path):
+    assert check(write(tmp_path, HARNESS)) == []
+
+
+def test_labels_order(tmp_path):
+    text = "## t\n\n**Goal:** g\n**Metrics:** 1a2b3c4d\n**Changes:** c\n**Follow-ups:** none\n"
+    fails = check(write(tmp_path, text))
+    assert any(f.startswith("order:") for f in fails)
+
+
+def test_lookup_only_still_ok(tmp_path):
+    assert check(write(tmp_path, "Lookup/Q&A only. No files modified.\n")) == []
+
+
+def test_bad_harness_row_fails(tmp_path):
+    text = HARNESS.replace("\n**Metrics:** 1a", "\n- component · change · check: c\n**Metrics:** 1a")
+    fails = check(write(tmp_path, text))
+    assert fails == ["harness row: Add a merge guard: line 9"]
+
+
+def test_harness_row_with_dot_and_verdict_ok(tmp_path):
+    text = HARNESS.replace("\n**Metrics:** 1a", "\n- a · b · c · expected: e · f · check: c · verdict: helped (1 vs 2, 2026-01-01)\n**Metrics:** 1a")
+    assert check(write(tmp_path, text)) == []
