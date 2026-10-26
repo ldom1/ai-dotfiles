@@ -29,7 +29,20 @@ date +%Y-%m-%d
 **Changes:** <bullets: what changed and where; PR/commit ids>
 **Commands/tests:** <only commands worth re-running>
 **Follow-ups:** <next steps, or "none">
+**Harness changes:** <optional; one row per harness change>
+- <component> · <change> · expected: <effect> · check: <metric or command>
+**Metrics:** <optional; the `harness-metrics.py` line>
 ```
+
+Add `**Metrics:**` when `$CLAUDE_SESSION_ID` is set. Run this command and paste its line:
+
+```bash
+python3 -I ~/ai-dotfiles/scripts/harness-metrics.py session --id "$CLAUDE_SESSION_ID" --compact
+```
+
+A second `/capture` of the same session replaces the line with the same id prefix. If `$CLAUDE_SESSION_ID` is unset (Cursor, Vibe), skip the label and say so. Lookup-only logs get no label.
+
+If the session edited the harness, add one `**Harness changes:**` row per change. The harness is skills, hooks, `AGENTS.md`, the settings template, `pitfalls.md` and pattern notes. `check:` names a number that the SessionEnd metrics line records, or a command. Such numbers are a guard's refusals, a rule's hits and a skill's calls. Leave the verdict empty: `/brain-audit` fills it.
 
 Check the log, then fix every `FAIL` line and run the check again until it prints `OK`:
 
@@ -65,6 +78,8 @@ Project-specific traps discovered this session go to `CONTEXT.md` → `Gotchas` 
   - **Drop** — one-off, or project-specific (step 3).
 
   Prefer Absorb: every new bullet competes for the same injected bytes.
+
+  A **lesson** needs an observed contrast. The same task failed or cost more without the approach, and passed with it, in this session. A success seen once is confounded. A session with several changes at once is also confounded. Keep it in the session log with verdict **Drop**.
 - Add one bullet under the matching `## <Topic>`: imperative rule + the mechanism in a clause, exact command when that is the fix. No dates, no project names, no narrative — the session log keeps the story.
 - End the bullet with its id: the section letter and the next free number, e.g. `^g15`. Letters in `pitfalls.md`: `v` Verification, `d` Diagnosis, `u` Working with the user, `s` Safety and secrets, `o` Vault. Letters in pattern notes: `g` git-patterns, `c` claude-code-patterns, `h` shell-patterns. A rule keeps its id when it moves between files. Never renumber or reuse an id. A merge keeps the lower id and adds the other to `## Retired ids` as `^g7→^g2`.
 - For each Absorb or Improve verdict, add `**Pitfall hit:** [[pitfalls#^g6]]` to today's session log (step 2), with the id of the rule hit. For a rule that moved to a pattern note, link that note: `[[git-patterns#^g6]]`. `/brain-audit` counts these lines to find rules worth a sensor.

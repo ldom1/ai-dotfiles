@@ -111,3 +111,29 @@ def test_main_exit_codes(tmp_path, capsys):
     assert main([str(bad)]) == 1
     assert capsys.readouterr().out.startswith("FAIL extra section:")
     assert main([str(tmp_path / "missing.md")]) == 2
+
+
+HARNESS = """## Add a merge guard
+
+**Goal:** stop bad merges.
+**Changes:** hook added.
+**Follow-ups:** none
+**Harness changes:**
+- `.claude/hooks/merge-guard.sh` · block data-only merges · expected: fewer refusals · check: merge-guard refusals
+- `skills/capture/SKILL.md` · add metrics label · expected: Metrics line in logs · check: grep '**Metrics:**' inbox/daily
+**Metrics:** 1a2b3c4d · 42 min · 12 tool calls
+"""
+
+
+def test_harness_changes_and_metrics_labels_ok(tmp_path):
+    assert check(write(tmp_path, HARNESS)) == []
+
+
+def test_labels_order(tmp_path):
+    text = "## t\n\n**Goal:** g\n**Metrics:** 1a2b3c4d\n**Changes:** c\n**Follow-ups:** none\n"
+    fails = check(write(tmp_path, text))
+    assert any(f.startswith("order:") for f in fails)
+
+
+def test_lookup_only_still_ok(tmp_path):
+    assert check(write(tmp_path, "Lookup/Q&A only. No files modified.\n")) == []

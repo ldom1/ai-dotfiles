@@ -9,6 +9,7 @@
 - `s3-manager` project type (`s3.env.example` marker, scopes `core`, `docs`, `config`, `ci`): `git-commit` scope registry entry and `config/brain-projects.tsv` line for `cie-s3-garage-mngt`.
 
 ### Changed
+- `capture` 1.2.0: the session log takes two optional labels after `**Follow-ups:**`. `**Harness changes:**` holds one row per harness change (`<component> · <change> · expected: <effect> · check: <metric or command>`), with the verdict left empty for `/brain-audit`. `**Metrics:**` holds the `harness-metrics.py session --compact` line when `CLAUDE_SESSION_ID` is set. `check_log.py` accepts both labels in that order. Step 4 requires an observed contrast before a lesson: a single or confounded success stays in the log (verdict Drop).
 - `veille-technique` 0.2.0: the artifact opens with a link to each studied source, then two new sections before the verdict table. **TL;DR** holds 5 to 7 bullets with every important finding. **Description** says what was studied in ≤ 150 words. Titles become `Veille technique <sujet> <YYYY-MM-DD>` and `Audit technique <sujet> <YYYY-MM-DD>`. A table sets `<sujet>`: the object's own name, a theme, the target slug, or slug plus layer.
 - `.claude/settings.json` takes the template's `local-ci-merge-guard.py` PreToolUse hook and its `deny` for `git push --no-verify` and `git -c core.hooksPath`. The `env` block moves to the top. Local choices: `model: opus` (template: `opus[1m]`) and `kpi-dashboard@pratique-ia` enabled. `.gitignore` adds `.claude/remote-settings.json.synced-at`.
 

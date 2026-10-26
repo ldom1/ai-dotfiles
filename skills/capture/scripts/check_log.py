@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 LOOKUP_ONLY = "Lookup/Q&A only. No files modified."
-ORDER = ["Goal", "Changes", "Commands/tests", "Follow-ups"]
+ORDER = ["Goal", "Changes", "Commands/tests", "Follow-ups", "Harness changes", "Metrics"]
 REQUIRED = {"Changes", "Follow-ups"}
 REPEATABLE = {"Pitfall hit"}
 NAME_RE = re.compile(r"^\d{4}-\d{2}-\d{2}-[a-z0-9.]+(?:-[a-z0-9.]+)*\.md$")
