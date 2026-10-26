@@ -56,12 +56,21 @@ if [[ -f "$ENV_FILE" ]]; then
   # shellcheck source=/dev/null
   source "$ENV_FILE"
 fi
-if [[ -n "${CLAUDE_ENV_FILE:-}" && -n "${BRAIN_PATH:-}" ]]; then
-  printf 'export BRAIN_PATH=%q\n' "$BRAIN_PATH" >> "$CLAUDE_ENV_FILE"
-fi
 
 # Hook JSON is on stdin; do not rely on jq (may be missing in hook PATH).
 INPUT=$(cat || true)
+SID=""
+if [[ "$INPUT" =~ \"session_id\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
+  SID="${BASH_REMATCH[1]}"
+fi
+if [[ -n "${CLAUDE_ENV_FILE:-}" && -n "${BRAIN_PATH:-}" ]]; then
+  printf 'export BRAIN_PATH=%q\n' "$BRAIN_PATH" >> "$CLAUDE_ENV_FILE"
+fi
+# Lets /capture find this session's transcript (harness-metrics.py session --id).
+if [[ -n "${CLAUDE_ENV_FILE:-}" && -n "$SID" ]]; then
+  printf 'export CLAUDE_SESSION_ID=%q\n' "$SID" >> "$CLAUDE_ENV_FILE"
+fi
+
 SOURCE="startup"
 if [[ "$INPUT" =~ \"source\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
   SOURCE="${BASH_REMATCH[1]}"

@@ -4,6 +4,7 @@
 
 ### Added
 - `scripts/harness-metrics.py` (stdlib): `session` turns one Claude Code transcript (and its `subagents/*.jsonl`) into one record of names, counts, duration, cost, hook-guard names and harness edits, never conversation text; `append` writes or replaces that record in `<vault>/meta/harness-sessions/<YYYY-MM>-<host>.jsonl` (temp file + rename). A truncated line gives `metrics_status: partial`. Tests use a stripped real transcript in `.claude/hooks/tests/fixtures/harness-metrics/`.
+- `brain-session-end.sh` appends one metrics line per session (`harness-metrics.py append`) to the vault before the sync, so the sync commits it. Metrics errors go to `~/.claude/logs/harness-metrics.log` (10 s cap) and never block the sync. Subagent transcripts and a missing `transcript_path` are skipped. `brain-session-start.sh` exports `CLAUDE_SESSION_ID` into every Bash call of the session.
 - `s3-manager` project type (`s3.env.example` marker, scopes `core`, `docs`, `config`, `ci`): `git-commit` scope registry entry and `config/brain-projects.tsv` line for `cie-s3-garage-mngt`.
 
 ### Changed

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SessionEnd: check for implementation notes → warn in log → brain-sync end
+# SessionEnd: append harness metrics line → brain-sync end → warn if implementation notes are missing
 #
 # NOTE: SessionEnd hooks do NOT give Claude a final turn. The /capture skill is the
 # primary path for end-of-session work (notes, pitfalls, lessons). This hook is a
@@ -18,9 +18,19 @@ ENV_FILE="${BRAIN_ENV_FILE:-$AI_DOTFILES/config/brain.env}"
 BRAIN_PATH="${BRAIN_PATH:-}"
 TODAY=$(date +%Y-%m-%d)
 
-# Consume stdin (SessionEnd may provide hook JSON — not used here)
-# shellcheck disable=SC2034
+# Hook JSON on stdin (no jq): session end reason and transcript path.
 INPUT=$(cat || true)
+TP="" REASON=""
+if [[ "$INPUT" =~ \"transcript_path\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then TP="${BASH_REMATCH[1]}"; fi
+if [[ "$INPUT" =~ \"reason\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then REASON="${BASH_REMATCH[1]}"; fi
+
+# ── Per-session metrics line in the vault (before the sync so it is committed).
+# Never fails or delays the sync: 10 s cap, errors to a log, nothing on stdout.
+if [[ -n "$TP" && -n "$BRAIN_PATH" && "$TP" != */subagents/* ]]; then
+  mkdir -p "$HOME/.claude/logs"
+  timeout 10 python3 -I "$AI_DOTFILES/scripts/harness-metrics.py" append "$TP" --vault "$BRAIN_PATH" \
+    ${REASON:+--reason "$REASON"} >>"$HOME/.claude/logs/harness-metrics.log" 2>&1 || true
+fi
 
 # ── Sync vault (commit + push whatever is on disk) ────────────────────────────
 "$AI_DOTFILES/skills/brain-sync/scripts/sync.sh" end 2>&1 | tee -a "$LOG" >&2 || true
