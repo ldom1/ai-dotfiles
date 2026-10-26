@@ -7,7 +7,7 @@
                                                <vault>/meta/harness-sessions/<YYYY-MM>-<host>.jsonl
   history --vault PATH [--projects DIR] [--skill-log FILE]
                                                one JSON aggregate over all transcripts, the skill log and the vault
-  changes --vault PATH [--days 7]              JSON list of /capture harness-change rows older than --days with no verdict
+  changes --vault PATH [--days 7]              JSON list of /capture harness-change rows older than --days with no verdict, and of malformed rows
 
 Stdlib only. The record holds names, counts, durations, cost, ids and repo-relative paths.
 It never holds prompts, replies, tool inputs, file contents or hook message text.
@@ -341,25 +341,32 @@ def history(projects_dir: Path, skill_log: Path, vault: Path) -> dict:
     }
 
 
+# Same row regex as skills/capture/scripts/check_log.py (separate plugins, no shared import): keep both in sync.
+LABEL = re.compile(r"\*\*[^*]+:\*\*")
+ROW = re.compile(r"^- (.+?) · (.+?) · expected: (.+?) · check: (.+?)(?: · (verdict: .+))?$")
+
+
 def pending_changes(vault: Path, min_age_days: int = 7) -> list:
-    """Harness-change rows of session logs at least `min_age_days` old that have no verdict yet."""
+    """Harness-change rows at least `min_age_days` old with no verdict, plus every malformed row (any age)."""
     cutoff = (datetime.now(timezone.utc) - timedelta(days=min_age_days)).strftime("%Y-%m-%d")
     out = []
     for log in sorted(Path(vault).glob("inbox/daily/implementation/*/*.md")):
         date = log.name[:10]
-        if not re.match(r"\d{4}-\d{2}-\d{2}-", log.name) or date > cutoff:
+        if not re.match(r"\d{4}-\d{2}-\d{2}-", log.name):
             continue
         in_rows = False
         for n, line in enumerate(log.read_text(errors="replace").splitlines(), 1):
             if line.startswith("**Harness changes:**"):
                 in_rows = True
-            elif in_rows and line.startswith("- "):
-                part = [p.strip() for p in line[2:].split(" · ")]
-                if (len(part) == 4 and part[2].startswith("expected: ") and part[3].startswith("check: ")):
-                    out.append({"log": str(log), "line": n, "date": date, "component": part[0], "change": part[1],
-                                "expected": part[2][10:], "check": part[3][7:]})
-            else:
+            elif line.startswith("## ") or LABEL.match(line):  # next label or heading ends the block; blank lines do not
                 in_rows = False
+            elif in_rows and line.startswith("- "):
+                m = ROW.match(line)
+                if not m:
+                    out.append({"log": str(log), "line": n, "malformed": True})
+                elif not m.group(5) and date <= cutoff:
+                    out.append({"log": str(log), "line": n, "date": date, "component": m.group(1),
+                                "change": m.group(2), "expected": m.group(3), "check": m.group(4)})
     return out
 
 

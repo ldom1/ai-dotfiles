@@ -137,3 +137,14 @@ def test_labels_order(tmp_path):
 
 def test_lookup_only_still_ok(tmp_path):
     assert check(write(tmp_path, "Lookup/Q&A only. No files modified.\n")) == []
+
+
+def test_bad_harness_row_fails(tmp_path):
+    text = HARNESS.replace("\n**Metrics:** 1a", "\n- component · change · check: c\n**Metrics:** 1a")
+    fails = check(write(tmp_path, text))
+    assert fails == ["harness row: Add a merge guard: line 9"]
+
+
+def test_harness_row_with_dot_and_verdict_ok(tmp_path):
+    text = HARNESS.replace("\n**Metrics:** 1a", "\n- a · b · c · expected: e · f · check: c · verdict: helped (1 vs 2, 2026-01-01)\n**Metrics:** 1a")
+    assert check(write(tmp_path, text)) == []

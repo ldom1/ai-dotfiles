@@ -51,7 +51,9 @@ grep -l <sha> "$BRAIN_PATH"/inbox/sensors/*.md
 python3 -I ~/ai-dotfiles/scripts/harness-metrics.py changes --vault "$BRAIN_PATH"
 ```
 
-The output is a JSON list. Each item holds `log`, `line`, `date`, `component`, `change`, `expected` and `check`. If the list is empty, go on to step 2.
+The output is a JSON list. A row item holds `log`, `line`, `date`, `component`, `change`, `expected` and `check`. A malformed row holds `log`, `line` and `"malformed": true`. A malformed row never gets a verdict.
+
+List each malformed row as "fix the row in the log", with its log and line number. Ask the user to fix it. Count it as `malformed` in the report. If the list is empty, go on to step 2.
 
 For each row:
 
@@ -67,6 +69,8 @@ Pick the verdict word from this list:
 - `no observed effect`: the number did not move, on 5 sessions or more on each side.
 - `confounded`: another harness change falls inside the window.
 - `inconclusive`: under 5 sessions on either side, or a weak signal.
+
+If the 14-day after-window ends in the future, say so. The verdict is usually `inconclusive`.
 
 Never write `no observed effect` on a thin sample. A before/after contrast shows correlation, not cause. Say so in the proposal.
 
@@ -122,7 +126,7 @@ brain-audit:promote complete
   Window: N days · ids with hits: N
   Candidates: N · drafts written: N · skipped (draft or sensor exists, classes included): N
   Repo classes: N · with proof: N · without proof: N
-  Harness changes: pending N · verdicts written N
+  Harness changes: pending N · verdicts written N · malformed N
   Drafts: [[YYYY-MM-DD-<slug>]], …
   Candidates without proof: <class> (<sha>, …)
 ```

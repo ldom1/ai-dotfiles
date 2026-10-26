@@ -23,6 +23,8 @@ QUALIFIER_RE = re.compile(r"\s*\(.*\)$")
 LINK_RE = re.compile(r"\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]")
 FENCE_RE = re.compile(r"^```.*?^```", re.M | re.S)
 CODE_RE = re.compile(r"`[^`\n]*`")
+# Same row regex as scripts/harness-metrics.py (separate plugins, no shared import): keep both in sync.
+ROW_RE = re.compile(r"^- (.+?) · (.+?) · expected: (.+?) · check: (.+?)(?: · (verdict: .+))?$")
 
 
 def vault_stems(vault: Path) -> set[str]:
@@ -31,6 +33,25 @@ def vault_stems(vault: Path) -> set[str]:
         dirs[:] = [d for d in dirs if not d.startswith(".")]
         stems.update(f[:-3] for f in files if f.endswith(".md"))
     return stems
+
+
+def bad_harness_rows(text: str) -> list[str]:
+    """FAIL lines for `- ` rows under `**Harness changes:**` that `harness-metrics.py changes` cannot parse."""
+    fails, topic, in_rows, fenced = [], "", False, False
+    for n, line in enumerate(text.splitlines(), 1):
+        if line.startswith("```"):
+            fenced = not fenced
+        elif fenced:
+            continue
+        elif line.startswith("## "):
+            topic, in_rows = line[3:].strip(), False
+        elif line.startswith("**Harness changes:**"):
+            in_rows = True
+        elif LABEL_RE.match(line):
+            in_rows = False
+        elif in_rows and line.startswith("- ") and not ROW_RE.match(line):
+            fails.append(f"harness row: {topic}: line {n}")
+    return fails
 
 
 def check(path: Path, vault: Path | None = None) -> list[str]:
@@ -59,6 +80,7 @@ def check(path: Path, vault: Path | None = None) -> list[str]:
                 fails.append(f"section: '{label}' appears {count} times in '{topic}'")
         if found != sorted(found, key=ORDER.index):
             fails.append(f"order: '{topic}' has {', '.join(found)}; expected order {', '.join(ORDER)}")
+    fails.extend(bad_harness_rows(text))
     stems = vault_stems(vault) if vault else None
     for target in (t.strip() for t in LINK_RE.findall(prose)):
         if "/" in target or target.endswith(".md"):

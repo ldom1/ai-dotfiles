@@ -384,9 +384,24 @@ def test_pending_changes_age_and_verdict(tmp_path):
     assert got[0]["log"].endswith(f"proj/{day(10)}-topic.md")
 
 
-def test_pending_changes_bad_row_skipped(tmp_path):
+def test_pending_changes_bad_row_flagged(tmp_path):
     write_log(tmp_path, 10, "skill capture · add step · check: skills.capture", "just text")
-    assert hm.pending_changes(tmp_path) == []
+    write_log(tmp_path, 1, "bad young row", slug="recent")  # malformed rows ignore the age filter
+    got = hm.pending_changes(tmp_path)
+    assert [(g["line"], g.get("malformed")) for g in got] == [(5, True), (6, True), (5, True)]
+    assert all(set(g) == {"log", "line", "malformed"} for g in got)
+
+
+def test_pending_changes_dot_in_text_and_blank_line(tmp_path):
+    d = tmp_path / "inbox/daily/implementation/proj"
+    d.mkdir(parents=True)
+    (d / f"{day(10)}-topic.md").write_text(
+        "**Harness changes:**\n- hook a · fix x · y · expected: e · f · check: c\n\n"
+        "- hook b · tweak · expected: e · check: c · verdict: helped (1 vs 2, 2026-01-01)\n"
+        "**Metrics:** x\n- not a row\n")
+    got = hm.pending_changes(tmp_path)
+    assert len(got) == 1 and got[0]["change"] == "fix x · y" and got[0]["expected"] == "e · f"
+    assert got[0]["check"] == "c" and got[0]["line"] == 2
 
 
 def test_cli_changes_prints_json(tmp_path):
