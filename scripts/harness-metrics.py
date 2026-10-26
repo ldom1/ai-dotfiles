@@ -41,6 +41,7 @@ REPO_DIR = Path(__file__).resolve().parents[1]
 RULE_FILES = ("resources/operational/ai-agents/pitfalls.md", "resources/knowledge/patterns")
 HOOK_CONFIGS = (".claude/settings.json.tpl", ".cursor/hooks.json", ".vibe/user-hooks.toml")
 HOOK_COMMAND = re.compile(r'^\s*"?command"?\s*[:=]')
+SLASH_COMMAND = re.compile(r"<command-name>/([^<\s]+)</command-name>")  # a user-typed /skill: no Skill tool_use
 
 
 def _roots() -> tuple:
@@ -88,10 +89,15 @@ def _scan(path: Path, acc: dict, main: bool) -> None:
                     if isinstance(x, dict) and x.get("type") == "tool_use" and x.get("id") not in seen:
                         seen.add(x.get("id"))
                         _tool_use(x, acc, main)
+            elif t == "attachment" and main and (r.get("attachment") or {}).get("type") == "skill_listing":
+                acc["skill_names"].update(r["attachment"].get("names") or [])
             elif t == "user" and main:
-                if isinstance(content, str) or (isinstance(content, list) and any(
-                        isinstance(x, dict) and x.get("type") != "tool_result" for x in content)):
+                # Injected skill bodies (isMeta) and task notifications are user records, not user turns.
+                human = not r.get("isMeta") and (r.get("origin") or {}).get("kind", "human") == "human"
+                if human and (isinstance(content, str) or (isinstance(content, list) and any(
+                        isinstance(x, dict) and x.get("type") != "tool_result" for x in content))):
                     acc["turns"] += 1
+                acc["commands"].update(SLASH_COMMAND.findall(_text(content)))
                 for x in content if isinstance(content, list) else []:
                     if isinstance(x, dict) and x.get("type") == "tool_result" and x.get("is_error"):
                         _refusal(_text(x.get("content")), acc)
@@ -143,7 +149,7 @@ def parse_session(transcript: Path) -> dict:
     transcript = Path(transcript)
     acc = {"bad": 0, "records": [], "turns": 0, "skills": Counter(), "agents": Counter(), "mcp": Counter(),
            "tools": Counter(), "sub": Counter(), "hooks": Counter(), "perm": 0, "captured": False,
-           "edits": set(), "rules": set()}
+           "edits": set(), "rules": set(), "commands": Counter(), "skill_names": set()}
     status = "ok"
     try:
         _scan(transcript, acc, True)
@@ -151,6 +157,11 @@ def parse_session(transcript: Path) -> dict:
             _scan(Path(sub), acc, False)
     except OSError:
         status = "failed"
+    # Built-ins (/clear, /compact) are not in the session's skill listing; without a listing, keep all.
+    for cmd, n in acc["commands"].items():
+        if not acc["skill_names"] or cmd in acc["skill_names"]:
+            acc["skills"][cmd] += n
+            acc["captured"] |= cmd == "capture"
     recs = acc["records"]
     if status == "ok" and not recs:
         status = "failed"
