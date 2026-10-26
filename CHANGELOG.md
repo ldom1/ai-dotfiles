@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- `scripts/harness-metrics.py` (stdlib): `session` turns one Claude Code transcript (and its `subagents/*.jsonl`) into one record of names, counts, duration, cost, hook-guard names and harness edits, never conversation text; `append` writes or replaces that record in `<vault>/meta/harness-sessions/<YYYY-MM>-<host>.jsonl` (temp file + rename). A truncated line gives `metrics_status: partial`. Tests use a stripped real transcript in `.claude/hooks/tests/fixtures/harness-metrics/`.
 - `s3-manager` project type (`s3.env.example` marker, scopes `core`, `docs`, `config`, `ci`): `git-commit` scope registry entry and `config/brain-projects.tsv` line for `cie-s3-garage-mngt`.
 
 ### Changed
