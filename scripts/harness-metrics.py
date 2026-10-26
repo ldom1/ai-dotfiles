@@ -33,7 +33,8 @@ GUARDS = {
 }
 HOOK_PREFIX = re.compile(r"^PreToolUse:\S+ hook error: ")
 RULE_ID = re.compile(r"\^([a-z]\d+)\b")
-RULE_DEF = re.compile(r"\^([a-z]\d+)\s*$")  # a definition ends its line; references and `^v2→^v1` do not
+RULE_DEF = re.compile(r"\^([a-z]\d+)\s*$")  # a definition ends its line; references do not
+RETIRED = re.compile(r"\^[a-z]\d+\s*→\s*\^[a-z]\d+")  # `^v2→^v1` retired-id mapping, not a definition
 EDIT_TOOLS = ("Edit", "Write", "MultiEdit")
 REPO_DIR = Path(__file__).resolve().parents[1]
 RULE_FILES = ("resources/operational/ai-agents/pitfalls.md", "resources/knowledge/patterns")
@@ -277,7 +278,7 @@ def _rules(vault: Path, window: dict) -> dict:
     for chunk in out.split("\0")[1:]:
         day, _, diff = chunk.partition("\n")
         lines = [ln for ln in diff.splitlines() if ln.startswith(("+", "-")) and not ln.startswith(("+++", "---"))]
-        plus, minus = ({m[1] for ln in lines if ln[0] == c and "→" not in ln and (m := RULE_DEF.search(ln))}
+        plus, minus = ({m[1] for ln in lines if ln[0] == c and not RETIRED.search(ln) and (m := RULE_DEF.search(ln))}
                        for c in "+-")
         added += [day] * len(plus - seen)
         removed += [day] * len((minus - plus) & present)

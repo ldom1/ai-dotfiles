@@ -351,3 +351,10 @@ def test_missing_skill_log_is_incomplete(world, tmp_path):
     projects, _, vault = world
     h = hm.history(projects, tmp_path / "absent.log", vault)
     assert h["skill_log"]["total"]["label"] == "incomplet" and h["skill_log"]["total"]["value"] == 0
+
+
+def test_arrow_in_definition_prose_counts(world):
+    projects, log, vault = world
+    commit_pitfalls(vault, "- Link `a` → `b`. ^g9\n## Retired ids\n^v2→^v1 ^g4→^g2\n")
+    h = hm.history(projects, log, vault)
+    assert (h["rules"]["added"]["value"], h["rules"]["removed"]["value"]) == (1, 0)
