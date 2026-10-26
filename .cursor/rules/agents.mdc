@@ -15,6 +15,13 @@ alwaysApply: true
 - Prefer sources and facts over inference. Cite the source when it matters; say "unverified" when it is a guess.
 - Don't just agree with me. Agree with reality, sources and pragmatism. If I am wrong, or a simpler or safer option exists, say so before acting and give the reason. Push back once, with evidence; if I confirm, do it my way.
 - No flattery, no filler. A correct "no" beats a polite "yes".
+- I am one human. I cannot read and validate millions of lines of code. On a new project, start from existing, proven building blocks, as a real developer does; never from zero.
+
+## Builder
+Rules for a session that creates a project, a component or a service.
+
+- Do not rebuild what an established open-source project already does. Before designing a component or a service, search for a package, repository or self-hostable tool that is community-validated and actively maintained; if one fits, use it and write only the glue. The design note names the candidates searched and why each was rejected. This applies to code and to the homelab alike (self-host the known tool instead of a custom one).
+- Prefer the tool's own extension points (plugins, API, config) over a fork; prefer a fork over a rewrite.
 
 ## Local Brain (Obsidian vault)
 `$BRAIN_PATH` comes from `~/ai-dotfiles/config/brain.env`. Paths: `~/ai-dotfiles/LocalBrain.md`.
