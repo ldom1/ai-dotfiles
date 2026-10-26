@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -99,6 +100,16 @@ def test_rules_added(tmp_path):
     assert rec["rules_added"] == [] and rec["harness_edits"] == ["resources/operational/ai-agents/pitfalls.md"]
 
 
+def test_rules_added_counts_definitions_only(tmp_path):
+    pit = f"{VAULT}/resources/operational/ai-agents/pitfalls.md"
+    new = "- a ^v1\n- see [[pitfalls#^v5]]\n- ^v7→^v2"
+    t = transcript(tmp_path, use("Edit", file_path=pit, old_string="- a ^v1", new_string=new))
+    assert hm.parse_session(t)["rules_added"] == []
+    t = transcript(tmp_path, use("Edit", file_path=pit, old_string="- a ^v1", new_string=new + "\n- New rule. ^v13"),
+                   name="sid-2")
+    assert hm.parse_session(t)["rules_added"] == ["v13"]
+
+
 def test_harness_edits_paths_relative(tmp_path):
     t = transcript(
         tmp_path,
@@ -163,6 +174,33 @@ def test_append_atomic(tmp_path, monkeypatch):
         raise OSError("disk")
 
     monkeypatch.setattr(os, "replace", boom)
+    with pytest.raises(OSError):
+        hm.append_record(rec_with(skills={"b": 2}), tmp_path, "h")
+    assert path.read_text() == before
+    assert [p.name for p in path.parent.iterdir()] == [path.name]
+
+
+def test_append_write_failure_leaves_no_temp(tmp_path, monkeypatch):
+    path = hm.append_record(rec_with(skills={"a": 1}), tmp_path, "h")
+    before = path.read_text()
+
+    real_ntf = tempfile.NamedTemporaryFile
+
+    class Boom:
+        def __init__(self, *a, **k):
+            self.real = real_ntf(*a, **k)
+            self.name = self.real.name
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            self.real.close()
+
+        def write(self, _):
+            raise OSError("disk full")
+
+    monkeypatch.setattr(hm.tempfile, "NamedTemporaryFile", Boom)
     with pytest.raises(OSError):
         hm.append_record(rec_with(skills={"b": 2}), tmp_path, "h")
     assert path.read_text() == before

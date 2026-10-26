@@ -97,6 +97,11 @@ def _scan(path: Path, acc: dict, main: bool) -> None:
                         _refusal(_text(x.get("content")), acc)
 
 
+def _rule_defs(text) -> set:
+    lines = str(text or "").splitlines()
+    return {m[1] for ln in lines if not RETIRED.search(ln) and (m := RULE_DEF.search(ln))}
+
+
 def _tool_use(x: dict, acc: dict, main: bool) -> None:
     name, inp = x.get("name") or "?", x.get("input") or {}
     acc["tools" if main else "sub"][name] += 1
@@ -116,8 +121,7 @@ def _tool_use(x: dict, acc: dict, main: bool) -> None:
         if rel:
             acc["edits"].add(rel)
             if name == "Edit" and (rel.endswith("pitfalls.md") or "/patterns/" in "/" + rel):
-                old = set(RULE_ID.findall(str(inp.get("old_string") or "")))
-                acc["rules"].update(set(RULE_ID.findall(str(inp.get("new_string") or ""))) - old)
+                acc["rules"].update(_rule_defs(inp.get("new_string")) - _rule_defs(inp.get("old_string")))
 
 
 def _refusal(text: str, acc: dict) -> None:
@@ -203,12 +207,13 @@ def append_record(record: dict, vault: Path, host: str) -> Path:
     else:
         lines.append(new)
     with tempfile.NamedTemporaryFile("w", dir=target.parent, delete=False, suffix=".tmp") as tmp:
-        tmp.write("\n".join(lines) + "\n")
-    try:
-        os.replace(tmp.name, target)
-    except BaseException:
-        os.unlink(tmp.name)
-        raise
+        try:
+            tmp.write("\n".join(lines) + "\n")
+            tmp.flush()
+            os.replace(tmp.name, target)
+        except BaseException:
+            os.unlink(tmp.name)
+            raise
     return target
 
 

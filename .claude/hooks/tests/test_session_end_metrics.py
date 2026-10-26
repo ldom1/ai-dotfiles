@@ -21,7 +21,8 @@ def setup(tmp_path: Path, metrics_stub: str | None = None) -> dict:
     dot, vault, home = tmp_path / "dot", tmp_path / "vault", tmp_path / "home"
     home.mkdir()
     vault.mkdir()
-    exe(dot / "skills/brain-sync/scripts/sync.sh", f"echo synced > '{tmp_path}/marker'")
+    exe(dot / "skills/brain-sync/scripts/sync.sh",
+        f"echo synced > '{tmp_path}/marker'\nls '{vault}'/meta/harness-sessions/*.jsonl > '{tmp_path}/seen' 2>/dev/null || true")
     exe(dot / "scripts/log-skill-usage.sh", "exit 0")
     script = dot / "scripts/harness-metrics.py"
     if metrics_stub is None:
@@ -51,6 +52,7 @@ def test_appends_line_then_syncs(tmp_path):
     recs = lines(tmp_path)
     assert len(recs) == 1 and recs[0]["reason"] == "prompt_input_exit"
     assert (tmp_path / "marker").exists()
+    assert (tmp_path / "seen").read_text().strip()  # the jsonl existed when the sync ran
 
 
 def test_metrics_failure_keeps_sync(tmp_path):
