@@ -6,6 +6,7 @@
 - `s3-manager` project type (`s3.env.example` marker, scopes `core`, `docs`, `config`, `ci`): `git-commit` scope registry entry and `config/brain-projects.tsv` line for `cie-s3-garage-mngt`.
 
 ### Changed
+- `veille-technique` 0.2.0: the artifact opens with a link to each studied source, then two new sections before the verdict table. **TL;DR** holds 5 to 7 bullets with every important finding. **Description** says what was studied in ≤ 150 words. Titles become `Veille technique <sujet> <YYYY-MM-DD>` and `Audit technique <sujet> <YYYY-MM-DD>`. A table sets `<sujet>`: the object's own name, a theme, the target slug, or slug plus layer.
 - `.claude/settings.json` takes the template's `local-ci-merge-guard.py` PreToolUse hook and its `deny` for `git push --no-verify` and `git -c core.hooksPath`. The `env` block moves to the top. Local choices: `model: opus` (template: `opus[1m]`) and `kpi-dashboard@pratique-ia` enabled. `.gitignore` adds `.claude/remote-settings.json.synced-at`.
 
 ## [0.14.0] - 2026-10-19
