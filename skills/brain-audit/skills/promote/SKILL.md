@@ -57,7 +57,9 @@ List each malformed row as "fix the row in the log", with its log and line numbe
 
 For each row:
 
-1. Read `meta/harness-sessions/*.jsonl`. Take the number that `check:` names, for the 14 days before and the 14 days after `date`.
+1. Take the number that `check:` names, for the 14 days before and the 14 days after `date`. Take it from the source below.
+   - Guard refusals and skill calls: read `meta/harness-sessions/*.jsonl`.
+   - Rule hits: count the `**Pitfall hit:**` lines of the session logs with `count-pitfall-hits.py` (step 1). The jsonl files hold no rule hits.
 2. Count the sessions on each side, and note the project mix.
 3. List every other harness change dated inside that window. Find them in the session logs.
 4. Propose a provisional verdict with its numbers and these confounders.
