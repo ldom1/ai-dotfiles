@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-10-26
+
 ### Added
 - `scripts/harness-metrics.py` (stdlib): `session` turns one Claude Code transcript (and its `subagents/*.jsonl`) into one record of names, counts, duration, cost, hook-guard names and harness edits, never conversation text; `append` writes or replaces that record in `<vault>/meta/harness-sessions/<YYYY-MM>-<host>.jsonl` (temp file + rename). `rules_added` counts rule definitions only (an id ending its line), never references or retirement lines. A truncated line gives `metrics_status: partial`. Tests use a stripped real transcript in `.claude/hooks/tests/fixtures/harness-metrics/`.
 - `harness-metrics.py history --vault PATH [--projects DIR] [--skill-log FILE]` prints one JSON aggregate over every main transcript (subagent transcripts excluded), the skill-usage log and the vault, for a one-off capitalisation report. Every number is `{value, label, source}` with label `mesuré`, `déduit` or `incomplet`. The capture rate comes from transcripts, never from skill-log lines. Rules added and removed come from `git log -p` on `pitfalls.md` and the pattern notes. They count rule definitions only (an id ending its line), never references or `^v2→^v1` retirement lines. A rule moved across commits counts as removed then added. Labels fall to `incomplet` when a transcript is partial or unreadable, when the skill log is missing, and always for `capture_rate` (a log written through Bash is unseen). Sensors count drafts in `inbox/sensors/` and `command` lines in the repo hook configs.
