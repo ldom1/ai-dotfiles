@@ -206,14 +206,14 @@ def append_record(record: dict, vault: Path, host: str) -> Path:
             break
     else:
         lines.append(new)
-    with tempfile.NamedTemporaryFile("w", dir=target.parent, delete=False, suffix=".tmp") as tmp:
-        try:
+    tmp = tempfile.NamedTemporaryFile("w", dir=target.parent, delete=False, suffix=".tmp")
+    try:
+        with tmp:  # closed before the rename: NTFS (drvfs) cannot rename or unlink an open file
             tmp.write("\n".join(lines) + "\n")
-            tmp.flush()
-            os.replace(tmp.name, target)
-        except BaseException:
-            os.unlink(tmp.name)
-            raise
+        os.replace(tmp.name, target)
+    except BaseException:
+        Path(tmp.name).unlink(missing_ok=True)
+        raise
     return target
 
 

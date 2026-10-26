@@ -180,6 +180,23 @@ def test_append_atomic(tmp_path, monkeypatch):
     assert [p.name for p in path.parent.iterdir()] == [path.name]
 
 
+def test_append_closes_temp_before_replace(tmp_path, monkeypatch):
+    real_ntf, real_replace, handles, states = tempfile.NamedTemporaryFile, os.replace, [], []
+
+    def spy_ntf(*a, **k):
+        handles.append(real_ntf(*a, **k))
+        return handles[-1]
+
+    def spy_replace(src, dst):
+        states.append(handles[-1].closed)  # NTFS (drvfs) cannot rename an open file
+        real_replace(src, dst)
+
+    monkeypatch.setattr(hm.tempfile, "NamedTemporaryFile", spy_ntf)
+    monkeypatch.setattr(os, "replace", spy_replace)
+    hm.append_record(rec_with(), tmp_path, "h")
+    assert states == [True]
+
+
 def test_append_write_failure_leaves_no_temp(tmp_path, monkeypatch):
     path = hm.append_record(rec_with(skills={"a": 1}), tmp_path, "h")
     before = path.read_text()
