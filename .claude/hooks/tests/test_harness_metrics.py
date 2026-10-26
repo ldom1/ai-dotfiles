@@ -102,6 +102,19 @@ def test_typed_slash_command_counts_as_skill(tmp_path):
     assert rec["captured"] is True
 
 
+def test_user_turns_skip_injected_messages(tmp_path):
+    # Shapes copied from real transcripts (Claude Code 2.1.310): a typed prompt, an injected skill body,
+    # a background-task notification. Only the first is a user turn.
+    prompt = {"type": "user", "origin": {"kind": "human"}, "promptSource": "typed",
+              "message": {"role": "user", "content": "cherche dans le brain"}}
+    skill_body = {"type": "user", "isMeta": True,
+                  "message": {"role": "user", "content": [{"type": "text", "text": "Base directory for this skill: x"}]}}
+    notification = {"type": "user", "origin": {"kind": "task-notification", "producer": "session-task"},
+                    "promptSource": "system", "message": {"role": "user", "content": "<task-notification>x"}}
+    rec = hm.parse_session(transcript(tmp_path, prompt, skill_body, notification, typed("capture")))
+    assert rec["user_turns"] == 2  # the prompt and the typed /capture
+
+
 def test_rules_added(tmp_path):
     pit = f"{VAULT}/resources/operational/ai-agents/pitfalls.md"
     t = transcript(tmp_path, use("Edit", file_path=pit, old_string="- a ^v1", new_string="- a ^v1\n- b ^v13"))

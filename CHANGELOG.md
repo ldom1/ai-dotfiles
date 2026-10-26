@@ -10,6 +10,7 @@
 
 ### Fixed
 - `harness-metrics.py` counts a slash command the user types (`/capture`, `/brain-search`) as a skill. Such a command is a `<command-name>` user message, not a `Skill` tool call, so it was missed: `/capture` gave `skills={}` and `captured=false`. Built-ins (`/clear`, `/compact`) stay out: a command counts only when the session's skill listing names it.
+- `harness-metrics.py` `user_turns` counts human messages only. An injected skill body (`isMeta`) and a background-task notification (`origin.kind: task-notification`) are user records, but no longer turns: a one-prompt session that loaded one skill gave `user_turns: 2`.
 - `brain-sync` `sync.sh end` runs `qmd update` and `qmd embed` detached, logging to `~/.claude/logs/brain-sync.log`. Claude Code cancels the SessionEnd hook about 20 s after exit ("Hook cancelled"), which killed `qmd update` after the push, so `qmd embed` never ran at session end.
 
 ## [0.15.0] - 2026-10-26

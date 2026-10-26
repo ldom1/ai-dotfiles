@@ -92,8 +92,10 @@ def _scan(path: Path, acc: dict, main: bool) -> None:
             elif t == "attachment" and main and (r.get("attachment") or {}).get("type") == "skill_listing":
                 acc["skill_names"].update(r["attachment"].get("names") or [])
             elif t == "user" and main:
-                if isinstance(content, str) or (isinstance(content, list) and any(
-                        isinstance(x, dict) and x.get("type") != "tool_result" for x in content)):
+                # Injected skill bodies (isMeta) and task notifications are user records, not user turns.
+                human = not r.get("isMeta") and (r.get("origin") or {}).get("kind", "human") == "human"
+                if human and (isinstance(content, str) or (isinstance(content, list) and any(
+                        isinstance(x, dict) and x.get("type") != "tool_result" for x in content))):
                     acc["turns"] += 1
                 acc["commands"].update(SLASH_COMMAND.findall(_text(content)))
                 for x in content if isinstance(content, list) else []:
