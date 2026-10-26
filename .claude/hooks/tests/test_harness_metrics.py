@@ -190,3 +190,122 @@ def test_cli_session_by_id_and_append(tmp_path):
     assert done.returncode == 0 and done.stdout == ""
     row = json.loads((vault / "meta/harness-sessions/2026-10-h.jsonl").read_text())
     assert row["reason"] == "clear" and row["host"] == "h"
+
+
+# --- history ---
+
+def at(day, *records):
+    return [{**r, "timestamp": f"{day}T10:00:00Z"} for r in records]
+
+
+def git(vault, *args, day="2026-10-21"):
+    env = {**os.environ, "GIT_AUTHOR_DATE": f"{day}T10:00:00", "GIT_COMMITTER_DATE": f"{day}T10:00:00"}
+    subprocess.run(["git", "-C", str(vault), "-c", "user.name=t", "-c", "user.email=t@t", *args],
+                   check=True, capture_output=True, env=env)
+
+
+def commit_pitfalls(vault, text, day="2026-10-21"):
+    f = vault / "resources/operational/ai-agents/pitfalls.md"
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(text)
+    git(vault, "add", "-A", day=day)
+    git(vault, "commit", "-m", "x", day=day)
+
+
+@pytest.fixture
+def world(tmp_path, monkeypatch):
+    """Two main transcripts (one captures), one subagent transcript, a skill log, a git vault."""
+    proj = tmp_path / "projects" / "p"
+    (proj / "a" / "subagents").mkdir(parents=True)
+    transcript(proj, *at("2026-10-20", use("Skill", skill="capture"), use("Agent", 1, subagent_type="reviewer")),
+               name="a")
+    transcript(proj, *at("2026-10-22", use("Skill", skill="git-commit"), refusal("PreToolUse:Bash hook error: "
+               "local-ci merge guard: x")), name="b")
+    (proj / "a" / "subagents" / "agent-1.jsonl").write_text(json.dumps(use("Read", 2)) + "\n")
+    log = tmp_path / "skill-usage.log"
+    log.write_text("2026-09-30T09:00:00+01:00 old-skill\n2026-10-21T09:00:00+01:00 capture claude:Skill\n"
+                   + "2026-10-21T10:00:00+01:00 brain-load claude:sessionEnd\n" * 10)
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    git(vault, "init", "-q")
+    monkeypatch.setattr(hm, "REPO_DIR", tmp_path / "repo")
+    (tmp_path / "repo" / ".claude").mkdir(parents=True)
+    return tmp_path / "projects", log, vault
+
+
+def test_capture_rate_same_population(world):
+    projects, log, vault = world
+    h = hm.history(projects, log, vault)
+    assert h["sessions"]["count"]["value"] == 2  # subagent transcript is not a session
+    assert h["capture_rate"]["value"] == 0.5 and h["capture_rate"]["label"] == "déduit"
+    assert h["skill_log"]["by_source"]["value"]["claude:sessionEnd"] == 10  # the log never feeds the rate
+    assert h["skills"]["by_name"]["value"] == {"capture": 1, "git-commit": 1}
+    assert h["agents"]["by_name"]["value"] == {"reviewer": 1}
+    assert h["hook_refusals"]["by_guard"]["value"] == {"merge-guard": 1}
+
+
+def test_window_reported(world):
+    projects, log, vault = world
+    h = hm.history(projects, log, vault)
+    assert h["window"] == {"from": "2026-10-20", "to": "2026-10-22"}
+    assert h["skill_log"]["range"] == {"from": "2026-09-30", "to": "2026-10-21"}  # its own full range
+    assert h["skill_log"]["total"]["value"] == 12 and h["skill_log"]["in_window"]["value"] == 11
+    assert h["skill_log"]["by_month"]["value"] == {"2026-09": 1, "2026-10": 11}
+
+
+def test_rules_from_git(world):
+    projects, log, vault = world
+    commit_pitfalls(vault, "- rule one ^v1\n")
+    commit_pitfalls(vault, "- rule two ^v2\n")
+    h = hm.history(projects, log, vault)
+    assert (h["rules"]["added"]["value"], h["rules"]["removed"]["value"]) == (2, 1)
+    assert h["rules"]["added"]["label"] == "mesuré"
+    assert h["rules"]["added_in_window"]["value"] == 2
+    commit_pitfalls(vault, "- rule two ^v2\n- three ^v3\n", day="2026-12-01")  # outside the window
+    h = hm.history(projects, log, vault)
+    assert h["rules"]["added"]["value"] == 3 and h["rules"]["added_in_window"]["value"] == 2
+
+
+def test_rules_without_git_is_incomplete(world, tmp_path):
+    projects, log, _ = world
+    h = hm.history(projects, log, tmp_path / "nogit")
+    assert h["rules"]["added"]["label"] == "incomplet"
+
+
+def test_sensors(world, tmp_path):
+    projects, log, vault = world
+    for n in ("s1.md", "s2.md"):
+        (vault / "inbox/sensors").mkdir(parents=True, exist_ok=True)
+        (vault / "inbox/sensors" / n).write_text("draft")
+    (tmp_path / "repo/.claude/settings.json.tpl").write_text('{"hooks": [{\n  "command": "x",\n  "type": "command"\n}]}')
+    h = hm.history(projects, log, vault)
+    assert h["sensors"]["drafts"]["value"] == 2 and h["sensors"]["installed"]["value"] == 1
+
+
+def test_session_logs_and_harness_sessions(world):
+    projects, log, vault = world
+    d = vault / "inbox/daily/implementation/proj"
+    d.mkdir(parents=True)
+    (d / "2026-10-21-a.md").write_text("## x\n**Pitfall hit:** [[pitfalls#^v5]]\n**Pitfall hit:** [[pitfalls#^v5]] [[pitfalls#^c1]]\n")
+    (d / "2026-08-01-old.md").write_text("**Pitfall hit:** [[pitfalls#^v9]]\n")
+    (vault / "meta/harness-sessions").mkdir(parents=True)
+    (vault / "meta/harness-sessions/2026-10-h.jsonl").write_text('{"a": 1}\n{"a": 2}\n')
+    h = hm.history(projects, log, vault)
+    assert h["session_logs"]["files"]["value"] == 1 and h["session_logs"]["pitfall_hits"]["value"] == 2
+    assert h["session_logs"]["hits_by_rule"]["value"] == {"v5": 2, "c1": 1}
+    assert h["harness_sessions"]["value"] == 2
+
+
+def test_empty_world_does_not_crash(tmp_path, monkeypatch):
+    monkeypatch.setattr(hm, "REPO_DIR", tmp_path)
+    h = hm.history(tmp_path / "none", tmp_path / "none.log", tmp_path / "vault")
+    assert h["sessions"]["count"]["value"] == 0 and h["capture_rate"]["value"] is None
+
+
+def test_cli_history_prints_json(world):
+    projects, log, vault = world
+    out = run("history", "--vault", str(vault), "--projects", str(projects), "--skill-log", str(log))
+    assert out.returncode == 0
+    assert list(json.loads(out.stdout)) == ["window", "sessions", "capture_rate", "skills", "mcp", "agents",
+                                            "hook_refusals", "skill_log", "session_logs", "rules", "sensors",
+                                            "harness_sessions"]

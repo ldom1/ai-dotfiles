@@ -5,6 +5,8 @@
   append TRANSCRIPT --vault PATH [--host NAME] [--reason R]
                                                write or replace the record in
                                                <vault>/meta/harness-sessions/<YYYY-MM>-<host>.jsonl
+  history --vault PATH [--projects DIR] [--skill-log FILE]
+                                               one JSON aggregate over all transcripts, the skill log and the vault
 
 Stdlib only. The record holds names, counts, durations, cost, ids and repo-relative paths.
 It never holds prompts, replies, tool inputs, file contents or hook message text.
@@ -15,6 +17,7 @@ import json
 import os
 import re
 import socket
+import subprocess
 import sys
 import tempfile
 from collections import Counter
@@ -31,6 +34,10 @@ GUARDS = {
 HOOK_PREFIX = re.compile(r"^PreToolUse:\S+ hook error: ")
 RULE_ID = re.compile(r"\^([a-z]\d+)\b")
 EDIT_TOOLS = ("Edit", "Write", "MultiEdit")
+REPO_DIR = Path(__file__).resolve().parents[1]
+RULE_FILES = ("resources/operational/ai-agents/pitfalls.md", "resources/knowledge/patterns")
+HOOK_CONFIGS = (".claude/settings.json.tpl", ".cursor/hooks.json", ".vibe/user-hooks.toml")
+HOOK_COMMAND = re.compile(r'^\s*"?command"?\s*[:=]')
 
 
 def _roots() -> tuple:
@@ -202,6 +209,130 @@ def append_record(record: dict, vault: Path, host: str) -> Path:
     return target
 
 
+def _leaf(value, label: str, source: str) -> dict:
+    return {"value": value, "label": label, "source": source}
+
+
+def _tally(records: list, key: str) -> dict:
+    total = Counter()
+    for r in records:
+        total.update(r[key])
+    return dict(total.most_common())
+
+
+def _counts(records: list, key: str) -> dict:
+    return {"total": _leaf(sum(_tally(records, key).values()), "mesuré", "transcripts"),
+            "by_name": _leaf(_tally(records, key), "mesuré", "transcripts")}
+
+
+def _skill_log(path: Path, window: dict) -> dict:
+    src = f"skill-usage.log ({path.name})"
+    rows = []
+    for line in path.read_text(errors="replace").splitlines() if path.exists() else []:
+        parts = line.split()
+        if len(parts) >= 2:
+            rows.append((parts[0][:10], parts[1], parts[2] if len(parts) > 2 else "untagged"))
+    inside = [r for r in rows if window["from"] and window["from"] <= r[0] <= window["to"]]
+    days = sorted(r[0] for r in rows)
+    return {"range": {"from": days[0] if days else None, "to": days[-1] if days else None},
+            "total": _leaf(len(rows), "mesuré", src),
+            "in_window": _leaf(len(inside), "mesuré", src),
+            "by_month": _leaf(dict(sorted(Counter(r[0][:7] for r in rows).items())), "mesuré", src),
+            "by_source": _leaf(dict(Counter(r[2] for r in rows).most_common()), "mesuré", src),
+            "by_skill_in_window": _leaf(dict(Counter(r[1] for r in inside).most_common()), "mesuré", src)}
+
+
+def _session_logs(vault: Path, window: dict) -> dict:
+    files = hits = 0
+    by_rule = Counter()
+    for f in glob.glob(str(vault / "inbox/daily/implementation/**/*.md"), recursive=True):
+        day = os.path.basename(f)[:10]
+        if not (window["from"] and window["from"] <= day <= window["to"]):
+            continue
+        files += 1
+        for line in Path(f).read_text(errors="replace").splitlines():
+            if line.startswith("**Pitfall hit:**"):
+                hits += 1
+                by_rule.update(RULE_ID.findall(line))
+    src = "inbox/daily/implementation/**/*.md"
+    return {"files": _leaf(files, "mesuré", src), "pitfall_hits": _leaf(hits, "mesuré", src),
+            "hits_by_rule": _leaf(dict(by_rule.most_common()), "mesuré", src)}
+
+
+def _rules(vault: Path, window: dict) -> dict:
+    cmd = f"git log --reverse -p -- {' '.join(RULE_FILES)}"
+    try:
+        out = subprocess.run(["git", "-C", str(vault), "log", "--reverse", "--format=%x00%ad", "--date=short",
+                              "-p", "--", *RULE_FILES], capture_output=True, text=True, check=True).stdout
+    except (OSError, subprocess.CalledProcessError):
+        bad = _leaf(None, "incomplet", cmd)
+        return {k: bad for k in ("added", "removed", "added_in_window", "removed_in_window")}
+    seen, present = set(), set()
+    added, removed = [], []  # commit dates
+    for chunk in out.split("\0")[1:]:
+        day, _, diff = chunk.partition("\n")
+        lines = [ln for ln in diff.splitlines() if ln.startswith(("+", "-")) and not ln.startswith(("+++", "---"))]
+        plus = {i for ln in lines if ln[0] == "+" for i in RULE_ID.findall(ln)}
+        minus = {i for ln in lines if ln[0] == "-" for i in RULE_ID.findall(ln)}
+        added += [day] * len(plus - seen)
+        removed += [day] * len((minus - plus) & present)
+        seen |= plus
+        present = (present | plus) - (minus - plus)
+
+    def inside(days):
+        return sum(1 for d in days if window["from"] and window["from"] <= d <= window["to"])
+    return {"added": _leaf(len(added), "mesuré", cmd), "removed": _leaf(len(removed), "mesuré", cmd),
+            "added_in_window": _leaf(inside(added), "mesuré", cmd),
+            "removed_in_window": _leaf(inside(removed), "mesuré", cmd)}
+
+
+def _sensors(vault: Path) -> dict:
+    drafts = [p for p in (vault / "inbox/sensors").glob("*") if p.is_file()] if (vault / "inbox/sensors").is_dir() else []
+    installed = sum(1 for c in HOOK_CONFIGS if (REPO_DIR / c).is_file()
+                    for ln in (REPO_DIR / c).read_text(errors="replace").splitlines() if HOOK_COMMAND.match(ln))
+    return {"drafts": _leaf(len(drafts), "mesuré", "inbox/sensors/*"),
+            "installed": _leaf(installed, "mesuré", "lines with `command` in " + ", ".join(HOOK_CONFIGS))}
+
+
+def history(projects_dir: Path, skill_log: Path, vault: Path) -> dict:
+    """One aggregate over every main transcript, the skill log and the vault. Subagent transcripts are not sessions."""
+    recs = [parse_session(p) for p in sorted(glob.glob(os.path.join(projects_dir, "*", "*.jsonl")))]
+    failed = sum(1 for r in recs if r["metrics_status"] == "failed")
+    recs = [r for r in recs if r["metrics_status"] != "failed"]
+    days = sorted(r["date"][:10] for r in recs)
+    window = {"from": days[0] if days else None, "to": days[-1] if days else None}
+    n, captured = len(recs), sum(r["captured"] for r in recs)
+    costs = [r["cost_usd"] for r in recs if r["cost_usd"] is not None]
+    return {
+        "window": window,
+        "sessions": {
+            "count": _leaf(n, "mesuré", "transcripts"),
+            "unreadable": _leaf(failed, "mesuré", "transcripts"),
+            "partial": _leaf(sum(r["metrics_status"] == "partial" for r in recs), "mesuré", "transcripts"),
+            "user_turns": _leaf(sum(r["user_turns"] for r in recs), "mesuré", "transcripts"),
+            "duration_s": _leaf(sum(r["duration_s"] for r in recs), "mesuré", "transcripts"),
+            "cost_usd": _leaf(round(sum(costs), 2), "mesuré" if len(costs) == n else "incomplet", "transcripts"),
+            "by_project": _leaf(dict(Counter(r["project"] for r in recs).most_common()), "mesuré", "transcripts"),
+        },
+        "capture_rate": _leaf(round(captured / n, 3) if n else None, "déduit",
+                              "transcripts: sessions with a capture skill call or an implementation-log write"),
+        "skills": _counts(recs, "skills"),
+        "mcp": _counts(recs, "mcp"),
+        "agents": _counts(recs, "agents"),
+        "hook_refusals": {**_counts(recs, "hook_refusals"),
+                          "by_guard": _leaf(_tally(recs, "hook_refusals"), "mesuré", "transcripts"),
+                          "permission": _leaf(sum(r["permission_refusals"] for r in recs), "mesuré", "transcripts")},
+        "skill_log": _skill_log(Path(skill_log), window),
+        "session_logs": _session_logs(Path(vault), window),
+        "rules": _rules(Path(vault), window),
+        "sensors": _sensors(Path(vault)),
+        "harness_sessions": _leaf(
+            sum(1 for f in glob.glob(str(Path(vault) / "meta/harness-sessions/*.jsonl"))
+                for ln in Path(f).read_text(errors="replace").splitlines() if ln.strip()),
+            "mesuré", "meta/harness-sessions/*.jsonl"),
+    }
+
+
 def compact(record: dict) -> str:
     cost = record["cost_usd"]
     return (f"{record['session_id'][:8]} {record['date'][:10]} {record['project']} "
@@ -231,7 +362,15 @@ def main(argv=None) -> int:
     a.add_argument("--vault", required=True)
     a.add_argument("--host", default=socket.gethostname())
     a.add_argument("--reason")
+    h = sub.add_parser("history")
+    h.add_argument("--vault", required=True)
+    h.add_argument("--projects", default=os.environ.get("CLAUDE_PROJECTS_DIR") or "~/.claude/projects")
+    h.add_argument("--skill-log", default="~/.claude/skill-usage.log")
     args = ap.parse_args(argv)
+    if args.cmd == "history":
+        agg = history(Path(args.projects).expanduser(), Path(args.skill_log).expanduser(), Path(args.vault))
+        print(json.dumps(agg, ensure_ascii=False, indent=1))
+        return 0
     if args.cmd == "session":
         path = _find(args.id) if args.id else Path(args.transcript) if args.transcript else None
         if path is None:
