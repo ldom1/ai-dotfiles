@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-10-26
+
 ### Added
 - `marketing-ops` project registered in `config/brain-projects.tsv`.
 
