@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.15.2] - 2026-10-27
+
 ### Changed
 - `AGENTS.md`: the `## Builder` package-first rule now covers every code change (order: repo code > established package > stdlib > hand-written code), defines "established", and asks the owner before a little-known package, git repository or binary; Occam/YAGNI now set scope only; ponytail's dependency step (4) is overridden; new `## Python` section (`uv`, `pydantic`, `pandera`, `pydantic-settings`, pandas/polars). `.vibe/AGENTS.md` and `.cursor/rules/agents.mdc` rebuilt.
 - `AGENTS.md` `## Builder`: a spec or plan names its building blocks (package chosen, hand-written alternative rejected; see `spec-template.md` in the vault); its Tech Stack is not a whitelist. This replaces the separate "name the package" bullet.
