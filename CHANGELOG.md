@@ -4,6 +4,7 @@
 
 ### Changed
 - `AGENTS.md`: the `## Builder` package-first rule now covers every code change (order: repo code > established package > stdlib > hand-written code), defines "established", and asks the owner before a little-known package, git repository or binary; Occam/YAGNI now set scope only; ponytail's dependency step (4) is overridden; new `## Python` section (`uv`, `pydantic`, `pandera`, `pydantic-settings`, pandas/polars). `.vibe/AGENTS.md` and `.cursor/rules/agents.mdc` rebuilt.
+- `capture` 1.2.1: the vault rules (`^o`) moved from `pitfalls.md` to the pattern note `vault-patterns.md`, so the letter list in step 4 names `o` under pattern notes.
 
 ## [0.15.1] - 2026-10-26
 
