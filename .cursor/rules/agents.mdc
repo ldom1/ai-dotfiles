@@ -18,9 +18,17 @@ alwaysApply: true
 - I am one human. I cannot read and validate millions of lines of code. On a new project, start from existing, proven building blocks, as a real developer does; never from zero.
 
 ## Builder
-Rules for a session that creates a project, a component or a service.
+Rules for every code change, and for a session that creates a project, a component or a service.
 
-- Do not rebuild what an established open-source project already does. Before designing a component or a service, search for a package, repository or self-hostable tool that is community-validated and actively maintained; if one fits, use it and write only the glue. The design note names the candidates searched and why each was rejected. This applies to code and to the homelab alike (self-host the known tool instead of a custom one).
+- Do not rebuild what an established open-source project already does. Before you write code or design a component or a service, search for an established package, repository or self-hostable tool; if one fits, use it and write only the glue. For a component or a service, the design note names the candidates searched and why each was rejected. This applies to code and to the homelab alike (self-host the known tool instead of a custom one).
+- Order of preference: existing repo code > established package > stdlib > hand-written code (last resort).
+- Prefer an established, widely used package or tool over hand-written code, also for a few lines, when it does the job better (correctness, edge cases, security). Examples: boto3, pydantic, httpx, regex, pandas, polars, ffmpeg.
+- "Established" means: a known maintainer or organisation, or a large user base (rough guide: 1,000+ GitHub stars or millions of monthly downloads), a release in the last 12 months, not archived.
+- Ask the owner before adding a little-known package, a git repository or a binary that does not meet this bar. Give its stars, last release and the established alternatives you checked.
+- A spec or plan names its building blocks (see "Building blocks" in spec-template.md). For each solved problem (signing, parsing, Unicode, retries, date maths), write the package chosen and the hand-written alternative rejected, in the spec, plan, design note or PR. Never prescribe hand-written code for a solved problem without naming the rejected package. Skip for tasks with no solved problem.
+- The Tech Stack of a spec or plan is a list of known packages, not a whitelist. An implementer may add an established package when a task needs it, and records it in the PR. A little-known package needs the owner's approval (see the "Established" definition above).
+- The stdlib wins only when it does the job fully (`json`, `pathlib`, `datetime`). Hand-written crypto, parsing, protocol signing or Unicode handling is never "a few lines".
+- Do not migrate existing code to another package unless asked.
 - Prefer the tool's own extension points (plugins, API, config) over a fork; prefer a fork over a rewrite.
 
 ## Local Brain (Obsidian vault)
@@ -33,11 +41,23 @@ Rules for a session that creates a project, a component or a service.
 - End a substantive session with `/capture`. Run `/brain-audit` only when told it is due.
 
 ## Development
-- Occam's razor & YAGNI: fewest assumptions, smallest surface area, smallest change that works. Simple, structured, readable code (shortest solution that stays readable). No speculative abstractions, no backwards-compat shims for removed code. Reuse existing code, stdlib and installed deps before writing new code; use the `ponytail` skill on coding tasks.
+- Occam's razor & YAGNI set the scope, not the dependency choice: fewest assumptions, smallest surface area, smallest change that works, no feature nobody asked for. Simple, structured, readable code (shortest solution that stays readable). No speculative abstractions, no backwards-compat shims for removed code.
+- Before writing new code, reuse in this order: existing repo code, then an established package (`## Builder`), then the stdlib. Hand-written code is the last resort.
+- Use the `ponytail` skill on coding tasks. Ponytail's dependency step (4) is overridden: apply the established-package rule.
 - Don't read files unrelated to the task.
 - When behavior, setup, commands or visible output change, update `CHANGELOG.md` in the same change (small infra/skill changes included). Update `README.md` when user-facing usage or structure changed.
 - If the repo root has `graphify-out*` (`graphify-out.md`/`.json`, `graphify-out/graph.json`), read it for architecture before inferring from the file tree. Never modify it: Graphify regenerates it.
 - For a Python bug fix or new Python behaviour, run `/python-tests` explicitly: its auto-trigger missed 1 run in 4.
+
+## Python
+- Use `uv` for all environment and dependency management (replaces pip, venv, poetry, requirements.txt). Commit `uv.lock`. Use `uv add`, `uv run`, `uv sync`.
+- Validate external data (APIs, files, user input) with `pydantic`.
+- Validate DataFrame schemas with `pandera` when a pipeline has a stable schema.
+- Centralise configuration in one `pydantic-settings` `BaseSettings` class. No `os.environ` reads scattered in the code.
+- Use strict type hints on public functions and modules.
+- Use `pandas` by default. Use `polars` when data does not fit comfortably in memory (rough guide: > 1 GB) or when pandas is too slow. Keep the library already used in the repo.
+- Prefer community-standard libraries (httpx, regex, boto3, etc.) over custom code.
+- Scale the rigour to the code: a throwaway script of 20 lines does not need models, schemas and settings classes.
 
 ## Docs style (ASD-STE100 inspired)
 - Prose docs: sentences ≤ 20 words (procedures), ≤ 25 (descriptions).
