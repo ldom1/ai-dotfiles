@@ -33,7 +33,8 @@ Rules for every code change, and for a session that creates a project, a compone
 - Prefer an established, widely used package or tool over hand-written code, also for a few lines, when it does the job better (correctness, edge cases, security). Examples: boto3, pydantic, httpx, regex, pandas, polars, ffmpeg.
 - "Established" means: a known maintainer or organisation, or a large user base (rough guide: 1,000+ GitHub stars or millions of monthly downloads), a release in the last 12 months, not archived.
 - Ask the owner before adding a little-known package, a git repository or a binary that does not meet this bar. Give its stars, last release and the established alternatives you checked.
-- Name the package you chose and the hand-written alternative you rejected, in one line, in the PR or design note.
+- A spec or plan names its building blocks (see "Building blocks" in spec-template.md). For each solved problem (signing, parsing, Unicode, retries, date maths), write the package chosen and the hand-written alternative rejected, in the spec, plan, design note or PR. Never prescribe hand-written code for a solved problem without naming the rejected package. Skip for tasks with no solved problem.
+- The Tech Stack of a spec or plan is a list of known packages, not a whitelist. An implementer may add an established package when a task needs it, and records it in the PR. A little-known package needs the owner's approval (see the "Established" definition above).
 - The stdlib wins only when it does the job fully (`json`, `pathlib`, `datetime`). Hand-written crypto, parsing, protocol signing or Unicode handling is never "a few lines".
 - Do not migrate existing code to another package unless asked.
 - Prefer the tool's own extension points (plugins, API, config) over a fork; prefer a fork over a rewrite.
