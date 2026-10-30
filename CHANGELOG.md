@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 ### Added
-- `config/tmux.conf` and `bin/tma`: tmux setup for agent sessions. `tma [dir] [n]` opens a nav pane on the left and `n` agent panes on the right (`main-vertical`). Mouse selection copies through OSC 52, so accents survive (`clip.exe` breaks them). The theme is dark and flat, with pane titles. `install.sh` links `~/.tmux.conf` and `~/.local/bin/tma`. The README documents the Windows Terminal `ctrl+shift+m` action.
+- `config/tmux.conf`, `config/tmux-sidebar-on.sh` and `bin/tma`: tmux setup for agent sessions. The [opensessions](https://github.com/Ataraxy-Labs/opensessions) sidebar (TPM plugin) lists sessions on the left: arrows select one, `Enter` switches to it. The terminal is on the right. `Ctrl+Shift+O` / `Ctrl+Shift+E` (Windows Terminal `sendInput` to tmux `user-keys`) split right / below. Mouse selection copies through OSC 52, so accents survive (`clip.exe` breaks them). `install.sh` links `~/.tmux.conf` and `~/.local/bin/tma` and clones TPM. The README documents the Windows Terminal keys and the opensessions source build for glibc < 2.39.
 
 ## [0.15.2] - 2026-10-27
 

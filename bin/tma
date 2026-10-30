@@ -1,17 +1,11 @@
 #!/usr/bin/env bash
-# tma [dir] [n_agents] — attach to, or create, a tmux session for agents.
-# Layout: nav pane on the left (30%), n agent panes stacked on the right.
+# tma [dir] — attach to, or create, the tmux session for dir (named after it).
+# The session-created hook in tmux.conf adds the session sidebar (tma-nav) on the left.
 set -euo pipefail
 
 dir=$(realpath "${1:-$PWD}")
-n=${2:-2}
 name=$( [ "$dir" = "$HOME" ] && echo main || basename "$dir" | tr '.:' '__' )
 
-if ! tmux has-session -t "=$name" 2>/dev/null; then
-  tmux new-session -d -s "$name" -c "$dir"
-  for _ in $(seq "$n"); do tmux split-window -t "$name" -h -c "$dir"; done
-  tmux select-layout -t "$name" main-vertical
-  tmux select-pane -t "$name:1.2"
-fi
+tmux has-session -t "=$name" 2>/dev/null || tmux new-session -d -s "$name" -c "$dir"
 
 if [ -n "${TMUX:-}" ]; then tmux switch-client -t "=$name"; else exec tmux attach -t "=$name"; fi

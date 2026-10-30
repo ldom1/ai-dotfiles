@@ -194,6 +194,8 @@ done
 [[ -e "$HOME/.tmux.conf" && ! -L "$HOME/.tmux.conf" ]] && mv "$HOME/.tmux.conf" "$HOME/.tmux.conf.bak" && warn "Backed up ~/.tmux.conf → ~/.tmux.conf.bak"
 ln -sfn "$DOTFILES/config/tmux.conf" "$HOME/.tmux.conf"
 log "$HOME/.tmux.conf → $DOTFILES/config/tmux.conf"
+[[ -d "$HOME/.tmux/plugins/tpm" ]] || git clone -q --depth 1 https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
+log "TPM ready: run prefix + I in tmux to install opensessions"
 
 # Statusline: pinned user-prefix install; npx resolves the package on every repaint (~1 s).
 CCSTATUSLINE_VERSION=2.2.30
