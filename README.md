@@ -418,12 +418,30 @@ Local Medium/blog drafts belong in `articles/` (gitignored).
 
 ### tmux for agents
 
-`install.sh` links `~/.tmux.conf` to `config/tmux.conf` and installs `bin/tma` in `~/.local/bin`.
+`install.sh` links `~/.tmux.conf` to `config/tmux.conf`, installs `bin/tma` in `~/.local/bin` and clones [TPM](https://github.com/tmux-plugins/tpm).
+The session sidebar is [opensessions](https://github.com/Ataraxy-Labs/opensessions) (TPM plugin). It shows each session with its git branch and Claude Code agent state.
 
-- `tma [dir] [n]` attaches to the session for `dir`, or creates it. The layout is `main-vertical`: a nav pane on the left (30%) and `n` agent panes stacked on the right (default 2). From `~`, the session is `main`.
+- `tma [dir]` attaches to the session for `dir`, or creates it (named after the folder; `main` for `~`).
+- Layout: opensessions sidebar on the left, terminal on the right.
+- In the sidebar: arrows select a session, `Enter` switches to it. `Alt+s` focuses the sidebar. `prefix o t` toggles it.
+- `config/tmux-sidebar-on.sh` opens the sidebar on attach: opensessions starts hidden on each tmux server.
+- Sidebar settings: `~/.config/opensessions/config.json` (`sidebarPosition`, `sidebarWidth`, `theme`).
 - Mouse selection copies to the system clipboard (OSC 52). Right click pastes.
-- `prefix a` adds an agent pane. `prefix =` re-applies the layout. `Alt+arrows` moves between panes. `Alt+z` zooms.
-- Windows Terminal (manual step): add a `newTab` action with `"commandline": "wsl.exe -d Ubuntu --cd ~ -- zsh -lic tma"` and bind it to `ctrl+shift+m`. This overrides the default mark-mode key.
+- `Alt+arrows` moves between panes. `Alt+z` zooms.
+
+First install, in tmux: press `prefix I`. The prebuilt opensessions binaries need glibc 2.39 (Ubuntu 24.04+). On an older system, build them after each install or update:
+
+```bash
+cd ~/.tmux/plugins/opensessions && cargo build --release
+cp target/release/opensessions-server target/release/opensessions-sidebar bin/
+```
+
+Windows Terminal (manual step, `settings.json`):
+
+- `ctrl+shift+m`: `newTab` action with `"commandline": "wsl.exe -d Ubuntu --cd ~ -- zsh -lic tma"`. It overrides the default mark-mode key.
+- `ctrl+shift+o`: `sendInput` `"\u001b[[tma-o"`. tmux maps it to a split on the right (`user-keys[0]`).
+- `ctrl+shift+e`: `sendInput` `"\u001b[[tma-e"`. tmux maps it to a split below (`user-keys[1]`).
+- These keys send text in every Windows Terminal tab, also outside tmux.
 
 `install.sh` symlinks `~/.claude` and `~/.cursor` to this repo, generates `settings.json` from the template, and creates `settings.local.json` if missing. Skills are wired automatically — no plugin install needed for your own machine. It also sets `git config core.hooksPath git-hooks` so the versioned [pre-commit hook](git-hooks/pre-commit) runs (blocks accidental commits under Cursor runtime dirs under `.cursor/` and scans staged diffs for secrets). If you clone without running `install.sh`, run `bash scripts/install-git-hooks.sh` once from the repo root.
 
