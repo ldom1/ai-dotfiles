@@ -32,6 +32,7 @@
     ]
   },
   "model": "opus",
+  "preferredNotifChannel": "terminal_bell",
   "hooks": {
     "SessionStart": [
       {

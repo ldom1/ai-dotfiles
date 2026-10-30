@@ -1,5 +1,6 @@
 {
   "model": "opus[1m]",
+  "preferredNotifChannel": "terminal_bell",
   "env": {
     "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
     "GRAPHIFY_NO_AUTO_REFRESH": "1"
