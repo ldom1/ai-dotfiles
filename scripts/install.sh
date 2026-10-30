@@ -184,11 +184,16 @@ fi
 header "Installing ai-dotfiles CLI"
 
 mkdir -p "$HOME/.local/bin"
-for cli in ai-dotfiles stop-check-trust; do
+for cli in ai-dotfiles stop-check-trust tma; do
   chmod +x "$DOTFILES/bin/$cli"
   ln -sfn "$DOTFILES/bin/$cli" "$HOME/.local/bin/$cli"
   log "$cli → $HOME/.local/bin/$cli (ensure ~/.local/bin is on PATH)"
 done
+
+# tmux config for agent sessions (launcher: bin/tma)
+[[ -e "$HOME/.tmux.conf" && ! -L "$HOME/.tmux.conf" ]] && mv "$HOME/.tmux.conf" "$HOME/.tmux.conf.bak" && warn "Backed up ~/.tmux.conf → ~/.tmux.conf.bak"
+ln -sfn "$DOTFILES/config/tmux.conf" "$HOME/.tmux.conf"
+log "$HOME/.tmux.conf → $DOTFILES/config/tmux.conf"
 
 # Statusline: pinned user-prefix install; npx resolves the package on every repaint (~1 s).
 CCSTATUSLINE_VERSION=2.2.30
