@@ -426,6 +426,7 @@ Sessions:
 - `tma [dir]` attaches to the session for `dir`, or creates it. The session name is the folder name (`main` for `~`).
 - `tma -n <name> [dir]` sets the name. Use it for an SSH session (`tma -n vps`).
 - If a session of the same name exists for another folder, `tma` stops and shows both paths. Use `-n`.
+- A session created without a name (plain `tmux`) is renamed after its folder by `config/tmux-name-session.sh` (`after-new-session` hook), with a `-2` suffix when the name is taken.
 - `Ctrl+Shift+N` opens a folder picker in a popup (opensessions `sessionizer.sh`, fzf) and creates a session there. It searches `$HOME` 2 levels deep (`SESSIONIZER_DIR`, `SESSIONIZER_MAXDEPTH`).
 - `Ctrl+Shift+X` kills the current session after a `y/n` prompt, moves to another session and saves the layout at once, so the session does not come back on restore.
 - In the sidebar: `n` creates a session, `x` kills the selected one.
