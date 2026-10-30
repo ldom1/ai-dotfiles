@@ -416,6 +416,69 @@ Then index the vault once ([QMD vault setup](#qmd-vault-setup-one-time)) and tag
 
 Local Medium/blog drafts belong in `articles/` (gitignored).
 
+### tmux for agents
+
+`install.sh` links `~/.tmux.conf` to `config/tmux.conf`, installs `bin/tma` in `~/.local/bin` and clones [TPM](https://github.com/tmux-plugins/tpm).
+The session sidebar is [opensessions](https://github.com/Ataraxy-Labs/opensessions) (TPM plugin). It shows each session with its git branch and Claude Code agent state.
+
+Sessions:
+
+- `tma [dir]` attaches to the session for `dir`, or creates it. The session name is the folder name (`main` for `~`).
+- `tma -n <name> [dir]` sets the name. Use it for an SSH session (`tma -n vps`).
+- If a session of the same name exists for another folder, `tma` stops and shows both paths. Use `-n`.
+- A session created without a name (plain `tmux`) is renamed after its folder by `config/tmux-name-session.sh` (`after-new-session` hook), with a `-2` suffix when the name is taken.
+- `Ctrl+Shift+N` opens a folder picker in a popup (opensessions `sessionizer.sh`, fzf) and creates a session there. It searches `$HOME` 2 levels deep (`SESSIONIZER_DIR`, `SESSIONIZER_MAXDEPTH`).
+- `Ctrl+Shift+X` kills the current session after a `y/n` prompt, moves to another session and saves the layout at once, so the session does not come back on restore.
+- In the sidebar: `n` creates a session, `x` kills the selected one.
+- Right click in the sidebar opens a menu for the **current** session: rename, new, kill, hide sidebar. tmux does not know which row was clicked: left-click a session first to act on it.
+- A renamed session no longer matches its folder: `tma <dir>` then creates a new session with the folder name.
+
+Keys:
+
+- In the sidebar, arrows select a session and `Enter` switches to it. `Alt+s` focuses the sidebar. `Ctrl+Shift+B` (or `prefix o t`) shows or hides it. It opens again on the next attach.
+- `Ctrl+Shift+O` splits right, `Ctrl+Shift+E` splits below. They do nothing in the sidebar.
+- `Alt+arrows` moves between panes. `Alt+z` zooms.
+- Mouse selection copies to the system clipboard (OSC 52). Right click pastes (outside the sidebar).
+
+Agent bell:
+
+- Claude Code rings the terminal bell when it waits or finishes (`preferredNotifChannel: "terminal_bell"` in `.claude/settings.json`).
+- tmux sends a bell only to clients of the session that rang. `config/tmux-bell-relay.sh` (`alert-bell` hook) forwards the bell of a background session to every attached client.
+- Windows Terminal: `"bellStyle": "taskbar"` on the WSL profiles flashes the taskbar icon.
+
+Save and restore ([tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) + [tmux-continuum](https://github.com/tmux-plugins/tmux-continuum)):
+
+- The layout is saved every 15 min (`prefix Ctrl-s` saves now). It is restored when the tmux server starts (`prefix Ctrl-r` restores now).
+- tmux restores sessions, windows, panes and folders. Processes are not kept: start each agent again (`claude -c` resumes the last conversation of the folder).
+- continuum neither saves nor restores while another tmux server runs (`tmux -L …`).
+- `config/tmux-resurrect-sidebar.sh` keeps the sidebar out of the save file and removes a duplicate sidebar after a restore.
+
+Agent status in the sidebar:
+
+- Right of each session: one glyph per agent (3 at most, then `+N`). `◉` blocked (waits for you), `⚙` using tools, `⠹` working, `●` done (not seen), `✓` idle, `⚠` stopped, `✗` error.
+- Under each session with agents: one line with the count for each status, most urgent first (`◉ 1 blocked  ⠹ 2 working`). This line comes from a local patch, `config/opensessions/agent-summary-row.patch`. `install.sh` applies it and builds opensessions from source (`cargo`).
+- Before an opensessions update (`prefix U`), drop the patch: `git -C ~/.tmux/plugins/opensessions checkout -- .`. Then run `install.sh` again. If the patch no longer applies, `install.sh` warns and the sidebar keeps the stock rows.
+
+Other:
+
+- `config/tmux-sidebar-on.sh` opens the sidebar on attach: opensessions starts hidden on each tmux server.
+- Sidebar settings: `~/.config/opensessions/config.json` (`sidebarPosition`, `sidebarWidth`, `theme`).
+
+First install, in tmux: press `prefix I`, then run `install.sh` again. `install.sh` builds opensessions with `cargo` when the agent summary patch is new, or when the prebuilt binaries cannot run (they need glibc 2.39, Ubuntu 24.04+; checked with `ldd`). Without `cargo`, it prints the build command. Restart the sidebar after a build: `Ctrl+Shift+B` twice.
+
+Windows Terminal (manual step, `settings.json`):
+
+- `ctrl+shift+m`: `newTab` action with `"commandline": "wsl.exe -d Ubuntu --cd ~ -- zsh -lic tma"`. It overrides the default mark-mode key.
+- `ctrl+shift+o`: `sendInput` `"\u001b[[tma-o"`. tmux maps it to a split on the right (`user-keys[0]`).
+- `ctrl+shift+e`: `sendInput` `"\u001b[[tma-e"`. tmux maps it to a split below (`user-keys[1]`).
+- `ctrl+shift+x`: `sendInput` `"\u001b[[tma-x"` (`user-keys[2]`, kill session).
+- `ctrl+shift+n`: `sendInput` `"\u001b[[tma-n"` (`user-keys[3]`, new session). It overrides the default new-window key.
+- `ctrl+shift+b`: `sendInput` `"\u001b[[tma-b"` (`user-keys[4]`, show / hide the sidebar).
+- These keys send text in every Windows Terminal tab, also outside tmux.
+- `"bellStyle": "taskbar"` on each WSL profile.
+
+Ghostty sends the keys as extended keys, and tmux binds `C-S-o`, `C-S-e`, `C-S-x`, `C-S-n` and `C-S-b`. `Ctrl+Shift+N` is the Ghostty new-window key: if Ghostty opens a window, add `keybind = ctrl+shift+n=unbind` (not tested).
+
 `install.sh` symlinks `~/.claude` and `~/.cursor` to this repo, generates `settings.json` from the template, and creates `settings.local.json` if missing. Skills are wired automatically — no plugin install needed for your own machine. It also sets `git config core.hooksPath git-hooks` so the versioned [pre-commit hook](git-hooks/pre-commit) runs (blocks accidental commits under Cursor runtime dirs under `.cursor/` and scans staged diffs for secrets). If you clone without running `install.sh`, run `bash scripts/install-git-hooks.sh` once from the repo root.
 
 Run `install.sh` from the main checkout only. It exits with code 2 in a linked git worktree, because the links would point into the worktree and break when it is removed. It also exits with code 2 on an unknown argument, so a flag from a newer version never runs a full install.

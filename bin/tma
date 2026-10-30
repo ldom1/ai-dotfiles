@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# tma [-n name] [dir] — attach to, or create, the tmux session for dir.
+# The session name is the folder name (main for ~), or name with -n.
+# The opensessions sidebar opens on attach (config/tmux-sidebar-on.sh).
+set -euo pipefail
+
+name=
+if [ "${1:-}" = -n ]; then name=${2:?usage: tma [-n name] [dir]}; shift 2; fi
+dir=$(realpath "${1:-$PWD}")
+[ -n "$name" ] || name=$( [ "$dir" = "$HOME" ] && echo main || basename "$dir" )
+name=$(printf '%s' "$name" | tr '.:' '__')
+
+if tmux has-session -t "=$name" 2>/dev/null; then
+  have=$(realpath "$(tmux display -p -t "=$name:" '#{session_path}')")
+  if [ "$have" != "$dir" ]; then
+    echo "tma: session '$name' already exists for $have, not $dir" >&2
+    echo "tma: use another name: tma -n <name> $dir" >&2
+    exit 1
+  fi
+else
+  tmux new-session -d -s "$name" -c "$dir"
+fi
+
+if [ -n "${TMUX:-}" ]; then tmux switch-client -t "=$name"; else exec tmux attach -t "=$name"; fi

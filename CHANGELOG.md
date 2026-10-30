@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Added
+- tmux setup for agent sessions: `config/tmux.conf`, `bin/tma`, and the helper scripts `config/tmux-sidebar-on.sh`, `config/tmux-bell-relay.sh`, `config/tmux-resurrect-sidebar.sh`.
+  - The [opensessions](https://github.com/Ataraxy-Labs/opensessions) sidebar (TPM plugin) lists sessions on the left: arrows select one, `Enter` switches. The terminal is on the right.
+  - `tma [-n name] [dir]` creates or attaches a named session. It stops when the name belongs to another folder.
+  - `Ctrl+Shift+O` / `Ctrl+Shift+E` split right / below: Windows Terminal through `sendInput` and tmux `user-keys`, Ghostty through extended keys (`C-S-o` / `C-S-e`).
+  - `Ctrl+Shift+N` creates a session from a folder picker (opensessions `sessionizer.sh` in a popup). `Ctrl+Shift+X` kills the current session after a prompt and saves the layout at once. `Ctrl+Shift+B` shows or hides the sidebar. Right click in the sidebar opens a menu for the current session (rename, new, kill, hide sidebar); elsewhere it still pastes.
+  - Agent bell: Claude Code `preferredNotifChannel: "terminal_bell"` (`.claude/settings.json`). An `alert-bell` hook forwards the bell of a background session to attached clients, so the Windows Terminal taskbar flashes (`bellStyle: "taskbar"`).
+  - tmux-resurrect + tmux-continuum save the layout every 15 min and restore it at server start. Processes are not kept. The sidebar is kept out of the save file, and a duplicate sidebar is removed after a restore. Exception to the 12-month release rule (last push 2024-08): no maintained alternative restores panes and folders.
+  - A session created without a name is renamed after its folder (`config/tmux-name-session.sh`). The window keeps its name while the sidebar has the focus, and the sidebar pane has no border title.
+  - Sidebar agent summary: under each session with agents, one line counts the agents for each status, most urgent first (`◉ 1 blocked  ⠹ 2 working`). Local opensessions patch `config/opensessions/agent-summary-row.patch`, applied by `install.sh`, which then builds from source.
+  - Mouse selection copies through OSC 52, so accents survive (`clip.exe` breaks them).
+  - `install.sh` links `~/.tmux.conf` and `~/.local/bin/tma`, clones TPM, and builds the opensessions binaries with `cargo` when the prebuilt ones need a newer glibc (`ldd` check).
+
 ## [0.15.2] - 2026-10-27
 
 ### Changed
