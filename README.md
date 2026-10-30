@@ -453,12 +453,18 @@ Save and restore ([tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrec
 - continuum neither saves nor restores while another tmux server runs (`tmux -L …`).
 - `config/tmux-resurrect-sidebar.sh` keeps the sidebar out of the save file and removes a duplicate sidebar after a restore.
 
+Agent status in the sidebar:
+
+- Right of each session: one glyph per agent (3 at most, then `+N`). `◉` blocked (waits for you), `⚙` using tools, `⠹` working, `●` done (not seen), `✓` idle, `⚠` stopped, `✗` error.
+- Under each session with agents: one line with the count for each status, most urgent first (`◉ 1 blocked  ⠹ 2 working`). This line comes from a local patch, `config/opensessions/agent-summary-row.patch`. `install.sh` applies it and builds opensessions from source (`cargo`).
+- Before an opensessions update (`prefix U`), drop the patch: `git -C ~/.tmux/plugins/opensessions checkout -- .`. Then run `install.sh` again. If the patch no longer applies, `install.sh` warns and the sidebar keeps the stock rows.
+
 Other:
 
 - `config/tmux-sidebar-on.sh` opens the sidebar on attach: opensessions starts hidden on each tmux server.
 - Sidebar settings: `~/.config/opensessions/config.json` (`sidebarPosition`, `sidebarWidth`, `theme`).
 
-First install, in tmux: press `prefix I`, then run `install.sh` again. The prebuilt opensessions binaries need glibc 2.39 (Ubuntu 24.04+). `install.sh` checks them with `ldd` and builds them with `cargo` when they cannot run. Without `cargo`, it prints the build command. Run `install.sh` again after an opensessions update (`prefix U`).
+First install, in tmux: press `prefix I`, then run `install.sh` again. `install.sh` builds opensessions with `cargo` when the agent summary patch is new, or when the prebuilt binaries cannot run (they need glibc 2.39, Ubuntu 24.04+; checked with `ldd`). Without `cargo`, it prints the build command. Restart the sidebar after a build: `Ctrl+Shift+B` twice.
 
 Windows Terminal (manual step, `settings.json`):
 

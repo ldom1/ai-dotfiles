@@ -11,6 +11,7 @@
   - Agent bell: Claude Code `preferredNotifChannel: "terminal_bell"` (`.claude/settings.json`). An `alert-bell` hook forwards the bell of a background session to attached clients, so the Windows Terminal taskbar flashes (`bellStyle: "taskbar"`).
   - tmux-resurrect + tmux-continuum save the layout every 15 min and restore it at server start. Processes are not kept. The sidebar is kept out of the save file, and a duplicate sidebar is removed after a restore. Exception to the 12-month release rule (last push 2024-08): no maintained alternative restores panes and folders.
   - A session created without a name is renamed after its folder (`config/tmux-name-session.sh`). The window keeps its name while the sidebar has the focus, and the sidebar pane has no border title.
+  - Sidebar agent summary: under each session with agents, one line counts the agents for each status, most urgent first (`◉ 1 blocked  ⠹ 2 working`). Local opensessions patch `config/opensessions/agent-summary-row.patch`, applied by `install.sh`, which then builds from source.
   - Mouse selection copies through OSC 52, so accents survive (`clip.exe` breaks them).
   - `install.sh` links `~/.tmux.conf` and `~/.local/bin/tma`, clones TPM, and builds the opensessions binaries with `cargo` when the prebuilt ones need a newer glibc (`ldd` check).
 
