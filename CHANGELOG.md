@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- `config/tmux.conf` and `bin/tma`: tmux setup for agent sessions. `tma [dir] [n]` opens a nav pane on the left and `n` agent panes on the right (`main-vertical`). Mouse selection copies through OSC 52, so accents survive (`clip.exe` breaks them). The theme is dark and flat, with pane titles. `install.sh` links `~/.tmux.conf` and `~/.local/bin/tma`. The README documents the Windows Terminal `ctrl+shift+m` action.
+
 ## [0.15.2] - 2026-10-27
 
 ### Changed

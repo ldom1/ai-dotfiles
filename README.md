@@ -416,6 +416,15 @@ Then index the vault once ([QMD vault setup](#qmd-vault-setup-one-time)) and tag
 
 Local Medium/blog drafts belong in `articles/` (gitignored).
 
+### tmux for agents
+
+`install.sh` links `~/.tmux.conf` to `config/tmux.conf` and installs `bin/tma` in `~/.local/bin`.
+
+- `tma [dir] [n]` attaches to the session for `dir`, or creates it. The layout is `main-vertical`: a nav pane on the left (30%) and `n` agent panes stacked on the right (default 2). From `~`, the session is `main`.
+- Mouse selection copies to the system clipboard (OSC 52). Right click pastes.
+- `prefix a` adds an agent pane. `prefix =` re-applies the layout. `Alt+arrows` moves between panes. `Alt+z` zooms.
+- Windows Terminal (manual step): add a `newTab` action with `"commandline": "wsl.exe -d Ubuntu --cd ~ -- zsh -lic tma"` and bind it to `ctrl+shift+m`. This overrides the default mark-mode key.
+
 `install.sh` symlinks `~/.claude` and `~/.cursor` to this repo, generates `settings.json` from the template, and creates `settings.local.json` if missing. Skills are wired automatically — no plugin install needed for your own machine. It also sets `git config core.hooksPath git-hooks` so the versioned [pre-commit hook](git-hooks/pre-commit) runs (blocks accidental commits under Cursor runtime dirs under `.cursor/` and scans staged diffs for secrets). If you clone without running `install.sh`, run `bash scripts/install-git-hooks.sh` once from the repo root.
 
 Run `install.sh` from the main checkout only. It exits with code 2 in a linked git worktree, because the links would point into the worktree and break when it is removed. It also exits with code 2 on an unknown argument, so a flag from a newer version never runs a full install.
