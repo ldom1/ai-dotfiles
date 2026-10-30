@@ -1,168 +1,152 @@
-diff --git a/packages/sidebar-core-rs/src/renderer.rs b/packages/sidebar-core-rs/src/renderer.rs
-index 5802f8b..943700b 100644
---- a/packages/sidebar-core-rs/src/renderer.rs
-+++ b/packages/sidebar-core-rs/src/renderer.rs
-@@ -449,6 +449,11 @@ enum SessionListRow<'a> {
-         session: &'a SessionData,
-         tree: TreePosition,
-     },
-+    SessionAgents {
-+        entry_idx: usize,
-+        session: &'a SessionData,
-+        tree: TreePosition,
-+    },
-     Spacer {
-         entry_idx: usize,
-         tree: TreePosition,
-@@ -469,6 +474,7 @@ impl<'a> SessionListRow<'a> {
-             Self::Group { entry_idx, .. }
-             | Self::SessionName { entry_idx, .. }
-             | Self::SessionDetail { entry_idx, .. }
-+            | Self::SessionAgents { entry_idx, .. }
-             | Self::Spacer { entry_idx, .. } => entry_idx,
-         }
-     }
-@@ -479,7 +485,7 @@ impl<'a> SessionListRow<'a> {
-             Self::SessionName { session, .. } => {
-                 app.focused_session_name() == Some(session.name.as_str())
-             }
--            Self::SessionDetail { .. } | Self::Spacer { .. } => false,
-+            Self::SessionDetail { .. } | Self::SessionAgents { .. } | Self::Spacer { .. } => false,
-         }
-     }
- 
-@@ -502,6 +508,9 @@ impl<'a> SessionListRow<'a> {
-             Self::SessionDetail { session, tree, .. } => {
-                 build_session_detail_row(app, palette, session, tree, width)
-             }
-+            Self::SessionAgents { session, tree, .. } => {
-+                build_session_agents_row(app, palette, session, tree, width)
-+            }
-             Self::Spacer { tree, .. } => tree_blank(palette, tree),
-         }
-     }
-@@ -564,6 +573,13 @@ fn flatten_session_rows<'a>(entries: &'a [DisplaySessionEntry<'a>]) -> Vec<Sessi
-                     session,
-                     tree,
-                 });
-+                if !session_agents(session).is_empty() {
-+                    rows.push(SessionListRow::SessionAgents {
-+                        entry_idx,
-+                        session,
-+                        tree,
-+                    });
-+                }
-                 rows.push(SessionListRow::Spacer {
-                     entry_idx,
-                     tree: if *indented && next_is_group_child {
-@@ -870,11 +886,7 @@ fn session_agent_badges(
-     session: &SessionData,
-     spinner_ts: u64,
- ) -> Vec<AgentBadge> {
--    let agents = if session.agents.is_empty() {
--        session.agent_state.iter().collect::<Vec<_>>()
--    } else {
--        session.agents.iter().collect::<Vec<_>>()
--    };
-+    let agents = session_agents(session);
-     if agents.is_empty() {
-         return Vec::new();
-     }
-@@ -917,6 +929,52 @@ fn session_agent_badges(
-     badges
- }
- 
-+fn session_agents(session: &SessionData) -> Vec<&AgentEvent> {
-+    if session.agents.is_empty() {
-+        session.agent_state.iter().collect()
-+    } else {
-+        session.agents.iter().collect()
-+    }
-+}
-+
-+/// One line under the session: agent count for each status, most urgent first ("◉ 1 blocked  ⠹ 2 working").
-+fn build_session_agents_row(
-+    app: &App,
-+    palette: &Palette,
-+    session: &SessionData,
-+    tree: TreePosition,
-+    width: usize,
-+) -> StyledLine {
-+    let focused = app.focused_session_name() == Some(session.name.as_str());
-+    let hit = HitTarget::Session(session.name.clone());
-+    let flashed = app.active_flash_target() == Some(&hit);
-+    let mut line = StyledLine::with_bg((focused || flashed).then_some(palette.surface1));
-+    line.push(tree_detail_prefix(tree), palette.surface2);
-+    let mut kinds = session_agents(session)
-+        .into_iter()
-+        .map(agent_visual_kind)
-+        .collect::<Vec<_>>();
-+    kinds.sort_by(|a, b| b.cmp(a));
-+    kinds.dedup_by(|a, b| a == b);
-+    for (idx, kind) in kinds.into_iter().enumerate() {
-+        let count = session_agents(session)
-+            .into_iter()
-+            .filter(|agent| agent_visual_kind(agent) == kind)
-+            .count();
-+        let visual = agent_visual_for_kind(palette, kind, spinner_clock(app));
-+        let text = format!("{}{} {} {}", if idx > 0 { "  " } else { "" }, visual.glyph, count, visual.label);
-+        if line.width() + text.width() > width {
-+            break;
-+        }
-+        line.push(text, visual.color);
-+    }
-+    line.end(CellStyle {
-+        fg: palette.white,
-+        bg: (focused || flashed).then_some(palette.surface1),
-+    })
-+    .with_hit(hit)
-+}
-+
- pub fn agent_focus_target(session: &SessionData, agent: &AgentEvent) -> AgentPaneTarget {
-     AgentPaneTarget {
-         session: session.name.clone(),
-@@ -3059,6 +3117,25 @@ mod tests {
-         );
-     }
- 
-+    #[test]
-+    fn session_agents_row_counts_each_status_most_urgent_first() {
-+        let mut busy = session("busy", "/tmp/busy", "main");
-+        busy.agents.push(agent("claude-code", AgentStatus::Running, Some("Build")));
-+        busy.agents.push(agent("claude-code", AgentStatus::Waiting, Some("Deploy")));
-+        busy.agents.push(agent("codex", AgentStatus::Running, Some("Tests")));
-+        busy.agents.push(agent("amp", AgentStatus::Idle, None));
-+        let quiet = session("quiet", "/tmp/quiet", "main");
-+
-+        let app = app_from_sessions(vec![busy, quiet]);
-+        let lines = render_text(&app, 40, 20);
-+
-+        assert_has_line(&lines, "     ◉ 1 blocked  ⠹ 2 working  ✓ 1 idle");
-+        assert!(
-+            !lines.iter().any(|line| line.contains("quiet") && line.contains(" idle")),
-+            "a session without agents gets no agents row"
-+        );
-+    }
-+
-     #[test]
-     fn session_rows_show_inline_agent_signals_and_spaced_header() {
-         let no_agent = session("effect-ts", "/tmp/effect-ts", "");
-@@ -3082,7 +3159,7 @@ mod tests {
-             .push(agent("amp", AgentStatus::ToolRunning, Some("Query tmux")));
- 
-         let app = app_from_sessions(vec![idle, running, unseen, tool, no_agent]);
--        let lines = render_text(&app, 40, 32);
-+        let lines = render_text(&app, 40, 40);
- 
-         assert_has_line(&lines, " sessions                        ⠹2 ●1 5");
-         assert_has_line(&lines, "› 01 learning                          ✓");
-@@ -3090,6 +3167,9 @@ mod tests {
-         assert_has_line(&lines, "  03 pdf-word-formatting               ●");
-         assert_has_line(&lines, "▌ 04 opensessions                      ⚙");
-         assert_has_line(&lines, "  05 effect-ts");
-+        assert_has_line(&lines, "     ✓ 1 idle");
-+        assert_has_line(&lines, "     ⠹ 1 working");
-+        assert_has_line(&lines, "     ⚙ 1 using tools");
-     }
- 
-     #[test]
+packages/sidebar-core-rs/src/renderer.rs | 105 ++++++++++++++++++++++++++++---
+ 1 file changed, 98 insertions(+), 7 deletions(-)
+
+--- Changes ---
+
+packages/sidebar-core-rs/src/renderer.rs
+  @@ -449,6 +449,11 @@ enum SessionListRow<'a> {
+  +    SessionAgents {
+  +        entry_idx: usize,
+  +        session: &'a SessionData,
+  +        tree: TreePosition,
+  +    },
+       Spacer {
+           entry_idx: usize,
+           tree: TreePosition,
+  @@ -469,6 +474,7 @@ impl<'a> SessionListRow<'a> {
+  +            | Self::SessionAgents { entry_idx, .. }
+               | Self::Spacer { entry_idx, .. } => entry_idx,
+           }
+       }
+  @@ -479,7 +485,7 @@ impl<'a> SessionListRow<'a> {
+  -            Self::SessionDetail { .. } | Self::Spacer { .. } => false,
+  +            Self::SessionDetail { .. } | Self::SessionAgents { .. } | Self::Spacer { .. } => false,
+           }
+       }
+   
+  @@ -502,6 +508,9 @@ impl<'a> SessionListRow<'a> {
+  +            Self::SessionAgents { session, tree, .. } => {
+  +                build_session_agents_row(app, palette, session, tree, width)
+  +            }
+               Self::Spacer { tree, .. } => tree_blank(palette, tree),
+           }
+       }
+  @@ -564,6 +573,13 @@ fn flatten_session_rows<'a>(entries: &'a [DisplaySessionEntry<'a>]) -> Vec<Sessi
+  +                if !session_agents(session).is_empty() {
+  +                    rows.push(SessionListRow::SessionAgents {
+  +                        entry_idx,
+  +                        session,
+  +                        tree,
+  +                    });
+  +                }
+                   rows.push(SessionListRow::Spacer {
+                       entry_idx,
+                       tree: if *indented && next_is_group_child {
+  @@ -870,11 +886,7 @@ fn session_agent_badges(
+  -    let agents = if session.agents.is_empty() {
+  -        session.agent_state.iter().collect::<Vec<_>>()
+  -    } else {
+  -        session.agents.iter().collect::<Vec<_>>()
+  -    };
+  +    let agents = session_agents(session);
+       if agents.is_empty() {
+           return Vec::new();
+       }
+  @@ -917,6 +929,58 @@ fn session_agent_badges(
+  +fn session_agents(session: &SessionData) -> Vec<&AgentEvent> {
+  +    if session.agents.is_empty() {
+  +        session.agent_state.iter().collect()
+  +    } else {
+  +        session.agents.iter().collect()
+  +    }
+  +}
+  +
+  +/// One line under the session: agent count for each status, most urgent first ("◉ 1 blocked  ⠹ 2 working").
+  +fn build_session_agents_row(
+  +    app: &App,
+  +    palette: &Palette,
+  +    session: &SessionData,
+  +    tree: TreePosition,
+  +    width: usize,
+  +) -> StyledLine {
+  +    let focused = app.focused_session_name() == Some(session.name.as_str());
+  +    let hit = HitTarget::Session(session.name.clone());
+  +    let flashed = app.active_flash_target() == Some(&hit);
+  +    let mut line = StyledLine::with_bg((focused || flashed).then_some(palette.surface1));
+  +    line.push(tree_detail_prefix(tree), palette.surface2);
+  +    let mut kinds = session_agents(session)
+  +        .into_iter()
+  +        .map(agent_visual_kind)
+  +        .collect::<Vec<_>>();
+  +    kinds.sort_by(|a, b| b.cmp(a));
+  +    kinds.dedup_by(|a, b| a == b);
+  +    for (idx, kind) in kinds.into_iter().enumerate() {
+  +        let count = session_agents(session)
+  +            .into_iter()
+  +            .filter(|agent| agent_visual_kind(agent) == kind)
+  +            .count();
+  +        let visual = agent_visual_for_kind(palette, kind, spinner_clock(app));
+  +        let text = format!(
+  +            "{}{} {} {}",
+  +            if idx > 0 { "  " } else { "" },
+  +            visual.glyph,
+  +            count,
+  +            visual.label
+  +        );
+  +        if line.width() + text.width() > width {
+  +            break;
+  +        }
+  +        line.push(text, visual.color);
+  +    }
+  +    line.end(CellStyle {
+  +        fg: palette.white,
+  +        bg: (focused || flashed).then_some(palette.surface1),
+  +    })
+  +    .with_hit(hit)
+  +}
+  +
+   pub fn agent_focus_target(session: &SessionData, agent: &AgentEvent) -> AgentPaneTarget {
+       AgentPaneTarget {
+           session: session.name.clone(),
+  @@ -3059,6 +3123,30 @@ mod tests {
+  +    #[test]
+  +    fn session_agents_row_counts_each_status_most_urgent_first() {
+  +        let mut busy = session("busy", "/tmp/busy", "main");
+  +        busy.agents
+  +            .push(agent("claude-code", AgentStatus::Running, Some("Build")));
+  +        busy.agents
+  +            .push(agent("claude-code", AgentStatus::Waiting, Some("Deploy")));
+  +        busy.agents
+  +            .push(agent("codex", AgentStatus::Running, Some("Tests")));
+  +        busy.agents.push(agent("amp", AgentStatus::Idle, None));
+  +        let quiet = session("quiet", "/tmp/quiet", "main");
+  +
+  +        let app = app_from_sessions(vec![busy, quiet]);
+  +        let lines = render_text(&app, 40, 20);
+  +
+  +        assert_has_line(&lines, "     ◉ 1 blocked  ⠹ 2 working  ✓ 1 idle");
+  +        assert!(
+  +            !lines
+  +                .iter()
+  +                .any(|line| line.contains("quiet") && line.contains(" idle")),
+  +            "a session without agents gets no agents row"
+  +        );
+  +    }
+  +
+       #[test]
+       fn session_rows_show_inline_agent_signals_and_spaced_header() {
+           let no_agent = session("effect-ts", "/tmp/effect-ts", "");
+  @@ -3082,7 +3170,7 @@ mod tests {
+  -        let lines = render_text(&app, 40, 32);
+  +        let lines = render_text(&app, 40, 40);
+   
+           assert_has_line(&lines, " sessions                        ⠹2 ●1 5");
+           assert_has_line(&lines, "› 01 learning                          ✓");
+  @@ -3090,6 +3178,9 @@ mod tests {
+  +        assert_has_line(&lines, "     ✓ 1 idle");
+  +        assert_has_line(&lines, "     ⠹ 1 working");
+  +        assert_has_line(&lines, "     ⚙ 1 using tools");
+       }
+   
+       #[test]
+  +98 -7
