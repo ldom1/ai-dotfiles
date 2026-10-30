@@ -3,7 +3,14 @@
 ## [Unreleased]
 
 ### Added
-- `config/tmux.conf`, `config/tmux-sidebar-on.sh` and `bin/tma`: tmux setup for agent sessions. The [opensessions](https://github.com/Ataraxy-Labs/opensessions) sidebar (TPM plugin) lists sessions on the left: arrows select one, `Enter` switches to it. The terminal is on the right. `Ctrl+Shift+O` / `Ctrl+Shift+E` (Windows Terminal `sendInput` to tmux `user-keys`) split right / below. Mouse selection copies through OSC 52, so accents survive (`clip.exe` breaks them). `install.sh` links `~/.tmux.conf` and `~/.local/bin/tma` and clones TPM. The README documents the Windows Terminal keys and the opensessions source build for glibc < 2.39.
+- tmux setup for agent sessions: `config/tmux.conf`, `bin/tma`, and the helper scripts `config/tmux-sidebar-on.sh`, `config/tmux-bell-relay.sh`, `config/tmux-resurrect-sidebar.sh`.
+  - The [opensessions](https://github.com/Ataraxy-Labs/opensessions) sidebar (TPM plugin) lists sessions on the left: arrows select one, `Enter` switches. The terminal is on the right.
+  - `tma [-n name] [dir]` creates or attaches a named session. It stops when the name belongs to another folder.
+  - `Ctrl+Shift+O` / `Ctrl+Shift+E` split right / below: Windows Terminal through `sendInput` and tmux `user-keys`, Ghostty through extended keys (`C-S-o` / `C-S-e`).
+  - Agent bell: Claude Code `preferredNotifChannel: "terminal_bell"` (`.claude/settings.json`). An `alert-bell` hook forwards the bell of a background session to attached clients, so the Windows Terminal taskbar flashes (`bellStyle: "taskbar"`).
+  - tmux-resurrect + tmux-continuum save the layout every 15 min and restore it at server start. Processes are not kept. The sidebar is kept out of the save file, and a duplicate sidebar is removed after a restore. Exception to the 12-month release rule (last push 2024-08): no maintained alternative restores panes and folders.
+  - Mouse selection copies through OSC 52, so accents survive (`clip.exe` breaks them).
+  - `install.sh` links `~/.tmux.conf` and `~/.local/bin/tma`, clones TPM, and builds the opensessions binaries with `cargo` when the prebuilt ones need a newer glibc (`ldd` check).
 
 ## [0.15.2] - 2026-10-27
 

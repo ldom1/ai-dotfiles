@@ -197,6 +197,18 @@ log "$HOME/.tmux.conf → $DOTFILES/config/tmux.conf"
 [[ -d "$HOME/.tmux/plugins/tpm" ]] || git clone -q --depth 1 https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
 log "TPM ready: run prefix + I in tmux to install opensessions"
 
+# opensessions prebuilt binaries need glibc 2.39: build them from source when the loader cannot run them.
+# ldd only reads the binary; running it would start a server and set hooks on the live tmux server.
+OS_DIR="$HOME/.tmux/plugins/opensessions"
+if [[ -x "$OS_DIR/bin/opensessions-server" ]] && ldd "$OS_DIR/bin/opensessions-server" 2>&1 | grep -q 'not found'; then
+  if command -v cargo >/dev/null 2>&1 && (cd "$OS_DIR" && cargo build --release -q); then
+    cp "$OS_DIR/target/release/opensessions-server" "$OS_DIR/target/release/opensessions-sidebar" "$OS_DIR/bin/"
+    log "opensessions built from source (prebuilt binaries need a newer glibc)"
+  else
+    warn "opensessions binaries need a newer glibc. Build them: cd $OS_DIR && cargo build --release && cp target/release/opensessions-{server,sidebar} bin/"
+  fi
+fi
+
 # Statusline: pinned user-prefix install; npx resolves the package on every repaint (~1 s).
 CCSTATUSLINE_VERSION=2.2.30
 if command -v npm >/dev/null 2>&1; then

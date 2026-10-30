@@ -421,20 +421,38 @@ Local Medium/blog drafts belong in `articles/` (gitignored).
 `install.sh` links `~/.tmux.conf` to `config/tmux.conf`, installs `bin/tma` in `~/.local/bin` and clones [TPM](https://github.com/tmux-plugins/tpm).
 The session sidebar is [opensessions](https://github.com/Ataraxy-Labs/opensessions) (TPM plugin). It shows each session with its git branch and Claude Code agent state.
 
-- `tma [dir]` attaches to the session for `dir`, or creates it (named after the folder; `main` for `~`).
-- Layout: opensessions sidebar on the left, terminal on the right.
-- In the sidebar: arrows select a session, `Enter` switches to it. `Alt+s` focuses the sidebar. `prefix o t` toggles it.
+Sessions:
+
+- `tma [dir]` attaches to the session for `dir`, or creates it. The session name is the folder name (`main` for `~`).
+- `tma -n <name> [dir]` sets the name. Use it for an SSH session (`tma -n vps`).
+- If a session of the same name exists for another folder, `tma` stops and shows both paths. Use `-n`.
+
+Keys:
+
+- In the sidebar, arrows select a session and `Enter` switches to it. `Alt+s` focuses the sidebar. `prefix o t` toggles it.
+- `Ctrl+Shift+O` splits right, `Ctrl+Shift+E` splits below. They do nothing in the sidebar.
+- `Alt+arrows` moves between panes. `Alt+z` zooms.
+- Mouse selection copies to the system clipboard (OSC 52). Right click pastes.
+
+Agent bell:
+
+- Claude Code rings the terminal bell when it waits or finishes (`preferredNotifChannel: "terminal_bell"` in `.claude/settings.json`).
+- tmux sends a bell only to clients of the session that rang. `config/tmux-bell-relay.sh` (`alert-bell` hook) forwards the bell of a background session to every attached client.
+- Windows Terminal: `"bellStyle": "taskbar"` on the WSL profiles flashes the taskbar icon.
+
+Save and restore ([tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) + [tmux-continuum](https://github.com/tmux-plugins/tmux-continuum)):
+
+- The layout is saved every 15 min (`prefix Ctrl-s` saves now). It is restored when the tmux server starts (`prefix Ctrl-r` restores now).
+- tmux restores sessions, windows, panes and folders. Processes are not kept: start each agent again (`claude -c` resumes the last conversation of the folder).
+- continuum neither saves nor restores while another tmux server runs (`tmux -L …`).
+- `config/tmux-resurrect-sidebar.sh` keeps the sidebar out of the save file and removes a duplicate sidebar after a restore.
+
+Other:
+
 - `config/tmux-sidebar-on.sh` opens the sidebar on attach: opensessions starts hidden on each tmux server.
 - Sidebar settings: `~/.config/opensessions/config.json` (`sidebarPosition`, `sidebarWidth`, `theme`).
-- Mouse selection copies to the system clipboard (OSC 52). Right click pastes.
-- `Alt+arrows` moves between panes. `Alt+z` zooms.
 
-First install, in tmux: press `prefix I`. The prebuilt opensessions binaries need glibc 2.39 (Ubuntu 24.04+). On an older system, build them after each install or update:
-
-```bash
-cd ~/.tmux/plugins/opensessions && cargo build --release
-cp target/release/opensessions-server target/release/opensessions-sidebar bin/
-```
+First install, in tmux: press `prefix I`, then run `install.sh` again. The prebuilt opensessions binaries need glibc 2.39 (Ubuntu 24.04+). `install.sh` checks them with `ldd` and builds them with `cargo` when they cannot run. Without `cargo`, it prints the build command. Run `install.sh` again after an opensessions update (`prefix U`).
 
 Windows Terminal (manual step, `settings.json`):
 
@@ -442,6 +460,9 @@ Windows Terminal (manual step, `settings.json`):
 - `ctrl+shift+o`: `sendInput` `"\u001b[[tma-o"`. tmux maps it to a split on the right (`user-keys[0]`).
 - `ctrl+shift+e`: `sendInput` `"\u001b[[tma-e"`. tmux maps it to a split below (`user-keys[1]`).
 - These keys send text in every Windows Terminal tab, also outside tmux.
+- `"bellStyle": "taskbar"` on each WSL profile.
+
+Ghostty needs no key setup: it sends `Ctrl+Shift+O` / `Ctrl+Shift+E` as extended keys, and tmux binds `C-S-o` / `C-S-e`.
 
 `install.sh` symlinks `~/.claude` and `~/.cursor` to this repo, generates `settings.json` from the template, and creates `settings.local.json` if missing. Skills are wired automatically — no plugin install needed for your own machine. It also sets `git config core.hooksPath git-hooks` so the versioned [pre-commit hook](git-hooks/pre-commit) runs (blocks accidental commits under Cursor runtime dirs under `.cursor/` and scans staged diffs for secrets). If you clone without running `install.sh`, run `bash scripts/install-git-hooks.sh` once from the repo root.
 
