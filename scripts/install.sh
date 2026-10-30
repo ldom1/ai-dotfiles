@@ -197,15 +197,32 @@ log "$HOME/.tmux.conf → $DOTFILES/config/tmux.conf"
 [[ -d "$HOME/.tmux/plugins/tpm" ]] || git clone -q --depth 1 https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
 log "TPM ready: run prefix + I in tmux to install opensessions"
 
-# opensessions prebuilt binaries need glibc 2.39: build them from source when the loader cannot run them.
+# opensessions: apply the local agent summary patch, and build from source when the patch is new
+# or the prebuilt binaries need a newer glibc (2.39).
 # ldd only reads the binary; running it would start a server and set hooks on the live tmux server.
 OS_DIR="$HOME/.tmux/plugins/opensessions"
-if [[ -x "$OS_DIR/bin/opensessions-server" ]] && ldd "$OS_DIR/bin/opensessions-server" 2>&1 | grep -q 'not found'; then
-  if command -v cargo >/dev/null 2>&1 && (cd "$OS_DIR" && cargo build --release -q); then
-    cp "$OS_DIR/target/release/opensessions-server" "$OS_DIR/target/release/opensessions-sidebar" "$OS_DIR/bin/"
-    log "opensessions built from source (prebuilt binaries need a newer glibc)"
+OS_PATCH="$DOTFILES/config/opensessions/agent-summary-row.patch"
+if [[ -d "$OS_DIR/.git" ]]; then
+  os_build=0
+  if git -C "$OS_DIR" apply --reverse --check "$OS_PATCH" 2>/dev/null; then
+    cmp -s "$OS_DIR/bin/opensessions-sidebar" "$OS_DIR/target/release/opensessions-sidebar" || os_build=1
+  elif git -C "$OS_DIR" apply "$OS_PATCH" 2>/dev/null; then
+    os_build=1
+    log "opensessions: agent summary patch applied"
   else
-    warn "opensessions binaries need a newer glibc. Build them: cd $OS_DIR && cargo build --release && cp target/release/opensessions-{server,sidebar} bin/"
+    warn "opensessions: agent summary patch does not apply (upstream changed renderer.rs); the sidebar keeps the stock rows"
+  fi
+  if [[ -x "$OS_DIR/bin/opensessions-server" ]] && ldd "$OS_DIR/bin/opensessions-server" 2>&1 | grep -q 'not found'; then
+    os_build=1
+  fi
+  if (( os_build )); then
+    if command -v cargo >/dev/null 2>&1 && (cd "$OS_DIR" && cargo build --release -q); then
+      # install writes a new file: cp fails with "Text file busy" while the sidebar runs
+      install -m755 "$OS_DIR/target/release/opensessions-server" "$OS_DIR/target/release/opensessions-sidebar" "$OS_DIR/bin/"
+      log "opensessions built from source (restart the sidebar: Ctrl+Shift+B twice)"
+    else
+      warn "opensessions needs a source build. Run: cd $OS_DIR && cargo build --release && install -m755 target/release/opensessions-{server,sidebar} bin/"
+    fi
   fi
 fi
 
