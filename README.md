@@ -426,6 +426,9 @@ Sessions:
 - `tma [dir]` attaches to the session for `dir`, or creates it. The session name is the folder name (`main` for `~`).
 - `tma -n <name> [dir]` sets the name. Use it for an SSH session (`tma -n vps`).
 - If a session of the same name exists for another folder, `tma` stops and shows both paths. Use `-n`.
+- `Ctrl+Shift+N` opens a folder picker in a popup (opensessions `sessionizer.sh`, fzf) and creates a session there. It searches `$HOME` 2 levels deep (`SESSIONIZER_DIR`, `SESSIONIZER_MAXDEPTH`).
+- `Ctrl+Shift+X` kills the current session after a `y/n` prompt, moves to another session and saves the layout at once, so the session does not come back on restore.
+- In the sidebar: `n` creates a session, `x` kills the selected one.
 
 Keys:
 
@@ -459,10 +462,12 @@ Windows Terminal (manual step, `settings.json`):
 - `ctrl+shift+m`: `newTab` action with `"commandline": "wsl.exe -d Ubuntu --cd ~ -- zsh -lic tma"`. It overrides the default mark-mode key.
 - `ctrl+shift+o`: `sendInput` `"\u001b[[tma-o"`. tmux maps it to a split on the right (`user-keys[0]`).
 - `ctrl+shift+e`: `sendInput` `"\u001b[[tma-e"`. tmux maps it to a split below (`user-keys[1]`).
+- `ctrl+shift+x`: `sendInput` `"\u001b[[tma-x"` (`user-keys[2]`, kill session).
+- `ctrl+shift+n`: `sendInput` `"\u001b[[tma-n"` (`user-keys[3]`, new session). It overrides the default new-window key.
 - These keys send text in every Windows Terminal tab, also outside tmux.
 - `"bellStyle": "taskbar"` on each WSL profile.
 
-Ghostty needs no key setup: it sends `Ctrl+Shift+O` / `Ctrl+Shift+E` as extended keys, and tmux binds `C-S-o` / `C-S-e`.
+Ghostty sends the keys as extended keys, and tmux binds `C-S-o`, `C-S-e`, `C-S-x` and `C-S-n`. `Ctrl+Shift+N` is the Ghostty new-window key: if Ghostty opens a window, add `keybind = ctrl+shift+n=unbind` (not tested).
 
 `install.sh` symlinks `~/.claude` and `~/.cursor` to this repo, generates `settings.json` from the template, and creates `settings.local.json` if missing. Skills are wired automatically — no plugin install needed for your own machine. It also sets `git config core.hooksPath git-hooks` so the versioned [pre-commit hook](git-hooks/pre-commit) runs (blocks accidental commits under Cursor runtime dirs under `.cursor/` and scans staged diffs for secrets). If you clone without running `install.sh`, run `bash scripts/install-git-hooks.sh` once from the repo root.
 
