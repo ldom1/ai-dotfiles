@@ -429,13 +429,15 @@ Sessions:
 - `Ctrl+Shift+N` opens a folder picker in a popup (opensessions `sessionizer.sh`, fzf) and creates a session there. It searches `$HOME` 2 levels deep (`SESSIONIZER_DIR`, `SESSIONIZER_MAXDEPTH`).
 - `Ctrl+Shift+X` kills the current session after a `y/n` prompt, moves to another session and saves the layout at once, so the session does not come back on restore.
 - In the sidebar: `n` creates a session, `x` kills the selected one.
+- Right click in the sidebar opens a menu for the **current** session: rename, new, kill, hide sidebar. tmux does not know which row was clicked: left-click a session first to act on it.
+- A renamed session no longer matches its folder: `tma <dir>` then creates a new session with the folder name.
 
 Keys:
 
-- In the sidebar, arrows select a session and `Enter` switches to it. `Alt+s` focuses the sidebar. `prefix o t` toggles it.
+- In the sidebar, arrows select a session and `Enter` switches to it. `Alt+s` focuses the sidebar. `Ctrl+Shift+B` (or `prefix o t`) shows or hides it. It opens again on the next attach.
 - `Ctrl+Shift+O` splits right, `Ctrl+Shift+E` splits below. They do nothing in the sidebar.
 - `Alt+arrows` moves between panes. `Alt+z` zooms.
-- Mouse selection copies to the system clipboard (OSC 52). Right click pastes.
+- Mouse selection copies to the system clipboard (OSC 52). Right click pastes (outside the sidebar).
 
 Agent bell:
 
@@ -464,10 +466,11 @@ Windows Terminal (manual step, `settings.json`):
 - `ctrl+shift+e`: `sendInput` `"\u001b[[tma-e"`. tmux maps it to a split below (`user-keys[1]`).
 - `ctrl+shift+x`: `sendInput` `"\u001b[[tma-x"` (`user-keys[2]`, kill session).
 - `ctrl+shift+n`: `sendInput` `"\u001b[[tma-n"` (`user-keys[3]`, new session). It overrides the default new-window key.
+- `ctrl+shift+b`: `sendInput` `"\u001b[[tma-b"` (`user-keys[4]`, show / hide the sidebar).
 - These keys send text in every Windows Terminal tab, also outside tmux.
 - `"bellStyle": "taskbar"` on each WSL profile.
 
-Ghostty sends the keys as extended keys, and tmux binds `C-S-o`, `C-S-e`, `C-S-x` and `C-S-n`. `Ctrl+Shift+N` is the Ghostty new-window key: if Ghostty opens a window, add `keybind = ctrl+shift+n=unbind` (not tested).
+Ghostty sends the keys as extended keys, and tmux binds `C-S-o`, `C-S-e`, `C-S-x`, `C-S-n` and `C-S-b`. `Ctrl+Shift+N` is the Ghostty new-window key: if Ghostty opens a window, add `keybind = ctrl+shift+n=unbind` (not tested).
 
 `install.sh` symlinks `~/.claude` and `~/.cursor` to this repo, generates `settings.json` from the template, and creates `settings.local.json` if missing. Skills are wired automatically — no plugin install needed for your own machine. It also sets `git config core.hooksPath git-hooks` so the versioned [pre-commit hook](git-hooks/pre-commit) runs (blocks accidental commits under Cursor runtime dirs under `.cursor/` and scans staged diffs for secrets). If you clone without running `install.sh`, run `bash scripts/install-git-hooks.sh` once from the repo root.
 
