@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- `AGENTS.md` `## Development`: skill placement rule (global skill → `skills/`, or `private/skills/` when it holds personal data; project-only skill → that project's repo). `.vibe/AGENTS.md` and `.cursor/rules/agents.mdc` rebuilt.
+
 ## [0.15.2] - 2026-10-27
 
 ### Changed

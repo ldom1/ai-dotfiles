@@ -43,6 +43,7 @@ Rules for every code change, and for a session that creates a project, a compone
 ## Development
 - Occam's razor & YAGNI set the scope, not the dependency choice: fewest assumptions, smallest surface area, smallest change that works, no feature nobody asked for. Simple, structured, readable code (shortest solution that stays readable). No speculative abstractions, no backwards-compat shims for removed code.
 - Before writing new code, reuse in this order: existing repo code, then an established package (`## Builder`), then the stdlib. Hand-written code is the last resort.
+- Skill placement: a skill used across projects or in claude.ai lives in `~/ai-dotfiles/skills/`, or in `~/ai-dotfiles/private/skills/` (repo `ai-dotfiles-private`) when it names people, accounts or private IDs. A skill used by one project stays in that project's repo.
 - Use the `ponytail` skill on coding tasks. Ponytail's dependency step (4) is overridden: apply the established-package rule.
 - Don't read files unrelated to the task.
 - When behavior, setup, commands or visible output change, update `CHANGELOG.md` in the same change (small infra/skill changes included). Update `README.md` when user-facing usage or structure changed.
