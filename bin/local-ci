@@ -396,7 +396,7 @@ def install(args) -> int:
 
 def pre_push(args) -> int:
     repo = Path(".").resolve()
-    lines = sys.stdin.read().splitlines()
+    lines = [l for l in sys.stdin.read().splitlines() if l.strip()]  # blank when git rejected every ref
     if cfg(repo, "enabled") != "true":
         return 0
     deploy = set(cfg(repo, "deploy-branches", "main preprod").split())

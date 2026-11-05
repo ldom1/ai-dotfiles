@@ -211,6 +211,21 @@ log "$HOME/.tmux.conf → $DOTFILES/config/tmux.conf"
 [[ -d "$HOME/.tmux/plugins/tpm" ]] || git clone -q --depth 1 https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
 log "TPM ready: run prefix + I in tmux to install tmux-resurrect and tmux-continuum"
 
+# Terminal init: ~/.zshrc and ~/.bashrc source config/shell-init.sh (PATH, then tma outside tmux).
+# Without either file, create the one of the login shell.
+init_line="[ -f \"$DOTFILES/config/shell-init.sh\" ] && . \"$DOTFILES/config/shell-init.sh\"  # ai-dotfiles terminal init"
+rcs=()
+for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do [[ -f $rc ]] && rcs+=("$rc"); done
+(( ${#rcs[@]} )) || rcs=("$HOME/.$(basename "${SHELL:-bash}")rc")
+for rc in "${rcs[@]}"; do
+  if grep -qF 'config/shell-init.sh' "$rc" 2>/dev/null; then
+    log "$rc already sources config/shell-init.sh"
+  else
+    printf '\n%s\n' "$init_line" >> "$rc"
+    log "$rc sources config/shell-init.sh: new terminals open tmux (AIF_NO_TMUX=1 turns it off)"
+  fi
+done
+
 # Platform layer: bin/aif-platform holds every WSL / native Linux difference (AIF_PLATFORM forces it).
 chmod +x "$DOTFILES/bin/aif-platform"
 ln -sfn "$DOTFILES/bin/aif-platform" "$HOME/.local/bin/aif-platform"
