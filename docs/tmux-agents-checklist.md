@@ -43,12 +43,12 @@ Avant : sauvegarder (`prefix Ctrl-s`), quitter tmux (`tmux kill-server`) et le r
 
 | Vérification | WSL | 26.04 |
 |---|---|---|
-| Une seule sidebar à gauche, dans chaque fenêtre et chaque session (y compris après Ctrl+Shift+N et une nouvelle fenêtre) | [ ] | [ ] |
-| Ctrl+Shift+B : la sidebar disparaît partout, puis revient ; Alt+s lui donne le focus | [ ] | [ ] |
-| SESSIONS : arbre session → agents → sous-agents ; `▸` sur la session courante ; `⏎` change de session ; `r` renomme | [ ] | [ ] |
-| Ctrl+Shift+N : écran New session ; étiquettes `new` / `attach` / `name taken → …-2` ; Create & attach crée et bascule | [ ] | [ ] |
-| Ctrl+Shift+K : écran Kill session (agents listés), pane de travail atténué ; Save & kill sauvegarde puis tue | [ ] | [ ] |
-| `prefix Q` : écran Save & exit ; `d` détache sans rien arrêter ; Save & exit quitte tmux ; au redémarrage, la disposition revient | [ ] | [ ] |
-| ACTIONS : cible = session sous le curseur de SESSIONS ; split, zoom sur le pane de travail ; « last save … ago » après `s` | [ ] | [ ] |
-| Clic droit dans la sidebar : menu rename / new / kill / hide | [ ] | [ ] |
-| Sans `aif-sidebar` installé : Ctrl+Shift+K et `prefix Q` posent une question y/n | [ ] | [ ] |
+| Une seule sidebar à gauche, dans chaque fenêtre et chaque session (y compris après Ctrl+Shift+N et une nouvelle fenêtre) | [x] | [ ] |
+| Ctrl+Shift+B : la sidebar disparaît partout, puis revient ; Alt+s lui donne le focus | [x] | [ ] |
+| SESSIONS : arbre session → agents → sous-agents ; `▸` sur la session courante ; `⏎` change de session ; `r` renomme | [x] | [ ] |
+| Ctrl+Shift+N : écran New session ; étiquettes `new` / `attach` / `name taken → …-2` ; Create & attach crée et bascule | [x] | [ ] |
+| Ctrl+Shift+K : écran Kill session (agents listés), pane de travail atténué ; Save & kill sauvegarde puis tue | [x] | [ ] |
+| `prefix Q` : écran Save & exit ; `d` détache sans rien arrêter ; Save & exit quitte tmux ; au redémarrage, la disposition revient | [x] | [ ] |
+| ACTIONS : cible = session sous le curseur de SESSIONS ; split, zoom sur le pane de travail ; « last save … ago » après `s` | [x] | [ ] |
+| Clic droit dans la sidebar : menu rename / new / kill / hide | [x] | [ ] |
+| Sans `aif-sidebar` installé : Ctrl+Shift+K et `prefix Q` posent une question y/n | [x] | [ ] |

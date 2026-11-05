@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 # tmux-sidebar.sh — une seule sidebar (aif-sidebar), à gauche de chaque fenêtre, quand elle est active.
-#   ensure [fenêtre]   ouvre la sidebar dans la fenêtre si elle est active et absente (hooks tmux)
+#   ensure [fenêtre]   ouvre la sidebar dans la fenêtre si elle est active et absente, et la remet
+#                      à sa largeur (hooks tmux, dont window-resized)
 #   toggle [fenêtre]   active ou masque la sidebar, dans toutes les fenêtres (Ctrl+Shift+B)
 #   focus [fenêtre]    l'affiche si besoin et lui donne le focus (Alt+s)
 #   screen <touche> [fenêtre]
@@ -22,10 +23,14 @@ ensure() {
   [ -x "$BIN" ] || return 0
   # Verrou : plusieurs hooks peuvent arriver en même temps (attach + changement de session)
   tmux wait-for -L aif-sidebar
-  if [ -z "$(sidebar_of "$win")" ]; then
-    width=$(tmux show -gqv @aif-sidebar-width); width=${width:-44}
+  width=$(tmux show -gqv @aif-sidebar-width); width=${width:-44}
+  pane=$(sidebar_of "$win")
+  if [ -z "$pane" ]; then
     pane=$(tmux split-window -hbfd -l "$width" -t "$win" -P -F '#{pane_id}' "$BIN" 2>/dev/null) &&
       tmux set -p -t "$pane" @aif_sidebar 1 && created=1
+  elif [ "$(tmux display -p -t "$pane" '#{pane_width}')" != "$width" ]; then
+    # tmux redistribue les largeurs quand la fenêtre change de taille : remettre la sidebar à sa largeur
+    tmux resize-pane -t "$pane" -x "$width"
   fi
   tmux wait-for -U aif-sidebar
 }

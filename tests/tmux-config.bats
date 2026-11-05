@@ -64,6 +64,7 @@ platform_parses() {
   for k in o:O e:E n:N b:B; do [ "$(cmd prefix "${k#*:}")" = "$(cmd root "S-C-${k%:*}")" ]; done
   [[ "$(cmd prefix Q)" == *"tmux-sidebar.sh screen Q"* ]]
   [ "$(cmd prefix Tab)" = "switch-client -l" ]
+  t show-hooks -g | grep -q 'client-resized.*tmux-sidebar.sh ensure' 
   [ "$(cmd prefix /)" = "list-keys -N" ]
 }
 

@@ -34,6 +34,17 @@ wait_sidebars() { for _ in $(seq 1 25); do [ "$(sidebars "${2:-work}")" -eq "$1"
   [ "$(tmux list-panes -t work -F '#{pane_width} #{@aif_sidebar}' | awk '$2 == 1 { print $1 }')" -eq 44 ]
 }
 
+@test "the sidebar keeps its width when the window is resized" {
+  $SB ensure
+  tmux set -g window-size manual
+  tmux resize-window -t work -x 120 -y 40
+  tmux resize-window -t work -x 220 -y 40
+  $SB ensure   # en vrai : hook client-resized (aucun client attaché dans ce test)
+  w() { tmux list-panes -t work -F '#{pane_width} #{@aif_sidebar}' | awk '$2 == 1 { print $1 }'; }
+  for _ in $(seq 1 25); do [ "$(w)" -eq 44 ] && break; sleep 0.2; done
+  [ "$(w)" -eq 44 ]
+}
+
 @test "hooks at the same time still give one sidebar (lock)" {
   $SB ensure & $SB ensure & $SB ensure & wait
   [ "$(sidebars)" -eq 1 ]
