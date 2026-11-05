@@ -1,10 +1,12 @@
 //! aif-sidebar — vue sessions / agents tmux d'ai-dotfiles.
 //!   aif-sidebar              la sidebar (onglets SESSIONS, AGENTS, ACTIONS)
 //!   aif-sidebar peek <pane>  l'aperçu d'un agent (lancé dans un popup tmux)
+//!   aif-sidebar help         la vue d'aide (popup tmux)
 //!   aif-sidebar --version
 //! Données : `aif-agents` (état des agents) et tmux, rien d'autre.
 
 mod app;
+mod help;
 mod model;
 mod peek;
 mod sessions;
@@ -36,6 +38,7 @@ fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         None => run_sidebar(),
+        Some("help") => run_help(),
         Some("peek") => run_peek(
             args.get(1)
                 .context("usage: aif-sidebar peek <pane>")?
@@ -229,6 +232,7 @@ fn apply(app: &App, e: &Effect) -> Result<()> {
         Effect::Zoom => tmux::zoom(),
         Effect::ToggleSidebar => tmux::toggle_sidebar(),
         Effect::LastSession => tmux::last_session(),
+        Effect::Help => tmux::open_help(),
         Effect::GoTo(p) => tmux::go_to(p),
         Effect::Peek(p) => tmux::open_peek(p),
         Effect::Interrupt(p) => tmux::interrupt(p),
@@ -241,6 +245,29 @@ fn apply(app: &App, e: &Effect) -> Result<()> {
             tmux::send(pane, &tmux::answer_keys(agent, *choice, text.as_deref()))
         }
     }
+}
+
+/// Vue d'aide, lancée dans un popup tmux (`prefix ?`, touche « ? » de la sidebar).
+fn run_help() -> Result<()> {
+    with_terminal(|term| {
+        loop {
+            term.draw(help::draw)?;
+            match event::read()? {
+                Event::Key(k) if k.kind == KeyEventKind::Press => {
+                    if matches!(
+                        k.code,
+                        KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('?') | KeyCode::Enter
+                    ) || (k.code == KeyCode::Char('c')
+                        && k.modifiers.contains(KeyModifiers::CONTROL))
+                    {
+                        return Ok(());
+                    }
+                }
+                Event::Mouse(m) if matches!(m.kind, MouseEventKind::Down(_)) => return Ok(()),
+                _ => {}
+            }
+        }
+    })
 }
 
 fn run_peek(pane: String) -> Result<()> {

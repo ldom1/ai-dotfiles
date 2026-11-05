@@ -449,7 +449,7 @@ Keys:
 - `Ctrl+Shift+O` splits right, `Ctrl+Shift+E` splits below. They do nothing in the sidebar.
 - `Alt+arrows` moves between panes. `Alt+z` zooms.
 - `prefix O`, `prefix E`, `prefix N` and `prefix B` do the same as the `Ctrl+Shift` keys, in any terminal.
-- `prefix Tab` switches to the last session. `prefix /` shows the tmux key list.
+- `prefix ?` opens the help view (same as `?` in the sidebar), even with the sidebar hidden. `prefix Tab` switches to the last session. `prefix /` shows the tmux key list.
 - Status line (top): session pill and window tabs on the left; on the right, the agent counters `◉ n ⠹ n ✓ n ◌ n ✕ n` (zeros hidden), the git branch `⎇` of the current pane and the time. `aif-agents status <dir>` renders the counters and the branch; the agent hook refreshes the line on each event. Colors follow the palette of the sidebar (accent `#BB9AF7`).
 - Mouse selection copies to the system clipboard and shows "Copied to clipboard": OSC 52 to the terminal, plus `aif-platform copy` (Wayland clipboard) on native Linux. Right click pastes (outside the sidebar).
 
@@ -481,6 +481,7 @@ Agents sidebar (`aif-sidebar`, Rust + ratatui, `sidebar/`; decision: `docs/adr/0
 - SESSIONS: tree session → agents → subagents, with the count of agents per state. The current session has `▸`. `↑↓` move, `⏎` switch, `r` rename, `N` new, `K` kill.
 - ACTIONS: the target session (the SESSIONS cursor), then the actions: new, rename, last session, kill, split right / below, zoom, save now (with the time of the last save), save & exit, exit (detach), restore the last save, hide the sidebar. `⏎` runs the selected action; `r`, `s`, `d` run directly. Pane actions act on the last active pane, not on the sidebar.
 - Confirmation screens (New session, Kill session, Save & exit, Rename) dim the working pane. `Esc` cancels; buttons are clickable.
+- Help: the `?` box of the tab bar, `? help` in the footer, the `?` key and `prefix ?` open the same centered popup (`aif-sidebar help`): keys in four columns (NAVIGATE, AGENTS, SESSIONS, PANES & VIEW; two or one on a narrow terminal) and the glyph legend. `Esc` closes it.
 - AGENTS groups agents by priority: TO CHECK, ERROR, DONE, RUNNING, UNKNOWN, STALE. Keys: `↑↓`/`j k` move, `/` filter, `o` sort (priority, session, recent), `⏎` go to the agent, `p` peek, `x` interrupt a running agent.
 - An agent in TO CHECK shows its question and buttons `[1 …] [2 …] [i Reply…]`. `1`–`3` (or a click) sends that answer to the agent pane (`tmux send-keys`); `i` opens a reply field. Otherwise `1`–`9` jumps to the agent with that number.
 - Keys checked in Claude Code 2.1.318: a question takes the option digit; a free reply takes the "Type something" digit, the text and Enter. A permission takes `1` (Yes) or `2` (Always). **No** sends `Escape`, never `3`: the menu has 3 or 4 options, and option 3 can be "switch to auto mode". A free reply to a permission sends `Escape`, then the text as a prompt.

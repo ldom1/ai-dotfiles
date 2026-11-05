@@ -97,3 +97,13 @@ as_permission() {
   tmux send-keys -t "$SB" Enter
   keys_received "$(printf '\033not now\r')"
 }
+
+@test "help view: four sections and the glyph legend; Esc closes it" {
+  HP=$(tmux split-window -d -P -F '#{pane_id}' -h -l 100 -t prosper "aif-sidebar help")
+  screen "$HP" "NAVIGATE"
+  screen "$HP" "PANES & VIEW"
+  screen "$HP" "◉ to check"
+  tmux send-keys -t "$HP" Escape
+  for _ in $(seq 1 25); do tmux list-panes -a -F '#{pane_id}' | grep -qx "$HP" || break; sleep 0.2; done
+  ! tmux list-panes -a -F '#{pane_id}' | grep -qx "$HP"
+}

@@ -106,6 +106,8 @@ pub enum Effect {
     Zoom,
     ToggleSidebar,
     LastSession,
+    /// Vue d'aide (popup tmux)
+    Help,
 }
 
 /// Écran de confirmation affiché dans la sidebar (le pane courant est atténué).
@@ -598,7 +600,7 @@ impl App {
         match k {
             Key::Tab => self.set_tab(self.tab.next()),
             Key::BackTab => self.set_tab(self.tab.prev()),
-            Key::Char('?') => self.message = Some("Help view comes with step 5".into()),
+            Key::Char('?') => return Effect::Help,
             // Écrans, depuis n'importe quel onglet (Ctrl+Shift+N / K, prefix Q les envoient)
             Key::Char('N') => return Effect::OpenNew,
             Key::Char('K') => return self.run_action(ActionKind::Kill),
@@ -1064,6 +1066,7 @@ mod tests {
     #[test]
     fn ctrl_c_quits_but_q_does_not() {
         let mut a = app();
+        assert_eq!(a.key(Key::Char('?')), Effect::Help);
         assert_eq!(a.key(Key::Char('q')), Effect::None);
         assert_eq!(a.key(Key::Quit), Effect::Quit);
     }

@@ -149,6 +149,13 @@ pub fn zoom() -> Result<()> {
     run(&["resize-pane", "-Z", "-t", "!"])
 }
 
+/// Vue d'aide dans un popup centré.
+pub fn open_help() -> Result<()> {
+    let exe = std::env::current_exe().context("current exe")?;
+    let cmd = format!("'{}' help", exe.display());
+    run(&["display-popup", "-w", "90%", "-h", "70%", "-E", &cmd])
+}
+
 /// Atténue (ou rétablit) le pane de travail pendant un écran de confirmation.
 pub fn dim(on: bool) {
     let _ = if on {

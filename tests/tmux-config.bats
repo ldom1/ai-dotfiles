@@ -67,6 +67,7 @@ platform_parses() {
   t show-hooks -g | grep -q 'client-resized.*tmux-sidebar.sh ensure' 
   t show -gv status-right | grep -qF "#(~/.local/bin/aif-agents status '#{pane_current_path}')"
   [ "$(cmd prefix /)" = "list-keys -N" ]
+  [[ "$(cmd prefix '?')" == *"aif-sidebar help"* ]]
 }
 
 @test "mouse selection copies and says so" {
