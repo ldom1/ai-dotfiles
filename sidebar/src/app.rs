@@ -125,6 +125,8 @@ pub enum Screen {
         session: String,
         input: String,
     },
+    /// Menu d'une session (clic droit) : ses actions et les actions globales
+    Menu(String),
     /// Nouveau projet : un nom, créé dans `parent` (dossier des projets)
     Project {
         parent: String,
@@ -500,6 +502,25 @@ impl App {
                 }
                 Effect::None
             }
+            (Screen::Menu(s), k) => match k {
+                Key::Enter => close(self, Effect::Switch(s)),
+                Key::Char('r') => {
+                    self.screen = Some(Screen::Rename {
+                        session: s.clone(),
+                        input: s,
+                    });
+                    Effect::None
+                }
+                // la session du menu, choisie par le clic : pas la session courante
+                Key::Char('K') => {
+                    self.screen = Some(Screen::Kill(s));
+                    Effect::None
+                }
+                Key::Char('N') => close(self, Effect::OpenNew),
+                Key::Char('+') => close(self, Effect::OpenProject),
+                Key::Char('b') => close(self, Effect::ToggleSidebar),
+                _ => Effect::None,
+            },
             (Screen::Kill(s), Key::Enter | Key::Char('y')) => close(self, Effect::KillSession(s)),
             (Screen::Kill(_), Key::Char('n')) => close(self, Effect::None),
             (Screen::SaveExit, Key::Enter | Key::Char('y')) => close(self, Effect::SaveExit),

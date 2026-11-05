@@ -64,6 +64,8 @@ platform_parses() {
   for k in o:O e:E n:N b:B; do [ "$(cmd prefix "${k#*:}")" = "$(cmd root "S-C-${k%:*}")" ]; done
   [[ "$(cmd prefix Q)" == *"tmux-sidebar.sh screen Q"* ]]
   [[ "$(cmd prefix +)" == *"tmux-sidebar.sh screen +"* ]]
+  # clic droit : envoyé à la sidebar (son menu de session), collage ailleurs
+  [[ "$(cmd root MouseDown3Pane)" == *"send-keys -M"*"paste-buffer -p"* ]]
   [ "$(cmd prefix Tab)" = "switch-client -l" ]
   t show-hooks -g | grep -q 'client-resized.*tmux-sidebar.sh ensure' 
   t show -gv status-right | grep -qF "#(~/.local/bin/aif-agents status '#{pane_current_path}')"

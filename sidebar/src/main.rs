@@ -183,6 +183,15 @@ fn run_sidebar() -> Result<()> {
                         MouseEventKind::Down(MouseButton::Left) => {
                             click(&mut app, hit_at(&hits, m.column, m.row))
                         }
+                        // Clic droit : menu de la session cliquée, sinon de la session courante
+                        MouseEventKind::Down(MouseButton::Right) => {
+                            let s = match hit_at(&hits, m.column, m.row) {
+                                Some(Hit::Session(i)) => app.sessions.get(i).map(|s| s.name.clone()),
+                                _ => None,
+                            };
+                            app.screen = Some(app::Screen::Menu(s.unwrap_or(app.current.clone())));
+                            Effect::None
+                        }
                         MouseEventKind::ScrollDown => app.key(Key::Down),
                         MouseEventKind::ScrollUp => app.key(Key::Up),
                         _ => Effect::None,
