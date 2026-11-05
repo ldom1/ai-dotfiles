@@ -1,0 +1,5 @@
+pane	main	1	1	:*	1	t	:@HOME@	1	zsh	:
+pane	proj	1	1	:*	1	t	:@PROJ@	1	zsh	:
+window	main	1	:main	1	:*	c3c3,80x24,0,0,1	:
+window	proj	1	:proj	1	:*	c3c3,80x24,0,0,1	:
+state	main	
