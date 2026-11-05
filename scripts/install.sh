@@ -293,6 +293,29 @@ if (( os_build )); then
   fi
 fi
 
+# aif-sidebar (Rust + ratatui, sidebar/): built here, linked in ~/.local/bin. Needs Rust >= 1.85
+# (edition 2024). cargo build is incremental: a second run rebuilds nothing.
+SB_BIN="$DOTFILES/sidebar/target/release/aif-sidebar"
+cargo_ok() {
+  local v ma mi
+  v=$(cargo --version 2>/dev/null | awk '{print $2}') || return 1
+  IFS=. read -r ma mi _ <<<"$v"
+  [[ $ma =~ ^[0-9]+$ && $mi =~ ^[0-9]+$ ]] && (( ma > 1 || (ma == 1 && mi >= 85) ))
+}
+if cargo_ok; then
+  if (cd "$DOTFILES/sidebar" && cargo build --release --locked -q); then
+    log "aif-sidebar built ($(cargo --version | awk '{print $2}'))"
+  else
+    warn_end "aif-sidebar build failed. Run: cd $DOTFILES/sidebar && cargo build --release --locked"
+  fi
+else
+  warn_end "aif-sidebar needs Rust >= 1.85. Ubuntu 26.04: sudo apt install cargo. Otherwise: https://rustup.rs"
+fi
+if [[ -x "$SB_BIN" ]]; then
+  ln -sfn "$SB_BIN" "$HOME/.local/bin/aif-sidebar"
+  log "aif-sidebar → $HOME/.local/bin/aif-sidebar"
+fi
+
 # Statusline: pinned user-prefix install; npx resolves the package on every repaint (~1 s).
 CCSTATUSLINE_VERSION=2.2.30
 if command -v npm >/dev/null 2>&1; then

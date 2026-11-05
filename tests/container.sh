@@ -14,7 +14,7 @@ set -euo pipefail
 [ -n "$AIF_PLATFORM" ] || unset AIF_PLATFORM
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq >/dev/null
-apt-get install -y -qq git python3 tmux curl ca-certificates jq fzf xz-utils bats procps >/dev/null
+apt-get install -y -qq git python3 tmux curl ca-certificates jq fzf xz-utils bats procps cargo >/dev/null
 git config --global --add safe.directory '*'
 git clone -q /src "$HOME/ai-dotfiles"
 # Contenu de $HOME : liens (cible) et fichiers (md5), hors dépôts .git internes

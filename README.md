@@ -472,6 +472,15 @@ Agent state (read by the views; one file per agent):
 - `bin/aif-statusline` is the Claude Code `statusLine`: it records the model and the context use, then runs the previous `statusLine` command (`install.sh` chains it, it does not replace it).
 - `aif-agents list --json` is the only data source of the views. It adds the tmux session, a `jump` number (1–9, display order) and git stats (`git diff --numstat HEAD`, cached 5 s). It computes `stale` (no event for `AIF_STALE_AFTER` seconds, default 3600, except `check`), `unknown` (a `claude` process in a pane without a state file) and `error` (a state file but no `claude` process left in the pane).
 
+Agents sidebar (`aif-sidebar`, Rust + ratatui, `sidebar/`; decision: `docs/adr/0001-agents-sidebar.md`):
+
+- `install.sh` builds it with `cargo` (Rust 1.85+; Ubuntu 26.04: `sudo apt install cargo`) and links `~/.local/bin/aif-sidebar`. It reads only `aif-agents` and tmux.
+- Until it replaces opensessions (next step), open it in a left pane: `tmux split-window -hbf -l 50 aif-sidebar`.
+- Tabs `SESSIONS`, `AGENTS`, `ACTIONS` (`Tab` switches); the ai-dotfiles version is top right. AGENTS groups agents by priority: TO CHECK, ERROR, DONE, RUNNING, UNKNOWN, STALE.
+- Keys in AGENTS: `↑↓`/`j k` move, `/` filter, `o` sort (priority, session, recent), `⏎` go to the agent, `p` peek, `x` interrupt a running agent, `q` quit.
+- An agent in TO CHECK shows its question and buttons `[1 …] [2 …] [i Reply…]`. `1`–`3` (or a click) sends that answer to the agent pane (`tmux send-keys`); `i` opens a reply field. Otherwise `1`–`9` jumps to the agent with that number.
+- Peek (`p`): a popup on the right (40 %) with the agent output (`Output`) and its diff against HEAD (`Diff`, `Tab` switches). `⏎` goes to the agent, `Esc` closes.
+
 Agent status in the sidebar:
 
 - Right of each session: one glyph per agent (3 at most, then `+N`). `◉` blocked (waits for you), `⚙` using tools, `⠹` working, `●` done (not seen), `✓` idle, `⚠` stopped, `✗` error.
