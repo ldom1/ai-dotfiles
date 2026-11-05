@@ -64,6 +64,13 @@ platform_parses() {
   [ "$(cmd prefix /)" = "list-keys -N" ]
 }
 
+@test "mouse selection copies and says so" {
+  start wsl
+  for k in MouseDragEnd1Pane DoubleClick1Pane y; do
+    [[ "$(cmd copy-mode-vi "$k")" == *'copy-pipe-and-cancel \; display-message -d 1500 "Copied to clipboard"'* ]]
+  done
+}
+
 @test "csi-u key format only from tmux 3.5" {
   start linux
   if t display -p '#{>=:#{version},3.5}' | grep -q 1; then

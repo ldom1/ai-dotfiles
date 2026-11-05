@@ -449,7 +449,7 @@ Keys:
 - `Alt+arrows` moves between panes. `Alt+z` zooms.
 - `prefix O`, `prefix E`, `prefix N`, `prefix X` and `prefix B` do the same as the `Ctrl+Shift` keys, in any terminal.
 - `prefix Q` saves every session, then quits tmux. `prefix Tab` switches to the last session. `prefix /` shows the tmux key list.
-- Mouse selection copies to the system clipboard: OSC 52 to the terminal, plus `aif-platform copy` (Wayland clipboard) on native Linux. Right click pastes (outside the sidebar).
+- Mouse selection copies to the system clipboard and shows "Copied to clipboard": OSC 52 to the terminal, plus `aif-platform copy` (Wayland clipboard) on native Linux. Right click pastes (outside the sidebar).
 
 Agent bell:
 
