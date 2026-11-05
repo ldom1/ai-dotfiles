@@ -58,7 +58,9 @@ platform_parses() {
 
 @test "prefix keys: O E N X B Q Tab and / are bound" {
   start linux
-  for k in o:O e:E x:X n:N b:B; do [ "$(cmd prefix "${k#*:}")" = "$(cmd root "S-C-${k%:*}")" ]; done
+  [[ "$(cmd root S-C-x)" == *kill-pane* ]]
+  [[ "$(cmd prefix X)" == *kill-session* ]]
+  for k in o:O e:E n:N b:B; do [ "$(cmd prefix "${k#*:}")" = "$(cmd root "S-C-${k%:*}")" ]; done
   [[ "$(cmd prefix Q)" == *kill-server* ]]
   [ "$(cmd prefix Tab)" = "switch-client -l" ]
   [ "$(cmd prefix /)" = "list-keys -N" ]
@@ -78,4 +80,13 @@ platform_parses() {
   else
     run -1 tmux -L aif-test show -sv extended-keys-format
   fi
+}
+
+@test "Ctrl+Shift+X action closes the current pane, not the session" {
+  start linux
+  t split-window -d
+  [ "$(t list-panes | wc -l)" -eq 2 ]
+  t aif-kill-pane
+  [ "$(t list-panes | wc -l)" -eq 1 ]
+  [ "$(t list-sessions | wc -l)" -eq 1 ]
 }

@@ -437,7 +437,8 @@ Sessions:
 - If a session of the same name exists for another folder, `tma` stops and shows both paths. Use `-n`.
 - A session created without a name (plain `tmux`) is renamed after its folder by `config/tmux-name-session.sh` (`after-new-session` hook), with a `-2` suffix when the name is taken.
 - `Ctrl+Shift+N` opens a folder picker in a popup (opensessions `sessionizer.sh`, fzf) and creates a session there. It searches `$HOME` 2 levels deep (`SESSIONIZER_DIR`, `SESSIONIZER_MAXDEPTH`).
-- `Ctrl+Shift+X` kills the current session after a `y/n` prompt, moves to another session and saves the layout at once, so the session does not come back on restore.
+- `Ctrl+Shift+X` closes the current pane. It asks first when an agent (`claude`) runs in the pane. It does nothing in the sidebar.
+- `prefix X` kills the current session after a `y/n` prompt, moves to another session and saves the layout at once, so the session does not come back on restore.
 - In the sidebar: `n` creates a session, `x` kills the selected one.
 - Right click in the sidebar opens a menu for the **current** session: rename, new, kill, hide sidebar. tmux does not know which row was clicked: left-click a session first to act on it.
 - A renamed session no longer matches its folder: `tma <dir>` then creates a new session with the folder name.
@@ -447,7 +448,7 @@ Keys:
 - In the sidebar, arrows select a session and `Enter` switches to it. `Alt+s` focuses the sidebar. `Ctrl+Shift+B` (or `prefix o t`) shows or hides it. It opens again on the next attach.
 - `Ctrl+Shift+O` splits right, `Ctrl+Shift+E` splits below. They do nothing in the sidebar.
 - `Alt+arrows` moves between panes. `Alt+z` zooms.
-- `prefix O`, `prefix E`, `prefix N`, `prefix X` and `prefix B` do the same as the `Ctrl+Shift` keys, in any terminal.
+- `prefix O`, `prefix E`, `prefix N` and `prefix B` do the same as the `Ctrl+Shift` keys, in any terminal.
 - `prefix Q` saves every session, then quits tmux. `prefix Tab` switches to the last session. `prefix /` shows the tmux key list.
 - Mouse selection copies to the system clipboard and shows "Copied to clipboard": OSC 52 to the terminal, plus `aif-platform copy` (Wayland clipboard) on native Linux. Right click pastes (outside the sidebar).
 
@@ -482,7 +483,7 @@ Windows Terminal (manual step, `settings.json`):
 - `ctrl+shift+m`: `newTab` action with `"commandline": "wsl.exe -d Ubuntu --cd ~ -- zsh -lic tma"`. It overrides the default mark-mode key.
 - `ctrl+shift+o`: `sendInput` `"\u001b[[tma-o"`. tmux maps it to a split on the right (`user-keys[0]`).
 - `ctrl+shift+e`: `sendInput` `"\u001b[[tma-e"`. tmux maps it to a split below (`user-keys[1]`).
-- `ctrl+shift+x`: `sendInput` `"\u001b[[tma-x"` (`user-keys[2]`, kill session).
+- `ctrl+shift+x`: `sendInput` `"\u001b[[tma-x"` (`user-keys[2]`, close pane).
 - `ctrl+shift+n`: `sendInput` `"\u001b[[tma-n"` (`user-keys[3]`, new session). It overrides the default new-window key.
 - `ctrl+shift+b`: `sendInput` `"\u001b[[tma-b"` (`user-keys[4]`, show / hide the sidebar).
 - These keys send text in every Windows Terminal tab, also outside tmux.
