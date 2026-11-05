@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Dans un conteneur propre : scripts/install.sh deux fois (les deux passes sortent en 0, la 2ᵉ
+# ne change aucun fichier de $HOME), puis les tests bats avec le tmux de l'image.
+# Usage : tests/container.sh [image] [wsl|linux]   (défaut ubuntu:24.04, plateforme détectée).
+# Sous WSL, Docker partage le noyau « microsoft » : passer linux pour tester la branche Ubuntu native.
+# Teste le HEAD commité.
+set -euo pipefail
+image=${1:-ubuntu:24.04}
+platform=${2:-}
+repo=$(git -C "$(dirname "$0")/.." rev-parse --show-toplevel)
+
+docker run --rm -i -e AIF_PLATFORM="$platform" -v "$repo:/src:ro" "$image" bash -s <<'IN'
+set -euo pipefail
+[ -n "$AIF_PLATFORM" ] || unset AIF_PLATFORM
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -qq >/dev/null
+apt-get install -y -qq git python3 tmux curl ca-certificates jq fzf xz-utils bats >/dev/null
+git config --global --add safe.directory '*'
+git clone -q /src "$HOME/ai-dotfiles"
+# Contenu de $HOME : liens (cible) et fichiers (md5), hors dépôts .git internes
+snap() { find "$HOME" -path '*/.git' -prune -o -type l -printf '%p -> %l\n' -o -type f -exec md5sum {} + | sort; }
+run() { bash "$HOME/ai-dotfiles/scripts/install.sh" > "/tmp/install-$1.log" 2>&1 || { echo "FAIL: pass $1 exit $?"; tail -20 "/tmp/install-$1.log"; exit 1; }; }
+run 1; snap > /tmp/s1
+run 2; snap > /tmp/s2
+os="$(. /etc/os-release; echo "$PRETTY_NAME"), tmux $(tmux -V | cut -d' ' -f2)"
+echo "--- $os, pass 1:"; grep -aE 'platform:|opensessions|Nerd Font|ghostty|BurntToast' /tmp/install-1.log
+echo "opensessions tag: $(git -C "$HOME/.tmux/plugins/opensessions" describe --tags)"
+echo "--- warnings, pass 2:"; sed -n '/Warnings:/,$p' /tmp/install-2.log
+diff /tmp/s1 /tmp/s2 || { echo "FAIL: pass 2 changed files"; exit 1; }
+echo "OK: $os: 2 passes exit 0, pass 2 changed nothing"
+git clone -q --depth 1 https://github.com/tmux-plugins/tmux-resurrect "$HOME/.tmux/plugins/tmux-resurrect"
+bats "$HOME/ai-dotfiles/tests/"
+IN

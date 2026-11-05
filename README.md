@@ -421,6 +421,15 @@ Local Medium/blog drafts belong in `articles/` (gitignored).
 `install.sh` links `~/.tmux.conf` to `config/tmux.conf`, installs `bin/tma` in `~/.local/bin` and clones [TPM](https://github.com/tmux-plugins/tpm).
 The session sidebar is [opensessions](https://github.com/Ataraxy-Labs/opensessions) (TPM plugin). It shows each session with its git branch and Claude Code agent state.
 
+Platforms:
+
+- WSL with Windows Terminal (Ubuntu 22.04+, tmux 3.2a+), and native Ubuntu 26.04 with Ghostty (GNOME, Wayland, tmux 3.6a).
+- `bin/aif-platform` holds every platform difference: `name` (`wsl` or `linux`), `copy`, `notify`, `open`. `AIF_PLATFORM=wsl|linux` forces the platform.
+- `config/tmux.conf` loads `config/tmux-platform-<name>.conf`: Windows Terminal keys on WSL; Wayland clipboard and Ghostty features on Linux.
+- Options newer than tmux 3.2a are guarded by `%if #{>=:#{version},X}` (for example `extended-keys-format csi-u` from 3.5).
+- Native Linux: `install.sh` checks `wl-copy`, `notify-send`, `jq` and `fzf`, installs JetBrainsMono Nerd Font in `~/.local/share/fonts`, and links `~/.config/ghostty/config` when Ghostty is installed.
+- WSL: `install.sh` checks `jq` and `fzf`. For Windows notifications, run once in Windows PowerShell: `Install-Module BurntToast -Scope CurrentUser`.
+
 Sessions:
 
 - `tma [dir]` attaches to the session for `dir`, or creates it. The session name is the folder name (`main` for `~`).
@@ -438,7 +447,9 @@ Keys:
 - In the sidebar, arrows select a session and `Enter` switches to it. `Alt+s` focuses the sidebar. `Ctrl+Shift+B` (or `prefix o t`) shows or hides it. It opens again on the next attach.
 - `Ctrl+Shift+O` splits right, `Ctrl+Shift+E` splits below. They do nothing in the sidebar.
 - `Alt+arrows` moves between panes. `Alt+z` zooms.
-- Mouse selection copies to the system clipboard (OSC 52). Right click pastes (outside the sidebar).
+- `prefix O`, `prefix E`, `prefix N`, `prefix X` and `prefix B` do the same as the `Ctrl+Shift` keys, in any terminal.
+- `prefix Q` saves every session, then quits tmux. `prefix Tab` switches to the last session. `prefix /` shows the tmux key list.
+- Mouse selection copies to the system clipboard: OSC 52 to the terminal, plus `aif-platform copy` (Wayland clipboard) on native Linux. Right click pastes (outside the sidebar).
 
 Agent bell:
 
@@ -457,14 +468,14 @@ Agent status in the sidebar:
 
 - Right of each session: one glyph per agent (3 at most, then `+N`). `◉` blocked (waits for you), `⚙` using tools, `⠹` working, `●` done (not seen), `✓` idle, `⚠` stopped, `✗` error.
 - Under each session with agents: one line with the count for each status, most urgent first (`◉ 1 blocked  ⠹ 2 working`). This line comes from a local patch, `config/opensessions/agent-summary-row.patch`. `install.sh` applies it and builds opensessions from source (`cargo`).
-- Before an opensessions update (`prefix U`), drop the patch: `git -C ~/.tmux/plugins/opensessions checkout -- .`. Then run `install.sh` again. If the patch no longer applies, `install.sh` warns and the sidebar keeps the stock rows.
+- opensessions is pinned on `v0.2.0-alpha.12`, the tag the patch targets. `install.sh` goes back to this tag after an update (`prefix U`). If the patch no longer applies, `install.sh` warns at the end and the sidebar keeps the stock rows.
 
 Other:
 
 - `config/tmux-sidebar-on.sh` opens the sidebar on attach: opensessions starts hidden on each tmux server.
 - Sidebar settings: `~/.config/opensessions/config.json` (`sidebarPosition`, `sidebarWidth`, `theme`).
 
-First install, in tmux: press `prefix I`, then run `install.sh` again. `install.sh` builds opensessions with `cargo` when the agent summary patch is new, or when the prebuilt binaries cannot run (they need glibc 2.39, Ubuntu 24.04+; checked with `ldd`). Without `cargo`, it prints the build command. Restart the sidebar after a build: `Ctrl+Shift+B` twice.
+First install: `install.sh` clones opensessions and fetches its binaries. In tmux, press `prefix I` to install tmux-resurrect and tmux-continuum. `install.sh` builds opensessions with `cargo` when the agent summary patch is new, or when the prebuilt binaries cannot run (they need glibc 2.39, Ubuntu 24.04+; checked with `ldd`). Without `cargo`, it prints the build command. Restart the sidebar after a build: `Ctrl+Shift+B` twice.
 
 Windows Terminal (manual step, `settings.json`):
 
@@ -477,7 +488,12 @@ Windows Terminal (manual step, `settings.json`):
 - These keys send text in every Windows Terminal tab, also outside tmux.
 - `"bellStyle": "taskbar"` on each WSL profile.
 
-Ghostty sends the keys as extended keys, and tmux binds `C-S-o`, `C-S-e`, `C-S-x`, `C-S-n` and `C-S-b`. `Ctrl+Shift+N` is the Ghostty new-window key: if Ghostty opens a window, add `keybind = ctrl+shift+n=unbind` (not tested).
+Ghostty: `config/ghostty/config` (linked by `install.sh`) sends `Ctrl+Shift+O/E/N/X/B` as CSI u extended keys instead of the Ghostty actions, and tmux binds `C-S-o`, `C-S-e`, `C-S-x`, `C-S-n` and `C-S-b`.
+
+Tests (bats, dedicated tmux server `tmux -L aif-test`):
+
+- `npx --yes bats@1.13.0 tests/` checks that the config loads with the local tmux on both platforms, and replays a tmux-resurrect restore.
+- `tests/container.sh [image] [wsl|linux]` runs `install.sh` twice in a clean container, then the bats tests with the tmux of the image. Example: `tests/container.sh ubuntu:26.04 linux`.
 
 `install.sh` symlinks `~/.claude` and `~/.cursor` to this repo, generates `settings.json` from the template, and creates `settings.local.json` if missing. Skills are wired automatically — no plugin install needed for your own machine. It also sets `git config core.hooksPath git-hooks` so the versioned [pre-commit hook](git-hooks/pre-commit) runs (blocks accidental commits under Cursor runtime dirs under `.cursor/` and scans staged diffs for secrets). If you clone without running `install.sh`, run `bash scripts/install-git-hooks.sh` once from the repo root.
 

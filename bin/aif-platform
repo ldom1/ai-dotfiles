@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# aif-platform — couche de portabilité WSL / Ubuntu natif pour la config tmux.
+#   aif-platform name                       → wsl | linux
+#   aif-platform copy  < texte              → presse-papiers système
+#   aif-platform notify TITRE CORPS [SESSION] [critical|normal]
+#   aif-platform open URL
+# AIF_PLATFORM=wsl|linux force la plateforme (ex. conteneur Docker sous WSL : le noyau dit « microsoft »).
+set -uo pipefail
+
+is_wsl() {
+  [[ -n ${AIF_PLATFORM:-} ]] && { [[ $AIF_PLATFORM == wsl ]]; return; }
+  [[ -n ${WSL_DISTRO_NAME:-} ]] || grep -qi microsoft /proc/sys/kernel/osrelease 2>/dev/null
+}
+has() { command -v "$1" >/dev/null 2>&1; }
+ps_quote() { local s=${1//\'/\'\'}; printf "'%s'" "$s"; }   # chaîne PowerShell sûre
+
+cmd_name() { if is_wsl; then echo wsl; else echo linux; fi; }
+
+# OSC 52 : dans tmux, load-buffer -w le transmet au terminal (set-clipboard on) ;
+# hors tmux, la séquence part directement vers le terminal.
+osc52() {
+  if [[ -n ${TMUX:-} ]]; then tmux load-buffer -w -
+  else printf '\033]52;c;%s\a' "$(base64 | tr -d '\n')" > /dev/tty
+  fi
+}
+
+cmd_copy() {
+  if is_wsl; then
+    osc52   # Windows Terminal ; clip.exe casse les accents
+  elif [[ -n ${WAYLAND_DISPLAY:-} ]] && has wl-copy; then wl-copy
+  elif [[ -n ${DISPLAY:-} ]] && has xclip; then xclip -selection clipboard
+  elif [[ -n ${DISPLAY:-} ]] && has xsel; then xsel --clipboard --input
+  else osc52   # SSH ou console : l'OSC 52 reste le seul canal
+  fi
+}
+
+cmd_notify() {
+  local title=${1:-tmux} body=${2:-} session=${3:-} urgency=${4:-normal}
+  if is_wsl; then
+    if has powershell.exe; then
+      # BurntToast : Install-Module BurntToast -Scope CurrentUser (côté Windows)
+      ( powershell.exe -NoProfile -NonInteractive -Command \
+          "if (Get-Module -ListAvailable BurntToast) { New-BurntToastNotification -Text $(ps_quote "$title"), $(ps_quote "$body") }" \
+          >/dev/null 2>&1 & )
+      return 0
+    fi
+  elif has notify-send && [[ -n ${DBUS_SESSION_BUS_ADDRESS:-} ]]; then
+    if [[ -n $session ]]; then
+      # GNOME affiche le bouton ; un clic ramène tmux sur la session.
+      ( action=$(notify-send -a "tmux agents" -u "$urgency" --action=open="Open $session" --wait "$title" "$body" 2>/dev/null)
+        [[ $action == open ]] && tmux switch-client -t "=$session" 2>/dev/null ) &
+    else
+      notify-send -a "tmux agents" -u "$urgency" "$title" "$body"
+    fi
+    return 0
+  fi
+  # Repli universel : message dans la barre tmux.
+  tmux display-message -d 4000 "$title — $body" 2>/dev/null || printf '%s: %s\n' "$title" "$body" >&2
+}
+
+cmd_open() {
+  local url=$1
+  if is_wsl; then
+    if has wslview; then wslview "$url"; else explorer.exe "$url" >/dev/null 2>&1; fi
+  else
+    xdg-open "$url" >/dev/null 2>&1 &
+  fi
+}
+
+case "${1:-}" in
+  name)   cmd_name ;;
+  copy)   cmd_copy ;;
+  notify) shift; cmd_notify "$@" ;;
+  open)   shift; cmd_open "$@" ;;
+  *) echo "usage: aif-platform name|copy|notify|open" >&2; exit 2 ;;
+esac

@@ -200,6 +200,47 @@ log "$HOME/.tmux.conf → $DOTFILES/config/tmux.conf"
 [[ -d "$HOME/.tmux/plugins/tpm" ]] || git clone -q --depth 1 https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
 log "TPM ready: run prefix + I in tmux to install tmux-resurrect and tmux-continuum"
 
+# Platform layer: bin/aif-platform holds every WSL / native Linux difference (AIF_PLATFORM forces it).
+chmod +x "$DOTFILES/bin/aif-platform"
+ln -sfn "$DOTFILES/bin/aif-platform" "$HOME/.local/bin/aif-platform"
+AIF_OS=$("$DOTFILES/bin/aif-platform" name)
+log "platform: $AIF_OS (tmux loads config/tmux-platform-$AIF_OS.conf)"
+need_cmds() {  # need_cmds "<apt packages>" cmd...: warn once with the apt line for missing commands
+  local pkgs=$1 missing=(); shift
+  for c in "$@"; do command -v "$c" >/dev/null 2>&1 || missing+=("$c"); done
+  (( ${#missing[@]} == 0 )) || warn_end "missing ${missing[*]}. Run: sudo apt install $pkgs"
+}
+if [[ "$AIF_OS" == linux ]]; then
+  need_cmds "wl-clipboard libnotify-bin jq fzf" wl-copy notify-send jq fzf
+  # JetBrainsMono Nerd Font (glyphs of the sidebar and status bar), user fonts folder
+  NF_VERSION=v3.5.1
+  NF_DIR="$HOME/.local/share/fonts/JetBrainsMonoNerdFont"
+  if [[ ! -f "$NF_DIR/.version-$NF_VERSION" ]]; then
+    nf_tmp=$(mktemp)
+    if curl -fsSL -o "$nf_tmp" "https://github.com/ryanoasis/nerd-fonts/releases/download/$NF_VERSION/JetBrainsMono.tar.xz" &&
+       mkdir -p "$NF_DIR" && tar -xJf "$nf_tmp" -C "$NF_DIR"; then
+      touch "$NF_DIR/.version-$NF_VERSION"
+      # fontconfig also finds the folder on its own; fc-cache only makes it immediate
+      command -v fc-cache >/dev/null 2>&1 && fc-cache -f "$NF_DIR" >/dev/null 2>&1 || true
+      log "JetBrainsMono Nerd Font $NF_VERSION → $NF_DIR"
+    else
+      warn_end "JetBrainsMono Nerd Font not installed (download or tar -J failed: is xz-utils installed?)"
+    fi
+    rm -f "$nf_tmp"
+  fi
+  # Ghostty: frees Ctrl+Shift+O/E/N/X/B for tmux
+  if command -v ghostty >/dev/null 2>&1; then
+    GHOSTTY_CONF="$HOME/.config/ghostty/config"
+    mkdir -p "$(dirname "$GHOSTTY_CONF")"
+    [[ -e "$GHOSTTY_CONF" && ! -L "$GHOSTTY_CONF" ]] && mv "$GHOSTTY_CONF" "$GHOSTTY_CONF.bak" && warn "Backed up $GHOSTTY_CONF → $GHOSTTY_CONF.bak"
+    ln -sfn "$DOTFILES/config/ghostty/config" "$GHOSTTY_CONF"
+    log "$GHOSTTY_CONF → $DOTFILES/config/ghostty/config"
+  fi
+else
+  need_cmds "jq fzf" jq fzf
+  log "Windows notifications: once, in Windows PowerShell, run: Install-Module BurntToast -Scope CurrentUser"
+fi
+
 # opensessions, pinned on a tag (the local patch targets it). install.sh clones it, so TPM finds it
 # installed; a checkout on another commit (prefix U) goes back to the tag, which drops the patch.
 # Then apply the local agent summary patch, and build from source when the patch is new
