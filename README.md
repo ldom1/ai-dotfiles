@@ -419,6 +419,13 @@ Local Medium/blog drafts belong in `articles/` (gitignored).
 ### tmux for agents
 
 `install.sh` links `~/.tmux.conf` to `config/tmux.conf`, installs `bin/tma` in `~/.local/bin` and clones [TPM](https://github.com/tmux-plugins/tpm).
+
+Terminal init: `install.sh` adds one line to `~/.zshrc` and `~/.bashrc` (or to the rc file of the login shell when neither exists). The line sources `config/shell-init.sh`:
+
+- It puts `~/.local/bin` on `PATH`.
+- A new terminal outside tmux runs `tma`: it opens the session of the current folder (`main` for `~`). After a detach, the shell continues.
+- It does not run `tma` inside tmux, in the VS Code or Cursor terminal, in a shell started by Claude Code, without a tty, or in a shell that runs a command (`zsh -lic tma`).
+- Set `AIF_NO_TMUX=1` to turn it off.
 The sidebar is `aif-sidebar` (Rust + ratatui, `sidebar/`; decision: `docs/adr/0001-agents-sidebar.md`): one pane on the left of each window, with the sessions, the Claude Code agents and the actions.
 
 Platforms:

@@ -3,9 +3,11 @@
 ## [Unreleased]
 
 ### Fixed
+- `local-ci pre-push` crashed with `ValueError` when git rejected every ref (for example a non-fast-forward push): the hook then gets one blank line. It now skips blank lines, so git shows its real error.
 - `install.sh` failed on a new machine: `.claude/settings.local.json.example` was deleted by mistake. It is back.
 
 ### Added
+- Terminal init: `install.sh` makes `~/.zshrc` and `~/.bashrc` source `config/shell-init.sh`. It puts `~/.local/bin` on `PATH` and opens tmux (`tma`) in a new terminal. It skips tmux, VS Code / Cursor terminals, Claude Code shells, shells without a tty and `-c` shells. `AIF_NO_TMUX=1` turns it off. `tests/shell-init.bats` covers it; `tests/container.sh` checks that `~/.bashrc` gets the line once.
 - tmux setup for agent sessions: `config/tmux.conf`, `bin/tma`, and the helper scripts `config/tmux-sidebar.sh`, `config/tmux-bell-relay.sh`, `config/tmux-resurrect-sidebar.sh`, `config/tmux-name-session.sh`.
   - One sidebar, `aif-sidebar`, on the left of each window (`config/tmux-sidebar.sh`, pane option `@aif_sidebar`): tmux hooks open it on attach, on a session or window change and in a new window; a `tmux wait-for` lock prevents a second one. It keeps its width (44 columns, `@aif-sidebar-width`) when the terminal is resized (`client-resized` hook). `Ctrl+Shift+B` / `prefix B` hides or shows it everywhere, `Alt+s` focuses it. The terminal panes are on the right.
   - `tma [-n name] [dir]` creates or attaches a named session. It stops when the name belongs to another folder.
