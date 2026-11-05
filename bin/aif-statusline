@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# aif-statusline [commande args…] — statusLine de Claude Code.
+# Enregistre modèle et contexte dans l'état de l'agent du pane tmux (lu par aif-agents), puis :
+#   - avec une commande : la lance avec la même entrée et affiche sa sortie (statusLine chaînée,
+#     ex. aif-statusline ~/.local/bin/ccstatusline --config …) ;
+#   - sans commande : affiche « Modèle · ctx N% ».
+set -uo pipefail
+input=$(cat)
+
+if command -v jq >/dev/null; then
+  model=$(jq -r '.model.display_name // .model.id // "?"' <<<"$input" 2>/dev/null)
+  ctx=$(jq -r '
+    if .context_window.used_percentage then .context_window.used_percentage
+    elif .context_window.remaining_percentage then (100 - .context_window.remaining_percentage)
+    elif (.context_window.current_usage and .context_window.context_window_size) then
+      ((.context_window.current_usage.input_tokens + (.context_window.current_usage.cache_creation_input_tokens // 0)
+        + (.context_window.current_usage.cache_read_input_tokens // 0)) * 100 / .context_window.context_window_size)
+    else empty end | floor' <<<"$input" 2>/dev/null)
+
+  if [[ -n ${TMUX_PANE:-} ]]; then
+    dir=${AIF_STATE_DIR:-${XDG_RUNTIME_DIR:-/tmp/aif-$UID}/aif/agents}
+    f="$dir/${TMUX_PANE#%}.json"
+    if [[ -f $f ]] && tmp=$(mktemp "$dir/.XXXXXX" 2>/dev/null); then
+      if jq --arg m "$model" --arg c "${ctx:-}" \
+           '.model=$m | .ctx=(if $c=="" then null else ($c|tonumber) end)' "$f" >"$tmp" 2>/dev/null; then
+        mv "$tmp" "$f"
+      else
+        rm -f "$tmp"
+      fi
+    fi
+  fi
+fi
+
+if (( $# )); then
+  printf '%s' "$input" | "$@"
+else
+  printf '%s%s\n' "${model:-claude}" "${ctx:+ · ctx ${ctx}%}"
+fi

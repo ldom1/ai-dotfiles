@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+# aif-agents — lecture de l'état des agents : seule source de données des vues tmux.
+#   aif-agents list --json   → tableau JSON, trié par priorité (ordre d'affichage)
+# Chaque agent : les champs écrits par aif-agent-hook, plus
+#   session  nom de la session tmux du pane
+#   state    final : check | error | done | running | unknown | stale
+#            stale   = état ≠ check et updated_at plus vieux que AIF_STALE_AFTER (s, défaut 3600)
+#            unknown = processus claude dans un pane sans fichier d'état
+#            error   = fichier d'état mais plus de processus claude dans le pane (agent tombé)
+#   jump     1–9 dans l'ordre affiché, null au-delà
+#   git      {add, del, files} de `git diff --numstat HEAD` dans cwd (cache 5 s par dossier)
+#   aif-agents diff <pane> --json → {files: [{file, add, del}], hunk} : diff contre HEAD dans le
+#            dossier de l'agent (cwd de son état, sinon dossier du pane), premier hunk seulement
+#   aif-agents status [dossier] → barre d'état tmux : compteurs par état (◉ ⠹ ✓ ◌ ✕, zéros masqués)
+#            et branche git du dossier, au format tmux (#[fg=…])
+set -uo pipefail
+
+STATE_DIR=${AIF_STATE_DIR:-${XDG_RUNTIME_DIR:-/tmp/aif-$UID}/aif/agents}
+CACHE_DIR="$STATE_DIR/../git-cache"
+STALE_AFTER=${AIF_STALE_AFTER:-3600}
+GIT_TTL=5
+
+usage() { echo "usage: aif-agents list --json | aif-agents diff <pane> --json | aif-agents status [dir]" >&2; exit 2; }
+command -v jq >/dev/null || { echo "aif-agents: jq is required" >&2; exit 1; }
+
+if [[ ${1:-} == diff && -n ${2:-} && ${3:-} == --json ]]; then
+  pane=$2
+  dir=$(jq -r '.cwd // empty' "$STATE_DIR/${pane#%}.json" 2>/dev/null)
+  [[ -n $dir ]] || dir=$(tmux display -p -t "$pane" '#{pane_current_path}' 2>/dev/null)
+  [[ -d $dir ]] || { echo "aif-agents: no folder for pane $pane" >&2; exit 1; }
+  files=$(git -C "$dir" diff --numstat HEAD 2>/dev/null | jq -Rn '[inputs | select(. != "") | split("\t")
+    | {file: .[2], add: (.[0] | tonumber? // 0), del: (.[1] | tonumber? // 0)}]')
+  # Premier hunk du premier fichier : de la 1re ligne @@ jusqu'à la suivante (ou au fichier suivant)
+  hunk=$(git -C "$dir" diff --no-color --no-ext-diff HEAD 2>/dev/null |
+    awk '/^@@/ { if (seen++) exit } /^diff --git/ && seen { exit } seen { print }')
+  jq -n --argjson files "${files:-[]}" --arg hunk "$hunk" '{files: $files, hunk: $hunk}'
+  exit 0
+fi
+mode=
+if [[ ${1:-} == list && ${2:-} == --json ]]; then mode=list
+elif [[ ${1:-} == status ]]; then mode=status; status_dir=${2:-}
+else usage
+fi
+
+# Panes tmux : id, session, pid, commande, dossier. Séparateur imprimable : tmux ≥ 3.3 remplace
+# la tabulation par « _ » dans la sortie -F.
+panes=$(tmux list-panes -a -F '#{pane_id}|:|#{session_name}|:|#{pane_pid}|:|#{pane_current_command}|:|#{pane_current_path}' 2>/dev/null) || panes=""
+
+# Panes où tourne un processus claude (descendant du shell du pane, ou commande au premier plan)
+agent_pids=""
+if [[ -n $panes ]] && command -v ps >/dev/null; then
+  agent_pids=$(ps -e -o pid=,ppid=,comm= 2>/dev/null | awk '
+    { parent[$1] = $2; if ($3 == "claude") claude[$1] = 1 }
+    END { for (p in claude) { q = p; n = 0; while (q > 1 && n++ < 64) { print q; q = parent[q] } } }' | sort -u)
+fi
+panes_json=$(jq -Rn --arg pids "$agent_pids" '
+  ($pids | split("\n") | map(select(. != "")) | INDEX(.)) as $ap
+  | [inputs | select(. != "") | split("|:|") | {pane: .[0], session: .[1], pid: .[2], cmd: .[3], path: .[4]}
+     | .agent = (.cmd == "claude" or ($ap[.pid] != null))]' <<<"$panes")
+
+# Stats git par dossier, en cache GIT_TTL secondes
+git_stats() {
+  local dir=$1 key file now
+  key=$(printf '%s' "$dir" | md5sum | cut -c1-32)
+  file="$CACHE_DIR/$key.json"
+  now=$(date +%s)
+  if [[ -f $file ]] && (( now - $(stat -c %Y "$file") < GIT_TTL )); then cat "$file"; return; fi
+  mkdir -p "$CACHE_DIR" 2>/dev/null
+  git -C "$dir" diff --numstat HEAD 2>/dev/null | awk -F'\t' '
+    { a += ($1 == "-" ? 0 : $1); d += ($2 == "-" ? 0 : $2); n++ }
+    END { printf "{\"add\":%d,\"del\":%d,\"files\":%d}\n", a, d, n }' | tee "$file.$$" && mv "$file.$$" "$file" 2>/dev/null
+}
+
+shopt -s nullglob
+files=("$STATE_DIR"/*.json)
+states=$(if (( ${#files[@]} )); then jq -cs '.' "${files[@]}" 2>/dev/null || echo '[]'; else echo '[]'; fi)
+
+# Dossiers : cwd des fichiers d'état et dossier des panes à agent sans fichier
+dirs=$(jq -rn --argjson s "$states" --argjson p "$panes_json" '
+  ($s | map(.cwd)) + ($p | map(select(.agent) | .pane as $id | select($s | any(.pane == $id) | not) | .path))
+  | map(select(. != null)) | unique[]')
+gits=$(while IFS= read -r d; do
+  [[ -n $d ]] && jq -cn --arg d "$d" --argjson g "$(git_stats "$d")" '{($d): $g}'
+done <<<"$dirs" | jq -s 'add // {}')
+
+list=$(jq -n --argjson s "$states" --argjson p "$panes_json" --argjson g "$gits" \
+      --argjson now "$(date +%s)" --argjson stale "$STALE_AFTER" '
+  ($p | INDEX(.pane)) as $panes
+  | {check: 0, error: 1, done: 2, running: 3, unknown: 4, stale: 5} as $rank
+  | [ ($s[] | select($panes[.pane]) | $panes[.pane] as $pp
+        | .tool = (.tool // "claude") | .session = $pp.session
+        | .state = (if $pp.agent | not then "error"
+                    elif .state != "check" and ($now - (.updated_at // 0)) > $stale then "stale"
+                    else .state end)
+        | (if $pp.agent | not then .error = (.error // "agent exited") else . end)),
+      ($p[] | select(.agent) | .pane as $id | select($s | any(.pane == $id) | not)
+        | {pane, session, cwd: .path, tool: "claude", state: "unknown"}) ]
+  | map(.git = ($g[.cwd // ""] // null))
+  | sort_by($rank[.state] // 9, .session, (.pane | ltrimstr("%") | tonumber? // 0))
+  | to_entries | map(.value + {jump: (if .key < 9 then .key + 1 else null end)})')
+
+if [[ $mode == list ]]; then
+  printf '%s\n' "$list"
+  exit 0
+fi
+
+# Barre d'état : palette de la spécification (6.1), glyphes (6.2)
+branch=""
+if [[ -n $status_dir ]]; then
+  branch=$(git -C "$status_dir" branch --show-current 2>/dev/null)
+  [[ -n $branch ]] || branch=$(git -C "$status_dir" rev-parse --short HEAD 2>/dev/null)
+fi
+jq -rn --argjson a "$list" --arg branch "$branch" '
+  [["check", "◉", "#FF9E64"], ["running", "⠹", "#7AA2F7"], ["done", "✓", "#9ECE6A"],
+   ["stale", "◌", "#8A90A0"], ["error", "✕", "#F7768E"]]
+  | map(.[0] as $st | ($a | map(select(.state == $st)) | length) as $n
+        | select($n > 0) | "#[fg=\(.[2])]\(.[1]) \($n)")
+  | join(" ") as $counts
+  | [$counts, (if $branch != "" then "#[fg=#73DACA]⎇ \($branch)" else "" end)]
+  | map(select(. != "")) | map(. + " #[fg=#3B4050]│ ") | join("")'
