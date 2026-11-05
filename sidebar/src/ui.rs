@@ -1247,4 +1247,36 @@ mod tests {
                 .any(|(_, h)| *h == Hit::Button(Button::ExitOnly))
         );
     }
+
+    #[test]
+    fn ten_agents_render_fast() {
+        let mut app = demo();
+        let base = app.agents.clone();
+        let agents: Vec<Agent> = (0..10)
+            .map(|i| {
+                let mut a = base[i % base.len()].clone();
+                a.pane = format!("%{i}");
+                a.jump = (i < 9).then_some(i as u8 + 1);
+                a
+            })
+            .collect();
+        app.set_agents(agents);
+        let mut t = Terminal::new(TestBackend::new(60, 50)).unwrap();
+        for tab in [Tab::Agents, Tab::Sessions] {
+            app.set_tab(tab);
+            let start = std::time::Instant::now();
+            for _ in 0..10 {
+                t.draw(|f| {
+                    draw(f, &mut app);
+                })
+                .unwrap();
+            }
+            let per_frame = start.elapsed() / 10;
+            println!("{tab:?}: {per_frame:?} per frame with 10 agents");
+            assert!(
+                per_frame < std::time::Duration::from_millis(10),
+                "{per_frame:?}"
+            );
+        }
+    }
 }

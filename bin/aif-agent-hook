@@ -68,12 +68,14 @@ if [[ $new_state != "$prev_state" ]] && { [[ $new_state == check ]] || { [[ $new
   visible=$(tmux display -p -t "$TMUX_PANE" '#{&&:#{session_attached},#{&&:#{window_active},#{pane_active}}}' 2>/dev/null)
   # Descripteurs fermés : la notification (notify-send --wait) ne doit pas garder ouvert le stdout
   # du hook, que Claude Code attend.
-  if [[ $visible != 1 ]] && command -v aif-platform >/dev/null; then
+  # aif-platform : PATH, sinon ~/.local/bin (PATH de Claude Code sans ce dossier)
+  platform=$(command -v aif-platform || echo "$HOME/.local/bin/aif-platform")
+  if [[ $visible != 1 && -x $platform ]]; then
     sess=$(tmux display -p -t "$TMUX_PANE" '#{session_name}' 2>/dev/null)
     if [[ $new_state == check ]]; then
-      aif-platform notify "◉ $sess needs you" "$(jq -r '.question // ""' "$FILE")" "$sess" critical </dev/null >/dev/null 2>&1 &
+      "$platform" notify "◉ $sess needs you" "$(jq -r '.question // ""' "$FILE")" "$sess" critical </dev/null >/dev/null 2>&1 &
     else
-      aif-platform notify "✓ $sess finished" "$(jq -r '.task // ""' "$FILE")" "$sess" </dev/null >/dev/null 2>&1 &
+      "$platform" notify "✓ $sess finished" "$(jq -r '.task // ""' "$FILE")" "$sess" </dev/null >/dev/null 2>&1 &
     fi
   fi
 fi
