@@ -20,8 +20,9 @@ usage() { echo "usage: aif-agents list --json" >&2; exit 2; }
 [[ ${1:-} == list && ${2:-} == --json ]] || usage
 command -v jq >/dev/null || { echo "aif-agents: jq is required" >&2; exit 1; }
 
-# Panes tmux : id, session, pid, commande, dossier
-panes=$(tmux list-panes -a -F '#{pane_id}	#{session_name}	#{pane_pid}	#{pane_current_command}	#{pane_current_path}' 2>/dev/null) || panes=""
+# Panes tmux : id, session, pid, commande, dossier. Séparateur imprimable : tmux ≥ 3.3 remplace
+# la tabulation par « _ » dans la sortie -F.
+panes=$(tmux list-panes -a -F '#{pane_id}|:|#{session_name}|:|#{pane_pid}|:|#{pane_current_command}|:|#{pane_current_path}' 2>/dev/null) || panes=""
 
 # Panes où tourne un processus claude (descendant du shell du pane, ou commande au premier plan)
 agent_pids=""
@@ -32,7 +33,7 @@ if [[ -n $panes ]] && command -v ps >/dev/null; then
 fi
 panes_json=$(jq -Rn --arg pids "$agent_pids" '
   ($pids | split("\n") | map(select(. != "")) | INDEX(.)) as $ap
-  | [inputs | select(. != "") | split("\t") | {pane: .[0], session: .[1], pid: .[2], cmd: .[3], path: .[4]}
+  | [inputs | select(. != "") | split("|:|") | {pane: .[0], session: .[1], pid: .[2], cmd: .[3], path: .[4]}
      | .agent = (.cmd == "claude" or ($ap[.pid] != null))]' <<<"$panes")
 
 # Stats git par dossier, en cache GIT_TTL secondes
