@@ -133,6 +133,17 @@ header "Generating settings.json"
 }
 log "settings.json up to date with the template (HOME=$HOME)"
 
+# statusLine: aif-statusline records the model and context of tmux agents, then runs the existing
+# statusLine command (chained, not replaced). merge-settings.py does not own statusLine.
+SETTINGS="$DOTFILES/.claude/settings.json"
+if [[ "$(jq -r '.statusLine.command // ""' "$SETTINGS")" != *aif-statusline* ]]; then
+  sl_tmp=$(mktemp "$SETTINGS.XXXXXX")
+  jq --arg w "$HOME/.local/bin/aif-statusline" \
+    '.statusLine = ((.statusLine // {type: "command"}) | .command = ($w + (if .command then " " + .command else "" end)))' \
+    "$SETTINGS" > "$sl_tmp" && cp "$SETTINGS" "$SETTINGS.bak" && mv "$sl_tmp" "$SETTINGS"
+  log "statusLine → aif-statusline, then the previous command"
+fi
+
 # ── 3. Bootstrap settings.local.json if missing ───────────────────────────────
 header "Checking settings.local.json"
 
@@ -187,7 +198,7 @@ fi
 header "Installing ai-dotfiles CLI"
 
 mkdir -p "$HOME/.local/bin"
-for cli in ai-dotfiles stop-check-trust tma; do
+for cli in ai-dotfiles stop-check-trust tma aif-agent-hook aif-statusline aif-agents; do
   chmod +x "$DOTFILES/bin/$cli"
   ln -sfn "$DOTFILES/bin/$cli" "$HOME/.local/bin/$cli"
   log "$cli → $HOME/.local/bin/$cli (ensure ~/.local/bin is on PATH)"

@@ -38,6 +38,15 @@
             "command": "__HOME__/.claude/hooks/brain-session-start.sh"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "SessionEnd": [
@@ -47,6 +56,15 @@
             "type": "command",
             "command": "__HOME__/.claude/hooks/brain-session-end.sh",
             "timeout": 120
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.local/bin/aif-agent-hook",
+            "timeout": 5
           }
         ]
       }
@@ -96,6 +114,16 @@
             "command": "__HOME__/.claude/hooks/log-skill-usage.sh"
           }
         ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "Stop": [
@@ -111,6 +139,15 @@
             "command": "__HOME__/.claude/hooks/compact-nudge.sh"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "PreCompact": [
@@ -122,11 +159,91 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt|elicitation_dialog",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
     "type": "command",
-    "command": "__HOME__/.local/bin/ccstatusline --config __HOME__/.claude/ccstatusline-settings.json",
+    "command": "__HOME__/.local/bin/aif-statusline __HOME__/.local/bin/ccstatusline --config __HOME__/.claude/ccstatusline-settings.json",
     "padding": 2,
     "refreshInterval": 10
   },

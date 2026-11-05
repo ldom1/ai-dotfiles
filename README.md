@@ -465,6 +465,13 @@ Save and restore ([tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrec
 - continuum neither saves nor restores while another tmux server runs (`tmux -L …`).
 - `config/tmux-resurrect-sidebar.sh` keeps the sidebar out of the save file and removes a duplicate sidebar after a restore.
 
+Agent state (read by the views; one file per agent):
+
+- Claude Code hooks call `bin/aif-agent-hook` (template `.claude/settings.json.tpl`, merged by `install.sh`). It writes `$XDG_RUNTIME_DIR/aif/agents/<pane>.json`: `state` (`running`, `check`, `done`, `error`), task, question and options, last tool, subagents, model and context. It does nothing outside tmux and always exits 0 (about 40 ms per event).
+- `check` means the agent waits for you: a permission prompt, or a question (`AskUserQuestion`). On entry into `check`, a system notification goes out through `aif-platform notify` when the pane is not visible. `AIF_NOTIFY_DONE=1` also notifies the end of a turn.
+- `bin/aif-statusline` is the Claude Code `statusLine`: it records the model and the context use, then runs the previous `statusLine` command (`install.sh` chains it, it does not replace it).
+- `aif-agents list --json` is the only data source of the views. It adds the tmux session, a `jump` number (1–9, display order) and git stats (`git diff --numstat HEAD`, cached 5 s). It computes `stale` (no event for `AIF_STALE_AFTER` seconds, default 3600, except `check`), `unknown` (a `claude` process in a pane without a state file) and `error` (a state file but no `claude` process left in the pane).
+
 Agent status in the sidebar:
 
 - Right of each session: one glyph per agent (3 at most, then `+N`). `◉` blocked (waits for you), `⚙` using tools, `⠹` working, `●` done (not seen), `✓` idle, `⚠` stopped, `✗` error.
