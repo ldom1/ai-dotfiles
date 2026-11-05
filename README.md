@@ -483,7 +483,7 @@ Agent state (read by the views; one file per agent):
 
 Agents sidebar (`aif-sidebar`, Rust + ratatui, `sidebar/`; decision: `docs/adr/0001-agents-sidebar.md`):
 
-- `install.sh` builds it with `cargo` (Rust 1.85+; Ubuntu 26.04: `sudo apt install cargo`) and links `~/.local/bin/aif-sidebar`. It reads only `aif-agents` and tmux.
+- `install.sh` builds it with `cargo` (Rust 1.85+; Ubuntu 26.04: `sudo apt install cargo`) and links `~/.local/bin/aif-sidebar`. It reads only `aif-agents` and tmux. A running sidebar restarts itself on a rebuilt binary within a second.
 - `config/tmux-sidebar.sh` keeps one sidebar pane (pane option `@aif_sidebar`, 44 columns, `@aif-sidebar-width`) on the left of each window while the sidebar is on (`@aif-sidebar`). tmux hooks open it on attach, on a session or window change and in a new window. A lock (`tmux wait-for`) prevents a second one.
 - Tabs `SESSIONS`, `AGENTS`, `ACTIONS` (`Tab` switches); the ai-dotfiles version is top right. `Ctrl+C` closes the sidebar of the window until the next window change.
 - Mouse and keyboard do the same things. One click acts like `⏎`, on the whole row. Each key shown in the footer, and the filter and sort of the AGENTS header, is a button that sends its key.

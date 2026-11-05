@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- A running sidebar kept its old code after a rebuild (`cargo build`, `install.sh`): clicks only moved the cursor, the `+ New session` / `+ New project` buttons were missing, and `?` opened nothing (it relaunched `current_exe()`, which then ends in ` (deleted)`). The sidebar now restarts itself on the new binary within a second (`exec`, same pane), and the help and peek popups use the path that launched it (`~/.local/bin/aif-sidebar`). Test: `sidebar/tests/e2e.rs` replaces the binary under a running sidebar.
+
 ## [0.16.1] - 2026-11-06
 
 ### Added
