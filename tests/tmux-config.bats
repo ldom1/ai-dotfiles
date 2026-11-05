@@ -39,7 +39,7 @@ platform_parses() {
 
 @test "wsl: config loads, Windows Terminal user-keys reach the actions" {
   start wsl
-  for k in o:0 e:1 x:2 n:3 b:4; do
+  for k in o:0 e:1 x:2 n:3 b:4 k:5; do
     [ -n "$(cmd root "S-C-${k%:*}")" ]
     [ "$(cmd root "User${k#*:}")" = "$(cmd root "S-C-${k%:*}")" ]
   done
@@ -60,6 +60,7 @@ platform_parses() {
   start linux
   [[ "$(cmd root S-C-x)" == *kill-pane* ]]
   [[ "$(cmd prefix X)" == *kill-session* ]]
+  [ "$(cmd root S-C-k)" = "$(cmd prefix X)" ]
   for k in o:O e:E n:N b:B; do [ "$(cmd prefix "${k#*:}")" = "$(cmd root "S-C-${k%:*}")" ]; done
   [[ "$(cmd prefix Q)" == *kill-server* ]]
   [ "$(cmd prefix Tab)" = "switch-client -l" ]

@@ -438,7 +438,7 @@ Sessions:
 - A session created without a name (plain `tmux`) is renamed after its folder by `config/tmux-name-session.sh` (`after-new-session` hook), with a `-2` suffix when the name is taken.
 - `Ctrl+Shift+N` opens a folder picker in a popup (opensessions `sessionizer.sh`, fzf) and creates a session there. It searches `$HOME` 2 levels deep (`SESSIONIZER_DIR`, `SESSIONIZER_MAXDEPTH`).
 - `Ctrl+Shift+X` closes the current pane. It asks first when an agent (`claude`) runs in the pane. It does nothing in the sidebar.
-- `prefix X` kills the current session after a `y/n` prompt, moves to another session and saves the layout at once, so the session does not come back on restore.
+- `Ctrl+Shift+K` or `prefix X` kills the current session after a `y/n` prompt, moves to another session and saves the layout at once, so the session does not come back on restore.
 - In the sidebar: `n` creates a session, `x` kills the selected one.
 - Right click in the sidebar opens a menu for the **current** session: rename, new, kill, hide sidebar. tmux does not know which row was clicked: left-click a session first to act on it.
 - A renamed session no longer matches its folder: `tma <dir>` then creates a new session with the folder name.
@@ -486,10 +486,11 @@ Windows Terminal (manual step, `settings.json`):
 - `ctrl+shift+x`: `sendInput` `"\u001b[[tma-x"` (`user-keys[2]`, close pane).
 - `ctrl+shift+n`: `sendInput` `"\u001b[[tma-n"` (`user-keys[3]`, new session). It overrides the default new-window key.
 - `ctrl+shift+b`: `sendInput` `"\u001b[[tma-b"` (`user-keys[4]`, show / hide the sidebar).
+- `ctrl+shift+k`: `sendInput` `"\u001b[[tma-k"` (`user-keys[5]`, kill session).
 - These keys send text in every Windows Terminal tab, also outside tmux.
 - `"bellStyle": "taskbar"` on each WSL profile.
 
-Ghostty: `config/ghostty/config` (linked by `install.sh`) sends `Ctrl+Shift+O/E/N/X/B` as CSI u extended keys instead of the Ghostty actions, and tmux binds `C-S-o`, `C-S-e`, `C-S-x`, `C-S-n` and `C-S-b`.
+Ghostty: `config/ghostty/config` (linked by `install.sh`) sends `Ctrl+Shift+O/E/N/X/B/K` as CSI u extended keys instead of the Ghostty actions, and tmux binds `C-S-o`, `C-S-e`, `C-S-x`, `C-S-n`, `C-S-b` and `C-S-k`.
 
 Tests (bats, dedicated tmux server `tmux -L aif-test`):
 

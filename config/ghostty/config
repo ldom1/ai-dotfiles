@@ -20,4 +20,5 @@ keybind = ctrl+shift+e=csi:101;6u
 keybind = ctrl+shift+n=csi:110;6u
 keybind = ctrl+shift+x=csi:120;6u
 keybind = ctrl+shift+b=csi:98;6u
-# Ctrl+Shift+Q reste « quitter Ghostty » : la sauvegarde-et-sortie tmux prend une autre touche.
+keybind = ctrl+shift+k=csi:107;6u
+# Ctrl+Shift+K : tuer la session tmux. Ctrl+Shift+Q reste « quitter Ghostty » : la sauvegarde-et-sortie tmux prend une autre touche.
