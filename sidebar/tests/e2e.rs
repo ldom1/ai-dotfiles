@@ -96,7 +96,9 @@ impl Env {
         }
         symlink(repo(), h.join("ai-dotfiles")).unwrap();
         symlink(repo().join("config/tmux.conf"), h.join(".tmux.conf")).unwrap();
-        symlink(env!("CARGO_BIN_EXE_aif-sidebar"), h.join(".local/bin/aif-sidebar")).unwrap();
+        // Une copie, comme une installation : un test peut la remplacer comme le fait cargo build
+        std::fs::copy(env!("CARGO_BIN_EXE_aif-sidebar"), d.join("aif-sidebar")).unwrap();
+        symlink(d.join("aif-sidebar"), h.join(".local/bin/aif-sidebar")).unwrap();
         symlink(repo().join("bin/aif-agents"), d.join("bin/aif-agents")).unwrap();
         script(&h.join(".tmux/plugins/tpm/tpm"), "#!/bin/sh\n");
         script(
@@ -429,4 +431,41 @@ fn ctrl_shift_o_and_e_split_the_work_pane_into_a_plain_shell() {
             std::thread::sleep(Duration::from_millis(100));
         }
     }
+}
+
+#[test]
+fn help_box_and_footer_help_open_the_help_popup() {
+    let e = Env::start();
+    e.click("help");
+    e.expect("NAVIGATE");
+    e.type_text("\x1b"); // Esc ferme l'aide
+    e.term.get_by_text("NAVIGATE").wait_hidden(Some(5000)).unwrap();
+    e.click_at(42, e.row_of("ACTIONS")); // case « ? » de la barre d'onglets
+    e.expect("NAVIGATE");
+}
+
+/// cargo build remplace le binaire (nouveau fichier, renommé) : la sidebar en cours se relance
+/// sur le nouveau, sinon elle garde l'ancien code et `?` ne trouve plus son exécutable.
+#[test]
+fn a_rebuilt_binary_restarts_the_running_sidebar() {
+    let e = Env::start();
+    // exécutable du process sidebar (enfant du `sh -c` du pane) ; exec garde le même PID
+    let exe = || {
+        let panes = e.tmux(&["list-panes", "-a", "-F", "#{@aif_sidebar} #{pane_pid}"]);
+        let sh = panes.lines().find(|l| l.starts_with("1 ")).unwrap()[2..].to_string();
+        let out = Command::new("pgrep").args(["-P", &sh]).output().unwrap();
+        let pid = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        std::fs::read_link(format!("/proc/{pid}/exe")).map(|p| p.display().to_string()).unwrap_or_default()
+    };
+    let bin = e.dir.path().join("aif-sidebar");
+    std::fs::copy(&bin, e.dir.path().join("new")).unwrap();
+    std::fs::rename(e.dir.path().join("new"), &bin).unwrap();
+    let start = Instant::now();
+    while exe().ends_with(" (deleted)") || exe().is_empty() {
+        assert!(start.elapsed() < Duration::from_secs(5), "still on the old binary: {}", exe());
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    e.expect("SESSIONS 1");
+    e.click("help");
+    e.expect("NAVIGATE");
 }

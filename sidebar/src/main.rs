@@ -135,11 +135,17 @@ fn run_sidebar() -> Result<()> {
     let mut app = App::new(dotfiles_version());
     app.home = sessions::home();
     let mut dimmed = false;
-    with_terminal(|term| {
+    let restart = with_terminal(|term| {
         let mut last_tick = Instant::now();
         loop {
             app.now = now();
             while let Ok(snap) = rx.try_recv() {
+                // Binaire remplacé (cargo build, install.sh) : relancer le nouveau, sinon la
+                // sidebar garde l'ancien code et ne trouve plus son exécutable (aide, aperçu)
+                if replaced() {
+                    tmux::dim(false);
+                    return Ok(true);
+                }
                 match snap.agents {
                     Ok(agents) => {
                         app.load_error = None;
@@ -185,7 +191,7 @@ fn run_sidebar() -> Result<()> {
                 };
                 if effect == Effect::Quit {
                     tmux::dim(false);
-                    return Ok(());
+                    return Ok(false);
                 }
                 if matches!(effect, Effect::OpenNew | Effect::OpenProject) {
                     let folders = sessions::folders(&app.home);
@@ -203,7 +209,18 @@ fn run_sidebar() -> Result<()> {
                 last_tick = Instant::now();
             }
         }
-    })
+    })?;
+    if restart {
+        use std::os::unix::process::CommandExt;
+        // exec garde le PID et le pane : le nouveau binaire prend la place
+        return Err(std::process::Command::new(tmux::self_path()).exec().into());
+    }
+    Ok(())
+}
+
+/// Le noyau suffixe « (deleted) » au lien de l'exécutable quand le fichier a été remplacé.
+fn replaced() -> bool {
+    std::fs::read_link("/proc/self/exe").is_ok_and(|p| p.to_string_lossy().ends_with(" (deleted)"))
 }
 
 fn click(app: &mut App, hit: Option<Hit>) -> Effect {

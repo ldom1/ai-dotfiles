@@ -156,9 +156,14 @@ pub fn zoom() -> Result<()> {
 }
 
 /// Vue d'aide dans un popup centré.
+/// Chemin qui a lancé ce binaire (~/.local/bin/aif-sidebar) : il reste valable après une
+/// recompilation, contrairement à `current_exe()` qui finit alors par « (deleted) ».
+pub fn self_path() -> String {
+    std::env::args().next().unwrap_or_else(|| "aif-sidebar".into())
+}
+
 pub fn open_help() -> Result<()> {
-    let exe = std::env::current_exe().context("current exe")?;
-    let cmd = format!("'{}' help", exe.display());
+    let cmd = format!("'{}' help", self_path());
     run(&["display-popup", "-w", "90%", "-h", "70%", "-E", &cmd])
 }
 
@@ -196,8 +201,7 @@ pub fn capture(pane: &str, lines: usize) -> Result<String> {
 
 /// Aperçu dans un popup à droite (≈ 40 % de la fenêtre) : le pane courant reste visible.
 pub fn open_peek(pane: &str) -> Result<()> {
-    let exe = std::env::current_exe().context("current exe")?;
-    let cmd = format!("'{}' peek '{}'", exe.display(), pane);
+    let cmd = format!("'{}' peek '{}'", self_path(), pane);
     tmux(&[
         "display-popup",
         "-x",
