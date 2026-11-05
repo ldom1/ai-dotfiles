@@ -65,6 +65,14 @@ def test_pre_push_skips_delete_and_tag(tmp_path):
     assert r.returncode == 0 and tiers(tmp_path) == []
 
 
+def test_pre_push_blank_line_when_git_rejected_every_ref(tmp_path):
+    # git leaves rejected refs (non-fast-forward) out of stdin; the hook's <<<"$input" then sends one blank line
+    repo, _ = installed(tmp_path)
+    r = pre_push(tmp_path, repo, [""])
+    assert r.returncode == 0, r.stderr
+    assert tiers(tmp_path) == []
+
+
 def test_pre_push_new_branch(tmp_path):
     repo, _ = installed(tmp_path)
     git(repo, "commit", "-q", "--allow-empty", "-m", "x")
