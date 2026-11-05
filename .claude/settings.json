@@ -42,6 +42,15 @@
             "command": "/home/lgiron/.claude/hooks/brain-session-start.sh"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "SessionEnd": [
@@ -51,6 +60,15 @@
             "type": "command",
             "command": "/home/lgiron/.claude/hooks/brain-session-end.sh",
             "timeout": 120
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.local/bin/aif-agent-hook",
+            "timeout": 5
           }
         ]
       }
@@ -100,6 +118,16 @@
             "command": "/home/lgiron/.claude/hooks/local-ci-merge-guard.py"
           }
         ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "Stop": [
@@ -115,6 +143,15 @@
             "command": "/home/lgiron/.claude/hooks/compact-nudge.sh"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "PreCompact": [
@@ -126,11 +163,91 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt|elicitation_dialog",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/lgiron/.local/bin/aif-agent-hook",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
     "type": "command",
-    "command": "/home/lgiron/.local/bin/ccstatusline --config /home/lgiron/.claude/ccstatusline-settings.json",
+    "command": "/home/lgiron/.local/bin/aif-statusline /home/lgiron/.local/bin/ccstatusline --config /home/lgiron/.claude/ccstatusline-settings.json",
     "padding": 2,
     "refreshInterval": 10
   },
