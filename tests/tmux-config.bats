@@ -59,10 +59,10 @@ platform_parses() {
 @test "prefix keys: O E N X B Q Tab and / are bound" {
   start linux
   [[ "$(cmd root S-C-x)" == *kill-pane* ]]
-  [[ "$(cmd prefix X)" == *kill-session* ]]
+  [[ "$(cmd prefix X)" == *"tmux-sidebar.sh screen K"* ]]
   [ "$(cmd root S-C-k)" = "$(cmd prefix X)" ]
   for k in o:O e:E n:N b:B; do [ "$(cmd prefix "${k#*:}")" = "$(cmd root "S-C-${k%:*}")" ]; done
-  [[ "$(cmd prefix Q)" == *kill-server* ]]
+  [[ "$(cmd prefix Q)" == *"tmux-sidebar.sh screen Q"* ]]
   [ "$(cmd prefix Tab)" = "switch-client -l" ]
   [ "$(cmd prefix /)" = "list-keys -N" ]
 }

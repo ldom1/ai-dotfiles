@@ -23,8 +23,7 @@ run() { bash "$HOME/ai-dotfiles/scripts/install.sh" > "/tmp/install-$1.log" 2>&1
 run 1; snap > /tmp/s1
 run 2; snap > /tmp/s2
 os="$(. /etc/os-release; echo "$PRETTY_NAME"), tmux $(tmux -V | cut -d' ' -f2)"
-echo "--- $os, pass 1:"; grep -aE 'platform:|opensessions|Nerd Font|ghostty|BurntToast' /tmp/install-1.log
-echo "opensessions tag: $(git -C "$HOME/.tmux/plugins/opensessions" describe --tags)"
+echo "--- $os, pass 1:"; grep -aE 'platform:|aif-sidebar|Nerd Font|ghostty|BurntToast' /tmp/install-1.log
 echo "--- warnings, pass 2:"; sed -n '/Warnings:/,$p' /tmp/install-2.log
 diff /tmp/s1 /tmp/s2 || { echo "FAIL: pass 2 changed files"; exit 1; }
 echo "OK: $os: 2 passes exit 0, pass 2 changed nothing"

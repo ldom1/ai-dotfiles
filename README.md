@@ -419,7 +419,7 @@ Local Medium/blog drafts belong in `articles/` (gitignored).
 ### tmux for agents
 
 `install.sh` links `~/.tmux.conf` to `config/tmux.conf`, installs `bin/tma` in `~/.local/bin` and clones [TPM](https://github.com/tmux-plugins/tpm).
-The session sidebar is [opensessions](https://github.com/Ataraxy-Labs/opensessions) (TPM plugin). It shows each session with its git branch and Claude Code agent state.
+The sidebar is `aif-sidebar` (Rust + ratatui, `sidebar/`; decision: `docs/adr/0001-agents-sidebar.md`): one pane on the left of each window, with the sessions, the Claude Code agents and the actions.
 
 Platforms:
 
@@ -436,20 +436,20 @@ Sessions:
 - `tma -n <name> [dir]` sets the name. Use it for an SSH session (`tma -n vps`).
 - If a session of the same name exists for another folder, `tma` stops and shows both paths. Use `-n`.
 - A session created without a name (plain `tmux`) is renamed after its folder by `config/tmux-name-session.sh` (`after-new-session` hook), with a `-2` suffix when the name is taken.
-- `Ctrl+Shift+N` opens a folder picker in a popup (opensessions `sessionizer.sh`, fzf) and creates a session there. It searches `$HOME` 2 levels deep (`SESSIONIZER_DIR`, `SESSIONIZER_MAXDEPTH`).
+- `Ctrl+Shift+N` (or `prefix N`) opens the New session screen in the sidebar. It lists folders from `zoxide`, or else the git repositories under `~` (3 levels). Each folder shows `new`, `attach <session>` (a session is open on it) or `name taken → <name>-2` (the name belongs to another folder: the new session gets a `-2` suffix).
 - `Ctrl+Shift+X` closes the current pane. It asks first when an agent (`claude`) runs in the pane. It does nothing in the sidebar.
-- `Ctrl+Shift+K` or `prefix X` kills the current session after a `y/n` prompt, moves to another session and saves the layout at once, so the session does not come back on restore.
-- In the sidebar: `n` creates a session, `x` kills the selected one.
-- Right click in the sidebar opens a menu for the **current** session: rename, new, kill, hide sidebar. tmux does not know which row was clicked: left-click a session first to act on it.
+- `Ctrl+Shift+K` (or `prefix X`) opens the Kill session screen: it lists the agents that will stop. `Save & kill` saves the layout first, so the session does not come back on restore, then kills it.
+- `prefix Q` opens the Save & exit screen: save every session, then quit tmux. `d` there detaches instead: sessions and agents keep running.
+- Right click in the sidebar opens a menu for the current session: rename, new, kill, hide sidebar.
 - A renamed session no longer matches its folder: `tma <dir>` then creates a new session with the folder name.
 
 Keys:
 
-- In the sidebar, arrows select a session and `Enter` switches to it. `Alt+s` focuses the sidebar. `Ctrl+Shift+B` (or `prefix o t`) shows or hides it. It opens again on the next attach.
+- `Ctrl+Shift+B` (or `prefix B`) hides or shows the sidebar in every window. `Alt+s` focuses it (and shows it).
 - `Ctrl+Shift+O` splits right, `Ctrl+Shift+E` splits below. They do nothing in the sidebar.
 - `Alt+arrows` moves between panes. `Alt+z` zooms.
 - `prefix O`, `prefix E`, `prefix N` and `prefix B` do the same as the `Ctrl+Shift` keys, in any terminal.
-- `prefix Q` saves every session, then quits tmux. `prefix Tab` switches to the last session. `prefix /` shows the tmux key list.
+- `prefix Tab` switches to the last session. `prefix /` shows the tmux key list.
 - Mouse selection copies to the system clipboard and shows "Copied to clipboard": OSC 52 to the terminal, plus `aif-platform copy` (Wayland clipboard) on native Linux. Right click pastes (outside the sidebar).
 
 Agent bell:
@@ -463,7 +463,7 @@ Save and restore ([tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrec
 - The layout is saved every 15 min (`prefix Ctrl-s` saves now). It is restored when the tmux server starts (`prefix Ctrl-r` restores now).
 - tmux restores sessions, windows, panes and folders. Processes are not kept: start each agent again (`claude -c` resumes the last conversation of the folder).
 - continuum neither saves nor restores while another tmux server runs (`tmux -L …`).
-- `config/tmux-resurrect-sidebar.sh` keeps the sidebar out of the save file and removes a duplicate sidebar after a restore.
+- `config/tmux-resurrect-sidebar.sh` keeps the sidebar out of the save file. After a restore, `config/tmux-sidebar.sh` opens it again.
 
 Agent state (read by the views; one file per agent):
 
@@ -475,26 +475,18 @@ Agent state (read by the views; one file per agent):
 Agents sidebar (`aif-sidebar`, Rust + ratatui, `sidebar/`; decision: `docs/adr/0001-agents-sidebar.md`):
 
 - `install.sh` builds it with `cargo` (Rust 1.85+; Ubuntu 26.04: `sudo apt install cargo`) and links `~/.local/bin/aif-sidebar`. It reads only `aif-agents` and tmux.
-- Until it replaces opensessions (next step), open it in a left pane: `tmux split-window -hbf -l 50 aif-sidebar`.
-- Tabs `SESSIONS`, `AGENTS`, `ACTIONS` (`Tab` switches); the ai-dotfiles version is top right. AGENTS groups agents by priority: TO CHECK, ERROR, DONE, RUNNING, UNKNOWN, STALE.
-- Keys in AGENTS: `↑↓`/`j k` move, `/` filter, `o` sort (priority, session, recent), `⏎` go to the agent, `p` peek, `x` interrupt a running agent, `q` quit.
+- `config/tmux-sidebar.sh` keeps one sidebar pane (pane option `@aif_sidebar`, 44 columns, `@aif-sidebar-width`) on the left of each window while the sidebar is on (`@aif-sidebar`). tmux hooks open it on attach, on a session or window change and in a new window. A lock (`tmux wait-for`) prevents a second one.
+- Tabs `SESSIONS`, `AGENTS`, `ACTIONS` (`Tab` switches); the ai-dotfiles version is top right. `Ctrl+C` closes the sidebar of the window until the next window change.
+- SESSIONS: tree session → agents → subagents, with the count of agents per state. The current session has `▸`. `↑↓` move, `⏎` switch, `r` rename, `N` new, `K` kill.
+- ACTIONS: the target session (the SESSIONS cursor), then the actions: new, rename, last session, kill, split right / below, zoom, save now (with the time of the last save), save & exit, exit (detach), restore the last save, hide the sidebar. `⏎` runs the selected action; `r`, `s`, `d` run directly. Pane actions act on the last active pane, not on the sidebar.
+- Confirmation screens (New session, Kill session, Save & exit, Rename) dim the working pane. `Esc` cancels; buttons are clickable.
+- AGENTS groups agents by priority: TO CHECK, ERROR, DONE, RUNNING, UNKNOWN, STALE. Keys: `↑↓`/`j k` move, `/` filter, `o` sort (priority, session, recent), `⏎` go to the agent, `p` peek, `x` interrupt a running agent.
 - An agent in TO CHECK shows its question and buttons `[1 …] [2 …] [i Reply…]`. `1`–`3` (or a click) sends that answer to the agent pane (`tmux send-keys`); `i` opens a reply field. Otherwise `1`–`9` jumps to the agent with that number.
 - Keys checked in Claude Code 2.1.318: a question takes the option digit; a free reply takes the "Type something" digit, the text and Enter. A permission takes `1` (Yes) or `2` (Always). **No** sends `Escape`, never `3`: the menu has 3 or 4 options, and option 3 can be "switch to auto mode". A free reply to a permission sends `Escape`, then the text as a prompt.
 - A refusal fires no Claude Code hook: the sidebar shows the agent as done until its next event.
 - Peek (`p`): a popup on the right (40 %) with the agent output (`Output`) and its diff against HEAD (`Diff`, `Tab` switches). `⏎` goes to the agent, `Esc` closes.
 
-Agent status in the sidebar:
-
-- Right of each session: one glyph per agent (3 at most, then `+N`). `◉` blocked (waits for you), `⚙` using tools, `⠹` working, `●` done (not seen), `✓` idle, `⚠` stopped, `✗` error.
-- Under each session with agents: one line with the count for each status, most urgent first (`◉ 1 blocked  ⠹ 2 working`). This line comes from a local patch, `config/opensessions/agent-summary-row.patch`. `install.sh` applies it and builds opensessions from source (`cargo`).
-- opensessions is pinned on `v0.2.0-alpha.12`, the tag the patch targets. `install.sh` goes back to this tag after an update (`prefix U`). If the patch no longer applies, `install.sh` warns at the end and the sidebar keeps the stock rows.
-
-Other:
-
-- `config/tmux-sidebar-on.sh` opens the sidebar on attach: opensessions starts hidden on each tmux server.
-- Sidebar settings: `~/.config/opensessions/config.json` (`sidebarPosition`, `sidebarWidth`, `theme`).
-
-First install: `install.sh` clones opensessions and fetches its binaries. In tmux, press `prefix I` to install tmux-resurrect and tmux-continuum. `install.sh` builds opensessions with `cargo` when the agent summary patch is new, or when the prebuilt binaries cannot run (they need glibc 2.39, Ubuntu 24.04+; checked with `ldd`). Without `cargo`, it prints the build command. Restart the sidebar after a build: `Ctrl+Shift+B` twice.
+First install: in tmux, press `prefix I` to install tmux-resurrect and tmux-continuum. `install.sh` builds `aif-sidebar` with `cargo`; without Rust 1.85+, it prints how to install it and tmux keeps working without the sidebar (`Ctrl+Shift+K` and `prefix Q` fall back to a `y/n` prompt).
 
 Windows Terminal (manual step, `settings.json`):
 
@@ -512,7 +504,7 @@ Ghostty: `config/ghostty/config` (linked by `install.sh`) sends `Ctrl+Shift+O/E/
 
 Tests (bats, dedicated tmux server `tmux -L aif-test`):
 
-- `npx --yes bats@1.13.0 tests/` checks that the config loads with the local tmux on both platforms, and replays a tmux-resurrect restore.
+- `npx --yes bats@1.13.0 tests/` checks that the config loads with the local tmux on both platforms, replays a tmux-resurrect restore, and drives the sidebar end to end (one sidebar per window, screens, answers). Rust tests: `cd sidebar && cargo test`.
 - `tests/container.sh [image] [wsl|linux]` runs `install.sh` twice in a clean container, then the bats tests with the tmux of the image. Example: `tests/container.sh ubuntu:26.04 linux`.
 
 `install.sh` symlinks `~/.claude` and `~/.cursor` to this repo, generates `settings.json` from the template, and creates `settings.local.json` if missing. Skills are wired automatically — no plugin install needed for your own machine. It also sets `git config core.hooksPath git-hooks` so the versioned [pre-commit hook](git-hooks/pre-commit) runs (blocks accidental commits under Cursor runtime dirs under `.cursor/` and scans staged diffs for secrets). If you clone without running `install.sh`, run `bash scripts/install-git-hooks.sh` once from the repo root.

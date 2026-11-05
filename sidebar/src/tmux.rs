@@ -76,6 +76,100 @@ pub fn send(pane: &str, keys: &[Vec<String>]) -> Result<()> {
     Ok(())
 }
 
+fn run(args: &[&str]) -> Result<()> {
+    tmux(args).map(|_| ())
+}
+
+/// Script de tmux-resurrect (`save.sh quiet` ou `restore.sh`), lancé et attendu.
+fn resurrect(script: &str, args: &[&str]) -> Result<()> {
+    let home = std::env::var("HOME").unwrap_or_default();
+    let path = format!("{home}/.tmux/plugins/tmux-resurrect/scripts/{script}");
+    let st = Command::new(&path)
+        .args(args)
+        .status()
+        .with_context(|| format!("run {path}"))?;
+    anyhow::ensure!(st.success(), "{script} failed");
+    Ok(())
+}
+
+pub fn save() -> Result<()> {
+    resurrect("save.sh", &["quiet"])
+}
+
+pub fn restore() -> Result<()> {
+    resurrect("restore.sh", &[])
+}
+
+pub fn switch(name: &str) -> Result<()> {
+    run(&["switch-client", "-t", &format!("={name}")])
+}
+
+/// Crée la session (sans la lier au terminal), puis y amène le client.
+pub fn create(name: &str, dir: &str) -> Result<()> {
+    run(&["new-session", "-d", "-s", name, "-c", dir])?;
+    switch(name)
+}
+
+/// Sauvegarde d'abord (la session ne revient pas à la restauration), puis tue la session.
+pub fn kill_session(name: &str) -> Result<()> {
+    save()?;
+    run(&["kill-session", "-t", &format!("={name}")])
+}
+
+pub fn save_exit() -> Result<()> {
+    save()?;
+    run(&["kill-server"])
+}
+
+pub fn detach() -> Result<()> {
+    run(&["detach-client"])
+}
+
+pub fn rename(from: &str, to: &str) -> Result<()> {
+    run(&["rename-session", "-t", &format!("={from}"), to])
+}
+
+pub fn last_session() -> Result<()> {
+    run(&["switch-client", "-l"])
+}
+
+/// Split ou zoom du pane de travail : le dernier pane actif de la fenêtre (« ! »), pas la sidebar.
+pub fn split(right: bool) -> Result<()> {
+    run(&[
+        "split-window",
+        if right { "-h" } else { "-v" },
+        "-t",
+        "!",
+        "-c",
+        "#{pane_current_path}",
+    ])
+}
+
+pub fn zoom() -> Result<()> {
+    run(&["resize-pane", "-Z", "-t", "!"])
+}
+
+/// Atténue (ou rétablit) le pane de travail pendant un écran de confirmation.
+pub fn dim(on: bool) {
+    let _ = if on {
+        run(&["set", "-p", "-t", "!", "window-style", "fg=#5c6370"])
+    } else {
+        run(&["set", "-pu", "-t", "!", "window-style"])
+    };
+}
+
+pub fn toggle_sidebar() -> Result<()> {
+    let repo = std::env::var("AIF_DOTFILES")
+        .unwrap_or_else(|_| format!("{}/ai-dotfiles", std::env::var("HOME").unwrap_or_default()));
+    let st = Command::new("sh")
+        .arg(format!("{repo}/config/tmux-sidebar.sh"))
+        .arg("toggle")
+        .status()
+        .context("run tmux-sidebar.sh")?;
+    anyhow::ensure!(st.success(), "tmux-sidebar.sh toggle failed");
+    Ok(())
+}
+
 /// Interrompt le tour en cours de l'agent (Échap dans Claude Code).
 pub fn interrupt(pane: &str) -> Result<()> {
     tmux(&["send-keys", "-t", pane, "Escape"]).map(|_| ())

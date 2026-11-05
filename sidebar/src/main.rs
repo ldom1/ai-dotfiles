@@ -7,6 +7,7 @@
 mod app;
 mod model;
 mod peek;
+mod sessions;
 mod theme;
 mod tmux;
 mod ui;
@@ -75,7 +76,7 @@ fn dotfiles_version() -> String {
 
 fn to_key(code: KeyCode, mods: KeyModifiers) -> Option<Key> {
     Some(match code {
-        KeyCode::Char('c') if mods.contains(KeyModifiers::CONTROL) => Key::Char('q'),
+        KeyCode::Char('c') if mods.contains(KeyModifiers::CONTROL) => Key::Quit,
         KeyCode::Char(c) => Key::Char(c),
         KeyCode::Up => Key::Up,
         KeyCode::Down => Key::Down,
@@ -104,33 +105,52 @@ fn with_terminal<T>(f: impl FnOnce(&mut ratatui::DefaultTerminal) -> Result<T>) 
     out
 }
 
+/// Données lues à chaque rafraîchissement, hors de la boucle d'affichage (≈ 50 ms).
+struct Snapshot {
+    agents: Result<Vec<model::Agent>, String>,
+    sessions: Vec<sessions::Session>,
+    current: String,
+    last_save: Option<i64>,
+}
+
 fn run_sidebar() -> Result<()> {
-    // Lecture d'aif-agents hors de la boucle d'affichage (≈ 50 ms par appel)
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || {
         loop {
-            if tx
-                .send(model::load_agents().map_err(|e| e.to_string()))
-                .is_err()
-            {
+            let snap = Snapshot {
+                agents: model::load_agents().map_err(|e| e.to_string()),
+                sessions: sessions::load_sessions(),
+                current: sessions::current_session(),
+                last_save: sessions::last_save(),
+            };
+            if tx.send(snap).is_err() {
                 break;
             }
             thread::sleep(REFRESH);
         }
     });
     let mut app = App::new(dotfiles_version());
+    app.home = sessions::home();
+    let mut dimmed = false;
     with_terminal(|term| {
         let mut last_tick = Instant::now();
         loop {
             app.now = now();
-            while let Ok(r) = rx.try_recv() {
-                match r {
+            while let Ok(snap) = rx.try_recv() {
+                match snap.agents {
                     Ok(agents) => {
                         app.load_error = None;
                         app.set_agents(agents);
                     }
                     Err(e) => app.load_error = Some(e),
                 }
+                app.set_sessions(snap.sessions, snap.current);
+                app.last_save = snap.last_save;
+            }
+            // Écran de confirmation ouvert : pane de travail atténué
+            if app.screen.is_some() != dimmed {
+                dimmed = app.screen.is_some();
+                tmux::dim(dimmed);
             }
             let mut hits = vec![];
             term.draw(|f| hits = ui::draw(f, &mut app))?;
@@ -150,7 +170,12 @@ fn run_sidebar() -> Result<()> {
                     _ => Effect::None,
                 };
                 if effect == Effect::Quit {
+                    tmux::dim(false);
                     return Ok(());
+                }
+                if effect == Effect::OpenNew {
+                    let folders = sessions::folders(&app.home);
+                    app.open_new(folders);
                 }
                 if let Err(e) = apply(&app, &effect) {
                     app.message = Some(e.to_string());
@@ -173,6 +198,9 @@ fn click(app: &mut App, hit: Option<Hit>) -> Effect {
         Some(Hit::Help) => return app.key(Key::Char('?')),
         Some(Hit::Agent(i)) => app.select(i),
         Some(Hit::Answer(pane, n)) => return app.click_answer(&pane, n),
+        Some(Hit::Session(i)) => app.session_sel = i,
+        Some(Hit::Action(i)) => return app.click_action(i),
+        Some(Hit::Button(b)) => return app.click_button(b),
         Some(Hit::Reply(pane)) => {
             if let Some(i) = app.visible().iter().position(|a| a.pane == pane) {
                 app.select(i);
@@ -187,7 +215,20 @@ fn click(app: &mut App, hit: Option<Hit>) -> Effect {
 /// Exécute l'effet d'une touche ou d'un clic (tmux).
 fn apply(app: &App, e: &Effect) -> Result<()> {
     match e {
-        Effect::None | Effect::Quit => Ok(()),
+        Effect::None | Effect::Quit | Effect::OpenNew => Ok(()),
+        Effect::Switch(n) => tmux::switch(n),
+        Effect::Create { name, dir } => tmux::create(name, dir),
+        Effect::KillSession(n) => tmux::kill_session(n),
+        Effect::SaveExit => tmux::save_exit(),
+        Effect::Detach => tmux::detach(),
+        Effect::Save => tmux::save(),
+        Effect::Restore => tmux::restore(),
+        Effect::Rename { from, to } => tmux::rename(from, to),
+        Effect::SplitRight => tmux::split(true),
+        Effect::SplitBelow => tmux::split(false),
+        Effect::Zoom => tmux::zoom(),
+        Effect::ToggleSidebar => tmux::toggle_sidebar(),
+        Effect::LastSession => tmux::last_session(),
         Effect::GoTo(p) => tmux::go_to(p),
         Effect::Peek(p) => tmux::open_peek(p),
         Effect::Interrupt(p) => tmux::interrupt(p),

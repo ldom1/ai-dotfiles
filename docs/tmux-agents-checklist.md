@@ -11,7 +11,7 @@ Préparation : `bash ~/ai-dotfiles/scripts/install.sh`, puis `prefix r` dans tmu
 | Ctrl+Shift+O / E : split à droite / en bas (pas de split Ghostty) | [ ] | [ ] |
 | Ctrl+Shift+N : nouvelle session ; Ctrl+Shift+B : sidebar affichée / masquée | [ ] | [ ] |
 | Ctrl+Shift+X : ferme le pane (confirmation si `claude` y tourne) | [ ] | [ ] |
-| Ctrl+Shift+K et `prefix X` : tuent la session après confirmation | [ ] | [ ] |
+| Ctrl+Shift+K et `prefix X` : écran Kill session dans la sidebar | [ ] | [ ] |
 | `prefix O/E/N/B/Q/Tab//` : mêmes actions, sauvegarde et sortie, dernière session, aide tmux | [ ] | [ ] |
 | Sélection à la souris : « Copied to clipboard », collage avec accents | [ ] | [ ] |
 | `printf 'héllo àccents' \| aif-platform copy` puis coller : accents intacts | [ ] | [ ] |
@@ -20,7 +20,7 @@ Préparation : `bash ~/ai-dotfiles/scripts/install.sh`, puis `prefix r` dans tmu
 
 ## Étape 3 — onglet AGENTS et aperçu
 
-Ouvrir la sidebar : `tmux split-window -hbf -l 50 aif-sidebar`.
+La sidebar s'ouvre seule à gauche de chaque fenêtre (après `install.sh` puis un redémarrage de tmux).
 
 | Vérification | WSL | 26.04 |
 |---|---|---|
@@ -36,3 +36,19 @@ Ouvrir la sidebar : `tmux split-window -hbf -l 50 aif-sidebar`.
 | `/` filtre ; `o` change le tri ; `1`–`9` saute à l'agent de ce numéro | [ ] | [ ] |
 | Clic sur un onglet, une carte, un bouton de réponse | [ ] | [ ] |
 | 10 agents : la sidebar reste fluide (spinner régulier, touches sans retard) | [ ] | [ ] |
+
+## Étape 4 — une seule sidebar, SESSIONS, ACTIONS, écrans
+
+Avant : sauvegarder (`prefix Ctrl-s`), quitter tmux (`tmux kill-server`) et le relancer, pour retirer les hooks d'opensessions du serveur. Puis, dans tmux, `prefix Alt+u` (TPM) supprime le dossier `~/.tmux/plugins/opensessions`.
+
+| Vérification | WSL | 26.04 |
+|---|---|---|
+| Une seule sidebar à gauche, dans chaque fenêtre et chaque session (y compris après Ctrl+Shift+N et une nouvelle fenêtre) | [ ] | [ ] |
+| Ctrl+Shift+B : la sidebar disparaît partout, puis revient ; Alt+s lui donne le focus | [ ] | [ ] |
+| SESSIONS : arbre session → agents → sous-agents ; `▸` sur la session courante ; `⏎` change de session ; `r` renomme | [ ] | [ ] |
+| Ctrl+Shift+N : écran New session ; étiquettes `new` / `attach` / `name taken → …-2` ; Create & attach crée et bascule | [ ] | [ ] |
+| Ctrl+Shift+K : écran Kill session (agents listés), pane de travail atténué ; Save & kill sauvegarde puis tue | [ ] | [ ] |
+| `prefix Q` : écran Save & exit ; `d` détache sans rien arrêter ; Save & exit quitte tmux ; au redémarrage, la disposition revient | [ ] | [ ] |
+| ACTIONS : cible = session sous le curseur de SESSIONS ; split, zoom sur le pane de travail ; « last save … ago » après `s` | [ ] | [ ] |
+| Clic droit dans la sidebar : menu rename / new / kill / hide | [ ] | [ ] |
+| Sans `aif-sidebar` installé : Ctrl+Shift+K et `prefix Q` posent une question y/n | [ ] | [ ] |

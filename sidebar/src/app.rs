@@ -4,6 +4,7 @@
 use std::collections::HashMap;
 
 use crate::model::Agent;
+use crate::sessions::{Fit, Session, fit, tilde};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tab {
@@ -64,6 +65,8 @@ pub enum Key {
     Tab,
     BackTab,
     Backspace,
+    /// Ctrl+C : quitte la sidebar
+    Quit,
 }
 
 /// Ce que `main` doit faire après une touche ou un clic.
@@ -80,7 +83,180 @@ pub enum Effect {
         text: Option<String>,
     },
     Interrupt(String),
+    /// Ouvre l'écran New session : `main` lit les dossiers, puis appelle `open_new`.
+    OpenNew,
+    Switch(String),
+    Create {
+        name: String,
+        dir: String,
+    },
+    /// Sauvegarde, puis tue la session
+    KillSession(String),
+    /// Sauvegarde toutes les sessions, puis quitte tmux
+    SaveExit,
+    Detach,
+    Save,
+    Restore,
+    Rename {
+        from: String,
+        to: String,
+    },
+    SplitRight,
+    SplitBelow,
+    Zoom,
+    ToggleSidebar,
+    LastSession,
 }
+
+/// Écran de confirmation affiché dans la sidebar (le pane courant est atténué).
+#[derive(Debug, Clone, PartialEq)]
+pub enum Screen {
+    New {
+        filter: String,
+        folders: Vec<String>,
+        sel: usize,
+    },
+    Kill(String),
+    SaveExit,
+    Rename {
+        session: String,
+        input: String,
+    },
+}
+
+/// Bouton d'un écran (clic).
+#[derive(Debug, Clone, PartialEq)]
+pub enum Button {
+    Cancel,
+    Confirm,
+    ExitOnly,
+    Folder(usize),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ActionKind {
+    New,
+    Rename,
+    Last,
+    Kill,
+    SplitRight,
+    SplitBelow,
+    Zoom,
+    Save,
+    SaveExit,
+    Exit,
+    Restore,
+    Hide,
+}
+
+/// Ligne de l'onglet ACTIONS.
+pub struct Action {
+    pub group: &'static str,
+    pub icon: &'static str,
+    pub label: &'static str,
+    pub keys: &'static str,
+    pub note: &'static str,
+    pub kind: ActionKind,
+}
+
+pub const ACTIONS: [Action; 12] = [
+    Action {
+        group: "SESSION",
+        icon: "+",
+        label: "New session…",
+        keys: "⌃⇧N",
+        note: "pick a folder, name comes from it",
+        kind: ActionKind::New,
+    },
+    Action {
+        group: "SESSION",
+        icon: "✎",
+        label: "Rename",
+        keys: "r",
+        note: "",
+        kind: ActionKind::Rename,
+    },
+    Action {
+        group: "SESSION",
+        icon: "⇄",
+        label: "Switch to last session",
+        keys: "prefix ⇥",
+        note: "",
+        kind: ActionKind::Last,
+    },
+    Action {
+        group: "SESSION",
+        icon: "✕",
+        label: "Kill session…",
+        keys: "⌃⇧K",
+        note: "",
+        kind: ActionKind::Kill,
+    },
+    Action {
+        group: "PANES",
+        icon: "┃",
+        label: "Split right",
+        keys: "⌃⇧O",
+        note: "",
+        kind: ActionKind::SplitRight,
+    },
+    Action {
+        group: "PANES",
+        icon: "━",
+        label: "Split below",
+        keys: "⌃⇧E",
+        note: "",
+        kind: ActionKind::SplitBelow,
+    },
+    Action {
+        group: "PANES",
+        icon: "⤢",
+        label: "Zoom pane",
+        keys: "⌥Z",
+        note: "",
+        kind: ActionKind::Zoom,
+    },
+    Action {
+        group: "SAVE & EXIT",
+        icon: "↓",
+        label: "Save now",
+        keys: "s",
+        note: "",
+        kind: ActionKind::Save,
+    },
+    Action {
+        group: "SAVE & EXIT",
+        icon: "⇣",
+        label: "Save & exit…",
+        keys: "prefix Q",
+        note: "save every session, then quit tmux",
+        kind: ActionKind::SaveExit,
+    },
+    Action {
+        group: "SAVE & EXIT",
+        icon: "→",
+        label: "Exit",
+        keys: "d",
+        note: "detach: sessions and agents keep running",
+        kind: ActionKind::Exit,
+    },
+    Action {
+        group: "SAVE & EXIT",
+        icon: "↺",
+        label: "Restore last save",
+        keys: "",
+        note: "",
+        kind: ActionKind::Restore,
+    },
+    Action {
+        group: "VIEW",
+        icon: "◧",
+        label: "Hide sidebar",
+        keys: "⌃⇧B",
+        note: "",
+        kind: ActionKind::Hide,
+    },
+];
 
 /// Réponse envoyée, gardée tant que le fichier d'état de l'agent n'a pas changé (même
 /// `updated_at`) : un refus (Échap) ne déclenche aucun hook, l'état resterait « check ».
@@ -109,6 +285,15 @@ pub struct App {
     pub now: i64,
     /// Onglets abrégés quand la sidebar est étroite (calculé au rendu).
     pub short_tabs: bool,
+    pub sessions: Vec<Session>,
+    /// Session de la sidebar (session courante)
+    pub current: String,
+    pub home: String,
+    /// Curseur des onglets SESSIONS et ACTIONS (session cible)
+    pub session_sel: usize,
+    pub action_sel: usize,
+    pub screen: Option<Screen>,
+    pub last_save: Option<i64>,
 }
 
 impl App {
@@ -128,6 +313,202 @@ impl App {
             tick: 0,
             now: 0,
             short_tabs: false,
+            sessions: vec![],
+            current: String::new(),
+            home: String::new(),
+            session_sel: 0,
+            action_sel: 0,
+            screen: None,
+            last_save: None,
+        }
+    }
+
+    /// Nouvelles sessions tmux : le curseur reste sur la même session, sinon va sur la courante.
+    pub fn set_sessions(&mut self, sessions: Vec<Session>, current: String) {
+        let keep = self
+            .sessions
+            .get(self.session_sel)
+            .map(|s| s.name.clone())
+            .filter(|_| !self.sessions.is_empty());
+        self.sessions = sessions;
+        let want = keep.unwrap_or_else(|| current.clone());
+        self.session_sel = self
+            .sessions
+            .iter()
+            .position(|s| s.name == want)
+            .unwrap_or(0);
+        self.current = current;
+    }
+
+    /// Session visée par SESSIONS et ACTIONS : celle sous le curseur.
+    pub fn target(&self) -> Option<&Session> {
+        self.sessions.get(self.session_sel)
+    }
+
+    pub fn agents_of(&self, session: &str) -> Vec<&Agent> {
+        self.agents
+            .iter()
+            .filter(|a| a.session == session)
+            .collect()
+    }
+
+    pub fn open_new(&mut self, folders: Vec<String>) {
+        self.screen = Some(Screen::New {
+            filter: String::new(),
+            folders,
+            sel: 0,
+        });
+    }
+
+    /// Dossiers de l'écran New session après le filtre.
+    pub fn new_folders(&self) -> Vec<&String> {
+        match &self.screen {
+            Some(Screen::New {
+                filter, folders, ..
+            }) => {
+                let f = filter.to_lowercase();
+                folders
+                    .iter()
+                    .filter(|d| tilde(d, &self.home).to_lowercase().contains(&f))
+                    .collect()
+            }
+            _ => vec![],
+        }
+    }
+
+    pub fn fit_of(&self, dir: &str) -> Fit {
+        fit(dir, &self.home, &self.sessions)
+    }
+
+    fn run_action(&mut self, kind: ActionKind) -> Effect {
+        let target = self.target().map(|s| s.name.clone());
+        match kind {
+            ActionKind::New => return Effect::OpenNew,
+            ActionKind::Rename => {
+                if let Some(t) = target {
+                    self.screen = Some(Screen::Rename {
+                        session: t.clone(),
+                        input: t,
+                    });
+                }
+            }
+            ActionKind::Last => return Effect::LastSession,
+            ActionKind::Kill => {
+                if let Some(t) = target {
+                    self.screen = Some(Screen::Kill(t));
+                }
+            }
+            ActionKind::SplitRight => return Effect::SplitRight,
+            ActionKind::SplitBelow => return Effect::SplitBelow,
+            ActionKind::Zoom => return Effect::Zoom,
+            ActionKind::Save => return Effect::Save,
+            ActionKind::SaveExit => self.screen = Some(Screen::SaveExit),
+            ActionKind::Exit => return Effect::Detach,
+            ActionKind::Restore => return Effect::Restore,
+            ActionKind::Hide => return Effect::ToggleSidebar,
+        }
+        Effect::None
+    }
+
+    pub fn click_action(&mut self, i: usize) -> Effect {
+        self.action_sel = i.min(ACTIONS.len() - 1);
+        self.run_action(ACTIONS[self.action_sel].kind)
+    }
+
+    pub fn click_button(&mut self, b: Button) -> Effect {
+        match b {
+            Button::Cancel => self.key_screen(Key::Esc),
+            Button::Confirm => self.key_screen(Key::Enter),
+            Button::ExitOnly => self.key_screen(Key::Char('d')),
+            Button::Folder(i) => {
+                if let Some(Screen::New { sel, .. }) = &mut self.screen {
+                    *sel = i;
+                }
+                Effect::None
+            }
+        }
+    }
+
+    fn key_screen(&mut self, k: Key) -> Effect {
+        let Some(screen) = self.screen.clone() else {
+            return Effect::None;
+        };
+        let close = |app: &mut App, e: Effect| {
+            app.screen = None;
+            e
+        };
+        match (screen, k) {
+            (_, Key::Esc) => close(self, Effect::None),
+            (Screen::New { .. }, Key::Enter) => {
+                let Some(dir) = self
+                    .new_folders()
+                    .get(self.new_sel())
+                    .map(|d| d.to_string())
+                else {
+                    return Effect::None;
+                };
+                let e = match self.fit_of(&dir) {
+                    Fit::Attach(n) => Effect::Switch(n),
+                    f => Effect::Create {
+                        name: f.name().to_string(),
+                        dir,
+                    },
+                };
+                close(self, e)
+            }
+            (Screen::New { .. }, k) => {
+                let n = self.new_folders().len();
+                if let Some(Screen::New { filter, sel, .. }) = &mut self.screen {
+                    match k {
+                        Key::Up => *sel = sel.saturating_sub(1),
+                        Key::Down => *sel = (*sel + 1).min(n.saturating_sub(1)),
+                        Key::Char(c) => {
+                            filter.push(c);
+                            *sel = 0;
+                        }
+                        Key::Backspace => {
+                            filter.pop();
+                            *sel = 0;
+                        }
+                        _ => {}
+                    }
+                }
+                Effect::None
+            }
+            (Screen::Kill(s), Key::Enter | Key::Char('y')) => close(self, Effect::KillSession(s)),
+            (Screen::Kill(_), Key::Char('n')) => close(self, Effect::None),
+            (Screen::SaveExit, Key::Enter | Key::Char('y')) => close(self, Effect::SaveExit),
+            (Screen::SaveExit, Key::Char('d')) => close(self, Effect::Detach),
+            (Screen::SaveExit, Key::Char('n')) => close(self, Effect::None),
+            (Screen::Rename { session, input }, Key::Enter) => {
+                let to = input.trim().to_string();
+                let e = if to.is_empty() || to == session {
+                    Effect::None
+                } else {
+                    Effect::Rename { from: session, to }
+                };
+                close(self, e)
+            }
+            (Screen::Rename { .. }, k) => {
+                if let Some(Screen::Rename { input, .. }) = &mut self.screen {
+                    match k {
+                        Key::Char(c) => input.push(c),
+                        Key::Backspace => {
+                            input.pop();
+                        }
+                        _ => {}
+                    }
+                }
+                Effect::None
+            }
+            _ => Effect::None,
+        }
+    }
+
+    pub fn new_sel(&self) -> usize {
+        match &self.screen {
+            Some(Screen::New { sel, .. }) => *sel,
+            _ => 0,
         }
     }
 
@@ -203,6 +584,12 @@ impl App {
 
     pub fn key(&mut self, k: Key) -> Effect {
         self.message = None;
+        if k == Key::Quit {
+            return Effect::Quit;
+        }
+        if self.screen.is_some() {
+            return self.key_screen(k);
+        }
         match self.mode {
             Mode::Filter => return self.key_filter(k),
             Mode::Reply => return self.key_reply(k),
@@ -211,9 +598,13 @@ impl App {
         match k {
             Key::Tab => self.set_tab(self.tab.next()),
             Key::BackTab => self.set_tab(self.tab.prev()),
-            Key::Char('q') => return Effect::Quit,
             Key::Char('?') => self.message = Some("Help view comes with step 5".into()),
-            _ if self.tab != Tab::Agents => {}
+            // Écrans, depuis n'importe quel onglet (Ctrl+Shift+N / K, prefix Q les envoient)
+            Key::Char('N') => return Effect::OpenNew,
+            Key::Char('K') => return self.run_action(ActionKind::Kill),
+            Key::Char('Q') => return self.run_action(ActionKind::SaveExit),
+            _ if self.tab == Tab::Sessions => return self.key_sessions(k),
+            _ if self.tab == Tab::Actions => return self.key_actions(k),
             Key::Up | Key::Char('k') => self.selected = self.selected.saturating_sub(1),
             Key::Down | Key::Char('j') => self.select(self.selected + 1),
             Key::Char('/') => self.mode = Mode::Filter,
@@ -243,6 +634,38 @@ impl App {
                 }
             }
             Key::Char(c @ '1'..='9') => return self.digit(c as usize - '0' as usize),
+            _ => {}
+        }
+        Effect::None
+    }
+
+    fn key_sessions(&mut self, k: Key) -> Effect {
+        match k {
+            Key::Up | Key::Char('k') => self.session_sel = self.session_sel.saturating_sub(1),
+            Key::Down | Key::Char('j') => {
+                self.session_sel = (self.session_sel + 1).min(self.sessions.len().saturating_sub(1))
+            }
+            Key::Enter => {
+                return self
+                    .target()
+                    .map_or(Effect::None, |s| Effect::Switch(s.name.clone()));
+            }
+            Key::Char('r') => return self.run_action(ActionKind::Rename),
+            _ => {}
+        }
+        Effect::None
+    }
+
+    fn key_actions(&mut self, k: Key) -> Effect {
+        match k {
+            Key::Up | Key::Char('k') => self.action_sel = self.action_sel.saturating_sub(1),
+            Key::Down | Key::Char('j') => {
+                self.action_sel = (self.action_sel + 1).min(ACTIONS.len() - 1)
+            }
+            Key::Enter => return self.run_action(ACTIONS[self.action_sel].kind),
+            Key::Char('r') => return self.run_action(ActionKind::Rename),
+            Key::Char('s') => return self.run_action(ActionKind::Save),
+            Key::Char('d') => return self.run_action(ActionKind::Exit),
             _ => {}
         }
         Effect::None
@@ -315,7 +738,7 @@ impl App {
                 self.mode = Mode::Normal;
             }
             Key::Enter | Key::Down | Key::Up | Key::Tab => self.mode = Mode::Normal,
-            Key::BackTab => {}
+            Key::BackTab | Key::Quit => {}
         }
         self.clamp();
         Effect::None
@@ -344,12 +767,7 @@ impl App {
     pub fn count_tab(&self, t: Tab) -> Option<usize> {
         match t {
             Tab::Agents => Some(self.agents.len()),
-            Tab::Sessions => {
-                let mut s: Vec<&str> = self.agents.iter().map(|a| a.session.as_str()).collect();
-                s.sort();
-                s.dedup();
-                Some(s.len())
-            }
+            Tab::Sessions => Some(self.sessions.len()),
             Tab::Actions => None,
         }
     }
@@ -520,14 +938,133 @@ mod tests {
     }
 
     #[test]
-    fn tabs_cycle_and_other_tabs_ignore_agent_keys() {
+    fn tabs_cycle_and_each_tab_has_its_keys() {
         let mut a = app();
         a.key(Key::Tab);
         assert_eq!(a.tab, Tab::Actions);
-        assert_eq!(a.key(Key::Enter), Effect::None);
+        assert_eq!(a.key(Key::Enter), Effect::OpenNew); // ACTIONS : 1re action
         a.key(Key::BackTab);
         a.key(Key::BackTab);
         assert_eq!(a.tab, Tab::Sessions);
-        assert_eq!(a.count_tab(Tab::Sessions), Some(3));
+        a.set_sessions(
+            vec![sess("alpha", "/w/alpha"), sess("prosper", "/w/prosper")],
+            "prosper".into(),
+        );
+        assert_eq!(a.count_tab(Tab::Sessions), Some(2));
+    }
+
+    fn sess(n: &str, p: &str) -> Session {
+        Session {
+            name: n.into(),
+            path: p.into(),
+        }
+    }
+
+    fn with_sessions() -> App {
+        let mut a = app();
+        a.home = "/h".into();
+        a.set_sessions(
+            vec![
+                sess("api", "/w/a/api"),
+                sess("main", "/h"),
+                sess("prosper", "/w/prosper"),
+            ],
+            "main".into(),
+        );
+        a
+    }
+
+    #[test]
+    fn cursor_starts_on_the_current_session_and_enter_switches() {
+        let mut a = with_sessions();
+        a.set_tab(Tab::Sessions);
+        assert_eq!(a.target().unwrap().name, "main");
+        a.key(Key::Down);
+        assert_eq!(a.key(Key::Enter), Effect::Switch("prosper".into()));
+        // rafraîchissement : le curseur reste sur prosper
+        a.set_sessions(a.sessions.clone(), "main".into());
+        assert_eq!(a.target().unwrap().name, "prosper");
+    }
+
+    #[test]
+    fn new_session_screen_creates_attaches_or_suffixes() {
+        let mut a = with_sessions();
+        assert_eq!(a.key(Key::Char('N')), Effect::OpenNew);
+        a.open_new(vec!["/w/a/api".into(), "/w/b/api".into(), "/w/web".into()]);
+        for c in "web".chars() {
+            a.key(Key::Char(c));
+        }
+        assert_eq!(a.new_folders(), vec!["/w/web"]);
+        assert_eq!(
+            a.key(Key::Enter),
+            Effect::Create {
+                name: "web".into(),
+                dir: "/w/web".into()
+            }
+        );
+        assert!(a.screen.is_none());
+        a.open_new(vec!["/w/a/api".into(), "/w/b/api".into()]);
+        assert_eq!(a.key(Key::Enter), Effect::Switch("api".into()));
+        a.open_new(vec!["/w/a/api".into(), "/w/b/api".into()]);
+        a.key(Key::Down);
+        assert_eq!(
+            a.key(Key::Enter),
+            Effect::Create {
+                name: "api-2".into(),
+                dir: "/w/b/api".into()
+            }
+        );
+        a.open_new(vec!["/w/x".into()]);
+        assert_eq!(a.key(Key::Esc), Effect::None);
+        assert!(a.screen.is_none());
+    }
+
+    #[test]
+    fn kill_and_save_exit_screens() {
+        let mut a = with_sessions();
+        a.key(Key::Char('K'));
+        assert_eq!(a.screen, Some(Screen::Kill("main".into())));
+        assert_eq!(a.key(Key::Enter), Effect::KillSession("main".into()));
+        a.key(Key::Char('Q'));
+        assert_eq!(a.screen, Some(Screen::SaveExit));
+        assert_eq!(a.key(Key::Char('d')), Effect::Detach);
+        a.key(Key::Char('Q'));
+        assert_eq!(a.click_button(Button::Confirm), Effect::SaveExit);
+        a.key(Key::Char('K'));
+        assert_eq!(a.click_button(Button::Cancel), Effect::None);
+        assert!(a.screen.is_none());
+    }
+
+    #[test]
+    fn rename_and_actions() {
+        let mut a = with_sessions();
+        a.set_tab(Tab::Actions);
+        a.key(Key::Char('r'));
+        for _ in 0.."main".len() {
+            a.key(Key::Backspace);
+        }
+        for c in "home".chars() {
+            a.key(Key::Char(c));
+        }
+        assert_eq!(
+            a.key(Key::Enter),
+            Effect::Rename {
+                from: "main".into(),
+                to: "home".into()
+            }
+        );
+        assert_eq!(a.key(Key::Char('s')), Effect::Save);
+        a.key(Key::Down);
+        a.key(Key::Down);
+        assert_eq!(a.key(Key::Enter), Effect::LastSession);
+        assert_eq!(a.click_action(11), Effect::ToggleSidebar);
+        assert_eq!(a.click_action(0), Effect::OpenNew);
+    }
+
+    #[test]
+    fn ctrl_c_quits_but_q_does_not() {
+        let mut a = app();
+        assert_eq!(a.key(Key::Char('q')), Effect::None);
+        assert_eq!(a.key(Key::Quit), Effect::Quit);
     }
 }

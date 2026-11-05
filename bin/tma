@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tma [-n name] [dir] — attach to, or create, the tmux session for dir.
 # The session name is the folder name (main for ~), or name with -n.
-# The opensessions sidebar opens on attach (config/tmux-sidebar-on.sh).
+# The aif-sidebar opens on attach (config/tmux-sidebar.sh).
 set -euo pipefail
 
 name=

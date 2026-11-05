@@ -252,47 +252,6 @@ else
   log "Windows notifications: once, in Windows PowerShell, run: Install-Module BurntToast -Scope CurrentUser"
 fi
 
-# opensessions, pinned on a tag (the local patch targets it). install.sh clones it, so TPM finds it
-# installed; a checkout on another commit (prefix U) goes back to the tag, which drops the patch.
-# Then apply the local agent summary patch, and build from source when the patch is new
-# or the prebuilt binaries need a newer glibc (2.39).
-# ldd only reads the binary; running it would start a server and set hooks on the live tmux server.
-OS_DIR="$HOME/.tmux/plugins/opensessions"
-OS_REF=v0.2.0-alpha.12
-OS_PATCH="$DOTFILES/config/opensessions/agent-summary-row.patch"
-[[ -d "$OS_DIR/.git" ]] || git clone -q --branch "$OS_REF" https://github.com/Ataraxy-Labs/opensessions "$OS_DIR"
-if [[ "$(git -C "$OS_DIR" rev-parse HEAD)" != "$(git -C "$OS_DIR" rev-parse -q --verify "$OS_REF^{commit}")" ]]; then
-  git -C "$OS_DIR" fetch -q --tags origin
-  git -C "$OS_DIR" checkout -q --force "$OS_REF"
-  log "opensessions → $OS_REF"
-fi
-# Prebuilt binaries: opensessions downloads them on its first tmux load; fetch them now with its own script.
-[[ -x "$OS_DIR/bin/opensessions-server" ]] ||
-  sh "$OS_DIR/integrations/tmux-plugin/scripts/install-binaries.sh" "$OS_DIR" >/dev/null 2>&1 ||
-  warn "opensessions: prebuilt binary download failed; they download on the next tmux start"
-os_build=0
-if git -C "$OS_DIR" apply --reverse --check "$OS_PATCH" 2>/dev/null; then
-  cmp -s "$OS_DIR/bin/opensessions-sidebar" "$OS_DIR/target/release/opensessions-sidebar" || os_build=1
-elif git -C "$OS_DIR" apply --check "$OS_PATCH" 2>/dev/null; then
-  git -C "$OS_DIR" apply "$OS_PATCH"
-  os_build=1
-  log "opensessions: agent summary patch applied"
-else
-  warn_end "opensessions: the agent summary patch does not apply on $OS_REF; the sidebar keeps the stock rows. Regenerate config/opensessions/agent-summary-row.patch."
-fi
-if [[ -x "$OS_DIR/bin/opensessions-server" ]] && ldd "$OS_DIR/bin/opensessions-server" 2>&1 | grep -q 'not found'; then
-  os_build=1
-fi
-if (( os_build )); then
-  if command -v cargo >/dev/null 2>&1 && (cd "$OS_DIR" && cargo build --release -q); then
-    # install writes a new file: cp fails with "Text file busy" while the sidebar runs
-    install -m755 "$OS_DIR/target/release/opensessions-server" "$OS_DIR/target/release/opensessions-sidebar" "$OS_DIR/bin/"
-    log "opensessions built from source (restart the sidebar: Ctrl+Shift+B twice)"
-  else
-    warn_end "opensessions needs a source build. Run: cd $OS_DIR && cargo build --release && install -m755 target/release/opensessions-{server,sidebar} bin/"
-  fi
-fi
-
 # aif-sidebar (Rust + ratatui, sidebar/): built here, linked in ~/.local/bin. Needs Rust >= 1.85
 # (edition 2024). cargo build is incremental: a second run rebuilds nothing.
 SB_BIN="$DOTFILES/sidebar/target/release/aif-sidebar"
