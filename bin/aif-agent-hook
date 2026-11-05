@@ -6,57 +6,56 @@ set -uo pipefail
 [[ -n ${TMUX_PANE:-} ]] || exit 0
 command -v jq >/dev/null || exit 0
 
-# Budget : < 100 ms par événement. Deux appels jq en tout, pas de date ni de mktemp.
+# Budget : < 100 ms par événement. Un seul appel jq (≈ 18 ms avec jq 1.6), pas de date ni de mktemp.
 STATE_DIR=${AIF_STATE_DIR:-${XDG_RUNTIME_DIR:-/tmp/aif-$UID}/aif/agents}
 [[ -d $STATE_DIR ]] || mkdir -p "$STATE_DIR" 2>/dev/null || exit 0
 FILE="$STATE_DIR/${TMUX_PANE#%}.json"
-[[ -f $FILE ]] || echo '{}' >"$FILE"
+cur=$FILE; [[ -f $cur ]] || cur=/dev/null
 input=$(cat)
-IFS=$'\t' read -r event prev_state < <(jq -r --slurpfile cur "$FILE" \
-  '[.hook_event_name // "", ($cur[0].state // "-")] | @tsv' <<<"$input" 2>/dev/null)
-[[ -n ${event:-} ]] || exit 0
 
-# filtre jq appliqué à l'état existant ; $in = entrée du hook
-case $event in
-  SessionStart)
-    # source=compact : compaction en cours de tour, l'agent continue (garder état et sous-agents)
-    f='.tool="claude" | .session_id=$in.session_id
-       | if $in.source=="compact" then . else .state="done" | .started_at=$now | .subagents={} | .question=null | .options=[] end' ;;
-  UserPromptSubmit)
-    f='.state="running" | .prompt_at=$now | .task=(($in.prompt // "") | split("\n")[0] | .[0:80]) | .question=null | .options=[]' ;;
-  PreToolUse)
-    f='if $in.tool_name=="AskUserQuestion" then
-         .state="check" | .question=($in.tool_input.questions[0].question // "Question")
-         | .options=[($in.tool_input.questions[0].options // [])[] | .label]
-       else .state="running" | .last_tool=$in.tool_name end' ;;
-  PostToolUse|PostToolUseFailure)
-    f='.state="running" | .question=null | .options=[] | .last_tool=$in.tool_name' ;;
-  Notification)
-    f='if ($in.notification_type=="permission_prompt" or $in.notification_type=="elicitation_dialog") then
-         .state="check" | .question=($in.message // "Permission requested")
-         | (if (.options|length)==0 then .options=["Yes","Always","No"] else . end)
-       else . end' ;;
-  Stop)
-    f='.state="done" | .question=null | .options=[] | .last_message=(($in.last_assistant_message // "") | .[0:200])' ;;
-  StopFailure)
-    f='.state="error" | .error=($in.error // "unknown")' ;;
-  SubagentStart)
-    f='.subagents[$in.agent_id]={type:($in.agent_type // "agent"), state:"running", since:$now}' ;;
-  SubagentStop)
-    f='if .subagents[$in.agent_id] then .subagents[$in.agent_id].state="done" else . end' ;;
-  SessionEnd)
-    rm -f "$FILE"; exit 0 ;;
-  *) exit 0 ;;
-esac
+# Filtre jq : $in = entrée du hook, `.` = état existant. Rend « événement \t état avant \t état après »,
+# puis le nouvel état en JSON ; seulement la 1re ligne pour SessionEnd et les événements ignorés.
+JQ='
+. as $in | ($cur[0] // {}) as $s | ($s.state // "-") as $prev | ($in.hook_event_name // "") as $ev
+| ($s
+  | if $ev == "SessionStart" then
+      # source=compact : compaction en cours de tour, l agent continue (garder état et sous-agents)
+      .tool = "claude" | .session_id = $in.session_id
+      | if $in.source == "compact" then . else .state = "done" | .started_at = $now | .subagents = {} | .question = null | .options = [] end
+    elif $ev == "UserPromptSubmit" then
+      .state = "running" | .prompt_at = $now | .task = (($in.prompt // "") | split("\n")[0] | .[0:80]) | .question = null | .options = []
+    elif $ev == "PreToolUse" then
+      if $in.tool_name == "AskUserQuestion" then
+        .state = "check" | .question = ($in.tool_input.questions[0].question // "Question")
+        | .options = [($in.tool_input.questions[0].options // [])[] | .label]
+      else .state = "running" | .last_tool = $in.tool_name end
+    elif $ev == "PostToolUse" or $ev == "PostToolUseFailure" then
+      .state = "running" | .question = null | .options = [] | .last_tool = $in.tool_name
+    elif $ev == "Notification" then
+      if ($in.notification_type == "permission_prompt" or $in.notification_type == "elicitation_dialog") then
+        .state = "check" | .question = ($in.message // "Permission requested")
+        | (if (.options | length) == 0 then .options = ["Yes", "Always", "No"] else . end)
+      else . end
+    elif $ev == "Stop" then
+      .state = "done" | .question = null | .options = [] | .last_message = (($in.last_assistant_message // "") | .[0:200])
+    elif $ev == "StopFailure" then .state = "error" | .error = ($in.error // "unknown")
+    elif $ev == "SubagentStart" then
+      .subagents[$in.agent_id] = {type: ($in.agent_type // "agent"), state: "running", since: $now}
+    elif $ev == "SubagentStop" then
+      if .subagents[$in.agent_id] then .subagents[$in.agent_id].state = "done" else . end
+    else null end) as $o
+| if $o == null then "\($ev)\t\($prev)\t-"
+  else ($o | .pane = $pane | .cwd = ($in.cwd // .cwd) | .event = $ev | .updated_at = $now) as $o
+    | "\($ev)\t\($prev)\t\($o.state // "-")", ($o | tojson)
+  end'
 
-tmp="$STATE_DIR/.$$.tmp"
 # Entrée du hook sur stdin, pas en argument : un tool_input de plus de 128 Ko (Write) dépasserait
 # la taille maximale d'un argument.
-# Sortie : le nouvel état sur la 1re ligne, puis l'objet complet (évite un 3e appel jq).
-out=$(jq -c --slurpfile cur "$FILE" --argjson now "$EPOCHSECONDS" --arg pane "$TMUX_PANE" --arg event "$event" \
-      ". as \$in | \$cur[0] | $f | .pane=\$pane | .cwd=(\$in.cwd // .cwd) | .event=\$event | .updated_at=\$now
-       | (.state // \"\"), ." <<<"$input" 2>/dev/null) || exit 0
-new_state=${out%%$'\n'*}; new_state=${new_state//\"/}
+out=$(jq -r --slurpfile cur "$cur" --argjson now "$EPOCHSECONDS" --arg pane "$TMUX_PANE" "$JQ" <<<"$input" 2>/dev/null) || exit 0
+IFS=$'\t' read -r event prev_state new_state <<<"${out%%$'\n'*}"
+[[ $event == SessionEnd ]] && { rm -f "$FILE"; exit 0; }
+[[ $out == *$'\n'* ]] || exit 0   # événement ignoré
+tmp="$STATE_DIR/.$$.tmp"
 printf '%s\n' "${out#*$'\n'}" >"$tmp" && mv "$tmp" "$FILE" || { rm -f "$tmp"; exit 0; }
 
 # Notification système seulement à l'entrée dans un état, et si le panneau n'est pas sous les yeux.
