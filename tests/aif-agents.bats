@@ -99,3 +99,16 @@ wait_claude() { for _ in 1 2 3 4 5 6 7 8 9 10; do ps -e -o comm= | grep -qx clau
   run "$REPO/bin/aif-agents" diff %999 --json
   [ "$status" -ne 0 ]
 }
+
+@test "status: counters per state in priority order, zeros hidden, then the git branch" {
+  a=$(new_pane claude); b=$(new_pane claude); c=$(new_pane claude); d=$(new_pane claude); wait_claude
+  put "$a" check 5; put "$b" check 5; put "$c" running 5; put "$d" running 7200
+  run -0 "$REPO/bin/aif-agents" status "$REPO_DIR"
+  branch=$(git -C "$REPO_DIR" branch --show-current)
+  [ "$output" = "#[fg=#FF9E64]◉ 2 #[fg=#7AA2F7]⠹ 1 #[fg=#8A90A0]◌ 1 #[fg=#3B4050]│ #[fg=#73DACA]⎇ $branch #[fg=#3B4050]│ " ]
+}
+
+@test "status: nothing to show gives an empty string" {
+  run -0 "$REPO/bin/aif-agents" status /
+  [ -z "$output" ]
+}

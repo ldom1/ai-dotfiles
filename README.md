@@ -450,6 +450,7 @@ Keys:
 - `Alt+arrows` moves between panes. `Alt+z` zooms.
 - `prefix O`, `prefix E`, `prefix N` and `prefix B` do the same as the `Ctrl+Shift` keys, in any terminal.
 - `prefix Tab` switches to the last session. `prefix /` shows the tmux key list.
+- Status line (top): session pill and window tabs on the left; on the right, the agent counters `◉ n ⠹ n ✓ n ◌ n ✕ n` (zeros hidden), the git branch `⎇` of the current pane and the time. `aif-agents status <dir>` renders the counters and the branch; the agent hook refreshes the line on each event. Colors follow the palette of the sidebar (accent `#BB9AF7`).
 - Mouse selection copies to the system clipboard and shows "Copied to clipboard": OSC 52 to the terminal, plus `aif-platform copy` (Wayland clipboard) on native Linux. Right click pastes (outside the sidebar).
 
 Agent bell:

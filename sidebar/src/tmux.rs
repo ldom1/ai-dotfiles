@@ -152,7 +152,7 @@ pub fn zoom() -> Result<()> {
 /// Atténue (ou rétablit) le pane de travail pendant un écran de confirmation.
 pub fn dim(on: bool) {
     let _ = if on {
-        run(&["set", "-p", "-t", "!", "window-style", "fg=#5c6370"])
+        run(&["set", "-p", "-t", "!", "window-style", "fg=#8A90A0"])
     } else {
         run(&["set", "-pu", "-t", "!", "window-style"])
     };

@@ -65,6 +65,7 @@ platform_parses() {
   [[ "$(cmd prefix Q)" == *"tmux-sidebar.sh screen Q"* ]]
   [ "$(cmd prefix Tab)" = "switch-client -l" ]
   t show-hooks -g | grep -q 'client-resized.*tmux-sidebar.sh ensure' 
+  t show -gv status-right | grep -qF "#(~/.local/bin/aif-agents status '#{pane_current_path}')"
   [ "$(cmd prefix /)" = "list-keys -N" ]
 }
 
