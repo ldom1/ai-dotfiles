@@ -23,7 +23,7 @@ case $event in
     f='.tool="claude" | .session_id=$in.session_id
        | if $in.source=="compact" then . else .state="done" | .started_at=$now | .subagents={} | .question=null | .options=[] end' ;;
   UserPromptSubmit)
-    f='.state="running" | .task=(($in.prompt // "") | split("\n")[0] | .[0:80]) | .question=null | .options=[]' ;;
+    f='.state="running" | .prompt_at=$now | .task=(($in.prompt // "") | split("\n")[0] | .[0:80]) | .question=null | .options=[]' ;;
   PreToolUse)
     f='if $in.tool_name=="AskUserQuestion" then
          .state="check" | .question=($in.tool_input.questions[0].question // "Question")

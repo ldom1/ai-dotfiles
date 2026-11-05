@@ -9,6 +9,8 @@
 #            error   = fichier d'état mais plus de processus claude dans le pane (agent tombé)
 #   jump     1–9 dans l'ordre affiché, null au-delà
 #   git      {add, del, files} de `git diff --numstat HEAD` dans cwd (cache 5 s par dossier)
+#   aif-agents diff <pane> --json → {files: [{file, add, del}], hunk} : diff contre HEAD dans le
+#            dossier de l'agent (cwd de son état, sinon dossier du pane), premier hunk seulement
 set -uo pipefail
 
 STATE_DIR=${AIF_STATE_DIR:-${XDG_RUNTIME_DIR:-/tmp/aif-$UID}/aif/agents}
@@ -16,9 +18,23 @@ CACHE_DIR="$STATE_DIR/../git-cache"
 STALE_AFTER=${AIF_STALE_AFTER:-3600}
 GIT_TTL=5
 
-usage() { echo "usage: aif-agents list --json" >&2; exit 2; }
-[[ ${1:-} == list && ${2:-} == --json ]] || usage
+usage() { echo "usage: aif-agents list --json | aif-agents diff <pane> --json" >&2; exit 2; }
 command -v jq >/dev/null || { echo "aif-agents: jq is required" >&2; exit 1; }
+
+if [[ ${1:-} == diff && -n ${2:-} && ${3:-} == --json ]]; then
+  pane=$2
+  dir=$(jq -r '.cwd // empty' "$STATE_DIR/${pane#%}.json" 2>/dev/null)
+  [[ -n $dir ]] || dir=$(tmux display -p -t "$pane" '#{pane_current_path}' 2>/dev/null)
+  [[ -d $dir ]] || { echo "aif-agents: no folder for pane $pane" >&2; exit 1; }
+  files=$(git -C "$dir" diff --numstat HEAD 2>/dev/null | jq -Rn '[inputs | select(. != "") | split("\t")
+    | {file: .[2], add: (.[0] | tonumber? // 0), del: (.[1] | tonumber? // 0)}]')
+  # Premier hunk du premier fichier : de la 1re ligne @@ jusqu'à la suivante (ou au fichier suivant)
+  hunk=$(git -C "$dir" diff --no-color --no-ext-diff HEAD 2>/dev/null |
+    awk '/^@@/ { if (seen++) exit } /^diff --git/ && seen { exit } seen { print }')
+  jq -n --argjson files "${files:-[]}" --arg hunk "$hunk" '{files: $files, hunk: $hunk}'
+  exit 0
+fi
+[[ ${1:-} == list && ${2:-} == --json ]] || usage
 
 # Panes tmux : id, session, pid, commande, dossier. Séparateur imprimable : tmux ≥ 3.3 remplace
 # la tabulation par « _ » dans la sortie -F.

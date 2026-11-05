@@ -46,6 +46,7 @@ notified() { sleep 0.2; [ -f "$NOTIFY_LOG" ] && wc -l < "$NOTIFY_LOG" || echo 0;
   [ "$(st .cwd)" = "$BATS_TEST_TMPDIR" ] && [ "$(st .session_id)" = s1 ]
   ev user-prompt
   [ "$(st .state)" = running ] && [ "$(st .task)" = "Parse the BOAMP notice PDFs" ]
+  [ "$(st .prompt_at)" -ge "$(st .started_at)" ]
   ev pre-tool-bash
   [ "$(st .state)" = running ] && [ "$(st .last_tool)" = Bash ]
   ev stop

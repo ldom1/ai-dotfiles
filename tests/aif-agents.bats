@@ -83,3 +83,19 @@ wait_claude() { for _ in 1 2 3 4 5 6 7 8 9 10; do ps -e -o comm= | grep -qx clau
   run -0 list
   [ "$output" = "[]" ]
 }
+
+@test "diff: files with +/- counts and the first hunk, from the agent folder" {
+  p=$(new_pane claude); wait_claude
+  put "$p" running 1
+  printf 'new\n' > "$REPO_DIR/g" && git -C "$REPO_DIR" add g
+  run -0 "$REPO/bin/aif-agents" diff "$p" --json
+  [ "$(jq -c '.files' <<<"$output")" = '[{"file":"f","add":2,"del":1},{"file":"g","add":1,"del":0}]' ]
+  [ "$(jq -r '.hunk' <<<"$output" | head -1)" = "@@ -1,2 +1,3 @@" ]
+  [ "$(jq -r '.hunk' <<<"$output" | grep -c '^[+-]')" -eq 3 ]
+  ! jq -r '.hunk' <<<"$output" | grep -q '^+new'
+}
+
+@test "diff: unknown pane fails with a message" {
+  run "$REPO/bin/aif-agents" diff %999 --json
+  [ "$status" -ne 0 ]
+}
