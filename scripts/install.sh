@@ -27,6 +27,9 @@ BOLD='\033[1m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; RESET='\033[0m'
 log()    { echo -e "${GREEN}✓${RESET} $*"; }
 warn()   { echo -e "${YELLOW}!${RESET} $*"; }
 header() { echo -e "\n${BOLD}$*${RESET}"; }
+# Warnings repeated at the end, so they stay visible after a long run
+END_WARNINGS=()
+warn_end() { warn "$*"; END_WARNINGS+=("$*"); }
 
 # ── 1. Symlinks ────────────────────────────────────────────────────────────────
 header "Creating symlinks"
@@ -195,34 +198,46 @@ done
 ln -sfn "$DOTFILES/config/tmux.conf" "$HOME/.tmux.conf"
 log "$HOME/.tmux.conf → $DOTFILES/config/tmux.conf"
 [[ -d "$HOME/.tmux/plugins/tpm" ]] || git clone -q --depth 1 https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
-log "TPM ready: run prefix + I in tmux to install opensessions"
+log "TPM ready: run prefix + I in tmux to install tmux-resurrect and tmux-continuum"
 
-# opensessions: apply the local agent summary patch, and build from source when the patch is new
+# opensessions, pinned on a tag (the local patch targets it). install.sh clones it, so TPM finds it
+# installed; a checkout on another commit (prefix U) goes back to the tag, which drops the patch.
+# Then apply the local agent summary patch, and build from source when the patch is new
 # or the prebuilt binaries need a newer glibc (2.39).
 # ldd only reads the binary; running it would start a server and set hooks on the live tmux server.
 OS_DIR="$HOME/.tmux/plugins/opensessions"
+OS_REF=v0.2.0-alpha.12
 OS_PATCH="$DOTFILES/config/opensessions/agent-summary-row.patch"
-if [[ -d "$OS_DIR/.git" ]]; then
-  os_build=0
-  if git -C "$OS_DIR" apply --reverse --check "$OS_PATCH" 2>/dev/null; then
-    cmp -s "$OS_DIR/bin/opensessions-sidebar" "$OS_DIR/target/release/opensessions-sidebar" || os_build=1
-  elif git -C "$OS_DIR" apply "$OS_PATCH" 2>/dev/null; then
-    os_build=1
-    log "opensessions: agent summary patch applied"
+[[ -d "$OS_DIR/.git" ]] || git clone -q --branch "$OS_REF" https://github.com/Ataraxy-Labs/opensessions "$OS_DIR"
+if [[ "$(git -C "$OS_DIR" rev-parse HEAD)" != "$(git -C "$OS_DIR" rev-parse -q --verify "$OS_REF^{commit}")" ]]; then
+  git -C "$OS_DIR" fetch -q --tags origin
+  git -C "$OS_DIR" checkout -q --force "$OS_REF"
+  log "opensessions → $OS_REF"
+fi
+# Prebuilt binaries: opensessions downloads them on its first tmux load; fetch them now with its own script.
+[[ -x "$OS_DIR/bin/opensessions-server" ]] ||
+  sh "$OS_DIR/integrations/tmux-plugin/scripts/install-binaries.sh" "$OS_DIR" >/dev/null 2>&1 ||
+  warn "opensessions: prebuilt binary download failed; they download on the next tmux start"
+os_build=0
+if git -C "$OS_DIR" apply --reverse --check "$OS_PATCH" 2>/dev/null; then
+  cmp -s "$OS_DIR/bin/opensessions-sidebar" "$OS_DIR/target/release/opensessions-sidebar" || os_build=1
+elif git -C "$OS_DIR" apply --check "$OS_PATCH" 2>/dev/null; then
+  git -C "$OS_DIR" apply "$OS_PATCH"
+  os_build=1
+  log "opensessions: agent summary patch applied"
+else
+  warn_end "opensessions: the agent summary patch does not apply on $OS_REF; the sidebar keeps the stock rows. Regenerate config/opensessions/agent-summary-row.patch."
+fi
+if [[ -x "$OS_DIR/bin/opensessions-server" ]] && ldd "$OS_DIR/bin/opensessions-server" 2>&1 | grep -q 'not found'; then
+  os_build=1
+fi
+if (( os_build )); then
+  if command -v cargo >/dev/null 2>&1 && (cd "$OS_DIR" && cargo build --release -q); then
+    # install writes a new file: cp fails with "Text file busy" while the sidebar runs
+    install -m755 "$OS_DIR/target/release/opensessions-server" "$OS_DIR/target/release/opensessions-sidebar" "$OS_DIR/bin/"
+    log "opensessions built from source (restart the sidebar: Ctrl+Shift+B twice)"
   else
-    warn "opensessions: agent summary patch does not apply (upstream changed renderer.rs); the sidebar keeps the stock rows"
-  fi
-  if [[ -x "$OS_DIR/bin/opensessions-server" ]] && ldd "$OS_DIR/bin/opensessions-server" 2>&1 | grep -q 'not found'; then
-    os_build=1
-  fi
-  if (( os_build )); then
-    if command -v cargo >/dev/null 2>&1 && (cd "$OS_DIR" && cargo build --release -q); then
-      # install writes a new file: cp fails with "Text file busy" while the sidebar runs
-      install -m755 "$OS_DIR/target/release/opensessions-server" "$OS_DIR/target/release/opensessions-sidebar" "$OS_DIR/bin/"
-      log "opensessions built from source (restart the sidebar: Ctrl+Shift+B twice)"
-    else
-      warn "opensessions needs a source build. Run: cd $OS_DIR && cargo build --release && install -m755 target/release/opensessions-{server,sidebar} bin/"
-    fi
+    warn_end "opensessions needs a source build. Run: cd $OS_DIR && cargo build --release && install -m755 target/release/opensessions-{server,sidebar} bin/"
   fi
 fi
 
@@ -274,3 +289,8 @@ echo "  2. Optional: edit config/graphify.env — GRAPHIFY_PROJECT if you use a 
 echo "  3. Install rtk if not present: cargo install rtk"
 echo "  4. Edit ~/.claude/settings.local.json to add your machine permissions"
 echo "  5. Install Claude Code plugins: claude plugins install superpowers"
+
+if (( ${#END_WARNINGS[@]} )); then
+  echo -e "\n${BOLD}${YELLOW}Warnings:${RESET}"
+  for w in "${END_WARNINGS[@]}"; do warn "$w"; done
+fi

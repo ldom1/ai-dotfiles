@@ -15,6 +15,7 @@
   - Sidebar agent summary: under each session with agents, one line counts the agents for each status, most urgent first (`◉ 1 blocked  ⠹ 2 working`). Local opensessions patch `config/opensessions/agent-summary-row.patch`, applied by `install.sh`, which then builds from source.
   - Mouse selection copies through OSC 52, so accents survive (`clip.exe` breaks them).
   - `install.sh` links `~/.tmux.conf` and `~/.local/bin/tma`, clones TPM, and builds the opensessions binaries with `cargo` when the prebuilt ones need a newer glibc (`ldd` check).
+  - opensessions is pinned on `v0.2.0-alpha.12`, the tag the patch targets. `install.sh` clones it at that tag and fetches its prebuilt binaries, and goes back to the tag after a TPM update. It checks the patch with `git apply --check` first. A patch that does not apply, or a missing source build, prints a warning again at the end of `install.sh`.
 
 ### Changed
 - `AGENTS.md` `## Development`: skill placement rule (global skill → `skills/`, or `private/skills/` when it holds personal data; project-only skill → that project's repo). `.vibe/AGENTS.md` and `.cursor/rules/agents.mdc` rebuilt.
