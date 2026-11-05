@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.16.3] - 2026-11-06
+
 ### Fixed
 - Right click on a session in the sidebar opened the tmux menu of the current session, not of the clicked one. tmux now passes the right click to the sidebar (`send-keys -M`), which opens the menu of the session under the pointer: Switch, Rename…, Kill…, New session…, New project…, Hide sidebar. Each entry shows its key. Tests: three e2e tests in `sidebar/tests/e2e.rs`, and the binding in `tests/tmux-config.bats`.
 
