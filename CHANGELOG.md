@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- `git-commit`: new `github-profile` project type (detected by `.github/workflows/snake.yml`), scopes `core`, `content`, `ci`, `docs`.
+
 ## [0.16.2] - 2026-11-06
 
 ### Fixed

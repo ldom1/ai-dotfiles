@@ -179,6 +179,17 @@
         "config",
         "ci"
       ]
+    },
+    "github-profile": {
+      "detect": [
+        ".github/workflows/snake.yml"
+      ],
+      "scopes": [
+        "core",
+        "content",
+        "ci",
+        "docs"
+      ]
     }
   }
 }
