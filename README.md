@@ -448,7 +448,7 @@ Sessions:
 - `Ctrl+Shift+X` closes the current pane. It asks first when an agent (`claude`) runs in the pane. It does nothing in the sidebar.
 - `Ctrl+Shift+K` (or `prefix X`) opens the Kill session screen: it lists the agents that will stop. `Save & kill` saves the layout first, so the session does not come back on restore, then kills it.
 - `prefix Q` opens the Save & exit screen: save every session, then quit tmux. `d` there detaches instead: sessions and agents keep running.
-- Right click in the sidebar opens a menu for the current session: rename, new session, new project, kill, hide sidebar.
+- Right click on a session in the sidebar opens its menu: switch, rename, kill, new session, new project, hide sidebar. Elsewhere in the sidebar, the menu is for the current session.
 - A renamed session no longer matches its folder: `tma <dir>` then creates a new session with the folder name.
 
 Keys:

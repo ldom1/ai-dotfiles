@@ -15,7 +15,7 @@ use std::time::{Duration, Instant};
 
 use tempfile::TempDir;
 use tui_test::{
-    LocatorExpectOptions, MouseAction, MouseOptions, OpenOptions, Operation, OperationResult,
+    LocatorExpectOptions, MouseAction, MouseButton, MouseOptions, OpenOptions, Operation, OperationResult,
     RunOptions,
     Session,
 };
@@ -163,17 +163,30 @@ impl Env {
 
     /// Clic gauche sur une cellule (0-indexée).
     fn click_at(&self, x: u16, y: u16) {
+        self.mouse_at(x, y, MouseButton::Left);
+    }
+
+    fn mouse_at(&self, x: u16, y: u16, button: MouseButton) {
         self.term
             .execute(Operation::Mouse {
                 action: MouseAction::Click {
                     x: Some(x),
                     y: Some(y),
                     on_text: None,
-                    options: MouseOptions::default(),
+                    options: MouseOptions::new(button),
                     clicks: 1,
                 },
             })
             .unwrap();
+    }
+
+    /// Clic droit au début d'un texte visible.
+    fn right_click(&self, text: &str) {
+        let at = {
+            self.expect(text);
+            self.term.get_by_text(text).first().location().unwrap().start
+        };
+        self.mouse_at(at.column + 1, at.row as u16, MouseButton::Right);
     }
 
     /// Clic au milieu d'un texte visible.
@@ -468,4 +481,43 @@ fn a_rebuilt_binary_restarts_the_running_sidebar() {
     e.expect("SESSIONS 1");
     e.click("help");
     e.expect("NAVIGATE");
+}
+
+#[test]
+fn right_click_on_a_session_opens_its_menu_rename_by_mouse() {
+    let e = Env::start();
+    e.tmux(&["new-session", "-d", "-s", "api"]);
+    e.click("SESSIONS");
+    e.right_click(" api");
+    e.expect("SESSION api");
+    e.click("Rename…");
+    e.expect("RENAME SESSION api");
+    e.type_text("\x7f\x7f\x7fweb");
+    e.click("[ Rename ]");
+    e.wait_tmux(&["list-sessions", "-F", "#{session_name}"], "main\nweb");
+}
+
+#[test]
+fn right_click_menu_kills_the_clicked_session_not_the_current_one() {
+    let e = Env::start();
+    e.tmux(&["new-session", "-d", "-s", "api"]);
+    e.click("SESSIONS");
+    e.right_click(" api");
+    e.click("Kill…");
+    e.expect("KILL SESSION api");
+    e.click("Save & kill");
+    e.wait_tmux(&["list-sessions", "-F", "#{session_name}"], "main");
+    assert_eq!(e.client_session(), "main");
+}
+
+#[test]
+fn right_click_menu_has_the_global_actions_and_esc_closes_it() {
+    let e = Env::start();
+    e.click("SESSIONS");
+    e.right_click("01 main");
+    for item in ["Switch", "New session…", "New project…", "Hide sidebar"] {
+        e.expect(item);
+    }
+    e.type_text("\x1b");
+    e.term.get_by_text("SESSION main").wait_hidden(Some(5000)).unwrap();
 }

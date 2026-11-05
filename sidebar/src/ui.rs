@@ -318,6 +318,7 @@ fn footer_row(app: &App, w: u16) -> Row {
     let keys: &[(&str, &str)] = match (&app.screen, app.mode, app.tab) {
         (Some(Screen::New { .. }), _, _) => &[("⏎", "create"), ("+", "project"), ("esc", "cancel")],
         (Some(Screen::Kill(_)), _, _) => &[("⏎", "save & kill"), ("esc", "cancel")],
+        (Some(Screen::Menu(_)), _, _) => &[("esc", "close")],
         (Some(Screen::SaveExit), _, _) => {
             &[("⏎", "save & exit"), ("d", "exit only"), ("esc", "cancel")]
         }
@@ -945,6 +946,35 @@ pub fn screen_rows(app: &App, screen: &Screen, w: u16) -> (Vec<Row>, Option<(usi
             );
             rows.push(Row::new());
             rows.push(buttons("Cancel", "Rename", bold(ACCENT)));
+        }
+        Screen::Menu(name) => {
+            rows.push(Row::new().push(format!(" SESSION {name}"), bold(ACCENT)).done());
+            if let Some(s) = app.sessions.iter().find(|s| &s.name == name) {
+                let path = format!(" {}", cut(&tilde(&s.path, &app.home), w as usize - 1));
+                rows.push(Row::new().push(path, fg(MUTED)).done());
+            }
+            rows.push(Row::new());
+            let items: [(&str, &str, &str, Key); 7] = [
+                ("⇄", "Switch", "⏎", Key::Enter),
+                ("✎", "Rename…", "r", Key::Char('r')),
+                ("✕", "Kill…", "K", Key::Char('K')),
+                ("", "", "", Key::Esc),
+                ("+", "New session…", "N", Key::Char('N')),
+                ("+", "New project…", "+", Key::Char('+')),
+                ("◧", "Hide sidebar", "b", Key::Char('b')),
+            ];
+            for (icon, label, key, k) in items {
+                if label.is_empty() {
+                    rows.push(Row::new());
+                    continue;
+                }
+                let mut r = Row::new().on(Hit::Key(k));
+                r.push(format!("   {icon} "), fg(ACCENT)).push(label, fg(TEXT));
+                r.right(format!("{key} "), fg(ACCENT), w);
+                rows.push(r);
+            }
+            rows.push(Row::new());
+            rows.push(buttons("Cancel", "Switch", bold(ACCENT)));
         }
         Screen::Project { parent, input } => {
             rows.push(Row::new().push(" NEW PROJECT", bold(ACCENT)).done());
