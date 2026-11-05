@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.16.1] - 2026-11-06
+
 ### Added
 - New project: `+ New project` (SESSIONS tab, ACTIONS tab, New session screen, right-click menu), the `+` key and `prefix +` open the New project screen. Type a name: the project goes into the folder that holds the most of your projects (for example `~/lab`). `Create & open` creates the folder, runs `git init` (so it comes back in the New session list) and opens a session in it.
 - Mouse tests in the style of Playwright: `sidebar/tests/e2e.rs` (`cargo test --test e2e`) runs a real tmux client in an emulated terminal. It uses [tui-test](https://github.com/microsoft/tui-test) (`tui-test-rs` 0.1.1, Microsoft) and `tempfile` as dev-dependencies. Each test has its own `HOME` and `TMUX_TMPDIR` under `/tmp`, and no `TMUX`, so it cannot reach your tmux server. Rejected: `send-keys -H` with raw mouse sequences in bats, because it skips the tmux mouse routing that users go through.
