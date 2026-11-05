@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-11-05
+
 ### Fixed
 - `local-ci pre-push` crashed with `ValueError` when git rejected every ref (for example a non-fast-forward push): the hook then gets one blank line. It now skips blank lines, so git shows its real error.
 - `install.sh` failed on a new machine: `.claude/settings.local.json.example` was deleted by mistake. It is back.
