@@ -61,6 +61,10 @@ notified() { sleep 0.2; [ -f "$NOTIFY_LOG" ] && wc -l < "$NOTIFY_LOG" || echo 0;
   [ "$(st '.options | join(",")')" = "pdfplumber,PyMuPDF" ]
   [ "$(notified)" -eq 1 ]
   grep -qxF 'notify|◉ proj needs you|Which parser for BOAMP notices?|proj|critical|' "$NOTIFY_LOG"
+  # Claude Code envoie aussi permission_prompt pour AskUserQuestion : la question reste
+  ev notification-permission
+  [ "$(st .question)" = "Which parser for BOAMP notices?" ] && [ "$(st '.options | join(",")')" = "pdfplumber,PyMuPDF" ]
+  [ "$(notified)" -eq 1 ]
   ev post-tool
   [ "$(st .state)" = running ] && [ "$(st .question)" = null ]
 }
@@ -69,7 +73,7 @@ notified() { sleep 0.2; [ -f "$NOTIFY_LOG" ] && wc -l < "$NOTIFY_LOG" || echo 0;
   ev session-start; ev user-prompt; ev pre-tool-bash
   ev notification-permission
   [ "$(st .state)" = check ]
-  [ "$(st .question)" = "Claude needs your permission to use Bash" ]
+  [ "$(st .question)" = "Bash: ls" ]
   [ "$(st '.options | join(",")')" = "Yes,Always,No" ]
   ev notification-permission
   [ "$(notified)" -eq 1 ]
@@ -133,11 +137,16 @@ notified() { sleep 0.2; [ -f "$NOTIFY_LOG" ] && wc -l < "$NOTIFY_LOG" || echo 0;
 @test "speed: a tool event takes under 100 ms" {
   ev session-start
   in=$(sed "s|@CWD@|$BATS_TEST_TMPDIR|" "$FIX/pre-tool-bash.json")
-  t0=$(date +%s%N)
-  for _ in 1 2 3 4 5 6 7 8 9 10; do "$HOOK" <<<"$in"; done
-  ms=$(( ($(date +%s%N) - t0) / 10000000 ))
-  echo "aif-agent-hook PreToolUse: ${ms} ms per event" >&3
-  [ "$ms" -lt 100 ]
+  # Meilleure de 3 séries de 10 : mesure le coût du hook, pas la charge de la machine
+  best=999
+  for _ in 1 2 3; do
+    t0=$(date +%s%N)
+    for _ in 1 2 3 4 5 6 7 8 9 10; do "$HOOK" <<<"$in"; done
+    ms=$(( ($(date +%s%N) - t0) / 10000000 ))
+    (( ms < best )) && best=$ms
+  done
+  echo "aif-agent-hook PreToolUse: ${best} ms per event (best of 3 x 10)" >&3
+  [ "$best" -lt 100 ]
 }
 
 @test "aif-statusline records model and context, then runs the chained statusLine" {

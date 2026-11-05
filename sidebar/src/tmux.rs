@@ -39,27 +39,36 @@ pub fn go_to(pane: &str) -> Result<()> {
 }
 
 /// Touches tmux qui répondent à l'agent. `choice` : 1, 2, 3… ; `text` : réponse libre (touche i).
-/// Claude Code : un chiffre choisit l'option affichée sous ce numéro et la valide.
-/// Réponse libre : l'option qui suit les choix proposés (« Type something » pour une question,
-/// « No, and tell Claude what to do differently » pour une permission), puis le texte et Entrée.
+/// Vérifié dans Claude Code 2.1.318 (claude --model haiku dans un serveur tmux de test) :
+/// - question (AskUserQuestion) : un chiffre choisit l'option et valide ; l'option qui suit les
+///   choix est « Type something » : son chiffre place le curseur dessus, le texte s'y écrit, Entrée envoie ;
+/// - permission : 1 « Yes », 2 « Yes, and always allow… » ; le menu a 3 ou 4 options et la 3 peut
+///   être « switch to auto mode » : « No » est donc Échap, qui refuse l'outil et attend un prompt.
+///   Réponse libre : Échap, puis le texte envoyé comme prompt.
 pub fn answer_keys(agent: &Agent, choice: Option<usize>, text: Option<&str>) -> Vec<Vec<String>> {
     let lit = |s: &str| vec!["-l".to_string(), s.to_string()];
+    let key = |s: &str| vec![s.to_string()];
+    let perm = agent.is_permission();
     match (choice, text) {
+        (Some(3), _) if perm => vec![key("Escape")],
         (Some(n), _) => vec![lit(&n.to_string())],
-        (None, Some(t)) => {
-            let free = if agent.is_permission() {
-                3
-            } else {
-                agent.options.len() + 1
-            };
-            vec![lit(&free.to_string()), lit(t), vec!["Enter".into()]]
-        }
+        (None, Some(t)) if perm => vec![key("Escape"), lit(t), key("Enter")],
+        (None, Some(t)) => vec![
+            lit(&(agent.options.len() + 1).to_string()),
+            lit(t),
+            key("Enter"),
+        ],
         (None, None) => vec![],
     }
 }
 
+/// Envoie les touches une par une ; pause entre deux envois, le temps que Claude Code
+/// ferme le menu ou ouvre le champ de texte.
 pub fn send(pane: &str, keys: &[Vec<String>]) -> Result<()> {
-    for k in keys {
+    for (i, k) in keys.iter().enumerate() {
+        if i > 0 {
+            std::thread::sleep(std::time::Duration::from_millis(300));
+        }
         let mut args = vec!["send-keys", "-t", pane];
         args.extend(k.iter().map(String::as_str));
         tmux(&args)?;
@@ -127,8 +136,18 @@ mod tests {
     }
 
     #[test]
-    fn free_reply_on_a_permission_says_no_with_a_reason() {
+    fn permission_no_is_escape_because_option_3_may_switch_to_auto_mode() {
+        let p = agent(&["Yes", "Always", "No"]);
+        assert_eq!(answer_keys(&p, Some(1), None), vec![vec!["-l", "1"]]);
+        assert_eq!(answer_keys(&p, Some(3), None), vec![vec!["Escape"]]);
+    }
+
+    #[test]
+    fn free_reply_on_a_permission_refuses_then_prompts() {
         let k = answer_keys(&agent(&["Yes", "Always", "No"]), None, Some("not now"));
-        assert_eq!(k[0], vec!["-l", "3"]);
+        assert_eq!(
+            k,
+            vec![vec!["Escape"], vec!["-l", "not now"], vec!["Enter"]]
+        );
     }
 }

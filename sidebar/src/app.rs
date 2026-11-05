@@ -82,11 +82,15 @@ pub enum Effect {
     Interrupt(String),
 }
 
-/// Réponse envoyée : affichée « you answered: … » tant que l'agent n'a pas changé d'état.
+/// Réponse envoyée, gardée tant que le fichier d'état de l'agent n'a pas changé (même
+/// `updated_at`) : un refus (Échap) ne déclenche aucun hook, l'état resterait « check ».
 #[derive(Debug, Clone)]
 pub struct Answered {
     pub text: String,
-    pub at: i64,
+    /// `updated_at` de l'agent au moment de la réponse
+    pub seen: Option<i64>,
+    /// État affiché en attendant le prochain événement : running, ou done après un refus
+    pub shown: &'static str,
 }
 
 pub struct App {
@@ -106,10 +110,6 @@ pub struct App {
     /// Onglets abrégés quand la sidebar est étroite (calculé au rendu).
     pub short_tabs: bool,
 }
-
-/// Délai pendant lequel un agent qui vient d'être répondu s'affiche en running,
-/// le temps que son hook PostToolUse arrive.
-const ANSWER_GRACE: i64 = 15;
 
 impl App {
     pub fn new(version: String) -> App {
@@ -135,18 +135,15 @@ impl App {
     pub fn set_agents(&mut self, agents: Vec<Agent>) {
         let keep = self.selected_agent().map(|a| a.pane.clone());
         self.agents = agents;
-        let now = self.now;
-        let states: HashMap<String, String> = self
-            .agents
-            .iter()
-            .map(|a| (a.pane.clone(), a.state.clone()))
-            .collect();
-        self.answered
-            .retain(|pane, ans| match states.get(pane).map(String::as_str) {
-                Some("running") => true,
-                Some("check") => now - ans.at < ANSWER_GRACE,
-                _ => false,
-            });
+        // Garder la réponse tant qu'aucun nouvel événement n'est arrivé, ou tant que l'agent tourne
+        // (note « you answered »).
+        let agents = &self.agents;
+        self.answered.retain(|pane, ans| {
+            agents
+                .iter()
+                .find(|a| &a.pane == pane)
+                .is_some_and(|a| a.updated_at == ans.seen || a.state == "running")
+        });
         if let Some(pane) = keep
             && let Some(i) = self.visible().iter().position(|a| a.pane == pane)
         {
@@ -155,12 +152,12 @@ impl App {
         self.clamp();
     }
 
-    /// État affiché : un agent répondu il y a peu reste « running » même si le fichier dit encore check.
+    /// État affiché : après une réponse et avant le prochain événement, l'état attendu
+    /// (running, ou done après un refus) au lieu du « check » encore écrit dans le fichier.
     pub fn shown_state<'a>(&self, a: &'a Agent) -> &'a str {
-        if a.state == "check" && self.answered.contains_key(&a.pane) {
-            "running"
-        } else {
-            &a.state
+        match self.answered.get(&a.pane) {
+            Some(ans) if a.updated_at == ans.seen => ans.shown,
+            _ => &a.state,
         }
     }
 
@@ -272,11 +269,17 @@ impl App {
     }
 
     fn answer(&mut self, pane: String, choice: Option<usize>, label: String) -> Effect {
+        let agent = self.agents.iter().find(|a| a.pane == pane);
+        let seen = agent.and_then(|a| a.updated_at);
+        // Refus d'une permission (No) : l'agent attend un prompt, aucun hook ne suit
+        let refused = agent.is_some_and(|a| a.is_permission()) && choice == Some(3);
+        let shown = if refused { "done" } else { "running" };
         self.answered.insert(
             pane.clone(),
             Answered {
                 text: label.clone(),
-                at: self.now,
+                seen,
+                shown,
             },
         );
         let text = if choice.is_none() { Some(label) } else { None };
@@ -482,17 +485,38 @@ mod tests {
     }
 
     #[test]
-    fn answered_note_lasts_while_running_then_clears() {
+    fn answer_holds_until_the_state_file_changes() {
         let mut a = app();
-        a.now = 100;
         a.key(Key::Char('1'));
+        // pas de nouvel événement : toujours affiché running, même après plusieurs rafraîchissements
+        a.set_agents(a.agents.clone());
+        assert_eq!(a.shown_state(&a.agents[0]), "running");
+        // PostToolUse : running avec la note
         let mut agents = a.agents.clone();
         agents[0].state = "running".into();
+        agents[0].updated_at = Some(100);
         a.set_agents(agents.clone());
         assert!(a.answered.contains_key("%1"));
         agents[0].state = "done".into();
+        agents[0].updated_at = Some(101);
         a.set_agents(agents);
         assert!(!a.answered.contains_key("%1"));
+    }
+
+    #[test]
+    fn refusing_a_permission_shows_done_until_the_next_event() {
+        let mut a = App::new("v0".into());
+        a.set_agents(vec![ag("%1", "p", "check", 1, &["Yes", "Always", "No"])]);
+        assert_eq!(
+            a.key(Key::Char('3')),
+            Effect::Answer {
+                pane: "%1".into(),
+                choice: Some(3),
+                text: None
+            }
+        );
+        a.set_agents(a.agents.clone());
+        assert_eq!(a.shown_state(&a.agents[0]), "done");
     }
 
     #[test]

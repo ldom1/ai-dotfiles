@@ -479,6 +479,8 @@ Agents sidebar (`aif-sidebar`, Rust + ratatui, `sidebar/`; decision: `docs/adr/0
 - Tabs `SESSIONS`, `AGENTS`, `ACTIONS` (`Tab` switches); the ai-dotfiles version is top right. AGENTS groups agents by priority: TO CHECK, ERROR, DONE, RUNNING, UNKNOWN, STALE.
 - Keys in AGENTS: `↑↓`/`j k` move, `/` filter, `o` sort (priority, session, recent), `⏎` go to the agent, `p` peek, `x` interrupt a running agent, `q` quit.
 - An agent in TO CHECK shows its question and buttons `[1 …] [2 …] [i Reply…]`. `1`–`3` (or a click) sends that answer to the agent pane (`tmux send-keys`); `i` opens a reply field. Otherwise `1`–`9` jumps to the agent with that number.
+- Keys checked in Claude Code 2.1.318: a question takes the option digit; a free reply takes the "Type something" digit, the text and Enter. A permission takes `1` (Yes) or `2` (Always). **No** sends `Escape`, never `3`: the menu has 3 or 4 options, and option 3 can be "switch to auto mode". A free reply to a permission sends `Escape`, then the text as a prompt.
+- A refusal fires no Claude Code hook: the sidebar shows the agent as done until its next event.
 - Peek (`p`): a popup on the right (40 %) with the agent output (`Output`) and its diff against HEAD (`Diff`, `Tab` switches). `⏎` goes to the agent, `Esc` closes.
 
 Agent status in the sidebar:

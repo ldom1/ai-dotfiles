@@ -2,17 +2,15 @@
 # aif-sidebar de bout en bout sur un serveur tmux dédié (-L aif-test) : rendu de l'onglet AGENTS,
 # réponse envoyée au pane de l'agent (send-keys), aperçu. Le faux agent est un script nommé
 # « claude » qui enregistre les touches reçues (terminal en mode raw).
-# Binaire : AIF_SIDEBAR_BIN, sinon sidebar/target/{release,debug}/aif-sidebar ; test sauté sans binaire.
+# Binaire : AIF_SIDEBAR_BIN, sinon le plus récent de sidebar/target/{release,debug} ; test sauté sans binaire.
 # Lancer : (cd sidebar && cargo build) && npx --yes bats@1.13.0 tests/
 
 bats_require_minimum_version 1.5.0
 REPO="$BATS_TEST_DIRNAME/.."
 
 setup() {
-  BIN=${AIF_SIDEBAR_BIN:-}
-  for b in "$REPO/sidebar/target/release/aif-sidebar" "$REPO/sidebar/target/debug/aif-sidebar"; do
-    [ -n "$BIN" ] || { [ -x "$b" ] && BIN=$b; }
-  done
+  # Le binaire le plus récent (release par install.sh, debug par cargo build)
+  BIN=${AIF_SIDEBAR_BIN:-$(ls -t "$REPO"/sidebar/target/{release,debug}/aif-sidebar 2>/dev/null | head -1)}
   [ -n "$BIN" ] || skip "aif-sidebar not built"
   export AIF_STATE_DIR="$BATS_TEST_TMPDIR/agents" KEYLOG="$BATS_TEST_TMPDIR/keys"
   mkdir -p "$AIF_STATE_DIR" "$BATS_TEST_TMPDIR/bin"
@@ -72,4 +70,30 @@ keys_received() { for _ in $(seq 1 25); do [ "$(cat "$KEYLOG" 2>/dev/null)" = "$
   screen "$PK" "Opus · ctx 61%"
   tmux send-keys -t "$PK" Tab
   screen "$PK" "no changes against HEAD"
+}
+
+# permission : réécrit l'état de l'agent en demande de permission (options Yes / Always / No)
+as_permission() {
+  jq '.question = "Bash: touch /tmp/x" | .options = ["Yes", "Always", "No"]' "$AIF_STATE_DIR/${AGENT#%}.json" > "$AIF_STATE_DIR/t"
+  mv "$AIF_STATE_DIR/t" "$AIF_STATE_DIR/${AGENT#%}.json"
+}
+
+@test "permission: 3 (No) sends Escape, never the digit (option 3 may switch to auto mode)" {
+  as_permission
+  SB=$(tmux split-window -d -P -F '#{pane_id}' -h -l 60 -t prosper aif-sidebar)
+  screen "$SB" "[3 No]"
+  tmux send-keys -t "$SB" 3
+  keys_received "$(printf '\033')"
+  screen "$SB" "you answered: No"
+}
+
+@test "permission: a free reply refuses with Escape, then sends the text as a prompt" {
+  as_permission
+  SB=$(tmux split-window -d -P -F '#{pane_id}' -h -l 60 -t prosper aif-sidebar)
+  screen "$SB" "Bash: touch /tmp/x"
+  tmux send-keys -t "$SB" i
+  screen "$SB" "›"
+  tmux send-keys -t "$SB" -l "not now"
+  tmux send-keys -t "$SB" Enter
+  keys_received "$(printf '\033not now\r')"
 }

@@ -28,13 +28,18 @@ JQ='
       if $in.tool_name == "AskUserQuestion" then
         .state = "check" | .question = ($in.tool_input.questions[0].question // "Question")
         | .options = [($in.tool_input.questions[0].options // [])[] | .label]
-      else .state = "running" | .last_tool = $in.tool_name end
+      else
+        # Outil et argument principal, affichés si une permission est demandée ensuite
+        .state = "running" | .last_tool = $in.tool_name
+        | .pending = ("\($in.tool_name): " + (($in.tool_input.command // $in.tool_input.file_path // $in.tool_input.url
+            // $in.tool_input.pattern // $in.tool_input.description // "") | tostring | split("\n")[0]) | .[0:120])
+      end
     elif $ev == "PostToolUse" or $ev == "PostToolUseFailure" then
       .state = "running" | .question = null | .options = [] | .last_tool = $in.tool_name
     elif $ev == "Notification" then
-      if ($in.notification_type == "permission_prompt" or $in.notification_type == "elicitation_dialog") then
-        .state = "check" | .question = ($in.message // "Permission requested")
-        | (if (.options | length) == 0 then .options = ["Yes", "Always", "No"] else . end)
+      # AskUserQuestion déclenche aussi permission_prompt : garder la question déjà posée
+      if ($in.notification_type == "permission_prompt" or $in.notification_type == "elicitation_dialog") and .state != "check" then
+        .state = "check" | .question = (.pending // $in.message // "Permission requested") | .options = ["Yes", "Always", "No"]
       else . end
     elif $ev == "Stop" then
       .state = "done" | .question = null | .options = [] | .last_message = (($in.last_assistant_message // "") | .[0:200])
