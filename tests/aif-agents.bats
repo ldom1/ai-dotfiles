@@ -22,7 +22,7 @@ setup() {
   tmux -f /dev/null new-session -d -s proj -x 250 -y 120 -c "$REPO_DIR"
 }
 
-teardown() { tmux kill-server 2>/dev/null || true; }
+teardown() { tmux -L aif-test kill-server 2>/dev/null || true; }   # -L explicite : setup a pu sauter (skip) avant le wrapper
 
 # new_pane <commande> : ouvre un pane dans la session proj, affiche son id
 new_pane() { tmux split-window -d -P -F '#{pane_id}' -t proj -c "$REPO_DIR" "$@"; tmux select-layout -t proj tiled >/dev/null; }

@@ -56,13 +56,14 @@ platform_parses() {
   platform_parses linux
 }
 
-@test "prefix keys: O E N X B Q Tab and / are bound" {
+@test "prefix keys: O E N + X B Q Tab and / are bound" {
   start linux
   [[ "$(cmd root S-C-x)" == *kill-pane* ]]
   [[ "$(cmd prefix X)" == *"tmux-sidebar.sh screen K"* ]]
   [ "$(cmd root S-C-k)" = "$(cmd prefix X)" ]
   for k in o:O e:E n:N b:B; do [ "$(cmd prefix "${k#*:}")" = "$(cmd root "S-C-${k%:*}")" ]; done
   [[ "$(cmd prefix Q)" == *"tmux-sidebar.sh screen Q"* ]]
+  [[ "$(cmd prefix +)" == *"tmux-sidebar.sh screen +"* ]]
   [ "$(cmd prefix Tab)" = "switch-client -l" ]
   t show-hooks -g | grep -q 'client-resized.*tmux-sidebar.sh ensure' 
   t show -gv status-right | grep -qF "#(~/.local/bin/aif-agents status '#{pane_current_path}')"
@@ -93,4 +94,13 @@ platform_parses() {
   t aif-kill-pane
   [ "$(t list-panes | wc -l)" -eq 1 ]
   [ "$(t list-sessions | wc -l)" -eq 1 ]
+}
+
+@test "Ghostty passes every tmux Ctrl+Shift key to tmux (CSI u), none stays a Ghostty split or window" {
+  keys=$(sed -nE 's/^bind -n C-S-([a-z]) .*/\1/p' "$HOME/ai-dotfiles/config/tmux.conf")
+  [ -n "$keys" ]
+  for k in $keys; do
+    grep -qx "keybind = ctrl+shift+$k=csi:$(printf '%d' "'$k");6u" "$HOME/ai-dotfiles/config/ghostty/config" \
+      || { echo "ctrl+shift+$k missing in config/ghostty/config" >&3; return 1; }
+  done
 }

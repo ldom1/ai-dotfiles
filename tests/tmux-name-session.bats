@@ -26,7 +26,7 @@ run '$RESURRECT/resurrect.tmux'
 CONF
 }
 
-teardown() { tmux kill-server 2>/dev/null || true; }
+teardown() { tmux -L aif-test kill-server 2>/dev/null || true; }   # -L explicite : setup a pu sauter (skip) avant le wrapper
 
 sessions() { tmux list-sessions -F '#{session_name}' | sort | tr '\n' ' '; }
 

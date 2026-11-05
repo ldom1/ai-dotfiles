@@ -158,7 +158,18 @@ fn run_sidebar() -> Result<()> {
             let mut hits = vec![];
             term.draw(|f| hits = ui::draw(f, &mut app))?;
             if event::poll(TICK.saturating_sub(last_tick.elapsed()))? {
-                let effect = match event::read()? {
+                let ev = event::read()?;
+                // La sidebar vient peut-être de changer de session (join-pane) : la session
+                // courante doit être juste avant la touche (Ctrl+Shift+K) ou le clic.
+                if matches!(ev, Event::Key(_))
+                    || matches!(ev, Event::Mouse(m) if matches!(m.kind, MouseEventKind::Down(_)))
+                {
+                    let cur = sessions::current_session();
+                    if cur != app.current {
+                        app.set_sessions(app.sessions.clone(), cur);
+                    }
+                }
+                let effect = match ev {
                     Event::Key(k) if k.kind == KeyEventKind::Press => {
                         to_key(k.code, k.modifiers).map_or(Effect::None, |k| app.key(k))
                     }
@@ -176,9 +187,9 @@ fn run_sidebar() -> Result<()> {
                     tmux::dim(false);
                     return Ok(());
                 }
-                if effect == Effect::OpenNew {
+                if matches!(effect, Effect::OpenNew | Effect::OpenProject) {
                     let folders = sessions::folders(&app.home);
-                    app.open_new(folders);
+                    app.open_new(folders, effect == Effect::OpenProject);
                 }
                 if let Err(e) = apply(&app, &effect) {
                     app.message = Some(e.to_string());
@@ -198,12 +209,23 @@ fn run_sidebar() -> Result<()> {
 fn click(app: &mut App, hit: Option<Hit>) -> Effect {
     match hit {
         Some(Hit::Tab(t)) => app.set_tab(t),
-        Some(Hit::Help) => return app.key(Key::Char('?')),
-        Some(Hit::Agent(i)) => app.select(i),
+        Some(Hit::Help) => return Effect::Help,
+        Some(Hit::Key(k)) => return app.key(k),
+        Some(Hit::Agent(i)) => {
+            app.select(i);
+            if let Some(a) = app.selected_agent() {
+                return Effect::GoTo(a.pane.clone());
+            }
+        }
         Some(Hit::Answer(pane, n)) => return app.click_answer(&pane, n),
-        Some(Hit::Session(i)) => app.session_sel = i,
+        Some(Hit::Session(i)) => {
+            app.session_sel = i;
+            if let Some(s) = app.sessions.get(i) {
+                return Effect::Switch(s.name.clone());
+            }
+        }
         Some(Hit::Action(i)) => return app.click_action(i),
-        Some(Hit::Button(b)) => return app.click_button(b),
+        Some(Hit::Folder(i)) => return app.click_folder(i),
         Some(Hit::Reply(pane)) => {
             if let Some(i) = app.visible().iter().position(|a| a.pane == pane) {
                 app.select(i);
@@ -218,7 +240,7 @@ fn click(app: &mut App, hit: Option<Hit>) -> Effect {
 /// Exécute l'effet d'une touche ou d'un clic (tmux).
 fn apply(app: &App, e: &Effect) -> Result<()> {
     match e {
-        Effect::None | Effect::Quit | Effect::OpenNew => Ok(()),
+        Effect::None | Effect::Quit | Effect::OpenNew | Effect::OpenProject => Ok(()),
         Effect::Switch(n) => tmux::switch(n),
         Effect::Create { name, dir } => tmux::create(name, dir),
         Effect::KillSession(n) => tmux::kill_session(n),

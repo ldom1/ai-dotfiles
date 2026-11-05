@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
-# config/tmux-sidebar.sh : une seule sidebar par fenêtre, masquage, hooks, touches d'écran.
+# config/tmux-sidebar.sh : une seule sidebar pour tout le serveur, déplacée dans la fenêtre active,
+# masquage, hooks, touches d'écran.
 # Serveur tmux dédié (-L aif-test), HOME temporaire, faux aif-sidebar (un `cat` qui affiche
 # les touches reçues). Lancer : npx --yes bats@1.13.0 tests/
 
@@ -20,10 +21,12 @@ setup() {
   SB="sh $HOME/ai-dotfiles/config/tmux-sidebar.sh"
 }
 
-teardown() { tmux kill-server 2>/dev/null || true; }
+teardown() { tmux -L aif-test kill-server 2>/dev/null || true; }   # -L explicite : setup a pu sauter (skip) avant le wrapper
 
 # sidebars [cible] : nombre de panes sidebar (toute la session par défaut)
 sidebars() { tmux list-panes -s -t "${1:-work}" -F '#{@aif_sidebar}' | grep -c '^1$' || true; }
+# sidebar_at : fenêtre et PID de l'unique sidebar du serveur
+sidebar_at() { tmux list-panes -a -F '#{@aif_sidebar} #{window_id} #{pane_pid}' | awk '$1 == 1 { print $2, $3 }'; }
 wait_sidebars() { for _ in $(seq 1 25); do [ "$(sidebars "${2:-work}")" -eq "$1" ] && return 0; sleep 0.2; done; sidebars >&3; return 1; }
 
 @test "ensure opens one sidebar on the left of the window, never two" {
@@ -50,15 +53,35 @@ wait_sidebars() { for _ in $(seq 1 25); do [ "$(sidebars "${2:-work}")" -eq "$1"
   [ "$(sidebars)" -eq 1 ]
 }
 
-@test "a new window gets its sidebar from the after-new-window hook" {
+@test "a new window gets the sidebar from the after-new-window hook: moved, not a second one" {
   $SB ensure
+  pid=$(sidebar_at | cut -d' ' -f2)
   tmux new-window -t work
-  wait_sidebars 2
+  win=$(tmux display -p -t work '#{window_id}')
+  for _ in $(seq 1 25); do [ "$(sidebar_at)" = "$win $pid" ] && break; sleep 0.2; done
+  [ "$(sidebar_at)" = "$win $pid" ]
+  [ "$(sidebars)" -eq 1 ]
+}
+
+@test "switching session moves the same sidebar process, at its width, focus unchanged" {
+  $SB ensure
+  pid=$(sidebar_at | cut -d' ' -f2)
+  tmux new-session -d -s other -x 200 -y 50
+  win=$(tmux display -p -t other: '#{window_id}')
+  work=$(tmux display -p -t other: '#{pane_id}')
+  $SB ensure "$win"
+  [ "$(sidebar_at)" = "$win $pid" ]
+  [ "$(sidebars work)" -eq 0 ] && [ "$(sidebars other)" -eq 1 ]
+  [ "$(tmux list-panes -t other: -F '#{pane_width} #{@aif_sidebar}' | awk '$2 == 1 { print $1 }')" -eq 44 ]
+  [ "$(tmux display -p -t other: '#{pane_id}')" = "$work" ]
+  [ "$(tmux list-panes -t other: -F '#{pane_left} #{@aif_sidebar}' | sort -n | head -1)" = "0 1" ]
 }
 
 @test "toggle hides every sidebar, then shows it again in the current window" {
   $SB ensure
-  tmux new-window -t work && wait_sidebars 2
+  tmux new-window -t work
+  win=$(tmux display -p -t work '#{window_id}')
+  for _ in $(seq 1 25); do [ "$(sidebar_at | cut -d' ' -f1)" = "$win" ] && break; sleep 0.2; done
   $SB toggle
   [ "$(sidebars)" -eq 0 ] && [ "$(tmux show -gv @aif-sidebar)" = off ]
   $SB ensure

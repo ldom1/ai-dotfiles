@@ -32,7 +32,7 @@ setup() {
   [ -n "$SB" ]
 }
 
-teardown() { tmux kill-server 2>/dev/null || true; }
+teardown() { tmux -L aif-test kill-server 2>/dev/null || true; }   # -L explicite : setup a pu sauter (skip) avant le wrapper
 
 screen() {
   for _ in $(seq 1 25); do tmux capture-pane -p -t "$SB" | grep -qF -- "$1" && return 0; sleep 0.2; done
@@ -63,17 +63,18 @@ gone() { for _ in $(seq 1 25); do tmux has-session -t "=$1" 2>/dev/null || retur
   has api-2
 }
 
-@test "Kill session screen saves, then kills the session" {
+@test "Kill session screen targets the current session, not the cursor; saves, then kills it" {
   tmux aif-new-session; screen "NEW SESSION"
   tmux send-keys -t "$SB" Escape
   tmux send-keys -t "$SB" Tab; tmux send-keys -t "$SB" Tab   # AGENTS → ACTIONS → SESSIONS
   screen "▸ 02 main"
   tmux send-keys -t "$SB" Up                                  # curseur sur api
   tmux send-keys -t "$SB" K
-  screen "KILL SESSION api"
+  screen "KILL SESSION main"                                  # la session courante, pas le curseur
   screen "No agents in this session."
   tmux send-keys -t "$SB" Enter
-  gone api
+  gone main
+  has api
   [ -f "$HOME/saved" ]
 }
 

@@ -443,11 +443,12 @@ Sessions:
 - `tma -n <name> [dir]` sets the name. Use it for an SSH session (`tma -n vps`).
 - If a session of the same name exists for another folder, `tma` stops and shows both paths. Use `-n`.
 - A session created without a name (plain `tmux`) is renamed after its folder by `config/tmux-name-session.sh` (`after-new-session` hook), with a `-2` suffix when the name is taken.
-- `Ctrl+Shift+N` (or `prefix N`) opens the New session screen in the sidebar. It lists folders from `zoxide`, or else the git repositories under `~` (3 levels). Each folder shows `new`, `attach <session>` (a session is open on it) or `name taken → <name>-2` (the name belongs to another folder: the new session gets a `-2` suffix).
+- `Ctrl+Shift+N` (or `prefix N`) opens the New session screen in the sidebar. It lists folders from `zoxide`, or else the git repositories under `~` (3 levels). Each folder shows `new`, `attach <session>` (a session is open on it) or `name taken → <name>-2` (the name belongs to another folder: the new session gets a `-2` suffix). A typed path (`~/…`, `/…`, or `lab/x` relative to `~`) that does not exist is created with `git init`.
+- `+` in the sidebar (or `prefix +`, or `+ New project`) opens the New project screen. Type a name: the project goes into the folder that holds the most of your projects (for example `~/lab`). `Create & open` creates the folder, runs `git init` and opens a session in it.
 - `Ctrl+Shift+X` closes the current pane. It asks first when an agent (`claude`) runs in the pane. It does nothing in the sidebar.
 - `Ctrl+Shift+K` (or `prefix X`) opens the Kill session screen: it lists the agents that will stop. `Save & kill` saves the layout first, so the session does not come back on restore, then kills it.
 - `prefix Q` opens the Save & exit screen: save every session, then quit tmux. `d` there detaches instead: sessions and agents keep running.
-- Right click in the sidebar opens a menu for the current session: rename, new, kill, hide sidebar.
+- Right click in the sidebar opens a menu for the current session: rename, new session, new project, kill, hide sidebar.
 - A renamed session no longer matches its folder: `tma <dir>` then creates a new session with the folder name.
 
 Keys:
@@ -455,7 +456,7 @@ Keys:
 - `Ctrl+Shift+B` (or `prefix B`) hides or shows the sidebar in every window. `Alt+s` focuses it (and shows it).
 - `Ctrl+Shift+O` splits right, `Ctrl+Shift+E` splits below. They do nothing in the sidebar.
 - `Alt+arrows` moves between panes. `Alt+z` zooms.
-- `prefix O`, `prefix E`, `prefix N` and `prefix B` do the same as the `Ctrl+Shift` keys, in any terminal.
+- `prefix O`, `prefix E`, `prefix N`, `prefix +` and `prefix B` do the same as the `Ctrl+Shift` keys, in any terminal.
 - `prefix ?` opens the help view (same as `?` in the sidebar), even with the sidebar hidden. `prefix Tab` switches to the last session. `prefix /` shows the tmux key list.
 - Status line (top): session pill and window tabs on the left; on the right, the agent counters `◉ n ⠹ n ✓ n ◌ n ✕ n` (zeros hidden), the git branch `⎇` of the current pane and the time. `aif-agents status <dir>` renders the counters and the branch; the agent hook refreshes the line on each event. Colors follow the palette of the sidebar (accent `#BB9AF7`).
 - Mouse selection copies to the system clipboard and shows "Copied to clipboard": OSC 52 to the terminal, plus `aif-platform copy` (Wayland clipboard) on native Linux. Right click pastes (outside the sidebar).
@@ -485,9 +486,10 @@ Agents sidebar (`aif-sidebar`, Rust + ratatui, `sidebar/`; decision: `docs/adr/0
 - `install.sh` builds it with `cargo` (Rust 1.85+; Ubuntu 26.04: `sudo apt install cargo`) and links `~/.local/bin/aif-sidebar`. It reads only `aif-agents` and tmux.
 - `config/tmux-sidebar.sh` keeps one sidebar pane (pane option `@aif_sidebar`, 44 columns, `@aif-sidebar-width`) on the left of each window while the sidebar is on (`@aif-sidebar`). tmux hooks open it on attach, on a session or window change and in a new window. A lock (`tmux wait-for`) prevents a second one.
 - Tabs `SESSIONS`, `AGENTS`, `ACTIONS` (`Tab` switches); the ai-dotfiles version is top right. `Ctrl+C` closes the sidebar of the window until the next window change.
-- SESSIONS: tree session → agents → subagents, with the count of agents per state. The current session has `▸`. `↑↓` move, `⏎` switch, `r` rename, `N` new, `K` kill.
-- ACTIONS: the target session (the SESSIONS cursor), then the actions: new, rename, last session, kill, split right / below, zoom, save now (with the time of the last save), save & exit, exit (detach), restore the last save, hide the sidebar. `⏎` runs the selected action; `r`, `s`, `d` run directly. Pane actions act on the last active pane, not on the sidebar.
-- Confirmation screens (New session, Kill session, Save & exit, Rename) dim the working pane. `Esc` cancels; buttons are clickable.
+- Mouse and keyboard do the same things. One click acts like `⏎`, on the whole row. Each key shown in the footer, and the filter and sort of the AGENTS header, is a button that sends its key.
+- SESSIONS: `+ New session` and `+ New project` on top, then the tree session → agents → subagents, with the count of agents per state. The current session has `▸`. `↑↓` move, `⏎` switch, `r` rename, `N` new, `+` new project, `K` kill.
+- ACTIONS: the target session (the SESSIONS cursor), then the actions: new session, new project, rename, last session, kill, split right / below, zoom, save now (with the time of the last save), save & exit, exit (detach), restore the last save, hide the sidebar. `⏎` runs the selected action; `r`, `s`, `d` run directly. Pane actions act on the last active pane, not on the sidebar.
+- Confirmation screens (New session, New project, Kill session, Save & exit, Rename) dim the working pane. `Esc` or `[ Cancel ]` cancels.
 - Help: the `?` box of the tab bar, `? help` in the footer, the `?` key and `prefix ?` open the same centered popup (`aif-sidebar help`): keys in four columns (NAVIGATE, AGENTS, SESSIONS, PANES & VIEW; two or one on a narrow terminal) and the glyph legend. `Esc` closes it.
 - AGENTS groups agents by priority: TO CHECK, ERROR, DONE, RUNNING, UNKNOWN, STALE. Keys: `↑↓`/`j k` move, `/` filter, `o` sort (priority, session, recent), `⏎` go to the agent, `p` peek, `x` interrupt a running agent.
 - An agent in TO CHECK shows its question and buttons `[1 …] [2 …] [i Reply…]`. `1`–`3` (or a click) sends that answer to the agent pane (`tmux send-keys`); `i` opens a reply field. Otherwise `1`–`9` jumps to the agent with that number.
@@ -509,11 +511,12 @@ Windows Terminal (manual step, `settings.json`):
 - These keys send text in every Windows Terminal tab, also outside tmux.
 - `"bellStyle": "taskbar"` on each WSL profile.
 
-Ghostty: `config/ghostty/config` (linked by `install.sh`) sends `Ctrl+Shift+O/E/N/X/B/K` as CSI u extended keys instead of the Ghostty actions, and tmux binds `C-S-o`, `C-S-e`, `C-S-x`, `C-S-n`, `C-S-b` and `C-S-k`.
+Ghostty: `config/ghostty/config` (linked by `install.sh`) sends `Ctrl+Shift+O/E/N/X/B/K` as CSI u extended keys instead of the Ghostty actions, and tmux binds `C-S-o`, `C-S-e`, `C-S-x`, `C-S-n`, `C-S-b` and `C-S-k`. Ghostty reads its config at start: after `install.sh`, press `Ctrl+Shift+,` to reload it. Without the reload, `Ctrl+Shift+O/E` open a Ghostty split, which runs a second tmux view with its own sidebar.
 
 Tests (bats, dedicated tmux server `tmux -L aif-test`):
 
-- `npx --yes bats@1.13.0 tests/` checks that the config loads with the local tmux on both platforms, replays a tmux-resurrect restore, and drives the sidebar end to end (one sidebar per window, screens, answers). Rust tests: `cd sidebar && cargo test`.
+- `npx --yes bats@1.13.0 tests/` checks that the config loads with the local tmux on both platforms, replays a tmux-resurrect restore, and drives the sidebar end to end (one sidebar for the server, screens, answers). Rust tests: `cd sidebar && cargo test`.
+- `cd sidebar && cargo test --test e2e` runs the mouse tests, in the style of Playwright. A real tmux client runs in an emulated terminal ([tui-test](https://github.com/microsoft/tui-test)). The tests click and type like a user, then read the tmux state. Each test uses its own `HOME` and `TMUX_TMPDIR` under `/tmp`, without `TMUX`, so it never reaches your sessions.
 - `tests/container.sh [image] [wsl|linux]` runs `install.sh` twice in a clean container, then the bats tests with the tmux of the image. Example: `tests/container.sh ubuntu:26.04 linux`.
 
 `install.sh` symlinks `~/.claude` and `~/.cursor` to this repo, generates `settings.json` from the template, and creates `settings.local.json` if missing. Skills are wired automatically — no plugin install needed for your own machine. It also sets `git config core.hooksPath git-hooks` so the versioned [pre-commit hook](git-hooks/pre-commit) runs (blocks accidental commits under Cursor runtime dirs under `.cursor/` and scans staged diffs for secrets). If you clone without running `install.sh`, run `bash scripts/install-git-hooks.sh` once from the repo root.

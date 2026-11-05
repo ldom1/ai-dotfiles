@@ -261,6 +261,8 @@ if [[ "$AIF_OS" == linux ]]; then
     [[ -e "$GHOSTTY_CONF" && ! -L "$GHOSTTY_CONF" ]] && mv "$GHOSTTY_CONF" "$GHOSTTY_CONF.bak" && warn "Backed up $GHOSTTY_CONF → $GHOSTTY_CONF.bak"
     ln -sfn "$DOTFILES/config/ghostty/config" "$GHOSTTY_CONF"
     log "$GHOSTTY_CONF → $DOTFILES/config/ghostty/config"
+    # Ghostty lit sa config au démarrage : sans rechargement, Ctrl+Shift+O/E restent ses propres splits
+    pgrep -x ghostty >/dev/null && warn "Ghostty is running: press Ctrl+Shift+, (reload config), or Ctrl+Shift+O/E open a Ghostty split instead of a tmux pane"
   fi
 else
   need_cmds "jq fzf" jq fzf
