@@ -57,12 +57,12 @@ Avant : sauvegarder (`prefix Ctrl-s`), quitter tmux (`tmux kill-server`) et le r
 
 | Vérification | WSL | 26.04 |
 |---|---|---|
-| `?` dans la sidebar, clic sur la case `?`, clic sur `? help`, `prefix ?` (sidebar masquée aussi) : même popup d'aide | [ ] | [ ] |
-| Aide : 4 colonnes (ou 2 si le terminal est étroit), légende des glyphes, `Esc` ferme ; `prefix /` montre l'aide tmux | [ ] | [ ] |
-| Barre d'état : pastille de session, onglets de fenêtres ; à droite `◉ n ⠹ n …` (zéros masqués), `⎇ branche`, heure | [ ] | [ ] |
-| Un agent qui passe en `check` met la barre à jour sans attendre (hook) | [ ] | [ ] |
-| Agent en `check` dans une session en arrière-plan : « ◉ <session> needs you » + la question | [ ] | [ ] |
+| `?` dans la sidebar, clic sur la case `?`, clic sur `? help`, `prefix ?` (sidebar masquée aussi) : même popup d'aide | [x] | [ ] |
+| Aide : 4 colonnes (ou 2 si le terminal est étroit), légende des glyphes, `Esc` ferme ; `prefix /` montre l'aide tmux | [x] | [ ] |
+| Barre d'état : pastille de session, onglets de fenêtres ; à droite `◉ n ⠹ n …` (zéros masqués), `⎇ branche`, heure | [x] | [ ] |
+| Un agent qui passe en `check` met la barre à jour sans attendre (hook) | [x] | [ ] |
+| Agent en `check` dans une session en arrière-plan : « ◉ <session> needs you » + la question | [x] | [ ] |
 | Linux : bouton « Open <session> » de la notification : tmux va sur la session | — | [ ] |
-| WSL : toast BurntToast (après `Install-Module BurntToast -Scope CurrentUser`) | [ ] | — |
-| `AIF_NOTIFY_DONE=1` dans l'environnement de Claude Code : « ✓ <session> finished » + la tâche | [ ] | [ ] |
-| Pane de l'agent visible : aucune notification | [ ] | [ ] |
+| WSL : toast BurntToast (après `Install-Module BurntToast -Scope CurrentUser`) | [x] | — |
+| `AIF_NOTIFY_DONE=1` dans l'environnement de Claude Code : « ✓ <session> finished » + la tâche | [x] | [ ] |
+| Pane de l'agent visible : aucune notification | [x] | [ ] |
