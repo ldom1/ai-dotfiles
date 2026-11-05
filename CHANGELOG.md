@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- `install.sh` failed on a new machine: `.claude/settings.local.json.example` was deleted by mistake. It is back.
+
 ### Added
 - tmux setup for agent sessions: `config/tmux.conf`, `bin/tma`, and the helper scripts `config/tmux-sidebar-on.sh`, `config/tmux-bell-relay.sh`, `config/tmux-resurrect-sidebar.sh`.
   - The [opensessions](https://github.com/Ataraxy-Labs/opensessions) sidebar (TPM plugin) lists sessions on the left: arrows select one, `Enter` switches. The terminal is on the right.
