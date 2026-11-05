@@ -22,6 +22,7 @@ pub const SECTIONS: [Section; 4] = [
             ("o", "change sort"),
             ("⇥", "next tab"),
             ("?", "help"),
+            ("click", "rows and keys shown"),
         ],
     ),
     (
@@ -39,6 +40,7 @@ pub const SECTIONS: [Section; 4] = [
         "SESSIONS",
         &[
             ("⌃⇧N", "new"),
+            ("+ · prefix +", "new project"),
             ("r", "rename"),
             ("prefix ⇥", "last session"),
             ("s", "save now"),

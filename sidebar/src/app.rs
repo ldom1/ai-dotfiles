@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 
 use crate::model::Agent;
-use crate::sessions::{Fit, Session, fit, tilde};
+use crate::sessions::{Fit, Session, fit, projects_dir, tilde, typed_path};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tab {
@@ -83,8 +83,9 @@ pub enum Effect {
         text: Option<String>,
     },
     Interrupt(String),
-    /// Ouvre l'écran New session : `main` lit les dossiers, puis appelle `open_new`.
+    /// Ouvre l'écran New session (ou New project) : `main` lit les dossiers, puis appelle `open_new`.
     OpenNew,
+    OpenProject,
     Switch(String),
     Create {
         name: String,
@@ -124,20 +125,17 @@ pub enum Screen {
         session: String,
         input: String,
     },
-}
-
-/// Bouton d'un écran (clic).
-#[derive(Debug, Clone, PartialEq)]
-pub enum Button {
-    Cancel,
-    Confirm,
-    ExitOnly,
-    Folder(usize),
+    /// Nouveau projet : un nom, créé dans `parent` (dossier des projets)
+    Project {
+        parent: String,
+        input: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActionKind {
     New,
+    Project,
     Rename,
     Last,
     Kill,
@@ -161,7 +159,7 @@ pub struct Action {
     pub kind: ActionKind,
 }
 
-pub const ACTIONS: [Action; 12] = [
+pub const ACTIONS: [Action; 13] = [
     Action {
         group: "SESSION",
         icon: "+",
@@ -169,6 +167,14 @@ pub const ACTIONS: [Action; 12] = [
         keys: "⌃⇧N",
         note: "pick a folder, name comes from it",
         kind: ActionKind::New,
+    },
+    Action {
+        group: "SESSION",
+        icon: "+",
+        label: "New project…",
+        keys: "+",
+        note: "new folder (git init) next to your projects",
+        kind: ActionKind::Project,
     },
     Action {
         group: "SESSION",
@@ -326,12 +332,14 @@ impl App {
     }
 
     /// Nouvelles sessions tmux : le curseur reste sur la même session, sinon va sur la courante.
+    /// Quand la session courante change (switch, clic sur un agent), le curseur la suit.
     pub fn set_sessions(&mut self, sessions: Vec<Session>, current: String) {
+        let moved = current != self.current;
         let keep = self
             .sessions
             .get(self.session_sel)
             .map(|s| s.name.clone())
-            .filter(|_| !self.sessions.is_empty());
+            .filter(|_| !moved);
         self.sessions = sessions;
         let want = keep.unwrap_or_else(|| current.clone());
         self.session_sel = self
@@ -354,28 +362,51 @@ impl App {
             .collect()
     }
 
-    pub fn open_new(&mut self, folders: Vec<String>) {
-        self.screen = Some(Screen::New {
-            filter: String::new(),
-            folders,
-            sel: 0,
+    pub fn open_new(&mut self, folders: Vec<String>, project: bool) {
+        self.screen = Some(if project {
+            Screen::Project {
+                parent: projects_dir(&folders, &self.home),
+                input: String::new(),
+            }
+        } else {
+            Screen::New {
+                filter: String::new(),
+                folders,
+                sel: 0,
+            }
         });
     }
 
-    /// Dossiers de l'écran New session après le filtre.
-    pub fn new_folders(&self) -> Vec<&String> {
-        match &self.screen {
-            Some(Screen::New {
-                filter, folders, ..
-            }) => {
-                let f = filter.to_lowercase();
-                folders
-                    .iter()
-                    .filter(|d| tilde(d, &self.home).to_lowercase().contains(&f))
-                    .collect()
-            }
-            _ => vec![],
+    /// Session pour ce dossier : s'y attacher si elle existe, sinon la créer.
+    fn open_dir(&self, dir: String) -> Effect {
+        match self.fit_of(&dir) {
+            Fit::Attach(n) => Effect::Switch(n),
+            f => Effect::Create {
+                name: f.name().to_string(),
+                dir,
+            },
         }
+    }
+
+    /// Dossiers de l'écran New session après le filtre, puis le chemin tapé (`typed_path`) s'il
+    /// n'est pas dans la liste : Entrée le crée.
+    pub fn new_folders(&self) -> Vec<String> {
+        let Some(Screen::New {
+            filter, folders, ..
+        }) = &self.screen
+        else {
+            return vec![];
+        };
+        let f = filter.to_lowercase();
+        let mut v: Vec<String> = folders
+            .iter()
+            .filter(|d| tilde(d, &self.home).to_lowercase().contains(&f))
+            .cloned()
+            .collect();
+        if let Some(p) = typed_path(filter, &self.home).filter(|p| !v.contains(p)) {
+            v.push(p);
+        }
+        v
     }
 
     pub fn fit_of(&self, dir: &str) -> Fit {
@@ -386,6 +417,7 @@ impl App {
         let target = self.target().map(|s| s.name.clone());
         match kind {
             ActionKind::New => return Effect::OpenNew,
+            ActionKind::Project => return Effect::OpenProject,
             ActionKind::Rename => {
                 if let Some(t) = target {
                     self.screen = Some(Screen::Rename {
@@ -417,18 +449,11 @@ impl App {
         self.run_action(ACTIONS[self.action_sel].kind)
     }
 
-    pub fn click_button(&mut self, b: Button) -> Effect {
-        match b {
-            Button::Cancel => self.key_screen(Key::Esc),
-            Button::Confirm => self.key_screen(Key::Enter),
-            Button::ExitOnly => self.key_screen(Key::Char('d')),
-            Button::Folder(i) => {
-                if let Some(Screen::New { sel, .. }) = &mut self.screen {
-                    *sel = i;
-                }
-                Effect::None
-            }
+    pub fn click_folder(&mut self, i: usize) -> Effect {
+        if let Some(Screen::New { sel, .. }) = &mut self.screen {
+            *sel = i;
         }
+        self.key_screen(Key::Enter)
     }
 
     fn key_screen(&mut self, k: Key) -> Effect {
@@ -442,21 +467,19 @@ impl App {
         match (screen, k) {
             (_, Key::Esc) => close(self, Effect::None),
             (Screen::New { .. }, Key::Enter) => {
-                let Some(dir) = self
-                    .new_folders()
-                    .get(self.new_sel())
-                    .map(|d| d.to_string())
-                else {
+                let Some(dir) = self.new_folders().get(self.new_sel()).cloned() else {
                     return Effect::None;
                 };
-                let e = match self.fit_of(&dir) {
-                    Fit::Attach(n) => Effect::Switch(n),
-                    f => Effect::Create {
-                        name: f.name().to_string(),
-                        dir,
-                    },
-                };
+                let e = self.open_dir(dir);
                 close(self, e)
+            }
+            // « + » : nouveau projet, avec le nom déjà tapé
+            (Screen::New { filter, folders, .. }, Key::Char('+')) => {
+                self.screen = Some(Screen::Project {
+                    parent: projects_dir(&folders, &self.home),
+                    input: if filter.contains('/') { String::new() } else { filter },
+                });
+                Effect::None
             }
             (Screen::New { .. }, k) => {
                 let n = self.new_folders().len();
@@ -491,8 +514,17 @@ impl App {
                 };
                 close(self, e)
             }
-            (Screen::Rename { .. }, k) => {
-                if let Some(Screen::Rename { input, .. }) = &mut self.screen {
+            (Screen::Project { parent, input }, Key::Enter) => match input.trim() {
+                "" => Effect::None,
+                name => {
+                    let e = self.open_dir(format!("{parent}/{name}"));
+                    close(self, e)
+                }
+            },
+            (Screen::Rename { .. } | Screen::Project { .. }, k) => {
+                if let Some(Screen::Rename { input, .. } | Screen::Project { input, .. }) =
+                    &mut self.screen
+                {
                     match k {
                         Key::Char(c) => input.push(c),
                         Key::Backspace => {
@@ -603,7 +635,11 @@ impl App {
             Key::Char('?') => return Effect::Help,
             // Écrans, depuis n'importe quel onglet (Ctrl+Shift+N / K, prefix Q les envoient)
             Key::Char('N') => return Effect::OpenNew,
-            Key::Char('K') => return self.run_action(ActionKind::Kill),
+            Key::Char('+') => return Effect::OpenProject,
+            // Ctrl+Shift+K : la session courante, pas celle sous le curseur
+            Key::Char('K') if !self.current.is_empty() => {
+                self.screen = Some(Screen::Kill(self.current.clone()));
+            }
             Key::Char('Q') => return self.run_action(ActionKind::SaveExit),
             _ if self.tab == Tab::Sessions => return self.key_sessions(k),
             _ if self.tab == Tab::Actions => return self.key_actions(k),
@@ -962,6 +998,64 @@ mod tests {
         }
     }
 
+    #[test]
+    fn p_peeks_and_x_interrupts_only_a_running_agent() {
+        let mut a = app();
+        assert_eq!(a.key(Key::Char('p')), Effect::Peek("%1".into()));
+        assert_eq!(a.key(Key::Char('x')), Effect::None); // %1 attend, il ne tourne pas
+        a.key(Key::Down);
+        a.key(Key::Down);
+        assert_eq!(a.key(Key::Char('x')), Effect::Interrupt("%3".into()));
+    }
+
+    #[test]
+    fn every_action_runs_its_effect_or_opens_its_screen() {
+        use ActionKind as K;
+        for (i, act) in ACTIONS.iter().enumerate() {
+            let mut a = with_sessions();
+            let (effect, screen) = match act.kind {
+                K::New => (Effect::OpenNew, None),
+                K::Project => (Effect::OpenProject, None),
+                K::Rename => (
+                    Effect::None,
+                    Some(Screen::Rename {
+                        session: "main".into(),
+                        input: "main".into(),
+                    }),
+                ),
+                K::Last => (Effect::LastSession, None),
+                K::Kill => (Effect::None, Some(Screen::Kill("main".into()))),
+                K::SplitRight => (Effect::SplitRight, None),
+                K::SplitBelow => (Effect::SplitBelow, None),
+                K::Zoom => (Effect::Zoom, None),
+                K::Save => (Effect::Save, None),
+                K::SaveExit => (Effect::None, Some(Screen::SaveExit)),
+                K::Exit => (Effect::Detach, None),
+                K::Restore => (Effect::Restore, None),
+                K::Hide => (Effect::ToggleSidebar, None),
+            };
+            assert_eq!(a.click_action(i), effect, "{}", act.label);
+            assert_eq!(a.screen, screen, "{}", act.label);
+        }
+    }
+
+    #[test]
+    fn new_session_screen_moves_filters_and_cancels() {
+        let mut a = with_sessions();
+        a.open_new(vec!["/w/x".into(), "/w/y".into()], false);
+        a.key(Key::Down);
+        a.key(Key::Down);
+        assert_eq!(a.new_sel(), 1);
+        a.key(Key::Up);
+        assert_eq!(a.new_sel(), 0);
+        a.key(Key::Char('y'));
+        assert_eq!(a.new_folders(), ["/w/y"]);
+        a.key(Key::Backspace);
+        assert_eq!(a.new_folders().len(), 2);
+        assert_eq!(a.key(Key::Esc), Effect::None);
+        assert!(a.screen.is_none());
+    }
+
     fn with_sessions() -> App {
         let mut a = app();
         a.home = "/h".into();
@@ -992,7 +1086,7 @@ mod tests {
     fn new_session_screen_creates_attaches_or_suffixes() {
         let mut a = with_sessions();
         assert_eq!(a.key(Key::Char('N')), Effect::OpenNew);
-        a.open_new(vec!["/w/a/api".into(), "/w/b/api".into(), "/w/web".into()]);
+        a.open_new(vec!["/w/a/api".into(), "/w/b/api".into(), "/w/web".into()], false);
         for c in "web".chars() {
             a.key(Key::Char(c));
         }
@@ -1005,9 +1099,9 @@ mod tests {
             }
         );
         assert!(a.screen.is_none());
-        a.open_new(vec!["/w/a/api".into(), "/w/b/api".into()]);
+        a.open_new(vec!["/w/a/api".into(), "/w/b/api".into()], false);
         assert_eq!(a.key(Key::Enter), Effect::Switch("api".into()));
-        a.open_new(vec!["/w/a/api".into(), "/w/b/api".into()]);
+        a.open_new(vec!["/w/a/api".into(), "/w/b/api".into()], false);
         a.key(Key::Down);
         assert_eq!(
             a.key(Key::Enter),
@@ -1016,9 +1110,80 @@ mod tests {
                 dir: "/w/b/api".into()
             }
         );
-        a.open_new(vec!["/w/x".into()]);
+        a.open_new(vec!["/w/x".into()], false);
         assert_eq!(a.key(Key::Esc), Effect::None);
         assert!(a.screen.is_none());
+    }
+
+    #[test]
+    fn kill_key_targets_the_current_session_not_the_cursor() {
+        let mut a = with_sessions();
+        a.set_tab(Tab::Sessions);
+        a.key(Key::Down);
+        assert_eq!(a.target().unwrap().name, "prosper");
+        a.key(Key::Char('K'));
+        assert_eq!(a.screen, Some(Screen::Kill("main".into())));
+    }
+
+    #[test]
+    fn session_cursor_follows_a_session_switch() {
+        let mut a = with_sessions();
+        a.set_tab(Tab::Sessions);
+        a.key(Key::Down);
+        assert_eq!(a.target().unwrap().name, "prosper");
+        // le client est allé sur api (clic sur un agent) : le curseur suit
+        a.set_sessions(a.sessions.clone(), "api".into());
+        assert_eq!(a.target().unwrap().name, "api");
+    }
+
+    #[test]
+    fn plus_opens_new_project_with_the_typed_name_next_to_the_projects() {
+        let mut a = with_sessions();
+        a.home = "/w".into();
+        a.open_new(vec!["/w/lab/a".into(), "/w/lab/b".into(), "/w/x".into()], false);
+        for c in "demo".chars() {
+            a.key(Key::Char(c));
+        }
+        a.key(Key::Char('+'));
+        let want = Screen::Project {
+            parent: "/w/lab".into(),
+            input: "demo".into(),
+        };
+        assert_eq!(a.screen, Some(want));
+        assert_eq!(
+            a.key(Key::Enter),
+            Effect::Create {
+                name: "demo".into(),
+                dir: "/w/lab/demo".into()
+            }
+        );
+        // nom vide : Entrée ne fait rien, l'écran reste
+        a.open_new(vec![], true);
+        assert_eq!(a.key(Key::Enter), Effect::None);
+        assert!(a.screen.is_some());
+    }
+
+    #[test]
+    fn new_session_screen_offers_a_typed_path() {
+        let mut a = with_sessions();
+        a.open_new(vec!["/w/web".into()], false);
+        for c in "~/new/proj".chars() {
+            a.key(Key::Char(c));
+        }
+        assert_eq!(a.new_folders(), vec!["/h/new/proj"]);
+        assert_eq!(
+            a.key(Key::Enter),
+            Effect::Create {
+                name: "proj".into(),
+                dir: "/h/new/proj".into()
+            }
+        );
+        // chemin déjà dans la liste : pas de doublon
+        a.open_new(vec!["/w/web".into()], false);
+        for c in "/w/web".chars() {
+            a.key(Key::Char(c));
+        }
+        assert_eq!(a.new_folders(), vec!["/w/web"]);
     }
 
     #[test]
@@ -1030,10 +1195,8 @@ mod tests {
         a.key(Key::Char('Q'));
         assert_eq!(a.screen, Some(Screen::SaveExit));
         assert_eq!(a.key(Key::Char('d')), Effect::Detach);
-        a.key(Key::Char('Q'));
-        assert_eq!(a.click_button(Button::Confirm), Effect::SaveExit);
         a.key(Key::Char('K'));
-        assert_eq!(a.click_button(Button::Cancel), Effect::None);
+        assert_eq!(a.key(Key::Esc), Effect::None);
         assert!(a.screen.is_none());
     }
 
@@ -1058,9 +1221,11 @@ mod tests {
         assert_eq!(a.key(Key::Char('s')), Effect::Save);
         a.key(Key::Down);
         a.key(Key::Down);
+        a.key(Key::Down);
         assert_eq!(a.key(Key::Enter), Effect::LastSession);
-        assert_eq!(a.click_action(11), Effect::ToggleSidebar);
+        assert_eq!(a.click_action(12), Effect::ToggleSidebar);
         assert_eq!(a.click_action(0), Effect::OpenNew);
+        assert_eq!(a.click_action(1), Effect::OpenProject);
     }
 
     #[test]

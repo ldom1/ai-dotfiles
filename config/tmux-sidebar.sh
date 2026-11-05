@@ -1,7 +1,9 @@
 #!/usr/bin/env sh
-# tmux-sidebar.sh — une seule sidebar (aif-sidebar), à gauche de chaque fenêtre, quand elle est active.
-#   ensure [fenêtre]   ouvre la sidebar dans la fenêtre si elle est active et absente, et la remet
-#                      à sa largeur (hooks tmux, dont window-resized)
+# tmux-sidebar.sh — une seule sidebar (aif-sidebar) pour tout le serveur, à gauche de la fenêtre
+# active, quand elle est active. Un seul process : onglet, curseur et filtre suivent l'utilisateur
+# d'une session à l'autre.
+#   ensure [fenêtre]   amène la sidebar dans la fenêtre (join-pane), l'ouvre si elle n'existe pas,
+#                      et la remet à sa largeur (hooks tmux, dont client-resized)
 #   toggle [fenêtre]   active ou masque la sidebar, dans toutes les fenêtres (Ctrl+Shift+B)
 #   focus [fenêtre]    l'affiche si besoin et lui donne le focus (Alt+s)
 #   screen <touche> [fenêtre]
@@ -17,6 +19,8 @@ win=${2:-}
 [ -n "$win" ] || win=$(tmux display -p '#{window_id}' 2>/dev/null) || exit 0
 
 sidebar_of() { tmux list-panes -t "$1" -F '#{pane_id} #{@aif_sidebar}' 2>/dev/null | awk '$2 == 1 { print $1; exit }'; }
+# La sidebar du serveur, dans n'importe quelle fenêtre
+any_sidebar() { tmux list-panes -a -F '#{pane_id} #{@aif_sidebar}' 2>/dev/null | awk '$2 == 1 { print $1; exit }'; }
 
 ensure() {
   [ "$(tmux show -gqv @aif-sidebar)" = off ] && return 0
@@ -25,7 +29,10 @@ ensure() {
   tmux wait-for -L aif-sidebar
   width=$(tmux show -gqv @aif-sidebar-width); width=${width:-44}
   pane=$(sidebar_of "$win")
-  if [ -z "$pane" ]; then
+  if [ -z "$pane" ] && other=$(any_sidebar) && [ -n "$other" ]; then
+    # shortcut: deux clients sur deux sessions se disputent la sidebar, le dernier actif la garde
+    tmux join-pane -hbfd -l "$width" -s "$other" -t "$win" 2>/dev/null && pane=$other
+  elif [ -z "$pane" ]; then
     pane=$(tmux split-window -hbfd -l "$width" -t "$win" -P -F '#{pane_id}' "$BIN" 2>/dev/null) &&
       tmux set -p -t "$pane" @aif_sidebar 1 && created=1
   elif [ "$(tmux display -p -t "$pane" '#{pane_width}')" != "$width" ]; then

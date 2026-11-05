@@ -27,7 +27,7 @@ setup() {
     options: ["pdfplumber", "PyMuPDF"], updated_at: $t, model: "Opus", ctx: 61}' > "$AIF_STATE_DIR/${AGENT#%}.json"
 }
 
-teardown() { tmux kill-server 2>/dev/null || true; }
+teardown() { tmux -L aif-test kill-server 2>/dev/null || true; }   # -L explicite : setup a pu sauter (skip) avant le wrapper
 
 # screen <pane> <texte> : attend (5 s max) que le pane affiche le texte
 screen() {

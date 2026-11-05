@@ -1,5 +1,6 @@
 //! Sessions tmux, nom d'une nouvelle session, dossiers proposés, dernière sauvegarde.
 
+use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
 
@@ -58,6 +59,35 @@ pub fn tilde(path: &str, home: &str) -> String {
         }
         _ => path.to_string(),
     }
+}
+
+/// Chemin tapé dans l'écran New session : « ~ », « ~/… », « /… » ou « a/b » (relatif à ~),
+/// sans « / » final. Un mot sans « / » reste un filtre.
+pub fn typed_path(s: &str, home: &str) -> Option<String> {
+    let p = match s.strip_prefix('~') {
+        Some(r) if r.is_empty() || r.starts_with('/') => format!("{home}{r}"),
+        Some(_) => return None,
+        None if s.starts_with('/') => s.to_string(),
+        None if s.contains('/') => format!("{home}/{s}"),
+        None => return None,
+    };
+    let t = p.trim_end_matches('/');
+    Some(if t.is_empty() { "/".into() } else { t.into() })
+}
+
+/// Dossier des projets : le parent qui contient le plus de dossiers proposés (hors ~), sinon ~.
+pub fn projects_dir(folders: &[String], home: &str) -> String {
+    let mut count: HashMap<&str, usize> = HashMap::new();
+    for p in folders.iter().filter_map(|d| Path::new(d).parent()?.to_str()) {
+        if p != home && Path::new(p).starts_with(home) {
+            *count.entry(p).or_default() += 1;
+        }
+    }
+    // à égalité, le premier par ordre alphabétique (résultat stable)
+    count
+        .into_iter()
+        .max_by(|a, b| a.1.cmp(&b.1).then(b.0.cmp(a.0)))
+        .map_or(home.to_string(), |(p, _)| p.to_string())
 }
 
 /// Nom de session d'un dossier : son nom (`main` pour ~), « . » et « : » remplacés (règle de `tma`).
@@ -181,6 +211,26 @@ pub fn last_save() -> Option<i64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn projects_dir_is_the_parent_with_most_projects() {
+        let f = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        let lab = f(&["/h", "/h/lab/a", "/h/lab/b", "/h/dev/c", "/x/y/z"]);
+        assert_eq!(projects_dir(&lab, "/h"), "/h/lab");
+        assert_eq!(projects_dir(&f(&["/h/b/x", "/h/a/y"]), "/h"), "/h/a");
+        assert_eq!(projects_dir(&f(&["/h", "/h/top"]), "/h"), "/h");
+    }
+
+    #[test]
+    fn typed_path_expands_tilde_and_ignores_plain_filters() {
+        assert_eq!(typed_path("~", "/h").as_deref(), Some("/h"));
+        assert_eq!(typed_path("~/a/b/", "/h").as_deref(), Some("/h/a/b"));
+        assert_eq!(typed_path("/x", "/h").as_deref(), Some("/x"));
+        assert_eq!(typed_path("/", "/h").as_deref(), Some("/"));
+        assert_eq!(typed_path("web", "/h"), None);
+        assert_eq!(typed_path("lab/new/", "/h").as_deref(), Some("/h/lab/new"));
+        assert_eq!(typed_path("~bob", "/h"), None);
+    }
 
     fn s(name: &str, path: &str) -> Session {
         Session {

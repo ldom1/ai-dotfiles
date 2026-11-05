@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Added
+- New project: `+ New project` (SESSIONS tab, ACTIONS tab, New session screen, right-click menu), the `+` key and `prefix +` open the New project screen. Type a name: the project goes into the folder that holds the most of your projects (for example `~/lab`). `Create & open` creates the folder, runs `git init` (so it comes back in the New session list) and opens a session in it.
+- Mouse tests in the style of Playwright: `sidebar/tests/e2e.rs` (`cargo test --test e2e`) runs a real tmux client in an emulated terminal. It uses [tui-test](https://github.com/microsoft/tui-test) (`tui-test-rs` 0.1.1, Microsoft) and `tempfile` as dev-dependencies. Each test has its own `HOME` and `TMUX_TMPDIR` under `/tmp`, and no `TMUX`, so it cannot reach your tmux server. Rejected: `send-keys -H` with raw mouse sequences in bats, because it skips the tmux mouse routing that users go through.
+
+### Fixed
+- `Ctrl+Shift+O/E` in Ghostty opened a Ghostty split with a second tmux view (sidebar included) instead of a tmux pane: the running Ghostty had started before `install.sh` linked its config. `install.sh` now tells you to reload Ghostty (`Ctrl+Shift+,`). Tests: `tests/tmux-config.bats` checks that `config/ghostty/config` passes every tmux `C-S-` key to tmux; `sidebar/tests/e2e.rs` sends the Ghostty sequences and checks for plain shell panes.
+- One `aif-sidebar` process for the whole tmux server. `config/tmux-sidebar.sh ensure` moves it to the active window (`join-pane`) instead of starting one per window. The tab, cursor and filter now follow you across sessions. Limit: with two clients on two sessions, only the last active one shows the sidebar.
+- `K` and `Ctrl+Shift+K` always target the current session, not the session under the SESSIONS cursor. The sidebar reads the current session again before each key or click.
+- New session screen: a typed path (`~`, `~/…`, `/…`, or `lab/new-project` relative to `~`) that does not exist is created with `git init`, then the session opens in it.
+- Sidebar clicks: one click acts, like `Enter`. A session switches to it, an agent goes to its pane, and a folder of the New session screen creates the session. The whole row is clickable, not only its text. The answer buttons of an agent keep their own action.
+- Mouse and keyboard parity: each key shown in the footer is a button that sends its key (`p` peek, `x` stop, `r` rename, `K` kill, `s` save, `d` exit…). The filter and the sort of the AGENTS header are buttons. The Rename screen has `[ Cancel ]` and `[ Rename ]`. The footers drop the hints that are not keys (`↑↓`, `type`) and the answer keys already on the agent card, so the other keys fit in 44 columns.
+- Tests: running `bats tests/` from inside tmux killed your tmux server. When `setup` skipped (for example, zoxide installed) before the `tmux -L aif-test` wrapper was on `PATH`, `teardown` ran the real `tmux kill-server`. Every `teardown` now calls `tmux -L aif-test kill-server`.
+
 ## [0.16.0] - 2026-11-05
 
 ### Fixed

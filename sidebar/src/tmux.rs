@@ -104,8 +104,14 @@ pub fn switch(name: &str) -> Result<()> {
     run(&["switch-client", "-t", &format!("={name}")])
 }
 
-/// Crée la session (sans la lier au terminal), puis y amène le client.
+/// Crée la session (sans la lier au terminal), puis y amène le client. Un dossier qui manque est
+/// un nouveau projet : créé avec `git init`, il revient ensuite dans la liste New session.
 pub fn create(name: &str, dir: &str) -> Result<()> {
+    if !std::path::Path::new(dir).exists() {
+        // git init crée aussi le dossier et ses parents
+        let ok = Command::new("git").args(["init", "-q", dir]).status();
+        anyhow::ensure!(ok.is_ok_and(|s| s.success()), "git init {dir} failed");
+    }
     run(&["new-session", "-d", "-s", name, "-c", dir])?;
     switch(name)
 }
