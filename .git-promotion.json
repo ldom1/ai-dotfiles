@@ -11,6 +11,8 @@
       "--no-project",
       "--with",
       "pytest",
+      "--with",
+      "pyyaml==6.0.2",
       "pytest",
       "-q",
       "-p",

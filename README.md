@@ -38,6 +38,7 @@ Each session starts with what the last one learned, and ends by writing it back.
 | `AGENTS.md` | One rule file for Claude Code, Cursor and Vibe. `install.sh` generates the per-tool copies. | [brain.md](docs/brain.md#shared-agent-rules-agentsmd) |
 | Hooks | Session load and save, pitfalls injection, Stop check, destructive-command tripwire, commit scopes. | [brain.md](docs/brain.md#claude-code-hooks) |
 | Local Brain | An Obsidian vault (a git repo) as memory, with QMD semantic search. | [brain.md](docs/brain.md) |
+| Review | One Obsidian base (`TASKS_REVIEW`) lists every manual step and open decision of all agents on all projects. | [brain.md](docs/brain.md#review-the-agents-work) |
 | ai-dotdeck | The agent session harness: tmux config, `tma`, and `aif-sidebar` (Rust). WSL + Windows Terminal, or Linux + Ghostty. | [terminal.md](docs/terminal.md) |
 | Skills | `capture`, `brain-*`, `git-promotion`, `grill-me`, `ponytail`, `graphify` and more. `install.sh` links them into each tool. | [skills.md](docs/skills.md) |
 | Local CI | Your GitHub workflows with `act`, in a clean clone, before push. | [local-ci.md](docs/local-ci.md) |

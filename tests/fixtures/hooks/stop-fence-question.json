@@ -1,0 +1,1 @@
+{"session_id":"s1","transcript_path":"/tmp/t.jsonl","cwd":"@CWD@","permission_mode":"default","hook_event_name":"Stop","stop_hook_active":false,"last_assistant_message":"Run this:\n```sh\ngrep -q '?' f &&\necho ok?"}

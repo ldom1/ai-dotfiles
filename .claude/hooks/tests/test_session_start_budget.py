@@ -4,6 +4,7 @@ Dependencies of the hook (sync, load, vendored check) are stubs with realistic o
 (measured 2026-10-06: project note 2,099 B, vendored warnings 375 B).
 """
 import json
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -36,25 +37,52 @@ def exe(path: Path, body: str) -> None:
     path.chmod(0o755)
 
 
-def env_for(tmp_path: Path, pitfalls_text: str, exit_log: str | None) -> dict:
+ITEM = """---
+type: action
+project: "[[proj]]"
+tool: claude
+status: ouvert
+created: 2026-11-06
+why_not_agent: needs the owner's login
+---
+Body.
+"""
+REVIEW_LINE = "[review] proj: 1 ouvert (1 action) → TASKS_REVIEW"
+UV = shutil.which("uv")
+
+
+def uv_env() -> dict:
+    """Lets `uv run --script` resolve pyyaml from the real cache, offline, with a fake HOME."""
+    cache = subprocess.run([UV, "cache", "dir"], capture_output=True, text=True, check=True).stdout.strip()
+    py = subprocess.run([UV, "python", "dir"], capture_output=True, text=True, check=True).stdout.strip()
+    return {"PATH": f"/usr/bin:/bin:{Path(UV).parent}", "UV_CACHE_DIR": cache, "UV_PYTHON_INSTALL_DIR": py,
+            "UV_OFFLINE": "1"}
+
+
+def env_for(tmp_path: Path, pitfalls_text: str, exit_log: str | None, review: str | None = None) -> dict:
     dot, vault, home = tmp_path / "dot", tmp_path / "vault", tmp_path / "home"
     exe(dot / "skills/brain-sync/scripts/sync.sh", "exit 0")
     note = "\n".join(f"note line {i:02d} " + "n" * 56 for i in range(30))
-    exe(dot / "skills/brain-load/scripts/load.sh", f"cat <<'EOF'\n{note}\nEOF")
+    exe(dot / "skills/brain-load/scripts/load.sh",
+        f"[[ \"${{1:-}}\" == --slug-only ]] && {{ echo slug=proj; exit 0; }}\ncat <<'EOF'\n{note}\nEOF")
     exe(dot / "scripts/log-skill-usage.sh", "exit 0")
     exe(dot / "scripts/check-vendored-skill-updates.sh", "printf 'w%.0s' {1..374}; echo")
-    for name in ("summarize-sync-log.py", "fit-sections.py"):
+    for name in ("summarize-sync-log.py", "fit-sections.py", "tasks-review.py"):
         (dot / "scripts" / name).symlink_to(REPO / "scripts" / name)
     (dot / "config").mkdir()
     (dot / "config" / "brain.env").write_text(f"BRAIN_PATH={vault}\n")
     p = vault / "resources/operational/ai-agents/pitfalls.md"
     p.parent.mkdir(parents=True)
     p.write_text(pitfalls_text)
+    if review is not None:
+        (vault / "inbox/review").mkdir(parents=True)
+        if review:
+            (vault / "inbox/review/2026-11-06-proj-login.md").write_text(review)
     if exit_log is not None:
         log = home / ".claude/logs/brain-sync-end.log"
         log.parent.mkdir(parents=True)
         log.write_text(exit_log)
-    return {"PATH": "/usr/bin:/bin", "HOME": str(home), "AI_DOTFILES": str(dot)}
+    return {**uv_env(), "HOME": str(home), "AI_DOTFILES": str(dot)}
 
 
 def run_hook(env: dict, source: str = "startup") -> str:
@@ -64,8 +92,9 @@ def run_hook(env: dict, source: str = "startup") -> str:
 
 def test_full_budget_case_fits_without_truncation(tmp_path):
     text = pitfalls(6000)
-    out = run_hook(env_for(tmp_path, text, EXIT_LOG))
+    out = run_hook(env_for(tmp_path, text, EXIT_LOG, review=ITEM))
     assert len(out.encode()) < BUDGET
+    assert REVIEW_LINE in out
     assert "[truncated" not in out
     assert text.rstrip().splitlines()[-1] in out
     assert "--- END PITFALLS ---" in out
@@ -106,3 +135,26 @@ def test_huge_project_note_leaves_only_the_pitfalls_note(tmp_path):
     printed = out.split("--- AI-AGENTS PITFALLS (constraints) ---\n", 1)[1].split("--- END PITFALLS ---", 1)[0]
     assert printed.splitlines() == [printed.strip()]  # only the one-line note, no rule
     assert "sections dropped: (preamble), Section 0" in printed
+
+
+def test_review_line_printed_before_pitfalls(tmp_path):
+    out = run_hook(env_for(tmp_path, pitfalls(1000), EXIT_LOG, review=ITEM))
+    assert out.count(REVIEW_LINE) == 1
+    assert out.index(REVIEW_LINE) < out.index("--- AI-AGENTS PITFALLS")
+
+
+def test_no_review_dir_output_unchanged(tmp_path):
+    missing = run_hook(env_for(tmp_path / "a", pitfalls(1000), EXIT_LOG)).replace(str(tmp_path / "a"), "T")
+    empty = run_hook(env_for(tmp_path / "b", pitfalls(1000), EXIT_LOG, review="")).replace(str(tmp_path / "b"), "T")
+    assert "[review]" not in missing
+    assert missing == empty
+
+
+def test_failing_review_script_adds_no_line_and_logs_stderr(tmp_path):
+    env = env_for(tmp_path, pitfalls(1000), EXIT_LOG, review=ITEM)
+    script = Path(env["AI_DOTFILES"]) / "scripts/tasks-review.py"
+    script.unlink()
+    script.write_text("import sys\nprint('boom', file=sys.stderr)\nsys.exit(2)\n")
+    out = run_hook(env)
+    assert "[review]" not in out and "--- END PITFALLS ---" in out
+    assert "boom" in (Path(env["AI_DOTFILES"]) / ".claude/logs/brain-load.log").read_text()

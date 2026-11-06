@@ -132,9 +132,9 @@ Invoke the `brain-sync` / `brain-load` skills manually when hooks are off or the
 
 All hooks are declared in `.claude/settings.json.tpl` and always on:
 
-- **SessionStart** `brain-session-start.sh`: settings drift check, vault pull, project note, pitfalls, vendored-skill update check, `/brain-audit` nudge. Output stays under 9.5 KB: Claude Code (observed on 2.1) swaps longer hook output for a file and a 2 KB preview, so pitfalls get only the bytes left and are cut at a line break. The last-exit log shrinks to one status line. Pitfalls are capped at 6,000 B when written (`scripts/check-pitfalls-budget.sh`); if the budget still runs out, whole sections are dropped and named.
+- **SessionStart** `brain-session-start.sh`: settings drift check, vault pull, project note, pitfalls, vendored-skill update check, `/brain-audit` nudge, the project's open review items (one `[review] …` line, before the pitfalls). Output stays under 9.5 KB: Claude Code (observed on 2.1) swaps longer hook output for a file and a 2 KB preview, so pitfalls get only the bytes left and are cut at a line break. The last-exit log shrinks to one status line. Pitfalls are capped at 6,000 B when written (`scripts/check-pitfalls-budget.sh`); if the budget still runs out, whole sections are dropped and named.
 - **SessionEnd** `brain-session-end.sh`: appends the session's metrics line (`scripts/harness-metrics.py`: counts, duration, cost, no conversation text) to `$BRAIN_PATH/meta/harness-sessions/<YYYY-MM>-<host>.jsonl`, then vault commit + push, warning if today has no session log. SessionStart exports `CLAUDE_SESSION_ID` to Bash calls. It gives the model no turn: run `/capture` before you quit.
-  - `python3 -I scripts/harness-metrics.py history --vault "$BRAIN_PATH"` prints one JSON aggregate over all transcripts, the skill-usage log and the vault. Each number carries a label (`mesuré`, `déduit`, `incomplet`) and its source.
+  - `python3 -I scripts/harness-metrics.py history --vault "$BRAIN_PATH"` prints one JSON aggregate over all transcripts, the skill-usage log and the vault. Each number carries a label (`mesuré`, `déduit`, `incomplet`) and its source. Key `review_questions` (`count`, `active_days`, `per_active_day`, `median_response_s`, `unanswered`) comes from `--check-log` (default `~/.claude/logs/aif-check.log`), which the agent hook writes at each entry into and exit from `check`. A missing log is labelled `absent`.
 - **PreToolUse (Bash)** `hardline-check.py` (runs first): a tripwire for a short list of destructive commands. It is not a security boundary: it does not see variables, other interpreters or scripts written to a file.
   - Tier 1 (`deny`, in every mode): `rm -rf` on `/` or home, `mkfs`, `dd` or a redirect to a device, `find -delete` from `/` or home, a fork bomb. If you really want one, check the target, then run it yourself with `!`. The deny reason never repeats the command, so you cannot paste it by mistake.
   - Tier 2 (`ask`): force push to `main`/`master`, `git clean -x`/`-d` on the whole tree, `docker system|volume prune`, `docker volume rm`, `chmod -R 777`, a download piped to a shell. A tier-1 shape with a `$` or backtick target also asks.
@@ -159,6 +159,8 @@ Opt a project into the Stop check:
 echo 'ruff check . && pytest -x -q' > .claude/stop-check   # this repo uses shellcheck on changed *.sh
 ```
 
+Opt-in rule ^v5 sensor: `TEST_CMD='pytest -q' ~/ai-dotfiles/.claude/hooks/fails-on-base.sh [base]`, from `.claude/stop-check` or `git-hooks/pre-push`, exits 1 when a fix commit's changed tests pass on the base code. Nothing wires it by default.
+
 `.claude/stop-check` is a shell command that runs with your user's permissions at the end of every agent turn that left changes. A cloned repo can ship one, so the hook runs it only after you approve it:
 
 ```bash
@@ -173,6 +175,25 @@ stop-check-trust --revoke   # remove the approvals of this repo
 - The template denies `stop-check-trust` to the agent. Read the command before you approve it.
 
 Tests: `.claude/hooks/tests/` (part of the git-promotion gate). Run from the repo root: `uvx -q pytest -q -p no:cacheprovider .claude/hooks/tests`. The repo does not install `pytest`; `uvx` fetches it. CI does not run these tests.
+
+### Review the agents' work
+
+One place holds the manual steps and the open decisions of all agents on all projects. The vault note `TASKS_REVIEW` shows them.
+
+- Each item is one note in `inbox/review/` (template: `_templates/review-item`).
+- An `action` is a manual step the agent cannot do. It carries `why_not_agent`.
+- An `arbitrage` is a decision. It carries at least two `options`.
+- You write your reply in `answer`, then set `status` to `répondu` (the agent reads `answer`, acts, then sets `fait`), `fait` or `écarté`. The agent closes its own items with `fait` or `écarté`, never `répondu`.
+- `TASKS_REVIEW.base` is an Obsidian Bases file with five views: to do, by project, decisions, manual steps, done this week.
+
+`scripts/tasks-review.py` checks the items. It needs PyYAML, which `uv run --script` installs from the PEP 723 header.
+
+```bash
+uv run --script scripts/tasks-review.py check [DIR]                    # FAIL <file>: <reason>, or OK <n> items
+uv run --script scripts/tasks-review.py summary --project <slug> [DIR] # one line, or nothing
+```
+
+`DIR` defaults to `$BRAIN_PATH/inbox/review`.
 
 ### Shared agent rules (AGENTS.md)
 

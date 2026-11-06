@@ -114,6 +114,16 @@ if (( $(date +%s) - LAST_MAINT > 7 * 86400 )); then
   echo "[brain] maintenance due — last /brain-audit: $(date -d "@$LAST_MAINT" +%F 2>/dev/null || echo never). Offer it to the user."
 fi
 
+# Open review items of this project (one line ≤ 300 B, empty when none; fail-open).
+# Printed before the pitfalls block, which takes the remaining budget.
+REVIEW_SLUG=$("$LOAD" --slug-only 2>>"$LOG_FILE" | sed -n 's/^slug=//p' | head -1 || true)
+if [[ -n "$REVIEW_SLUG" ]]; then
+  # uv: PATH, else ~/.local/bin (Claude Code's PATH can lack that folder); a missing uv stays fail-open
+  uv=$(command -v uv || echo "$HOME/.local/bin/uv")
+  timeout 3 "$uv" run --script "$AI_DOTFILES/scripts/tasks-review.py" summary --project "$REVIEW_SLUG" \
+    "${BRAIN_PATH}/inbox/review" 2>>"$LOG_FILE" | head -c 300 || true
+fi
+
 # Inject operational constraints from ai-agents knowledge base
 AI_AGENTS_DIR="${BRAIN_PATH}/resources/operational/ai-agents"
 

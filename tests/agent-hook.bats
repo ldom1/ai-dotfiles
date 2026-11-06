@@ -11,6 +11,7 @@ FIX="$BATS_TEST_DIRNAME/fixtures/hooks"
 
 setup() {
   export AIF_STATE_DIR="$BATS_TEST_TMPDIR/agents" TMUX_PANE=%42 NOTIFY_LOG="$BATS_TEST_TMPDIR/notify.log"
+  export AIF_CHECK_LOG="$BATS_TEST_TMPDIR/check.log"
   STATE="$AIF_STATE_DIR/42.json"
   mkdir -p "$BATS_TEST_TMPDIR/bin"
   # tmux : pane visible si AIF_TEST_VISIBLE=1, session « proj »
@@ -166,4 +167,62 @@ notified() { sleep 0.2; [ -f "$NOTIFY_LOG" ] && wc -l < "$NOTIFY_LOG" || echo 0;
 @test "aif-statusline without a chained command prints model and context" {
   run -0 "$REPO/bin/aif-statusline" <<<'{"model":{"display_name":"Opus"},"context_window":{"remaining_percentage":20}}'
   [ "$output" = "Opus · ctx 80%" ]
+}
+
+@test "Stop with a trailing question: check, prose, one notification" {
+  ev session-start; ev user-prompt; ev stop-question
+  [ "$(st .state)" = check ]
+  [ "$(st .question)" = "Should I squash the branch?" ]
+  [ "$(st .ask)" = prose ]
+  [ "$(st '.options | length')" -eq 0 ]
+  [ "$(st .last_message)" = $'Two options.\nShould I squash the branch?' ]
+  [ "$(notified)" -eq 1 ]
+  grep -qxF 'notify|◉ proj needs you|Should I squash the branch?|proj|critical|' "$NOTIFY_LOG"
+}
+
+@test "Stop ending inside an unclosed fenced block, or on a URL ending in ?: done" {
+  ev session-start; ev user-prompt; ev stop-fence-question
+  [ "$(st .state)" = done ]
+  [ "$(st .question)" = null ]
+  ev user-prompt; ev stop-url-question
+  [ "$(st .state)" = done ]
+  [ "$(st .question)" = null ]
+  [ "$(notified)" -eq 0 ]
+}
+
+@test "Stop with a closed fenced block then a real question: check" {
+  ev session-start; ev user-prompt; ev stop-fence-closed-question
+  [ "$(st .state)" = check ]
+  [ "$(st .question)" = "Should I run it?" ]
+  [ "$(st .ask)" = prose ]
+}
+
+@test "prompt after a prose question: running" {
+  ev session-start; ev user-prompt; ev stop-question
+  ev user-prompt
+  [ "$(st .state)" = running ]
+  [ "$(st .question)" = null ]
+}
+
+@test "ask kind: tool for AskUserQuestion, permission for a permission prompt" {
+  ev session-start; ev user-prompt; ev pre-tool-ask
+  [ "$(st .ask)" = tool ]
+  ev post-tool; ev pre-tool-bash; ev notification-permission
+  [ "$(st .ask)" = permission ]
+}
+
+@test "check transitions are logged: enter then leave" {
+  ev session-start; ev pre-tool-ask
+  ev post-tool
+  [ "$(wc -l < "$AIF_CHECK_LOG")" -eq 2 ]
+  [ "$(sed -n 1p "$AIF_CHECK_LOG" | cut -f2-4)" = "$(printf 's1\tenter\ttool')" ]
+  [ "$(sed -n 2p "$AIF_CHECK_LOG" | cut -f2-4)" = "$(printf 's1\tleave\ttool')" ]
+  [[ "$(cut -f1 "$AIF_CHECK_LOG" | head -1)" =~ ^[0-9]+$ ]]
+  ev stop
+  [ "$(wc -l < "$AIF_CHECK_LOG")" -eq 2 ]
+}
+
+@test "check log: a prose question enters with ask prose, the next prompt leaves with it" {
+  ev session-start; ev stop-question; ev user-prompt
+  [ "$(cut -f3,4 "$AIF_CHECK_LOG" | paste -sd,)" = "$(printf 'enter\tprose,leave\tprose')" ]
 }

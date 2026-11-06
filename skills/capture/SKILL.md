@@ -28,7 +28,7 @@ date +%Y-%m-%d
 **Goal:** <one line>
 **Changes:** <bullets: what changed and where; PR/commit ids>
 **Commands/tests:** <only commands worth re-running>
-**Follow-ups:** <next steps, or "none">
+**Follow-ups:** <the agent's next steps, or "none">
 **Harness changes:** <optional; one row per harness change>
 - <component> · <change> · expected: <effect> · check: <metric or command>
 **Metrics:** <optional; the `harness-metrics.py` line>
@@ -50,7 +50,21 @@ Check the log, then fix every `FAIL` line and run the check again until it print
 python3 ~/ai-dotfiles/skills/capture/scripts/check_log.py "$BRAIN_PATH/inbox/daily/implementation/<slug>/<TODAY>-<topic>.md" --vault "$BRAIN_PATH"
 ```
 
-This is the history. Details live here, not in the memory files below.
+Anything that needs the human goes to a review item, not to `**Follow-ups:**`. Write `$BRAIN_PATH/inbox/review/<TODAY>-<slug>-<topic>.md` from `$BRAIN_PATH/_templates/review-item.md`.
+
+- A manual action (`type: action`) states `why_not_agent`. If the agent can do it, do it now instead.
+- A decision (`type: arbitrage`) lists its `options`, at least two.
+- Fill `session:` with `$CLAUDE_SESSION_ID` when it is set.
+- An item this session resolved gets `status: fait` or `écarté`. The agent never sets `répondu`: only the human sets `répondu`, with an `answer`. Open items are in `$BRAIN_PATH/inbox/review/`.
+- If SessionStart printed a `[review] … répondu` line, open the `répondu` items of this project in `$BRAIN_PATH/inbox/review/`, act on `answer`, then set `status: fait`.
+
+Check the items, then fix every `FAIL` line and run the check again until it prints `OK <n> items`:
+
+```bash
+uv run --script ~/ai-dotfiles/scripts/tasks-review.py check "${BRAIN_PATH:?}/inbox/review"
+```
+
+The session log is the history. Details live here, not in the memory files below.
 
 If `$BRAIN_PATH/inbox/daily/checkpoints/<slug>/<TODAY>.md` exists (written by the PreCompact hook before each compaction), use it to recover what happened before the context was compacted. Fold the useful lines into the log, then delete the checkpoint file.
 
@@ -62,7 +76,7 @@ Files: `<repo>/.claude/memory/` (fallback `$BRAIN_PATH/projects/<slug>/`). Base 
 |---|---|
 | `CONTEXT.md` | Snapshot — **rewrite in place**: `Live now`, `In flight`, `Blockers / open questions`, `Gotchas`, `Recent history` (≤ 5 `[[session-log]]` links). Drop what is no longer true; never prepend dated banners. |
 | `DECISIONS.md` | One line per live decision: `- **<decision>** — <why> (<date>)`. Replace a superseded line instead of adding a contradicting one. |
-| `ROADMAP.md` | Move finished items out (they belong in CHANGELOG); add new follow-ups under `Now` / `Next` / `Later` / `Open debt`. |
+| `ROADMAP.md` | Move finished items out (they belong in CHANGELOG); add new follow-ups under `Now` / `Next` / `Later` / `Open debt`. An item waiting on an event goes to `Gates`. A dropped item goes to `Rejected` with its reason. Never delete a `Rejected` line without the user. |
 | `ARCHITECTURE.md` | Only durable structure: stack, modules, data flow, invariants. |
 
 Project-specific traps discovered this session go to `CONTEXT.md` → `Gotchas` (one line each). Ask the user before reversing a decision, removing an architecture claim, or changing roadmap direction.

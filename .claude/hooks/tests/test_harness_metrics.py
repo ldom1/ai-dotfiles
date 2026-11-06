@@ -356,14 +356,54 @@ def test_rules_without_git_is_incomplete(world, tmp_path):
     assert h["rules"]["added"]["label"] == "incomplet"
 
 
-def test_sensors(world, tmp_path):
+def test_sensors_promoted_needs_shipped_status_and_an_existing_file(world, tmp_path):
     projects, log, vault = world
-    for n in ("s1.md", "s2.md"):
-        (vault / "inbox/sensors").mkdir(parents=True, exist_ok=True)
-        (vault / "inbox/sensors" / n).write_text("draft")
+    (vault / "inbox/sensors").mkdir(parents=True)
+    hook = tmp_path / "hooks/x.sh"
+    hook.parent.mkdir()
+    hook.write_text("#!/bin/sh\n")
+    drafts = {
+        "shipped_file": f"**Installs at:** `{hook}`\n**Status:** shipped (v1)\n",
+        "extends_file": f"**Installs at:** `{hook}`\n**Status:** draft\n",
+        "no_status_file": f"**Installs at:** `{hook}`\n",
+        "shipped_missing": f"**Installs at:** `{tmp_path}/hooks/missing.sh`\n**Status:** shipped\n",
+    }
+    for name, body in drafts.items():
+        (vault / f"inbox/sensors/{name}.md").write_text(f"# d\n**Kind:** hook\n{body}")
     (tmp_path / "repo/.claude/settings.json.tpl").write_text('{"hooks": [{\n  "command": "x",\n  "type": "command"\n}]}')
-    h = hm.history(projects, log, vault)
-    assert h["sensors"]["drafts"]["value"] == 2 and h["sensors"]["installed"]["value"] == 1
+    s = hm.history(projects, log, vault)["sensors"]
+    assert (s["drafts"]["value"], s["promoted"]["value"], s["hook_commands"]["value"]) == (4, 1, 1)
+    assert s["promoted"]["source"] == "inbox/sensors/* with **Status:** shipped and an existing **Installs at:** file"
+    assert "installed" not in s
+
+
+def _promoted(world, tmp_path, monkeypatch, cwd, targets):
+    """`promoted` for one draft per target. REPO_DIR (tmp/repo) holds a file and a dir; HOME (tmp/home) holds a file."""
+    projects, log, vault = world
+    (vault / "inbox/sensors").mkdir(parents=True)
+    repo, home = tmp_path / "repo", tmp_path / "home"
+    (repo / ".claude/hooks").mkdir()
+    (repo / ".claude/hooks/rel.py").write_text("x\n")
+    (home / "bin").mkdir(parents=True)
+    (home / "bin/tilde.sh").write_text("x\n")
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.chdir(cwd or vault)
+    for i, t in enumerate(targets):
+        (vault / f"inbox/sensors/d{i}.md").write_text(f"# d\n**Installs at:** `{t}`\n**Status:** shipped\n")
+    return hm.history(projects, log, vault)["sensors"]["promoted"]["value"]
+
+
+def test_sensors_promoted_resolves_relative_path_against_repo_not_cwd(world, tmp_path, monkeypatch):
+    assert _promoted(world, tmp_path, monkeypatch, None, [".claude/hooks/rel.py"]) == 1  # cwd is the vault
+
+
+def test_sensors_promoted_expands_home(world, tmp_path, monkeypatch):
+    assert _promoted(world, tmp_path, monkeypatch, None, ["~/bin/tilde.sh", "~/bin/missing.sh"]) == 1
+
+
+def test_sensors_promoted_needs_a_file_not_a_directory(world, tmp_path, monkeypatch):
+    targets = [f"{tmp_path}/repo/.claude/hooks/", ".claude/hooks", "~/bin", "n/a", ".claude/hooks/gone.py"]
+    assert _promoted(world, tmp_path, monkeypatch, tmp_path / "repo", targets) == 0
 
 
 def test_session_logs_and_harness_sessions(world):
@@ -388,11 +428,98 @@ def test_empty_world_does_not_crash(tmp_path, monkeypatch):
 
 def test_cli_history_prints_json(world):
     projects, log, vault = world
-    out = run("history", "--vault", str(vault), "--projects", str(projects), "--skill-log", str(log))
+    out = run("history", "--vault", str(vault), "--projects", str(projects), "--skill-log", str(log),
+              "--check-log", str(log.parent / "none.log"))
     assert out.returncode == 0
     assert list(json.loads(out.stdout)) == ["window", "sessions", "capture_rate", "skills", "mcp", "agents",
                                             "hook_refusals", "skill_log", "session_logs", "rules", "sensors",
-                                            "harness_sessions"]
+                                            "harness_sessions", "review_questions"]
+
+
+def _check_log(path, rows):
+    """rows: (day, seconds into the day, session, kind, ask). One TSV line per transition, epochs in UTC."""
+    def epoch(day, sec):
+        return int(datetime.fromisoformat(day).replace(tzinfo=timezone.utc).timestamp()) + sec
+    path.write_text("".join(f"{epoch(d, t)}\t{sid}\t{kind}\t{ask}\n" for d, t, sid, kind, ask in rows))
+    return path
+
+
+ANY_WINDOW = {"from": None, "to": None}
+
+
+def test_review_questions_from_check_log(tmp_path):
+    log = _check_log(tmp_path / "check.log", [
+        ("2026-10-20", 100, "s1", "enter", "tool"), ("2026-10-20", 160, "s1", "leave", "tool"),
+        ("2026-10-20", 500, "s2", "enter", "prose"), ("2026-10-20", 620, "s2", "leave", "prose"),
+        ("2026-10-21", 100, "s1", "enter", "permission"), ("2026-10-21", 700, "s1", "leave", "permission"),
+        ("2026-10-21", 900, "s3", "enter", "prose"),
+    ])
+    rq = hm._review_questions(log, ANY_WINDOW)
+    assert {k: v["value"] for k, v in rq.items()} == {
+        "count": 4, "active_days": 2, "per_active_day": 2.0, "median_response_s": 120, "unanswered": 1}
+    assert all(v["label"] == "mesuré" and v["source"] == "aif-check.log" for v in rq.values())
+
+
+def test_unanswered_question_counts_but_not_in_median(tmp_path):
+    log = _check_log(tmp_path / "check.log", [
+        ("2026-10-20", 100, "s1", "enter", "tool"), ("2026-10-20", 130, "s1", "leave", "tool"),
+        ("2026-10-20", 200, "s2", "enter", "prose"),
+    ])
+    rq = {k: v["value"] for k, v in hm._review_questions(log, ANY_WINDOW).items()}
+    assert rq["count"] == 2 and rq["unanswered"] == 1 and rq["median_response_s"] == 30
+
+
+def test_leave_pairs_with_its_own_session(tmp_path):
+    log = _check_log(tmp_path / "check.log", [
+        ("2026-10-20", 100, "s1", "enter", "tool"), ("2026-10-20", 110, "s2", "enter", "tool"),
+        ("2026-10-20", 150, "s2", "leave", "tool"), ("2026-10-20", 400, "s1", "leave", "tool"),
+    ])
+    rq = {k: v["value"] for k, v in hm._review_questions(log, ANY_WINDOW).items()}
+    assert rq["median_response_s"] == 170 and rq["unanswered"] == 0  # median of 300 and 40
+
+
+def test_review_questions_window_filters_on_enter_day(tmp_path):
+    log = _check_log(tmp_path / "check.log", [
+        ("2026-10-19", 100, "s1", "enter", "tool"), ("2026-10-19", 160, "s1", "leave", "tool"),
+        ("2026-10-21", 100, "s1", "enter", "tool"), ("2026-10-21", 400, "s1", "leave", "tool"),
+    ])
+    rq = {k: v["value"] for k, v in hm._review_questions(log, {"from": "2026-10-20", "to": "2026-10-22"}).items()}
+    assert rq["count"] == 1 and rq["median_response_s"] == 300
+
+
+def test_missing_check_log_is_absent_not_zero(tmp_path):
+    rq = hm._review_questions(tmp_path / "none.log", ANY_WINDOW)
+    assert set(rq) == {"count", "active_days", "per_active_day", "median_response_s", "unanswered"}
+    assert all(v["label"] == "absent" and v["value"] is None for v in rq.values())
+
+
+def test_empty_check_log_has_no_median(tmp_path):
+    (tmp_path / "check.log").write_text("")
+    rq = {k: v["value"] for k, v in hm._review_questions(tmp_path / "check.log", ANY_WINDOW).items()}
+    assert rq["count"] == 0 and rq["per_active_day"] is None and rq["median_response_s"] is None
+
+
+def test_garbled_check_log_lines_are_skipped(tmp_path):
+    log = tmp_path / "check.log"
+    log.write_text("garbage\nx\ty\tenter\ttool\n\n")
+    assert hm._review_questions(log, ANY_WINDOW)["count"]["value"] == 0
+
+
+def test_history_reports_review_questions(world, tmp_path):
+    projects, log, vault = world
+    check = _check_log(tmp_path / "check.log", [("2026-10-21", 100, "s1", "enter", "tool"),
+                                                ("2026-10-21", 160, "s1", "leave", "tool")])
+    h = hm.history(projects, log, vault, check)
+    assert h["review_questions"]["count"]["value"] == 1
+    assert h["review_questions"]["median_response_s"]["value"] == 60
+
+
+def test_cli_history_check_log_option(world, tmp_path):
+    projects, log, vault = world
+    check = _check_log(tmp_path / "check.log", [("2026-10-21", 100, "s1", "enter", "tool")])
+    out = run("history", "--vault", str(vault), "--projects", str(projects), "--skill-log", str(log),
+              "--check-log", str(check))
+    assert json.loads(out.stdout)["review_questions"]["unanswered"]["value"] == 1
 
 
 def test_rule_references_do_not_count(world):

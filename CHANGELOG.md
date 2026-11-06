@@ -3,6 +3,54 @@
 ## [Unreleased]
 
 ### Added
+- `.claude/hooks/fails-on-base.sh`: the sensor for rule ^v5 ("a check must fail on the pre-fix code"), drafted on 2026-10-14. It is opt-in: nothing wires it. A repo calls it from `.claude/stop-check` or `git-hooks/pre-push`: `TEST_CMD='pytest -q' fails-on-base.sh [base]`.
+  - It lists the test files changed since `base` (default: merge-base with `origin/main`, else `HEAD~1`). It copies them onto a clean detached worktree of `base`, and runs `TEST_CMD` there.
+  - A fix is a diff that changes tests and modifies or deletes a non-test file. A diff that only adds files is a feature: it is skipped, because a new module has no pre-fix code (the base run would fail on `ModuleNotFoundError`).
+  - It runs each changed test file alone on base, so one failing test cannot mask a weak one. Exit 0: no test changed, tests only, files added only, or every changed test file fails on base. Exit 1: a changed test file passes on base (each such file is printed), or a base run failed on the environment (INCONCLUSIVE). Exit 2: bad setup.
+  - INCONCLUSIVE covers rc 126 and 127 (the runner did not start) and the messages `ModuleNotFoundError`, `Cannot find module`, `No module named` and a line ending in `: not found`. A real failure that prints `AssertionError: 'x' not found` is not inconclusive. The script runs under `/bin/sh` (dash), which prints `<cmd>: not found`, not `command not found`.
+  - Non-ASCII test paths are read with `core.quotepath=off`. The worktree is removed (and pruned) on every exit path.
+  - Not caught: a test that fails on base for the wrong assertion, assumed fixtures, refactor commits, ad-hoc shell checks. The clean worktree has no venv or `node_modules`.
+  - Run on the real fix commit 3b00c49 (base e878c05): exit 0, the new test fails on base with `KeyError: 'promoted'`.
+  - Tests: 22 in `tests/fails-on-base.bats` (POSIX sh runner, no pytest).
+- SessionStart prints one review line for the current project, before the pitfalls block: `[review] <slug>: 2 ouverts (1 action, 1 arbitrage) → TASKS_REVIEW`.
+  - It comes from `tasks-review.py summary` (3 s timeout, at most 300 bytes). It finds `uv` on `PATH`, else in `~/.local/bin`.
+  - It prints nothing when the project has no open item, when `inbox/review/` is missing, or when the script fails. The error goes to `brain-load.log`.
+  - Latency: the step adds about 150 ms to a session start (6 runs: slug 12-44 ms, `uv run --script` 106-149 ms).
+  - Tests: three in `test_session_start_budget.py`, and the full-budget test now holds a review line.
+
+- A question left in prose puts the agent in `check`. On `Stop`, `bin/aif-agent-hook` reads the last non-empty line of the last assistant message.
+  - The line is a question when it ends with `?` or `？`. It is not a question when it sits inside an unclosed code fence, or when it is a URL that holds a `?`.
+  - A question sets the state to `check`, with that line as the question and no options. The sidebar shows "needs you" and the desktop notification fires.
+  - The state has a new field `ask`: `prose`, `tool` (`AskUserQuestion`) or `permission`. It stays until the next entry into `check`.
+  - `scripts/replay-prose-questions.py [--days N]` applies the same rule to past transcripts. Over 30 days it found 190 matches in 1382 turns, 8.6 per active day.
+  - Tests: five in `tests/agent-hook.bats`.
+- `bin/aif-agent-hook` logs every entry into and exit from `check` to `$AIF_CHECK_LOG` (default `~/.claude/logs/aif-check.log`).
+  - A line is `epoch`, session id, `enter` or `leave`, and `ask`. A `leave` line carries the `ask` of the question it closes. The log holds no text.
+  - `harness-metrics.py history` has a new key `review_questions`: `count`, `active_days`, `per_active_day`, `median_response_s` and `unanswered`. It reads the log named by `--check-log`.
+  - A question with no `leave` counts as asked but not in the median. A missing log gives label `absent` and value `null`.
+  - Tests: two in `tests/agent-hook.bats`, nine in `test_harness_metrics.py`.
+
+- The `ROADMAP.md` template has two new sections after `Open debt`: `Gates` (an item waiting on a named event) and `Rejected` (a dropped item with its reason and date). `merge-memory-md.py` backfills them into existing projects.
+- `/capture` (1.3.0) files an item waiting on an event under `Gates` and a dropped item under `Rejected`. It never deletes a `Rejected` line without the user.
+- Test: `test_roadmap_template_and_capture_agree` in `skills/capture/scripts/tests/test_capture_contract.py`.
+
+- `/capture` (1.3.0) writes anything that needs the human to a review item. The file is `$BRAIN_PATH/inbox/review/<TODAY>-<slug>-<topic>.md`, from `_templates/review-item.md`.
+  - An action states `why_not_agent`. A decision lists its options. `session:` holds `$CLAUDE_SESSION_ID` when it is set.
+  - The agent closes an item with `fait` or `écarté`. Only the human sets `répondu`.
+  - If SessionStart printed a `[review] … répondu` line, `/capture` opens those items, acts on `answer`, then sets `fait`.
+  - `/capture` runs `tasks-review.py check "${BRAIN_PATH:?}/inbox/review"` and fixes every `FAIL`. An unset `BRAIN_PATH` now fails loudly, not `OK 0 items`.
+  - `**Follow-ups:**` keeps the agent's own next steps.
+  - Tests: `test_capture_routes_human_items_to_review` and `test_capture_review_agent_side_rules` in `test_capture_contract.py`.
+
+- `scripts/tasks-review.py`: checks the review items of the Local Brain (`inbox/review/`, one note per manual step or pending decision) and prints a one-line summary.
+  - `check [DIR]` prints `FAIL <file>: <reason>` per problem (exit 1), or `OK <n> items`. It validates the enums (`type`, `status`, `tool`), the `[[slug]]` link, that `projects/<slug>.md` exists, `why_not_agent` on an `action`, two `options` on an `arbitrage`, and `answer` on a `répondu`. An empty property counts as missing. A missing directory gives `OK 0 items`.
+  - `summary --project <slug> [DIR]` prints one line of at most 300 bytes, for example `[review] dombot: 3 ouverts (2 actions, 1 arbitrage), 1 répondu < 7 j → TASKS_REVIEW`. It prints nothing when the project has no open item and no answer in the last 7 days (file modification time). It prints nothing for an unknown project.
+  - New dependency, approved by the owner: PyYAML 6.0.2, declared in the PEP 723 header and run with `uv run --script`. It reads the frontmatter of Obsidian notes, where the Properties UI writes YAML lists. Rejected: the flat `key: value` reader in `test_skill_frontmatter.py`, which breaks on those lists.
+  - A file with an impossible date (`created: 2026-13-45`), invalid YAML or a non-UTF-8 encoding gets one `FAIL` line and the other items are still checked. An unquoted `project: [[slug]]` says to quote the link. With no `DIR` and no `BRAIN_PATH`, both commands print `BRAIN_PATH is not set and no DIR given` to stderr and exit 2.
+  - The test gate in `.git-promotion.json` has `--with pyyaml==6.0.2`.
+  - A `summary` with an open item of an invalid `type` counts it and shows no empty parentheses. `check .` resolves the vault from the real path of `DIR`.
+  - Tests: `.claude/hooks/tests/test_tasks_review.py`.
+- Vault (not in this repo): `TASKS_REVIEW.md` and `TASKS_REVIEW.base` (five Bases views), the template `_templates/review-item.md` and `inbox/review/`. `docs/brain.md` section "Review the agents' work".
 - Sidebar: `+ Terminal` (SESSIONS tab, ACTIONS tab, session menu, key `T`) opens a new session in `~` and switches to it. The `after-new-session` hook names it like any unnamed session (`main`, then `main-2`). Test: `sidebar/tests/e2e.rs`.
 - Sidebar: right click on an agent opens the menu of that agent (AGENTS tab, and agent rows in the SESSIONS tree): Go to agent, Peek, Reply… (when it waits), Interrupt (when it runs), Session menu… (the session of the agent). Before, it opened the menu of the current session. A left click on an agent row in the SESSIONS tree still switches to its session. Tests: two e2e tests in `sidebar/tests/e2e.rs`.
 - README: a 30 s video of the session loop (`docs/media/ai-dotfiles-workflow.gif`, `.mp4`), made with [HyperFrames](https://github.com/heygen-com/hyperframes). The composition is not in the repo.
@@ -12,6 +60,7 @@
 - `README.md` is now a short page: the idea, the session loop (vault → tmux → `/capture` → vault), what is inside, quick start. The details moved, unchanged, to `docs/install.md`, `docs/brain.md`, `docs/terminal.md`, `docs/skills.md` and `docs/local-ci.md`.
 
 ### Fixed
+- `harness-metrics`: `sensors.installed` counted `command` lines in hook configs, so it printed 26 next to 26 drafts. The `sensors` block now has `drafts`, `promoted` (drafts with `**Status:** shipped` and an existing `**Installs at:**` file; a relative path resolves against the repo; a draft that only extends an existing file does not count) and `hook_commands` (the old count, renamed). Key `installed` is removed. Test: `test_sensors_promoted_needs_shipped_status_and_an_existing_file`.
 - `aif-agent-hook` sent a Windows toast (BurntToast, shown as "Windows PowerShell") when tmux gave no answer: `visible != 1` treated an empty answer as a hidden pane. A benchmark that ran the real hook with a stub `tmux` sent about 100 toasts in 40 s. The hook now notifies only when tmux answers `0` (pane not visible). Test: `tests/agent-hook.bats`.
 - bats tests shared one tmux server (`tmux -L aif-test` in `/tmp/tmux-<uid>/`). Two suites at the same time (two worktrees) failed at random (`duplicate session: proj`). Each test now sets `TMUX_TMPDIR` to its own folder. Two parallel runs: 71/71 each.
 - The skill install commands named a wrong marketplace (`@ldom1/ai-dotfiles`) and six skills the marketplace does not publish (`capture`, `brain-search`, `brain-audit`, `server-audit`, `sop-builder`, `photo-archive-triage`). `docs/skills.md` now lists the ten plugins of `.claude-plugin/marketplace.json` with `@ldom1-ai-dotfiles`.
