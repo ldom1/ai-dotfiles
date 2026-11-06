@@ -28,6 +28,16 @@ def test_capture_routes_human_items_to_review():
     assert "why_not_agent" in skill
     assert "_templates/review-item.md" in skill
     assert (
-        'uv run --script ~/ai-dotfiles/scripts/tasks-review.py check "$BRAIN_PATH/inbox/review"'
+        'uv run --script ~/ai-dotfiles/scripts/tasks-review.py check "${BRAIN_PATH:?}/inbox/review"'
         in skill
     )
+
+
+def test_capture_review_agent_side_rules():
+    skill = skill_text()
+    assert '"${BRAIN_PATH:?}/inbox/review"' in skill  # unset BRAIN_PATH fails loudly, not `OK 0 items`
+    assert "`status: fait`" in skill and "`écarté`" in skill
+    assert "status: répondu" not in skill  # only the human sets répondu
+    assert "only the human sets `répondu`" in skill
+    assert "[review] … répondu" in skill  # read-back of the human's answers
+    assert "`session:` with `$CLAUDE_SESSION_ID`" in skill

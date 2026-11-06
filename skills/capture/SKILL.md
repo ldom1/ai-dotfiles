@@ -54,12 +54,14 @@ Anything that needs the human goes to a review item, not to `**Follow-ups:**`. W
 
 - A manual gesture (`type: geste`) states `why_not_agent`. If the agent can do it, do it now instead.
 - A decision (`type: arbitrage`) lists its `options`, at least two.
-- An item this session resolved gets `status: répondu` with an `answer`, or `status: fait` or `écarté`. Open items are in `$BRAIN_PATH/inbox/review/`.
+- Fill `session:` with `$CLAUDE_SESSION_ID` when it is set.
+- An item this session resolved gets `status: fait` or `écarté`. The agent never sets `répondu`: only the human sets `répondu`, with an `answer`. Open items are in `$BRAIN_PATH/inbox/review/`.
+- If SessionStart printed a `[review] … répondu` line, open the `répondu` items of this project in `$BRAIN_PATH/inbox/review/`, act on `answer`, then set `status: fait`.
 
 Check the items, then fix every `FAIL` line and run the check again until it prints `OK <n> items`:
 
 ```bash
-uv run --script ~/ai-dotfiles/scripts/tasks-review.py check "$BRAIN_PATH/inbox/review"
+uv run --script ~/ai-dotfiles/scripts/tasks-review.py check "${BRAIN_PATH:?}/inbox/review"
 ```
 
 The session log is the history. Details live here, not in the memory files below.
