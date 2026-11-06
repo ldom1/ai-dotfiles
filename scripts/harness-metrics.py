@@ -43,6 +43,7 @@ RULE_FILES = ("resources/operational/ai-agents/pitfalls.md", "resources/knowledg
 HOOK_CONFIGS = (".claude/settings.json.tpl", ".cursor/hooks.json", ".vibe/user-hooks.toml")
 HOOK_COMMAND = re.compile(r'^\s*"?command"?\s*[:=]')
 INSTALLS_AT = re.compile(r"\*\*Installs at:\*\*\s*`([^`\n]+)`")
+SHIPPED = re.compile(r"^\*\*Status:\*\*\s*shipped", re.M)
 SLASH_COMMAND = re.compile(r"<command-name>/([^<\s]+)</command-name>")  # a user-typed /skill: no Skill tool_use
 
 
@@ -315,12 +316,13 @@ def _sensors(vault: Path) -> dict:
     drafts = [p for p in (vault / "inbox/sensors").glob("*") if p.is_file()] if (vault / "inbox/sensors").is_dir() else []
     promoted = 0
     for p in drafts:
-        m = INSTALLS_AT.search(p.read_text(errors="replace"))
-        promoted += bool(m and (REPO_DIR / os.path.expanduser(m[1])).is_file())  # absolute stays absolute
+        text = p.read_text(errors="replace")
+        m = INSTALLS_AT.search(text)  # a draft that extends an existing file is not shipped: needs the status too
+        promoted += bool(SHIPPED.search(text) and m and (REPO_DIR / os.path.expanduser(m[1])).is_file())  # absolute stays absolute
     hook_commands = sum(1 for c in HOOK_CONFIGS if (REPO_DIR / c).is_file()
                         for ln in (REPO_DIR / c).read_text(errors="replace").splitlines() if HOOK_COMMAND.match(ln))
     return {"drafts": _leaf(len(drafts), "mesuré", "inbox/sensors/*"),
-            "promoted": _leaf(promoted, "mesuré", "inbox/sensors/* whose **Installs at:** path is an existing file"),
+            "promoted": _leaf(promoted, "mesuré", "inbox/sensors/* with **Status:** shipped and an existing **Installs at:** file"),
             "hook_commands": _leaf(hook_commands, "mesuré", "lines with `command` in " + ", ".join(HOOK_CONFIGS))}
 
 

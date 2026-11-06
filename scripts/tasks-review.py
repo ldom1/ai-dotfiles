@@ -117,7 +117,8 @@ def summary_line(items: list[dict], slug: str, today: date) -> str:
             kinds.append(f"{gestes} geste{'s' if gestes > 1 else ''}")
         if arbitrages:
             kinds.append(f"{arbitrages} arbitrage{'s' if arbitrages > 1 else ''}")
-        parts.append(f"{len(opened)} ouvert{'s' if len(opened) > 1 else ''} ({', '.join(kinds)})")
+        kinds_text = f" ({', '.join(kinds)})" if kinds else ""  # an invalid type is counted, not itemised
+        parts.append(f"{len(opened)} ouvert{'s' if len(opened) > 1 else ''}{kinds_text}")
     if answered:
         parts.append(f"{len(answered)} répondu{'s' if len(answered) > 1 else ''} < {ANSWER_DAYS} j")
     if not parts:
@@ -145,7 +146,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     items = load_items(directory)
     if args.cmd == "check":
-        vault = directory.parent.parent
+        vault = directory.resolve().parent.parent
         found = [(i["_file"], reason) for i in items for reason in problems(i, vault)]
         for name, reason in found:
             print(f"FAIL {name}: {reason}")

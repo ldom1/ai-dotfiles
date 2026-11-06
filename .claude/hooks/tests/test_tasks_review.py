@@ -179,3 +179,23 @@ def test_no_dir_and_no_brain_path_exits_2(monkeypatch, capsys, argv):
     cap = capsys.readouterr()
     assert cap.out == ""
     assert "BRAIN_PATH is not set and no DIR given" in cap.err
+
+
+def test_summary_invalid_type_counts_open_without_empty_parens(vault):
+    item(vault, "bad", type="bogus")
+    line = tr.summary_line(tr.load_items(vault / "inbox" / "review"), "dombot", TODAY)
+    assert line == "[review] dombot: 1 ouvert → TASKS_REVIEW"
+
+
+def test_summary_parens_count_only_valid_types(vault):
+    item(vault, "bad", type="bogus")
+    item(vault, "g1")
+    line = tr.summary_line(tr.load_items(vault / "inbox" / "review"), "dombot", TODAY)
+    assert line == "[review] dombot: 2 ouverts (1 geste) → TASKS_REVIEW"
+
+
+def test_check_with_relative_dir_finds_the_vault(vault, monkeypatch, capsys):
+    item(vault, "a")
+    monkeypatch.chdir(vault / "inbox" / "review")
+    assert tr.main(["check", "."]) == 0
+    assert capsys.readouterr().out == "OK 1 items\n"

@@ -356,18 +356,24 @@ def test_rules_without_git_is_incomplete(world, tmp_path):
     assert h["rules"]["added"]["label"] == "incomplet"
 
 
-def test_sensors_promoted_counts_drafts_whose_target_exists(world, tmp_path):
+def test_sensors_promoted_needs_shipped_status_and_an_existing_file(world, tmp_path):
     projects, log, vault = world
     (vault / "inbox/sensors").mkdir(parents=True)
     hook = tmp_path / "hooks/x.sh"
     hook.parent.mkdir()
     hook.write_text("#!/bin/sh\n")
-    (vault / "inbox/sensors/s1.md").write_text(f"# d\n**Kind:** hook\n**Installs at:** `{hook}`\n")
-    (vault / "inbox/sensors/s2.md").write_text(f"# d\n**Installs at:** `{tmp_path}/hooks/missing.sh`\n")
+    drafts = {
+        "shipped_file": f"**Installs at:** `{hook}`\n**Status:** shipped (v1)\n",
+        "extends_file": f"**Installs at:** `{hook}`\n**Status:** draft\n",
+        "no_status_file": f"**Installs at:** `{hook}`\n",
+        "shipped_missing": f"**Installs at:** `{tmp_path}/hooks/missing.sh`\n**Status:** shipped\n",
+    }
+    for name, body in drafts.items():
+        (vault / f"inbox/sensors/{name}.md").write_text(f"# d\n**Kind:** hook\n{body}")
     (tmp_path / "repo/.claude/settings.json.tpl").write_text('{"hooks": [{\n  "command": "x",\n  "type": "command"\n}]}')
     s = hm.history(projects, log, vault)["sensors"]
-    assert (s["drafts"]["value"], s["promoted"]["value"], s["hook_commands"]["value"]) == (2, 1, 1)
-    assert s["promoted"]["source"] == "inbox/sensors/* whose **Installs at:** path is an existing file"
+    assert (s["drafts"]["value"], s["promoted"]["value"], s["hook_commands"]["value"]) == (4, 1, 1)
+    assert s["promoted"]["source"] == "inbox/sensors/* with **Status:** shipped and an existing **Installs at:** file"
     assert "installed" not in s
 
 
@@ -383,7 +389,7 @@ def _promoted(world, tmp_path, monkeypatch, cwd, targets):
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.chdir(cwd or vault)
     for i, t in enumerate(targets):
-        (vault / f"inbox/sensors/d{i}.md").write_text(f"# d\n**Installs at:** `{t}`\n")
+        (vault / f"inbox/sensors/d{i}.md").write_text(f"# d\n**Installs at:** `{t}`\n**Status:** shipped\n")
     return hm.history(projects, log, vault)["sensors"]["promoted"]["value"]
 
 
