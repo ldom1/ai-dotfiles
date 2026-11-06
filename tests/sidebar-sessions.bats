@@ -8,6 +8,8 @@ bats_require_minimum_version 1.5.0
 REPO="$BATS_TEST_DIRNAME/.."
 
 setup() {
+  # Socket tmux du test : deux suites en parallèle (autre worktree) ne partagent pas « aif-test »
+  export TMUX_TMPDIR="$BATS_TEST_TMPDIR"
   BIN=${AIF_SIDEBAR_BIN:-$(ls -t "$REPO"/sidebar/target/{release,debug}/aif-sidebar 2>/dev/null | head -1)}
   [ -n "$BIN" ] || skip "aif-sidebar not built"
   command -v zoxide >/dev/null && skip "zoxide installed: folders would come from it"

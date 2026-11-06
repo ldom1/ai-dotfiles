@@ -8,6 +8,8 @@ bats_require_minimum_version 1.5.0
 REPO="$BATS_TEST_DIRNAME/.."
 
 setup() {
+  # Socket tmux du test : deux suites en parallèle (autre worktree) ne partagent pas « aif-test »
+  export TMUX_TMPDIR="$BATS_TEST_TMPDIR"
   export HOME="$BATS_TEST_TMPDIR/home"
   mkdir -p "$HOME/.tmux/plugins/tpm"
   ln -s "$(cd "$REPO" && pwd)" "$HOME/ai-dotfiles"

@@ -7,6 +7,8 @@ REPO="$BATS_TEST_DIRNAME/.."
 RESURRECT="$HOME/.tmux/plugins/tmux-resurrect"
 
 setup() {
+  # Socket tmux du test : deux suites en parallèle (autre worktree) ne partagent pas « aif-test »
+  export TMUX_TMPDIR="$BATS_TEST_TMPDIR"
   [ -x "$RESURRECT/scripts/restore.sh" ] || skip "tmux-resurrect not installed"
   export AIF_HOME="$BATS_TEST_TMPDIR/home" PROJ="$BATS_TEST_TMPDIR/proj"
   mkdir -p "$AIF_HOME/resurrect" "$PROJ"

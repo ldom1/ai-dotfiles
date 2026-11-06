@@ -1,15 +1,15 @@
 //! Rendu de la sidebar. Inspiré de claude-squad : cartes sur deux lignes et plus, fond de
 //! sélection, onglets soulignés en accent, menu de touches « touche desc • … » en pied.
 
-use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph};
+use ratatui::Frame;
 
-use crate::app::{ACTIONS, App, Key, Mode, Screen, Sort, Tab, rank};
-use crate::model::{Agent, ago};
-use crate::sessions::{Fit, tilde};
+use crate::app::{rank, App, Key, Mode, Screen, Sort, Tab, ACTIONS};
+use crate::model::{ago, Agent};
+use crate::sessions::{tilde, Fit};
 use crate::theme::*;
 
 /// Zone cliquable de l'écran.
@@ -21,6 +21,8 @@ pub enum Hit {
     Answer(String, usize),
     Reply(String),
     Session(usize),
+    /// Agent dans l'arbre SESSIONS : un clic agit comme sur sa session, le clic droit ouvre son menu
+    TreeAgent(usize, String),
     Action(usize),
     /// Bouton qui envoie une touche : la souris fait tout ce que fait le clavier
     Key(Key),
@@ -319,6 +321,7 @@ fn footer_row(app: &App, w: u16) -> Row {
         (Some(Screen::New { .. }), _, _) => &[("⏎", "create"), ("+", "project"), ("esc", "cancel")],
         (Some(Screen::Kill(_)), _, _) => &[("⏎", "save & kill"), ("esc", "cancel")],
         (Some(Screen::Menu(_)), _, _) => &[("esc", "close")],
+        (Some(Screen::AgentMenu(_)), _, _) => &[("⏎", "go"), ("esc", "close")],
         (Some(Screen::SaveExit), _, _) => {
             &[("⏎", "save & exit"), ("d", "exit only"), ("esc", "cancel")]
         }
@@ -634,7 +637,9 @@ pub fn sessions_rows(app: &App, w: u16) -> (Vec<Row>, Option<(usize, usize)>) {
     let mut rows = vec![];
     let mut sel = None;
     let mut plus = Row::new();
-    plus.hit(" + New session", fg(ACCENT), Hit::Key(Key::Char('N')))
+    plus.hit(" + Terminal", fg(ACCENT), Hit::Key(Key::Char('T')))
+        .push("  ", Style::new())
+        .hit("+ New session", fg(ACCENT), Hit::Key(Key::Char('N')))
         .push("  ", Style::new())
         .hit("+ New project", fg(ACCENT), Hit::Key(Key::Char('+')));
     rows.push(plus);
@@ -681,6 +686,7 @@ pub fn sessions_rows(app: &App, w: u16) -> (Vec<Row>, Option<(usize, usize)>) {
             rows.push(Row::new().bg(bg).push("     no agents", fg(TREE)).done());
         }
         for (j, a) in agents.iter().enumerate() {
+            let agent_start = rows.len();
             let last = j + 1 == agents.len();
             let state = app.shown_state(a);
             let mut r = Row::new().bg(bg);
@@ -720,10 +726,13 @@ pub fn sessions_rows(app: &App, w: u16) -> (Vec<Row>, Option<(usize, usize)>) {
                 }
                 rows.push(r);
             }
+            for r in &mut rows[agent_start..] {
+                r.on = Some(Hit::TreeAgent(i, a.pane.clone()));
+            }
         }
         // Tout le bloc de la session est cliquable
         for r in &mut rows[start..] {
-            r.on = Some(Hit::Session(i));
+            r.on.get_or_insert(Hit::Session(i));
         }
         if i == app.session_sel {
             sel = Some((start, rows.len() - 1));
@@ -794,7 +803,11 @@ fn buttons(cancel: &str, confirm: &str, confirm_style: Style) -> Row {
     r.push(" ", Style::new());
     r.hit(format!("[ {cancel} ]"), fg(MUTED), Hit::Key(Key::Esc));
     r.push("  ", Style::new());
-    r.hit(format!("[ {confirm} ]"), confirm_style, Hit::Key(Key::Enter));
+    r.hit(
+        format!("[ {confirm} ]"),
+        confirm_style,
+        Hit::Key(Key::Enter),
+    );
     r
 }
 
@@ -948,17 +961,22 @@ pub fn screen_rows(app: &App, screen: &Screen, w: u16) -> (Vec<Row>, Option<(usi
             rows.push(buttons("Cancel", "Rename", bold(ACCENT)));
         }
         Screen::Menu(name) => {
-            rows.push(Row::new().push(format!(" SESSION {name}"), bold(ACCENT)).done());
+            rows.push(
+                Row::new()
+                    .push(format!(" SESSION {name}"), bold(ACCENT))
+                    .done(),
+            );
             if let Some(s) = app.sessions.iter().find(|s| &s.name == name) {
                 let path = format!(" {}", cut(&tilde(&s.path, &app.home), w as usize - 1));
                 rows.push(Row::new().push(path, fg(MUTED)).done());
             }
             rows.push(Row::new());
-            let items: [(&str, &str, &str, Key); 7] = [
+            let items: [(&str, &str, &str, Key); 8] = [
                 ("⇄", "Switch", "⏎", Key::Enter),
                 ("✎", "Rename…", "r", Key::Char('r')),
                 ("✕", "Kill…", "K", Key::Char('K')),
                 ("", "", "", Key::Esc),
+                ("+", "New terminal", "T", Key::Char('T')),
                 ("+", "New session…", "N", Key::Char('N')),
                 ("+", "New project…", "+", Key::Char('+')),
                 ("◧", "Hide sidebar", "b", Key::Char('b')),
@@ -969,12 +987,59 @@ pub fn screen_rows(app: &App, screen: &Screen, w: u16) -> (Vec<Row>, Option<(usi
                     continue;
                 }
                 let mut r = Row::new().on(Hit::Key(k));
-                r.push(format!("   {icon} "), fg(ACCENT)).push(label, fg(TEXT));
+                r.push(format!("   {icon} "), fg(ACCENT))
+                    .push(label, fg(TEXT));
                 r.right(format!("{key} "), fg(ACCENT), w);
                 rows.push(r);
             }
             rows.push(Row::new());
             rows.push(buttons("Cancel", "Switch", bold(ACCENT)));
+        }
+        Screen::AgentMenu(pane) => {
+            let Some(a) = app.agents.iter().find(|a| &a.pane == pane) else {
+                return (rows, sel);
+            };
+            let task = a.task.as_deref().unwrap_or(a.tool_name());
+            rows.push(
+                Row::new()
+                    .push(
+                        format!(" AGENT {}", cut(task, w as usize - 7)),
+                        bold(ACCENT),
+                    )
+                    .done(),
+            );
+            let state = app.shown_state(a);
+            rows.push(
+                Row::new()
+                    .push(format!(" {} · {state}", a.session), fg(MUTED))
+                    .done(),
+            );
+            rows.push(Row::new());
+            let mut items = vec![
+                ("→", "Go to agent", "⏎", Key::Enter),
+                ("◧", "Peek", "p", Key::Char('p')),
+            ];
+            if state == "check" {
+                items.push(("↩", "Reply…", "i", Key::Char('i')));
+            }
+            if a.state == "running" {
+                items.push(("■", "Interrupt", "x", Key::Char('x')));
+            }
+            items.push(("", "", "", Key::Esc));
+            items.push(("⇄", "Session menu…", "m", Key::Char('m')));
+            for (icon, label, key, k) in items {
+                if label.is_empty() {
+                    rows.push(Row::new());
+                    continue;
+                }
+                let mut r = Row::new().on(Hit::Key(k));
+                r.push(format!("   {icon} "), fg(ACCENT))
+                    .push(label, fg(TEXT));
+                r.right(format!("{key} "), fg(ACCENT), w);
+                rows.push(r);
+            }
+            rows.push(Row::new());
+            rows.push(buttons("Cancel", "Go to", bold(ACCENT)));
         }
         Screen::Project { parent, input } => {
             rows.push(Row::new().push(" NEW PROJECT", bold(ACCENT)).done());
@@ -1000,7 +1065,11 @@ pub fn screen_rows(app: &App, screen: &Screen, w: u16) -> (Vec<Row>, Option<(usi
                     _ if std::path::Path::new(&dir).exists() => "exists: new session".into(),
                     f => format!("new folder + git init, session {}", f.name()),
                 };
-                rows.push(Row::new().push(format!(" {}", tilde(&dir, &app.home)), bold(TEXT)).done());
+                rows.push(
+                    Row::new()
+                        .push(format!(" {}", tilde(&dir, &app.home)), bold(TEXT))
+                        .done(),
+                );
                 rows.extend(wrap_rows(&what, w, fg(MUTED)));
                 rows.push(Row::new());
             }
@@ -1022,8 +1091,8 @@ mod tests {
     use super::*;
     use crate::model::{Git, Subagent};
     use crate::sessions::Session;
-    use ratatui::Terminal;
     use ratatui::backend::TestBackend;
+    use ratatui::Terminal;
 
     fn screen(app: &mut App, w: u16, h: u16) -> (String, Vec<(Rect, Hit)>) {
         let mut t = Terminal::new(TestBackend::new(w, h)).unwrap();
@@ -1276,10 +1345,7 @@ mod tests {
         ] {
             assert!(s.contains(want), "missing {want:?}\n{s}");
         }
-        assert!(
-            hits.iter()
-                .any(|(_, h)| *h == Hit::Folder(2))
-        );
+        assert!(hits.iter().any(|(_, h)| *h == Hit::Folder(2)));
         app.key(crate::app::Key::Down);
         let (s, _) = screen(&mut app, 60, 30);
         assert!(
@@ -1320,10 +1386,9 @@ mod tests {
         ] {
             assert!(s.contains(want), "missing {want:?}\n{s}");
         }
-        assert!(
-            hits.iter()
-                .any(|(_, h)| *h == Hit::Key(crate::app::Key::Char('d')))
-        );
+        assert!(hits
+            .iter()
+            .any(|(_, h)| *h == Hit::Key(crate::app::Key::Char('d'))));
     }
 
     #[test]

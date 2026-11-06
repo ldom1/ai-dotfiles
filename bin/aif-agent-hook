@@ -70,7 +70,9 @@ if [[ $new_state != "$prev_state" ]] && { [[ $new_state == check ]] || { [[ $new
   # du hook, que Claude Code attend.
   # aif-platform : PATH, sinon ~/.local/bin (PATH de Claude Code sans ce dossier)
   platform=$(command -v aif-platform || echo "$HOME/.local/bin/aif-platform")
-  if [[ $visible != 1 && -x $platform ]]; then
+  # Seulement si tmux répond 0 : sans réponse (pas de serveur, pane mort, tmux factice d'un banc
+  # d'essai), pas de notification. Un benchmark du hook a ainsi envoyé ~100 toasts en 40 s.
+  if [[ $visible == 0 && -x $platform ]]; then
     sess=$(tmux display -p -t "$TMUX_PANE" '#{session_name}' 2>/dev/null)
     if [[ $new_state == check ]]; then
       "$platform" notify "◉ $sess needs you" "$(jq -r '.question // ""' "$FILE")" "$sess" critical </dev/null >/dev/null 2>&1 &
