@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Added
+- SessionStart prints one review line for the current project, before the pitfalls block: `[review] <slug>: 2 ouverts (1 geste, 1 arbitrage) → TASKS_REVIEW`. It comes from `tasks-review.py summary` (3 s timeout, at most 300 bytes). It prints nothing when the project has no open item, when `inbox/review/` is missing, or when the script fails; the error goes to `brain-load.log`.
+- The step adds about 150 ms to a session start (6 runs: slug 12-44 ms, `uv run --script` 106-149 ms).
+- Tests: three in `test_session_start_budget.py`, and the full-budget test now holds a review line.
+
 - A question left in prose puts the agent in `check`. On `Stop`, `bin/aif-agent-hook` reads the last non-empty line of the last assistant message.
 - The line is a question when it ends with `?` or `？`. It is not a question when it sits inside an unclosed code fence, or when it is a URL that holds a `?`.
 - A question sets the state to `check`, with that line as the question and no options. The sidebar shows "needs you" and the desktop notification fires.
