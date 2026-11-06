@@ -183,13 +183,18 @@ fn run_sidebar() -> Result<()> {
                         MouseEventKind::Down(MouseButton::Left) => {
                             click(&mut app, hit_at(&hits, m.column, m.row))
                         }
-                        // Clic droit : menu de la session cliquée, sinon de la session courante
+                        // Clic droit : menu de l'agent ou de la session cliqués, sinon de la session courante
                         MouseEventKind::Down(MouseButton::Right) => {
-                            let s = match hit_at(&hits, m.column, m.row) {
-                                Some(Hit::Session(i)) => app.sessions.get(i).map(|s| s.name.clone()),
-                                _ => None,
-                            };
-                            app.screen = Some(app::Screen::Menu(s.unwrap_or(app.current.clone())));
+                            app.screen = Some(match hit_at(&hits, m.column, m.row) {
+                                Some(Hit::TreeAgent(_, pane)) => app::Screen::AgentMenu(pane),
+                                Some(Hit::Agent(i)) if i < app.visible().len() => {
+                                    app::Screen::AgentMenu(app.visible()[i].pane.clone())
+                                }
+                                Some(Hit::Session(i)) if i < app.sessions.len() => {
+                                    app::Screen::Menu(app.sessions[i].name.clone())
+                                }
+                                _ => app::Screen::Menu(app.current.clone()),
+                            });
                             Effect::None
                         }
                         MouseEventKind::ScrollDown => app.key(Key::Down),
@@ -244,7 +249,7 @@ fn click(app: &mut App, hit: Option<Hit>) -> Effect {
             }
         }
         Some(Hit::Answer(pane, n)) => return app.click_answer(&pane, n),
-        Some(Hit::Session(i)) => {
+        Some(Hit::Session(i) | Hit::TreeAgent(i, _)) => {
             app.session_sel = i;
             if let Some(s) = app.sessions.get(i) {
                 return Effect::Switch(s.name.clone());
@@ -268,6 +273,7 @@ fn apply(app: &App, e: &Effect) -> Result<()> {
     match e {
         Effect::None | Effect::Quit | Effect::OpenNew | Effect::OpenProject => Ok(()),
         Effect::Switch(n) => tmux::switch(n),
+        Effect::NewTerminal => tmux::new_terminal(&app.home),
         Effect::Create { name, dir } => tmux::create(name, dir),
         Effect::KillSession(n) => tmux::kill_session(n),
         Effect::SaveExit => tmux::save_exit(),

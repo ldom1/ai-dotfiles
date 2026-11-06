@@ -86,6 +86,8 @@ pub enum Effect {
     /// Ouvre l'écran New session (ou New project) : `main` lit les dossiers, puis appelle `open_new`.
     OpenNew,
     OpenProject,
+    /// Nouvelle session dans ~, nommée comme une session tmux sans nom (main-2…)
+    NewTerminal,
     Switch(String),
     Create {
         name: String,
@@ -127,6 +129,8 @@ pub enum Screen {
     },
     /// Menu d'une session (clic droit) : ses actions et les actions globales
     Menu(String),
+    /// Menu d'un agent (clic droit sur l'agent), par son pane
+    AgentMenu(String),
     /// Nouveau projet : un nom, créé dans `parent` (dossier des projets)
     Project {
         parent: String,
@@ -136,6 +140,7 @@ pub enum Screen {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActionKind {
+    Terminal,
     New,
     Project,
     Rename,
@@ -161,7 +166,15 @@ pub struct Action {
     pub kind: ActionKind,
 }
 
-pub const ACTIONS: [Action; 13] = [
+pub const ACTIONS: [Action; 14] = [
+    Action {
+        group: "SESSION",
+        icon: "+",
+        label: "New terminal",
+        keys: "T",
+        note: "new session in ~",
+        kind: ActionKind::Terminal,
+    },
     Action {
         group: "SESSION",
         icon: "+",
@@ -418,6 +431,7 @@ impl App {
     fn run_action(&mut self, kind: ActionKind) -> Effect {
         let target = self.target().map(|s| s.name.clone());
         match kind {
+            ActionKind::Terminal => return Effect::NewTerminal,
             ActionKind::New => return Effect::OpenNew,
             ActionKind::Project => return Effect::OpenProject,
             ActionKind::Rename => {
@@ -516,11 +530,33 @@ impl App {
                     self.screen = Some(Screen::Kill(s));
                     Effect::None
                 }
+                Key::Char('T') => close(self, Effect::NewTerminal),
                 Key::Char('N') => close(self, Effect::OpenNew),
                 Key::Char('+') => close(self, Effect::OpenProject),
                 Key::Char('b') => close(self, Effect::ToggleSidebar),
                 _ => Effect::None,
             },
+            (Screen::AgentMenu(pane), k) => {
+                let Some(i) = self.visible().iter().position(|a| a.pane == pane) else {
+                    return close(self, Effect::None);
+                };
+                match k {
+                    // la session de l'agent, pas la session courante
+                    Key::Char('m') => {
+                        self.screen = Some(Screen::Menu(self.visible()[i].session.clone()));
+                        Effect::None
+                    }
+                    Key::Enter | Key::Char('p' | 'x' | 'i') => {
+                        self.screen = None;
+                        if k == Key::Char('i') {
+                            self.set_tab(Tab::Agents); // le champ de réponse est dans AGENTS
+                        }
+                        self.select(i);
+                        self.agent_key(k)
+                    }
+                    _ => Effect::None,
+                }
+            }
             (Screen::Kill(s), Key::Enter | Key::Char('y')) => close(self, Effect::KillSession(s)),
             (Screen::Kill(_), Key::Char('n')) => close(self, Effect::None),
             (Screen::SaveExit, Key::Enter | Key::Char('y')) => close(self, Effect::SaveExit),
@@ -656,6 +692,7 @@ impl App {
             Key::Char('?') => return Effect::Help,
             // Écrans, depuis n'importe quel onglet (Ctrl+Shift+N / K, prefix Q les envoient)
             Key::Char('N') => return Effect::OpenNew,
+            Key::Char('T') => return Effect::NewTerminal,
             Key::Char('+') => return Effect::OpenProject,
             // Ctrl+Shift+K : la session courante, pas celle sous le curseur
             Key::Char('K') if !self.current.is_empty() => {
@@ -671,6 +708,16 @@ impl App {
                 self.sort = self.sort.next();
                 self.clamp();
             }
+            Key::Enter | Key::Char('p' | 'x' | 'i') => return self.agent_key(k),
+            Key::Char(c @ '1'..='9') => return self.digit(c as usize - '0' as usize),
+            _ => {}
+        }
+        Effect::None
+    }
+
+    /// Touches de l'agent sélectionné : onglet AGENTS et menu de l'agent.
+    fn agent_key(&mut self, k: Key) -> Effect {
+        match k {
             Key::Enter => {
                 return self
                     .selected_agent()
@@ -686,13 +733,7 @@ impl App {
                     return Effect::Interrupt(a.pane.clone());
                 }
             }
-            Key::Char('i') => {
-                if self.selected_waits() {
-                    self.input.clear();
-                    self.mode = Mode::Reply;
-                }
-            }
-            Key::Char(c @ '1'..='9') => return self.digit(c as usize - '0' as usize),
+            Key::Char('i') => self.start_reply(),
             _ => {}
         }
         Effect::None
@@ -1001,7 +1042,7 @@ mod tests {
         let mut a = app();
         a.key(Key::Tab);
         assert_eq!(a.tab, Tab::Actions);
-        assert_eq!(a.key(Key::Enter), Effect::OpenNew); // ACTIONS : 1re action
+        assert_eq!(a.key(Key::Enter), Effect::NewTerminal); // ACTIONS : 1re action
         a.key(Key::BackTab);
         a.key(Key::BackTab);
         assert_eq!(a.tab, Tab::Sessions);
@@ -1035,6 +1076,7 @@ mod tests {
         for (i, act) in ACTIONS.iter().enumerate() {
             let mut a = with_sessions();
             let (effect, screen) = match act.kind {
+                K::Terminal => (Effect::NewTerminal, None),
                 K::New => (Effect::OpenNew, None),
                 K::Project => (Effect::OpenProject, None),
                 K::Rename => (
@@ -1240,13 +1282,14 @@ mod tests {
             }
         );
         assert_eq!(a.key(Key::Char('s')), Effect::Save);
-        a.key(Key::Down);
-        a.key(Key::Down);
-        a.key(Key::Down);
+        for _ in 0..4 {
+            a.key(Key::Down);
+        }
         assert_eq!(a.key(Key::Enter), Effect::LastSession);
-        assert_eq!(a.click_action(12), Effect::ToggleSidebar);
-        assert_eq!(a.click_action(0), Effect::OpenNew);
-        assert_eq!(a.click_action(1), Effect::OpenProject);
+        assert_eq!(a.click_action(13), Effect::ToggleSidebar);
+        assert_eq!(a.click_action(0), Effect::NewTerminal);
+        assert_eq!(a.click_action(1), Effect::OpenNew);
+        assert_eq!(a.click_action(2), Effect::OpenProject);
     }
 
     #[test]

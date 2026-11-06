@@ -9,6 +9,8 @@ bats_require_minimum_version 1.5.0
 REPO="$BATS_TEST_DIRNAME/.."
 
 setup() {
+  # Socket tmux du test : deux suites en parallèle (autre worktree) ne partagent pas « aif-test »
+  export TMUX_TMPDIR="$BATS_TEST_TMPDIR"
   # Le binaire le plus récent (release par install.sh, debug par cargo build)
   BIN=${AIF_SIDEBAR_BIN:-$(ls -t "$REPO"/sidebar/target/{release,debug}/aif-sidebar 2>/dev/null | head -1)}
   [ -n "$BIN" ] || skip "aif-sidebar not built"

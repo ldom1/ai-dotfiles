@@ -7,6 +7,8 @@ bats_require_minimum_version 1.5.0
 REPO="$BATS_TEST_DIRNAME/.."
 
 setup() {
+  # Socket tmux du test : deux suites en parallèle (autre worktree) ne partagent pas « aif-test »
+  export TMUX_TMPDIR="$BATS_TEST_TMPDIR"
   export AIF_STATE_DIR="$BATS_TEST_TMPDIR/agents"
   mkdir -p "$AIF_STATE_DIR" "$BATS_TEST_TMPDIR/bin"
   printf '#!/bin/sh\nexec %s -L aif-test "$@"\n' "$(command -v tmux)" > "$BATS_TEST_TMPDIR/bin/tmux"

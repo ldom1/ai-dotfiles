@@ -18,7 +18,7 @@ setup() {
   cat > "$BATS_TEST_TMPDIR/bin/tmux" <<'SH'
 #!/bin/sh
 case "$*" in
-  *session_attached*) echo "${AIF_TEST_VISIBLE:-0}" ;;
+  *session_attached*) echo "${AIF_TEST_VISIBLE-0}" ;;   # AIF_TEST_VISIBLE= : tmux ne répond rien
   *session_name*) echo proj ;;
 esac
 SH
@@ -83,6 +83,12 @@ notified() { sleep 0.2; [ -f "$NOTIFY_LOG" ] && wc -l < "$NOTIFY_LOG" || echo 0;
 @test "a failed tool after approval leaves check" {
   ev session-start; ev notification-permission; ev post-tool-failure
   [ "$(st .state)" = running ]
+}
+
+@test "tmux gives no answer (no server, stub, dead pane): no notification" {
+  export AIF_TEST_VISIBLE=
+  ev session-start; ev pre-tool-ask
+  [ "$(st .state)" = check ] && [ "$(notified)" -eq 0 ]
 }
 
 @test "visible pane: no notification" {

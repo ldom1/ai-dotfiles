@@ -35,7 +35,7 @@
 - Test: `test_roadmap_template_and_capture_agree` in `skills/capture/scripts/tests/test_capture_contract.py`.
 
 - `/capture` (1.3.0) writes anything that needs the human to a review item. The file is `$BRAIN_PATH/inbox/review/<TODAY>-<slug>-<topic>.md`, from `_templates/review-item.md`.
-  - A gesture states `why_not_agent`. A decision lists its options. `session:` holds `$CLAUDE_SESSION_ID` when it is set.
+  - An action states `why_not_agent`. A decision lists its options. `session:` holds `$CLAUDE_SESSION_ID` when it is set.
   - The agent closes an item with `fait` or `écarté`. Only the human sets `répondu`.
   - If SessionStart printed a `[review] … répondu` line, `/capture` opens those items, acts on `answer`, then sets `fait`.
   - `/capture` runs `tasks-review.py check "${BRAIN_PATH:?}/inbox/review"` and fixes every `FAIL`. An unset `BRAIN_PATH` now fails loudly, not `OK 0 items`.
@@ -50,10 +50,23 @@
   - The test gate in `.git-promotion.json` has `--with pyyaml==6.0.2`.
   - A `summary` with an open item of an invalid `type` counts it and shows no empty parentheses. `check .` resolves the vault from the real path of `DIR`.
   - Tests: `.claude/hooks/tests/test_tasks_review.py`.
-- Vault (not in this repo): `TASKS_REVIEW.md` and `TASKS_REVIEW.base` (five Bases views), the template `_templates/review-item.md` and `inbox/review/`. README section "Review the agents' work".
+- Vault (not in this repo): `TASKS_REVIEW.md` and `TASKS_REVIEW.base` (five Bases views), the template `_templates/review-item.md` and `inbox/review/`. `docs/brain.md` section "Review the agents' work".
+- Sidebar: `+ Terminal` (SESSIONS tab, ACTIONS tab, session menu, key `T`) opens a new session in `~` and switches to it. The `after-new-session` hook names it like any unnamed session (`main`, then `main-2`). Test: `sidebar/tests/e2e.rs`.
+- Sidebar: right click on an agent opens the menu of that agent (AGENTS tab, and agent rows in the SESSIONS tree): Go to agent, Peek, Reply… (when it waits), Interrupt (when it runs), Session menu… (the session of the agent). Before, it opened the menu of the current session. A left click on an agent row in the SESSIONS tree still switches to its session. Tests: two e2e tests in `sidebar/tests/e2e.rs`.
+- README: a 30 s video of the session loop (`docs/media/ai-dotfiles-workflow.gif`, `.mp4`), made with [HyperFrames](https://github.com/heygen-com/hyperframes). The composition is not in the repo.
+
+### Changed
+- The tmux + `aif-sidebar` session harness is named **ai-dotdeck** in the docs. Commands and binaries keep their names (`tma`, `aif-sidebar`).
+- `README.md` is now a short page: the idea, the session loop (vault → tmux → `/capture` → vault), what is inside, quick start. The details moved, unchanged, to `docs/install.md`, `docs/brain.md`, `docs/terminal.md`, `docs/skills.md` and `docs/local-ci.md`.
 
 ### Fixed
 - `harness-metrics`: `sensors.installed` counted `command` lines in hook configs, so it printed 26 next to 26 drafts. The `sensors` block now has `drafts`, `promoted` (drafts with `**Status:** shipped` and an existing `**Installs at:**` file; a relative path resolves against the repo; a draft that only extends an existing file does not count) and `hook_commands` (the old count, renamed). Key `installed` is removed. Test: `test_sensors_promoted_needs_shipped_status_and_an_existing_file`.
+- `aif-agent-hook` sent a Windows toast (BurntToast, shown as "Windows PowerShell") when tmux gave no answer: `visible != 1` treated an empty answer as a hidden pane. A benchmark that ran the real hook with a stub `tmux` sent about 100 toasts in 40 s. The hook now notifies only when tmux answers `0` (pane not visible). Test: `tests/agent-hook.bats`.
+- bats tests shared one tmux server (`tmux -L aif-test` in `/tmp/tmux-<uid>/`). Two suites at the same time (two worktrees) failed at random (`duplicate session: proj`). Each test now sets `TMUX_TMPDIR` to its own folder. Two parallel runs: 71/71 each.
+- The skill install commands named a wrong marketplace (`@ldom1/ai-dotfiles`) and six skills the marketplace does not publish (`capture`, `brain-search`, `brain-audit`, `server-audit`, `sop-builder`, `photo-archive-triage`). `docs/skills.md` now lists the ten plugins of `.claude-plugin/marketplace.json` with `@ldom1-ai-dotfiles`.
+- `cargo test --test e2e` failed 5 of 19 tests on WSL (Ubuntu 22.04, tmux 3.2a). There are two causes, both in the tests:
+  - Ubuntu's `update-motd.sh` printed the MOTD in each fresh test `HOME`. Its words (`help.ubuntu.com`) caught text locators, so `click("help")` hit the shell pane. Each test `HOME` now gets a `.hushlogin`.
+  - tmux before 3.6 drops a click of another button less than 300 ms after the previous click (double-click window in `server_client_check_mouse`). tui-test clicks in about 80 ms, so a left click right after a right click was lost. The test helpers now wait 400 ms after each click is sent. A human rarely clicks that fast, so the sidebar code does not change.
 
 ## [0.16.3] - 2026-11-06
 

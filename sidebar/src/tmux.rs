@@ -116,6 +116,13 @@ pub fn create(name: &str, dir: &str) -> Result<()> {
     switch(name)
 }
 
+/// Nouvelle session dans `home`, sans nom : le hook after-new-session la nomme (main-2…).
+/// Le client y va par son id, car le hook la renomme en tâche de fond.
+pub fn new_terminal(home: &str) -> Result<()> {
+    let id = tmux(&["new-session", "-d", "-P", "-F", "#{session_id}", "-c", home])?;
+    run(&["switch-client", "-t", id.trim()])
+}
+
 /// Sauvegarde d'abord (la session ne revient pas à la restauration), puis tue la session.
 pub fn kill_session(name: &str) -> Result<()> {
     save()?;
@@ -159,7 +166,9 @@ pub fn zoom() -> Result<()> {
 /// Chemin qui a lancé ce binaire (~/.local/bin/aif-sidebar) : il reste valable après une
 /// recompilation, contrairement à `current_exe()` qui finit alors par « (deleted) ».
 pub fn self_path() -> String {
-    std::env::args().next().unwrap_or_else(|| "aif-sidebar".into())
+    std::env::args()
+        .next()
+        .unwrap_or_else(|| "aif-sidebar".into())
 }
 
 pub fn open_help() -> Result<()> {
