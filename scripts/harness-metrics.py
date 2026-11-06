@@ -315,11 +315,11 @@ def _sensors(vault: Path) -> dict:
     promoted = 0
     for p in drafts:
         m = INSTALLS_AT.search(p.read_text(errors="replace"))
-        promoted += bool(m and Path(os.path.expanduser(m[1])).exists())
+        promoted += bool(m and (REPO_DIR / os.path.expanduser(m[1])).is_file())  # absolute stays absolute
     hook_commands = sum(1 for c in HOOK_CONFIGS if (REPO_DIR / c).is_file()
                         for ln in (REPO_DIR / c).read_text(errors="replace").splitlines() if HOOK_COMMAND.match(ln))
     return {"drafts": _leaf(len(drafts), "mesuré", "inbox/sensors/*"),
-            "promoted": _leaf(promoted, "mesuré", "inbox/sensors/* whose **Installs at:** path exists"),
+            "promoted": _leaf(promoted, "mesuré", "inbox/sensors/* whose **Installs at:** path is an existing file"),
             "hook_commands": _leaf(hook_commands, "mesuré", "lines with `command` in " + ", ".join(HOOK_CONFIGS))}
 
 

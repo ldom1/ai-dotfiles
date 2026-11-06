@@ -367,8 +367,37 @@ def test_sensors_promoted_counts_drafts_whose_target_exists(world, tmp_path):
     (tmp_path / "repo/.claude/settings.json.tpl").write_text('{"hooks": [{\n  "command": "x",\n  "type": "command"\n}]}')
     s = hm.history(projects, log, vault)["sensors"]
     assert (s["drafts"]["value"], s["promoted"]["value"], s["hook_commands"]["value"]) == (2, 1, 1)
-    assert s["promoted"]["source"] == "inbox/sensors/* whose **Installs at:** path exists"
+    assert s["promoted"]["source"] == "inbox/sensors/* whose **Installs at:** path is an existing file"
     assert "installed" not in s
+
+
+def _promoted(world, tmp_path, monkeypatch, cwd, targets):
+    """`promoted` for one draft per target. REPO_DIR (tmp/repo) holds a file and a dir; HOME (tmp/home) holds a file."""
+    projects, log, vault = world
+    (vault / "inbox/sensors").mkdir(parents=True)
+    repo, home = tmp_path / "repo", tmp_path / "home"
+    (repo / ".claude/hooks").mkdir()
+    (repo / ".claude/hooks/rel.py").write_text("x\n")
+    (home / "bin").mkdir(parents=True)
+    (home / "bin/tilde.sh").write_text("x\n")
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.chdir(cwd or vault)
+    for i, t in enumerate(targets):
+        (vault / f"inbox/sensors/d{i}.md").write_text(f"# d\n**Installs at:** `{t}`\n")
+    return hm.history(projects, log, vault)["sensors"]["promoted"]["value"]
+
+
+def test_sensors_promoted_resolves_relative_path_against_repo_not_cwd(world, tmp_path, monkeypatch):
+    assert _promoted(world, tmp_path, monkeypatch, None, [".claude/hooks/rel.py"]) == 1  # cwd is the vault
+
+
+def test_sensors_promoted_expands_home(world, tmp_path, monkeypatch):
+    assert _promoted(world, tmp_path, monkeypatch, None, ["~/bin/tilde.sh", "~/bin/missing.sh"]) == 1
+
+
+def test_sensors_promoted_needs_a_file_not_a_directory(world, tmp_path, monkeypatch):
+    targets = [f"{tmp_path}/repo/.claude/hooks/", ".claude/hooks", "~/bin", "n/a", ".claude/hooks/gone.py"]
+    assert _promoted(world, tmp_path, monkeypatch, tmp_path / "repo", targets) == 0
 
 
 def test_session_logs_and_harness_sessions(world):
