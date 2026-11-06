@@ -54,15 +54,15 @@ Anything that needs the human goes to a review item, not to `**Follow-ups:**`. W
 
 - A manual gesture (`type: geste`) states `why_not_agent`. If the agent can do it, do it now instead.
 - A decision (`type: arbitrage`) lists its `options`, at least two.
-- An item this session resolved gets its `status` and `answer` set.
+- An item this session resolved gets `status: répondu` with an `answer`, or `status: fait` or `écarté`. Open items are in `$BRAIN_PATH/inbox/review/`.
 
-Check the items, then fix every `FAIL` line and run the check again until it prints `OK`:
+Check the items, then fix every `FAIL` line and run the check again until it prints `OK <n> items`:
 
 ```bash
-uv run --script ~/ai-dotfiles/scripts/tasks-review.py check
+uv run --script ~/ai-dotfiles/scripts/tasks-review.py check "$BRAIN_PATH/inbox/review"
 ```
 
-This is the history. Details live here, not in the memory files below.
+The session log is the history. Details live here, not in the memory files below.
 
 If `$BRAIN_PATH/inbox/daily/checkpoints/<slug>/<TODAY>.md` exists (written by the PreCompact hook before each compaction), use it to recover what happened before the context was compacted. Fold the useful lines into the log, then delete the checkpoint file.
 

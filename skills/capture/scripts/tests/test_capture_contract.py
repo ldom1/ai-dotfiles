@@ -26,4 +26,8 @@ def test_capture_routes_human_items_to_review():
     skill = skill_text()
     assert "inbox/review/" in skill
     assert "why_not_agent" in skill
-    assert "uv run --script ~/ai-dotfiles/scripts/tasks-review.py check" in skill
+    assert "_templates/review-item.md" in skill
+    assert (
+        'uv run --script ~/ai-dotfiles/scripts/tasks-review.py check "$BRAIN_PATH/inbox/review"'
+        in skill
+    )
