@@ -333,6 +333,8 @@ Opt a project into the Stop check:
 echo 'ruff check . && pytest -x -q' > .claude/stop-check   # this repo uses shellcheck on changed *.sh
 ```
 
+Opt-in rule ^v5 sensor: `TEST_CMD='pytest -q' .claude/hooks/fails-on-base.sh [base]`, from `.claude/stop-check` or `git-hooks/pre-push`, exits 1 when a fix commit's changed tests pass on the base code. Nothing wires it by default.
+
 `.claude/stop-check` is a shell command that runs with your user's permissions at the end of every agent turn that left changes. A cloned repo can ship one, so the hook runs it only after you approve it:
 
 ```bash
