@@ -17,6 +17,14 @@
 - `/capture` (1.3.0) files an item waiting on an event under `Gates` and a dropped item under `Rejected`. It never deletes a `Rejected` line without the user.
 - Test: `test_roadmap_template_and_capture_agree` in `skills/capture/scripts/tests/test_capture_contract.py`.
 
+- `scripts/tasks-review.py`: checks the review items of the Local Brain (`inbox/review/`, one note per manual step or pending decision) and prints a one-line summary.
+  - `check [DIR]` prints `FAIL <file>: <reason>` per problem (exit 1), or `OK <n> items`. It validates the enums (`type`, `status`, `tool`), the `[[slug]]` link, that `projects/<slug>.md` exists, `why_not_agent` on a `geste`, two `options` on an `arbitrage`, and `answer` on a `répondu`. An empty property counts as missing. A missing directory gives `OK 0 items`.
+  - `summary --project <slug> [DIR]` prints one line of at most 300 bytes, for example `[review] dombot: 3 ouverts (2 gestes, 1 arbitrage), 1 répondu < 7 j → TASKS_REVIEW`. It prints nothing when the project has no open item and no answer in the last 7 days (file modification time). It prints nothing for an unknown project.
+  - New dependency, approved by the owner: PyYAML 6.0.2, declared in the PEP 723 header and run with `uv run --script`. It reads the frontmatter of Obsidian notes, where the Properties UI writes YAML lists. Rejected: the flat `key: value` reader in `test_skill_frontmatter.py`, which breaks on those lists.
+  - The test gate in `.git-promotion.json` has `--with pyyaml==6.0.2`.
+  - Tests: `.claude/hooks/tests/test_tasks_review.py`.
+- Vault (not in this repo): `TASKS_REVIEW.md` and `TASKS_REVIEW.base` (five Bases views), the template `_templates/review-item.md` and `inbox/review/`. README section "Review the agents' work".
+
 ### Fixed
 - `harness-metrics`: `sensors.installed` counted `command` lines in hook configs, so it printed 26 next to 26 drafts. The `sensors` block now has `drafts`, `promoted` (drafts whose `**Installs at:**` path is an existing file; a relative path resolves against the repo) and `hook_commands` (the old count, renamed). Key `installed` is removed. Test: `test_sensors_promoted_counts_drafts_whose_target_exists`.
 

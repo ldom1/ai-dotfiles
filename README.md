@@ -402,6 +402,25 @@ The file is not named `.vibe/hooks.toml`. In this trusted repo, Vibe would load 
 
 ---
 
+## Review the agents' work
+
+One place holds the manual steps and the open decisions of all agents on all projects. The vault note `TASKS_REVIEW` shows them.
+
+- Each item is one note in `inbox/review/` (template: `_templates/review-item`).
+- A `geste` is a manual step the agent cannot do. It carries `why_not_agent`.
+- An `arbitrage` is a decision. It carries at least two `options`.
+- You write your reply in `answer`, then set `status` to `répondu`, `fait` or `écarté`.
+- `TASKS_REVIEW.base` is an Obsidian Bases file with five views: to do, by project, decisions, manual steps, done this week.
+
+`scripts/tasks-review.py` checks the items. It needs PyYAML, which `uv run --script` installs from the PEP 723 header.
+
+```bash
+uv run --script scripts/tasks-review.py check [DIR]                    # FAIL <file>: <reason>, or OK <n> items
+uv run --script scripts/tasks-review.py summary --project <slug> [DIR] # one line, or nothing
+```
+
+`DIR` defaults to `$BRAIN_PATH/inbox/review`.
+
 ## Personal setup (quick start)
 
 ```bash
