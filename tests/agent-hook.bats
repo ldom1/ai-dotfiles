@@ -161,3 +161,37 @@ notified() { sleep 0.2; [ -f "$NOTIFY_LOG" ] && wc -l < "$NOTIFY_LOG" || echo 0;
   run -0 "$REPO/bin/aif-statusline" <<<'{"model":{"display_name":"Opus"},"context_window":{"remaining_percentage":20}}'
   [ "$output" = "Opus · ctx 80%" ]
 }
+
+@test "Stop with a trailing question: check, prose, one notification" {
+  ev session-start; ev user-prompt; ev stop-question
+  [ "$(st .state)" = check ]
+  [ "$(st .question)" = "Should I squash the branch?" ]
+  [ "$(st .ask)" = prose ]
+  [ "$(st '.options | length')" -eq 0 ]
+  [ "$(st .last_message)" = $'Two options.\nShould I squash the branch?' ]
+  [ "$(notified)" -eq 1 ]
+  grep -qxF 'notify|◉ proj needs you|Should I squash the branch?|proj|critical|' "$NOTIFY_LOG"
+}
+
+@test "Stop ending in a fenced block or URL with ?: done" {
+  ev session-start; ev user-prompt; ev stop-fence-question
+  [ "$(st .state)" = done ]
+  ev user-prompt; ev stop-url-question
+  [ "$(st .state)" = done ]
+  [ "$(st .question)" = null ]
+  [ "$(notified)" -eq 0 ]
+}
+
+@test "prompt after a prose question: running" {
+  ev session-start; ev user-prompt; ev stop-question
+  ev user-prompt
+  [ "$(st .state)" = running ]
+  [ "$(st .question)" = null ]
+}
+
+@test "ask kind: tool for AskUserQuestion, permission for a permission prompt" {
+  ev session-start; ev user-prompt; ev pre-tool-ask
+  [ "$(st .ask)" = tool ]
+  ev post-tool; ev pre-tool-bash; ev notification-permission
+  [ "$(st .ask)" = permission ]
+}

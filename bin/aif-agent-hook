@@ -27,7 +27,7 @@ JQ='
     elif $ev == "PreToolUse" then
       if $in.tool_name == "AskUserQuestion" then
         .state = "check" | .question = ($in.tool_input.questions[0].question // "Question")
-        | .options = [($in.tool_input.questions[0].options // [])[] | .label]
+        | .options = [($in.tool_input.questions[0].options // [])[] | .label] | .ask = "tool"
       else
         # Outil et argument principal, affichés si une permission est demandée ensuite
         .state = "running" | .last_tool = $in.tool_name
@@ -39,10 +39,16 @@ JQ='
     elif $ev == "Notification" then
       # AskUserQuestion déclenche aussi permission_prompt : garder la question déjà posée
       if ($in.notification_type == "permission_prompt" or $in.notification_type == "elicitation_dialog") and .state != "check" then
-        .state = "check" | .question = (.pending // $in.message // "Permission requested") | .options = ["Yes", "Always", "No"]
+        .state = "check" | .question = (.pending // $in.message // "Permission requested") | .options = ["Yes", "Always", "No"] | .ask = "permission"
       else . end
     elif $ev == "Stop" then
-      .state = "done" | .question = null | .options = [] | .last_message = (($in.last_assistant_message // "") | .[0:200])
+      # Question laissée en prose : dernière ligne non vide finissant par ? ou ？, hors bloc de code et URL avec ?
+      # (.ask reste jusqu a la prochaine entrée dans check)
+      (($in.last_assistant_message // "") | sub("\\s+$"; "") | split("\n") | last // "") as $q
+      | (.last_message = (($in.last_assistant_message // "") | .[0:200])) as $d
+      | if ($q | (endswith("?") or endswith("？"))) and ($q | test("^\\s*```") | not) and ($q | test("https?://\\S*\\?\\S*$") | not)
+        then $d | .state = "check" | .question = $q[0:200] | .options = [] | .ask = "prose"
+        else $d | .state = "done" | .question = null | .options = [] end
     elif $ev == "StopFailure" then .state = "error" | .error = ($in.error // "unknown")
     elif $ev == "SubagentStart" then
       .subagents[$in.agent_id] = {type: ($in.agent_type // "agent"), state: "running", since: $now}

@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- A question left in prose puts the agent in `check`. On `Stop`, `bin/aif-agent-hook` takes the last non-empty line of the last assistant message. When it ends with `?` or `？`, does not start with a code fence and is not a URL holding a `?`, the state is `check` (question = that line, no options), so the sidebar shows "needs you" and the desktop notification fires. The state also gets `ask`: `prose`, `tool` (`AskUserQuestion`) or `permission`; it stays until the next entry into `check`. `scripts/replay-prose-questions.py [--days N]` measures the rule on past transcripts (30 days: 190 matches in 1379 turns, 8.6 per active day). Tests: four in `tests/agent-hook.bats`.
+
 ### Fixed
 - `harness-metrics`: `sensors.installed` counted `command` lines in hook configs, so it printed 26 next to 26 drafts. The `sensors` block now has `drafts`, `promoted` (drafts whose `**Installs at:**` path is an existing file; a relative path resolves against the repo) and `hook_commands` (the old count, renamed). Key `installed` is removed. Test: `test_sensors_promoted_counts_drafts_whose_target_exists`.
 
