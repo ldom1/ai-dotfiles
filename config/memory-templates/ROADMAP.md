@@ -20,3 +20,9 @@ updated:
 
 ## Open debt
 <!-- Known shortcuts, missing tests, deferred cleanups -->
+
+## Gates
+<!-- waiting on a named event: "<event> → <what to check then>" -->
+
+## Rejected
+<!-- "<item> — <reason> (<YYYY-MM-DD>)": a future session must not reopen it without new evidence -->

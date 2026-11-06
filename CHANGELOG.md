@@ -13,6 +13,10 @@
 - `harness-metrics.py history` has a new key `review_questions`: `count`, `active_days`, `per_active_day`, `median_response_s` and `unanswered`. It reads the log named by `--check-log`. A question with no `leave` counts as asked but not in the median. A missing log gives label `absent` and value `null`.
 - Tests: two in `tests/agent-hook.bats`, eight in `test_harness_metrics.py`.
 
+- The `ROADMAP.md` template has two new sections after `Open debt`: `Gates` (an item waiting on a named event) and `Rejected` (a dropped item with its reason and date). `merge-memory-md.py` backfills them into existing projects.
+- `/capture` (1.3.0) files an item waiting on an event under `Gates` and a dropped item under `Rejected`. It never deletes a `Rejected` line without the user.
+- Test: `test_roadmap_template_and_capture_agree` in `skills/capture/scripts/tests/test_capture_contract.py`.
+
 ### Fixed
 - `harness-metrics`: `sensors.installed` counted `command` lines in hook configs, so it printed 26 next to 26 drafts. The `sensors` block now has `drafts`, `promoted` (drafts whose `**Installs at:**` path is an existing file; a relative path resolves against the repo) and `hook_commands` (the old count, renamed). Key `installed` is removed. Test: `test_sensors_promoted_counts_drafts_whose_target_exists`.
 
