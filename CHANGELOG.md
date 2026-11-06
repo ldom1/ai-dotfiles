@@ -17,6 +17,9 @@
 - `/capture` (1.3.0) files an item waiting on an event under `Gates` and a dropped item under `Rejected`. It never deletes a `Rejected` line without the user.
 - Test: `test_roadmap_template_and_capture_agree` in `skills/capture/scripts/tests/test_capture_contract.py`.
 
+- `/capture` (1.3.0) writes anything that needs the human to a review item: `$BRAIN_PATH/inbox/review/<TODAY>-<slug>-<topic>.md`, from `_templates/review-item.md`. A gesture states `why_not_agent`. A decision lists its options. An item the session resolved gets `status` and `answer`. `/capture` then runs `tasks-review.py check` and fixes every `FAIL`. `**Follow-ups:**` keeps the agent's own next steps.
+- Test: `test_capture_routes_human_items_to_review` in `test_capture_contract.py`.
+
 - `scripts/tasks-review.py`: checks the review items of the Local Brain (`inbox/review/`, one note per manual step or pending decision) and prints a one-line summary.
   - `check [DIR]` prints `FAIL <file>: <reason>` per problem (exit 1), or `OK <n> items`. It validates the enums (`type`, `status`, `tool`), the `[[slug]]` link, that `projects/<slug>.md` exists, `why_not_agent` on a `geste`, two `options` on an `arbitrage`, and `answer` on a `répondu`. An empty property counts as missing. A missing directory gives `OK 0 items`.
   - `summary --project <slug> [DIR]` prints one line of at most 300 bytes, for example `[review] dombot: 3 ouverts (2 gestes, 1 arbitrage), 1 répondu < 7 j → TASKS_REVIEW`. It prints nothing when the project has no open item and no answer in the last 7 days (file modification time). It prints nothing for an unknown project.

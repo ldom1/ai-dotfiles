@@ -20,3 +20,10 @@ def test_roadmap_template_and_capture_agree():
     skill = skill_text()
     for name in ("Gates", "Rejected"):
         assert f"`{name}`" in skill
+
+
+def test_capture_routes_human_items_to_review():
+    skill = skill_text()
+    assert "inbox/review/" in skill
+    assert "why_not_agent" in skill
+    assert "uv run --script ~/ai-dotfiles/scripts/tasks-review.py check" in skill

@@ -28,7 +28,7 @@ date +%Y-%m-%d
 **Goal:** <one line>
 **Changes:** <bullets: what changed and where; PR/commit ids>
 **Commands/tests:** <only commands worth re-running>
-**Follow-ups:** <next steps, or "none">
+**Follow-ups:** <the agent's next steps, or "none">
 **Harness changes:** <optional; one row per harness change>
 - <component> · <change> · expected: <effect> · check: <metric or command>
 **Metrics:** <optional; the `harness-metrics.py` line>
@@ -48,6 +48,18 @@ Check the log, then fix every `FAIL` line and run the check again until it print
 
 ```bash
 python3 ~/ai-dotfiles/skills/capture/scripts/check_log.py "$BRAIN_PATH/inbox/daily/implementation/<slug>/<TODAY>-<topic>.md" --vault "$BRAIN_PATH"
+```
+
+Anything that needs the human goes to a review item, not to `**Follow-ups:**`. Write `$BRAIN_PATH/inbox/review/<TODAY>-<slug>-<topic>.md` from `$BRAIN_PATH/_templates/review-item.md`.
+
+- A manual gesture (`type: geste`) states `why_not_agent`. If the agent can do it, do it now instead.
+- A decision (`type: arbitrage`) lists its `options`, at least two.
+- An item this session resolved gets its `status` and `answer` set.
+
+Check the items, then fix every `FAIL` line and run the check again until it prints `OK`:
+
+```bash
+uv run --script ~/ai-dotfiles/scripts/tasks-review.py check
 ```
 
 This is the history. Details live here, not in the memory files below.
