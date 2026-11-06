@@ -11,6 +11,7 @@ FIX="$BATS_TEST_DIRNAME/fixtures/hooks"
 
 setup() {
   export AIF_STATE_DIR="$BATS_TEST_TMPDIR/agents" TMUX_PANE=%42 NOTIFY_LOG="$BATS_TEST_TMPDIR/notify.log"
+  export AIF_CHECK_LOG="$BATS_TEST_TMPDIR/check.log"
   STATE="$AIF_STATE_DIR/42.json"
   mkdir -p "$BATS_TEST_TMPDIR/bin"
   # tmux : pane visible si AIF_TEST_VISIBLE=1, session « proj »
@@ -202,4 +203,20 @@ notified() { sleep 0.2; [ -f "$NOTIFY_LOG" ] && wc -l < "$NOTIFY_LOG" || echo 0;
   [ "$(st .ask)" = tool ]
   ev post-tool; ev pre-tool-bash; ev notification-permission
   [ "$(st .ask)" = permission ]
+}
+
+@test "check transitions are logged: enter then leave" {
+  ev session-start; ev pre-tool-ask
+  ev post-tool
+  [ "$(wc -l < "$AIF_CHECK_LOG")" -eq 2 ]
+  [ "$(sed -n 1p "$AIF_CHECK_LOG" | cut -f2-4)" = "$(printf 's1\tenter\ttool')" ]
+  [ "$(sed -n 2p "$AIF_CHECK_LOG" | cut -f2-4)" = "$(printf 's1\tleave\ttool')" ]
+  [[ "$(cut -f1 "$AIF_CHECK_LOG" | head -1)" =~ ^[0-9]+$ ]]
+  ev stop
+  [ "$(wc -l < "$AIF_CHECK_LOG")" -eq 2 ]
+}
+
+@test "check log: a prose question enters with ask prose, the next prompt leaves with it" {
+  ev session-start; ev stop-question; ev user-prompt
+  [ "$(cut -f3,4 "$AIF_CHECK_LOG" | paste -sd,)" = "$(printf 'enter\tprose,leave\tprose')" ]
 }

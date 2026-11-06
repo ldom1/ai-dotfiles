@@ -422,11 +422,98 @@ def test_empty_world_does_not_crash(tmp_path, monkeypatch):
 
 def test_cli_history_prints_json(world):
     projects, log, vault = world
-    out = run("history", "--vault", str(vault), "--projects", str(projects), "--skill-log", str(log))
+    out = run("history", "--vault", str(vault), "--projects", str(projects), "--skill-log", str(log),
+              "--check-log", str(log.parent / "none.log"))
     assert out.returncode == 0
     assert list(json.loads(out.stdout)) == ["window", "sessions", "capture_rate", "skills", "mcp", "agents",
                                             "hook_refusals", "skill_log", "session_logs", "rules", "sensors",
-                                            "harness_sessions"]
+                                            "harness_sessions", "review_questions"]
+
+
+def _check_log(path, rows):
+    """rows: (day, seconds into the day, session, kind, ask). One TSV line per transition, epochs in UTC."""
+    def epoch(day, sec):
+        return int(datetime.fromisoformat(day).replace(tzinfo=timezone.utc).timestamp()) + sec
+    path.write_text("".join(f"{epoch(d, t)}\t{sid}\t{kind}\t{ask}\n" for d, t, sid, kind, ask in rows))
+    return path
+
+
+ANY_WINDOW = {"from": None, "to": None}
+
+
+def test_review_questions_from_check_log(tmp_path):
+    log = _check_log(tmp_path / "check.log", [
+        ("2026-10-20", 100, "s1", "enter", "tool"), ("2026-10-20", 160, "s1", "leave", "tool"),
+        ("2026-10-20", 500, "s2", "enter", "prose"), ("2026-10-20", 620, "s2", "leave", "prose"),
+        ("2026-10-21", 100, "s1", "enter", "permission"), ("2026-10-21", 700, "s1", "leave", "permission"),
+        ("2026-10-21", 900, "s3", "enter", "prose"),
+    ])
+    rq = hm._review_questions(log, ANY_WINDOW)
+    assert {k: v["value"] for k, v in rq.items()} == {
+        "count": 4, "active_days": 2, "per_active_day": 2.0, "median_response_s": 120, "unanswered": 1}
+    assert all(v["label"] == "mesuré" and v["source"] == "aif-check.log" for v in rq.values())
+
+
+def test_unanswered_question_counts_but_not_in_median(tmp_path):
+    log = _check_log(tmp_path / "check.log", [
+        ("2026-10-20", 100, "s1", "enter", "tool"), ("2026-10-20", 130, "s1", "leave", "tool"),
+        ("2026-10-20", 200, "s2", "enter", "prose"),
+    ])
+    rq = {k: v["value"] for k, v in hm._review_questions(log, ANY_WINDOW).items()}
+    assert rq["count"] == 2 and rq["unanswered"] == 1 and rq["median_response_s"] == 30
+
+
+def test_leave_pairs_with_its_own_session(tmp_path):
+    log = _check_log(tmp_path / "check.log", [
+        ("2026-10-20", 100, "s1", "enter", "tool"), ("2026-10-20", 110, "s2", "enter", "tool"),
+        ("2026-10-20", 150, "s2", "leave", "tool"), ("2026-10-20", 400, "s1", "leave", "tool"),
+    ])
+    rq = {k: v["value"] for k, v in hm._review_questions(log, ANY_WINDOW).items()}
+    assert rq["median_response_s"] == 170 and rq["unanswered"] == 0  # median of 300 and 40
+
+
+def test_review_questions_window_filters_on_enter_day(tmp_path):
+    log = _check_log(tmp_path / "check.log", [
+        ("2026-10-19", 100, "s1", "enter", "tool"), ("2026-10-19", 160, "s1", "leave", "tool"),
+        ("2026-10-21", 100, "s1", "enter", "tool"), ("2026-10-21", 400, "s1", "leave", "tool"),
+    ])
+    rq = {k: v["value"] for k, v in hm._review_questions(log, {"from": "2026-10-20", "to": "2026-10-22"}).items()}
+    assert rq["count"] == 1 and rq["median_response_s"] == 300
+
+
+def test_missing_check_log_is_absent_not_zero(tmp_path):
+    rq = hm._review_questions(tmp_path / "none.log", ANY_WINDOW)
+    assert set(rq) == {"count", "active_days", "per_active_day", "median_response_s", "unanswered"}
+    assert all(v["label"] == "absent" and v["value"] is None for v in rq.values())
+
+
+def test_empty_check_log_has_no_median(tmp_path):
+    (tmp_path / "check.log").write_text("")
+    rq = {k: v["value"] for k, v in hm._review_questions(tmp_path / "check.log", ANY_WINDOW).items()}
+    assert rq["count"] == 0 and rq["per_active_day"] is None and rq["median_response_s"] is None
+
+
+def test_garbled_check_log_lines_are_skipped(tmp_path):
+    log = tmp_path / "check.log"
+    log.write_text("garbage\nx\ty\tenter\ttool\n\n")
+    assert hm._review_questions(log, ANY_WINDOW)["count"]["value"] == 0
+
+
+def test_history_reports_review_questions(world, tmp_path):
+    projects, log, vault = world
+    check = _check_log(tmp_path / "check.log", [("2026-10-21", 100, "s1", "enter", "tool"),
+                                                ("2026-10-21", 160, "s1", "leave", "tool")])
+    h = hm.history(projects, log, vault, check)
+    assert h["review_questions"]["count"]["value"] == 1
+    assert h["review_questions"]["median_response_s"]["value"] == 60
+
+
+def test_cli_history_check_log_option(world, tmp_path):
+    projects, log, vault = world
+    check = _check_log(tmp_path / "check.log", [("2026-10-21", 100, "s1", "enter", "tool")])
+    out = run("history", "--vault", str(vault), "--projects", str(projects), "--skill-log", str(log),
+              "--check-log", str(check))
+    assert json.loads(out.stdout)["review_questions"]["unanswered"]["value"] == 1
 
 
 def test_rule_references_do_not_count(world):

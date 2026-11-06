@@ -9,6 +9,9 @@
 - The state has a new field `ask`: `prose`, `tool` (`AskUserQuestion`) or `permission`. It stays until the next entry into `check`.
 - `scripts/replay-prose-questions.py [--days N]` applies the same rule to past transcripts. Over 30 days it found 190 matches in 1382 turns, 8.6 per active day.
 - Tests: five in `tests/agent-hook.bats`.
+- `bin/aif-agent-hook` logs every entry into and exit from `check` to `$AIF_CHECK_LOG` (default `~/.claude/logs/aif-check.log`). A line is `epoch`, session id, `enter` or `leave`, and `ask`. A `leave` line carries the `ask` of the question it closes. The log holds no text.
+- `harness-metrics.py history` has a new key `review_questions`: `count`, `active_days`, `per_active_day`, `median_response_s` and `unanswered`. It reads the log named by `--check-log`. A question with no `leave` counts as asked but not in the median. A missing log gives label `absent` and value `null`.
+- Tests: two in `tests/agent-hook.bats`, eight in `test_harness_metrics.py`.
 
 ### Fixed
 - `harness-metrics`: `sensors.installed` counted `command` lines in hook configs, so it printed 26 next to 26 drafts. The `sensors` block now has `drafts`, `promoted` (drafts whose `**Installs at:**` path is an existing file; a relative path resolves against the repo) and `hook_commands` (the old count, renamed). Key `installed` is removed. Test: `test_sensors_promoted_counts_drafts_whose_target_exists`.

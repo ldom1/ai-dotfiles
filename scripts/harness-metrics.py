@@ -5,7 +5,7 @@
   append TRANSCRIPT --vault PATH [--host NAME] [--reason R]
                                                write or replace the record in
                                                <vault>/meta/harness-sessions/<YYYY-MM>-<host>.jsonl
-  history --vault PATH [--projects DIR] [--skill-log FILE]
+  history --vault PATH [--projects DIR] [--skill-log FILE] [--check-log FILE]
                                                one JSON aggregate over all transcripts, the skill log and the vault
   changes --vault PATH [--days 7]              JSON list of /capture harness-change rows older than --days with no verdict, and of malformed rows
 
@@ -24,6 +24,7 @@ import tempfile
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from statistics import median
 
 # Refusal prefix (after "PreToolUse:<tool> hook error: ") -> guard name. Only the name is stored.
 GUARDS = {
@@ -323,7 +324,45 @@ def _sensors(vault: Path) -> dict:
             "hook_commands": _leaf(hook_commands, "mesuré", "lines with `command` in " + ", ".join(HOOK_CONFIGS))}
 
 
-def history(projects_dir: Path, skill_log: Path, vault: Path) -> dict:
+def _review_questions(log: Path | None, window: dict) -> dict:
+    """Questions the agent put to the user, from bin/aif-agent-hook's check log (epoch, session, enter|leave, ask).
+    An enter pairs with the next leave of the same session; one with no leave is unanswered."""
+    src = "aif-check.log"
+    keys = ("count", "active_days", "per_active_day", "median_response_s", "unanswered")
+    try:
+        text = Path(log).read_text(errors="replace") if log else None
+    except OSError:
+        text = None
+    if text is None:  # no log given, or never written
+        return {k: _leaf(None, "absent", src) for k in keys}
+    open_at: dict[str, int] = {}
+    asked: list[tuple[int, int | None]] = []  # (enter epoch, seconds to the leave, None if unanswered)
+    for line in text.splitlines():
+        f = line.split("\t")
+        if len(f) < 3 or not f[0].isdigit():
+            continue
+        t, sid, kind = int(f[0]), f[1], f[2]
+        if kind == "enter":
+            if sid in open_at:  # entered again with no leave in between: the first is unanswered
+                asked.append((open_at[sid], None))
+            open_at[sid] = t
+        elif kind == "leave" and sid in open_at:
+            start = open_at.pop(sid)
+            asked.append((start, t - start))
+    asked += [(t, None) for t in open_at.values()]
+    def day(t: int) -> str:
+        return datetime.fromtimestamp(t, timezone.utc).strftime("%Y-%m-%d")
+
+    if window["from"] and window["to"]:
+        asked = [a for a in asked if window["from"] <= day(a[0]) <= window["to"]]
+    answers = [d for _, d in asked if d is not None]
+    n_days = len({day(t) for t, _ in asked})
+    vals = (len(asked), n_days, round(len(asked) / n_days, 2) if n_days else None,
+            median(answers) if answers else None, len(asked) - len(answers))
+    return {k: _leaf(v, "mesuré", src) for k, v in zip(keys, vals)}
+
+
+def history(projects_dir: Path, skill_log: Path, vault: Path, check_log: Path | None = None) -> dict:
     """One aggregate over every main transcript, the skill log and the vault. Subagent transcripts are not sessions."""
     recs = [parse_session(p) for p in sorted(glob.glob(os.path.join(projects_dir, "*", "*.jsonl")))]
     failed = sum(1 for r in recs if r["metrics_status"] == "failed")
@@ -360,6 +399,7 @@ def history(projects_dir: Path, skill_log: Path, vault: Path) -> dict:
             sum(1 for f in glob.glob(str(Path(vault) / "meta/harness-sessions/*.jsonl"))
                 for ln in Path(f).read_text(errors="replace").splitlines() if ln.strip()),
             "mesuré", "meta/harness-sessions/*.jsonl"),
+        "review_questions": _review_questions(check_log, window),
     }
 
 
@@ -425,6 +465,7 @@ def main(argv=None) -> int:
     h.add_argument("--vault", required=True)
     h.add_argument("--projects", default=os.environ.get("CLAUDE_PROJECTS_DIR") or "~/.claude/projects")
     h.add_argument("--skill-log", default="~/.claude/skill-usage.log")
+    h.add_argument("--check-log", default="~/.claude/logs/aif-check.log")
     c = sub.add_parser("changes")
     c.add_argument("--vault", required=True)
     c.add_argument("--days", type=int, default=7)
@@ -433,7 +474,8 @@ def main(argv=None) -> int:
         print(json.dumps(pending_changes(Path(args.vault), args.days), ensure_ascii=False, indent=1))
         return 0
     if args.cmd == "history":
-        agg = history(Path(args.projects).expanduser(), Path(args.skill_log).expanduser(), Path(args.vault))
+        agg = history(Path(args.projects).expanduser(), Path(args.skill_log).expanduser(), Path(args.vault),
+                      Path(args.check_log).expanduser())
         print(json.dumps(agg, ensure_ascii=False, indent=1))
         return 0
     if args.cmd == "session":

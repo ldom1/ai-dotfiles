@@ -13,8 +13,9 @@ FILE="$STATE_DIR/${TMUX_PANE#%}.json"
 cur=$FILE; [[ -f $cur ]] || cur=/dev/null
 input=$(cat)
 
-# Filtre jq : $in = entrée du hook, `.` = état existant. Rend « événement \t état avant \t état après »,
-# puis le nouvel état en JSON ; seulement la 1re ligne pour SessionEnd et les événements ignorés.
+# Filtre jq : $in = entrée du hook, `.` = état existant. Rend « événement \t état avant \t état après \t
+# session \t nature de la question » (« - » si absent : read ne garde pas les champs vides), puis le
+# nouvel état en JSON ; seulement la 1re ligne pour SessionEnd et les événements ignorés.
 JQ='
 . as $in | ($cur[0] // {}) as $s | ($s.state // "-") as $prev | ($in.hook_event_name // "") as $ev
 | ($s
@@ -61,17 +62,27 @@ JQ='
     else null end) as $o
 | if $o == null then "\($ev)\t\($prev)\t-"
   else ($o | .pane = $pane | .cwd = ($in.cwd // .cwd) | .event = $ev | .updated_at = $now) as $o
-    | "\($ev)\t\($prev)\t\($o.state // "-")", ($o | tojson)
+    | "\($ev)\t\($prev)\t\($o.state // "-")\t\($in.session_id // "-")\t\($o.ask // "-")", ($o | tojson)
   end'
 
 # Entrée du hook sur stdin, pas en argument : un tool_input de plus de 128 Ko (Write) dépasserait
 # la taille maximale d'un argument.
 out=$(jq -r --slurpfile cur "$cur" --argjson now "$EPOCHSECONDS" --arg pane "$TMUX_PANE" "$JQ" <<<"$input" 2>/dev/null) || exit 0
-IFS=$'\t' read -r event prev_state new_state <<<"${out%%$'\n'*}"
+IFS=$'\t' read -r event prev_state new_state sid ask <<<"${out%%$'\n'*}"
 [[ $event == SessionEnd ]] && { rm -f "$FILE"; exit 0; }
 [[ $out == *$'\n'* ]] || exit 0   # événement ignoré
 tmp="$STATE_DIR/.$$.tmp"
 printf '%s\n' "${out#*$'\n'}" >"$tmp" && mv "$tmp" "$FILE" || { rm -f "$tmp"; exit 0; }
+
+# Journal des questions : une ligne « epoch \t session \t enter|leave \t nature » à chaque entrée dans
+# check et sortie de check. .ask n est jamais effacé : la ligne leave porte la nature de la question
+# qu elle ferme. Ni texte ni option : seulement des identifiants et des énumérations.
+if [[ $new_state != "$prev_state" ]] && [[ $new_state == check || $prev_state == check ]]; then
+  CHECK_LOG=${AIF_CHECK_LOG:-$HOME/.claude/logs/aif-check.log}
+  [[ -d ${CHECK_LOG%/*} ]] || mkdir -p "${CHECK_LOG%/*}" 2>/dev/null
+  kind=enter; [[ $new_state == check ]] || kind=leave
+  { printf '%s\t%s\t%s\t%s\n' "$EPOCHSECONDS" "$sid" "$kind" "$ask" >>"$CHECK_LOG"; } 2>/dev/null
+fi
 
 # Notification système seulement à l'entrée dans un état, et si le panneau n'est pas sous les yeux.
 if [[ $new_state != "$prev_state" ]] && { [[ $new_state == check ]] || { [[ $new_state == "done" && ${AIF_NOTIFY_DONE:-0} == 1 ]]; }; }; then
