@@ -52,7 +52,7 @@ python3 ~/ai-dotfiles/skills/capture/scripts/check_log.py "$BRAIN_PATH/inbox/dai
 
 Anything that needs the human goes to a review item, not to `**Follow-ups:**`. Write `$BRAIN_PATH/inbox/review/<TODAY>-<slug>-<topic>.md` from `$BRAIN_PATH/_templates/review-item.md`.
 
-- A manual gesture (`type: geste`) states `why_not_agent`. If the agent can do it, do it now instead.
+- A manual action (`type: action`) states `why_not_agent`. If the agent can do it, do it now instead.
 - A decision (`type: arbitrage`) lists its `options`, at least two.
 - Fill `session:` with `$CLAUDE_SESSION_ID` when it is set.
 - An item this session resolved gets `status: fait` or `écarté`. The agent never sets `répondu`: only the human sets `répondu`, with an `answer`. Open items are in `$BRAIN_PATH/inbox/review/`.

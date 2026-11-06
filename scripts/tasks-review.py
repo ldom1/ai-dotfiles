@@ -22,7 +22,7 @@ from pathlib import Path
 
 import yaml
 
-TYPES = ("geste", "arbitrage")
+TYPES = ("action", "arbitrage")
 STATUSES = ("ouvert", "répondu", "fait", "écarté")
 TOOLS = ("claude", "cursor", "vibe")
 REQUIRED = ("type", "project", "tool", "status", "created")
@@ -92,8 +92,8 @@ def problems(item: dict, vault: Path) -> list[str]:
                 date.fromisoformat(str(created))
         except ValueError:
             out.append(f"created {created!r} is not a date (YYYY-MM-DD)")
-    if item.get("type") == "geste" and not _text(item.get("why_not_agent")):
-        out.append("geste needs why_not_agent")
+    if item.get("type") == "action" and not _text(item.get("why_not_agent")):
+        out.append("action needs why_not_agent")
     if item.get("type") == "arbitrage":
         options = item.get("options")
         if not isinstance(options, list) or len([o for o in options if o not in (None, "")]) < 2:
@@ -110,11 +110,11 @@ def summary_line(items: list[dict], slug: str, today: date) -> str:
     answered = [i for i in mine if i.get("status") == "répondu" and i["_mtime"] > cutoff]
     parts = []
     if opened:
-        gestes = sum(i.get("type") == "geste" for i in opened)
+        actions = sum(i.get("type") == "action" for i in opened)
         arbitrages = sum(i.get("type") == "arbitrage" for i in opened)
         kinds = []
-        if gestes:
-            kinds.append(f"{gestes} geste{'s' if gestes > 1 else ''}")
+        if actions:
+            kinds.append(f"{actions} action{'s' if actions > 1 else ''}")
         if arbitrages:
             kinds.append(f"{arbitrages} arbitrage{'s' if arbitrages > 1 else ''}")
         kinds_text = f" ({', '.join(kinds)})" if kinds else ""  # an invalid type is counted, not itemised

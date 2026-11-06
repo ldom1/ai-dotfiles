@@ -409,7 +409,7 @@ The file is not named `.vibe/hooks.toml`. In this trusted repo, Vibe would load 
 One place holds the manual steps and the open decisions of all agents on all projects. The vault note `TASKS_REVIEW` shows them.
 
 - Each item is one note in `inbox/review/` (template: `_templates/review-item`).
-- A `geste` is a manual step the agent cannot do. It carries `why_not_agent`.
+- An `action` is a manual step the agent cannot do. It carries `why_not_agent`.
 - An `arbitrage` is a decision. It carries at least two `options`.
 - You write your reply in `answer`, then set `status` to `répondu` (the agent reads `answer`, acts, then sets `fait`), `fait` or `écarté`. The agent closes its own items with `fait` or `écarté`, never `répondu`.
 - `TASKS_REVIEW.base` is an Obsidian Bases file with five views: to do, by project, decisions, manual steps, done this week.

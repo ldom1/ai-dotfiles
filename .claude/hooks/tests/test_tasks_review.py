@@ -23,7 +23,7 @@ def vault(tmp_path):
 
 
 def item(vault, name, **props):
-    base = {"type": "geste", "project": '"[[dombot]]"', "tool": "claude", "session": "s1",
+    base = {"type": "action", "project": '"[[dombot]]"', "tool": "claude", "session": "s1",
             "status": "ouvert", "created": "2026-11-05", "why_not_agent": "needs the UI"}
     base.update(props)
     lines = [f"{k}: {v}" for k, v in base.items() if v is not None]
@@ -46,17 +46,17 @@ def fails(vault):
     return [p for i in tr.load_items(vault / "inbox" / "review") for p in tr.problems(i, vault)]
 
 
-def test_valid_geste_and_arbitrage_ok(vault, capsys):
+def test_valid_action_and_arbitrage_ok(vault, capsys):
     item(vault, "a")
     item(vault, "b", type="arbitrage", why_not_agent=None, options="[A, B]")
     assert tr.main(["check", rdir(vault)]) == 0
     assert capsys.readouterr().out.strip() == "OK 2 items"
 
 
-def test_geste_without_reason_fails(vault, capsys):
+def test_action_without_reason_fails(vault, capsys):
     item(vault, "a", why_not_agent=None)
     assert tr.main(["check", rdir(vault)]) == 1
-    assert "FAIL a.md: geste needs why_not_agent" in capsys.readouterr().out
+    assert "FAIL a.md: action needs why_not_agent" in capsys.readouterr().out
 
 
 def test_obsidian_list_and_empty_property(vault, capsys):
@@ -67,9 +67,9 @@ def test_obsidian_list_and_empty_property(vault, capsys):
     item(vault, "d", why_not_agent='"  "')
     assert tr.main(["check", rdir(vault)]) == 1
     out = capsys.readouterr().out
-    assert "FAIL b.md: geste needs why_not_agent" in out
-    assert "FAIL c.md: geste needs why_not_agent" in out
-    assert "FAIL d.md: geste needs why_not_agent" in out
+    assert "FAIL b.md: action needs why_not_agent" in out
+    assert "FAIL c.md: action needs why_not_agent" in out
+    assert "FAIL d.md: action needs why_not_agent" in out
     assert "a.md" not in out
 
 
@@ -129,7 +129,7 @@ def test_summary_line(vault):
     age(item(vault, "a2", type="arbitrage", why_not_agent=None, options="[A, B]", status="répondu",
              answer="A"), 2)
     line = tr.summary_line(tr.load_items(vault / "inbox" / "review"), "dombot", TODAY)
-    assert line == "[review] dombot: 3 ouverts (2 gestes, 1 arbitrage), 1 répondu < 7 j → TASKS_REVIEW"
+    assert line == "[review] dombot: 3 ouverts (2 actions, 1 arbitrage), 1 répondu < 7 j → TASKS_REVIEW"
     assert len(line.encode()) <= 300
 
 
@@ -154,7 +154,7 @@ def test_impossible_date_fails_that_file_only(vault, capsys):
     assert tr.main(["check", rdir(vault)]) == 1
     out = capsys.readouterr().out
     assert len([ln for ln in out.splitlines() if ln.startswith("FAIL a.md")]) == 1
-    assert "FAIL b.md: geste needs why_not_agent" in out
+    assert "FAIL b.md: action needs why_not_agent" in out
 
 
 def test_unquoted_link_says_quote_it(vault):
@@ -164,12 +164,12 @@ def test_unquoted_link_says_quote_it(vault):
 
 
 def test_non_utf8_file_fails_that_file_only(vault, capsys):
-    (vault / "inbox" / "review" / "bad.md").write_bytes(b"---\ntype: geste\n---\n\xff\xfe\n")
+    (vault / "inbox" / "review" / "bad.md").write_bytes(b"---\ntype: action\n---\n\xff\xfe\n")
     item(vault, "b", why_not_agent=None)
     assert tr.main(["check", rdir(vault)]) == 1
     out = capsys.readouterr().out
     assert "FAIL bad.md: not UTF-8" in out
-    assert "FAIL b.md: geste needs why_not_agent" in out
+    assert "FAIL b.md: action needs why_not_agent" in out
 
 
 @pytest.mark.parametrize("argv", [["check"], ["summary", "--project", "dombot"]])
@@ -191,7 +191,7 @@ def test_summary_parens_count_only_valid_types(vault):
     item(vault, "bad", type="bogus")
     item(vault, "g1")
     line = tr.summary_line(tr.load_items(vault / "inbox" / "review"), "dombot", TODAY)
-    assert line == "[review] dombot: 2 ouverts (1 geste) → TASKS_REVIEW"
+    assert line == "[review] dombot: 2 ouverts (1 action) → TASKS_REVIEW"
 
 
 def test_check_with_relative_dir_finds_the_vault(vault, monkeypatch, capsys):

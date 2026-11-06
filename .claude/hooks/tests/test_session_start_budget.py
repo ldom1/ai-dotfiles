@@ -38,7 +38,7 @@ def exe(path: Path, body: str) -> None:
 
 
 ITEM = """---
-type: geste
+type: action
 project: "[[proj]]"
 tool: claude
 status: ouvert
@@ -47,7 +47,7 @@ why_not_agent: needs the owner's login
 ---
 Body.
 """
-REVIEW_LINE = "[review] proj: 1 ouvert (1 geste) → TASKS_REVIEW"
+REVIEW_LINE = "[review] proj: 1 ouvert (1 action) → TASKS_REVIEW"
 UV = shutil.which("uv")
 
 

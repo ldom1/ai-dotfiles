@@ -12,7 +12,7 @@
   - Not caught: a test that fails on base for the wrong assertion, assumed fixtures, refactor commits, ad-hoc shell checks. The clean worktree has no venv or `node_modules`.
   - Run on the real fix commit 3b00c49 (base e878c05): exit 0, the new test fails on base with `KeyError: 'promoted'`.
   - Tests: 22 in `tests/fails-on-base.bats` (POSIX sh runner, no pytest).
-- SessionStart prints one review line for the current project, before the pitfalls block: `[review] <slug>: 2 ouverts (1 geste, 1 arbitrage) → TASKS_REVIEW`.
+- SessionStart prints one review line for the current project, before the pitfalls block: `[review] <slug>: 2 ouverts (1 action, 1 arbitrage) → TASKS_REVIEW`.
   - It comes from `tasks-review.py summary` (3 s timeout, at most 300 bytes). It finds `uv` on `PATH`, else in `~/.local/bin`.
   - It prints nothing when the project has no open item, when `inbox/review/` is missing, or when the script fails. The error goes to `brain-load.log`.
   - Latency: the step adds about 150 ms to a session start (6 runs: slug 12-44 ms, `uv run --script` 106-149 ms).
@@ -43,8 +43,8 @@
   - Tests: `test_capture_routes_human_items_to_review` and `test_capture_review_agent_side_rules` in `test_capture_contract.py`.
 
 - `scripts/tasks-review.py`: checks the review items of the Local Brain (`inbox/review/`, one note per manual step or pending decision) and prints a one-line summary.
-  - `check [DIR]` prints `FAIL <file>: <reason>` per problem (exit 1), or `OK <n> items`. It validates the enums (`type`, `status`, `tool`), the `[[slug]]` link, that `projects/<slug>.md` exists, `why_not_agent` on a `geste`, two `options` on an `arbitrage`, and `answer` on a `répondu`. An empty property counts as missing. A missing directory gives `OK 0 items`.
-  - `summary --project <slug> [DIR]` prints one line of at most 300 bytes, for example `[review] dombot: 3 ouverts (2 gestes, 1 arbitrage), 1 répondu < 7 j → TASKS_REVIEW`. It prints nothing when the project has no open item and no answer in the last 7 days (file modification time). It prints nothing for an unknown project.
+  - `check [DIR]` prints `FAIL <file>: <reason>` per problem (exit 1), or `OK <n> items`. It validates the enums (`type`, `status`, `tool`), the `[[slug]]` link, that `projects/<slug>.md` exists, `why_not_agent` on an `action`, two `options` on an `arbitrage`, and `answer` on a `répondu`. An empty property counts as missing. A missing directory gives `OK 0 items`.
+  - `summary --project <slug> [DIR]` prints one line of at most 300 bytes, for example `[review] dombot: 3 ouverts (2 actions, 1 arbitrage), 1 répondu < 7 j → TASKS_REVIEW`. It prints nothing when the project has no open item and no answer in the last 7 days (file modification time). It prints nothing for an unknown project.
   - New dependency, approved by the owner: PyYAML 6.0.2, declared in the PEP 723 header and run with `uv run --script`. It reads the frontmatter of Obsidian notes, where the Properties UI writes YAML lists. Rejected: the flat `key: value` reader in `test_skill_frontmatter.py`, which breaks on those lists.
   - A file with an impossible date (`created: 2026-13-45`), invalid YAML or a non-UTF-8 encoding gets one `FAIL` line and the other items are still checked. An unquoted `project: [[slug]]` says to quote the link. With no `DIR` and no `BRAIN_PATH`, both commands print `BRAIN_PATH is not set and no DIR given` to stderr and exit 2.
   - The test gate in `.git-promotion.json` has `--with pyyaml==6.0.2`.
