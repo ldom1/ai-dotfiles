@@ -42,11 +42,15 @@ JQ='
         .state = "check" | .question = (.pending // $in.message // "Permission requested") | .options = ["Yes", "Always", "No"] | .ask = "permission"
       else . end
     elif $ev == "Stop" then
-      # Question laissée en prose : dernière ligne non vide finissant par ? ou ？, hors bloc de code et URL avec ?
+      # Question laissée en prose : dernière ligne non vide finissant par ? ou ？, hors bloc de code
+      # (nombre impair de lignes ``` : la dernière ligne est dans un bloc) et hors URL avec ?.
+      # Même règle dans scripts/replay-prose-questions.py (is_question) : modifier les deux ensemble.
       # (.ask reste jusqu a la prochaine entrée dans check)
-      (($in.last_assistant_message // "") | sub("\\s+$"; "") | split("\n") | last // "") as $q
+      (($in.last_assistant_message // "") | sub("\\s+$"; "") | split("\n")) as $l
+      | ($l | last // "") as $q
       | (.last_message = (($in.last_assistant_message // "") | .[0:200])) as $d
-      | if ($q | (endswith("?") or endswith("？"))) and ($q | test("^\\s*```") | not) and ($q | test("https?://\\S*\\?\\S*$") | not)
+      | if ($q | (endswith("?") or endswith("？"))) and ([$l[] | select(test("^\\s*```"))] | length % 2 == 0)
+          and ($q | test("https?://\\S*\\?\\S*$") | not)
         then $d | .state = "check" | .question = $q[0:200] | .options = [] | .ask = "prose"
         else $d | .state = "done" | .question = null | .options = [] end
     elif $ev == "StopFailure" then .state = "error" | .error = ($in.error // "unknown")

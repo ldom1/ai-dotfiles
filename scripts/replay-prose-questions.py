@@ -6,7 +6,7 @@ Usage: replay-prose-questions.py [--days N]   (default 30; read-only)
 - Turn: the assistant records between two user prompts (a tool_result is not a prompt).
   Its last assistant text is what the Stop hook receives as last_assistant_message.
 - Rule (same as the Stop branch of bin/aif-agent-hook): the last non-empty line ends with ? or ？,
-  does not start with ``` and is not a URL holding a "?".
+  is not inside a fenced block (odd count of lines starting with ```) and is not a URL holding a "?".
 - Active day: a UTC date with >= 1 turn.
 - Output: matches, turns, active_days, matches_per_active_day, then 20 sampled last lines.
   Only the last line of a message is printed, never more.
@@ -16,10 +16,11 @@ from pathlib import Path
 
 
 def is_question(message):
-    """Mirror of the jq rule in bin/aif-agent-hook (Stop)."""
+    """Mirror of the jq rule in bin/aif-agent-hook (Stop): change both together."""
     lines = re.sub(r"\s+$", "", message).split("\n")
-    last = lines[-1] if lines else ""
-    return (last.endswith(("?", "？")) and not re.match(r"\s*```", last)
+    last = lines[-1]
+    fences = sum(1 for line in lines if re.match(r"\s*```", line))
+    return (last.endswith(("?", "？")) and fences % 2 == 0  # odd: the last line is inside a fenced block
             and not re.search(r"https?://\S*\?\S*$", last))
 
 

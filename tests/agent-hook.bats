@@ -173,13 +173,21 @@ notified() { sleep 0.2; [ -f "$NOTIFY_LOG" ] && wc -l < "$NOTIFY_LOG" || echo 0;
   grep -qxF 'notify|◉ proj needs you|Should I squash the branch?|proj|critical|' "$NOTIFY_LOG"
 }
 
-@test "Stop ending in a fenced block or URL with ?: done" {
+@test "Stop ending inside an unclosed fenced block, or on a URL ending in ?: done" {
   ev session-start; ev user-prompt; ev stop-fence-question
   [ "$(st .state)" = done ]
+  [ "$(st .question)" = null ]
   ev user-prompt; ev stop-url-question
   [ "$(st .state)" = done ]
   [ "$(st .question)" = null ]
   [ "$(notified)" -eq 0 ]
+}
+
+@test "Stop with a closed fenced block then a real question: check" {
+  ev session-start; ev user-prompt; ev stop-fence-closed-question
+  [ "$(st .state)" = check ]
+  [ "$(st .question)" = "Should I run it?" ]
+  [ "$(st .ask)" = prose ]
 }
 
 @test "prompt after a prose question: running" {
