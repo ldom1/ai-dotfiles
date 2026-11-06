@@ -356,14 +356,19 @@ def test_rules_without_git_is_incomplete(world, tmp_path):
     assert h["rules"]["added"]["label"] == "incomplet"
 
 
-def test_sensors(world, tmp_path):
+def test_sensors_promoted_counts_drafts_whose_target_exists(world, tmp_path):
     projects, log, vault = world
-    for n in ("s1.md", "s2.md"):
-        (vault / "inbox/sensors").mkdir(parents=True, exist_ok=True)
-        (vault / "inbox/sensors" / n).write_text("draft")
+    (vault / "inbox/sensors").mkdir(parents=True)
+    hook = tmp_path / "hooks/x.sh"
+    hook.parent.mkdir()
+    hook.write_text("#!/bin/sh\n")
+    (vault / "inbox/sensors/s1.md").write_text(f"# d\n**Kind:** hook\n**Installs at:** `{hook}`\n")
+    (vault / "inbox/sensors/s2.md").write_text(f"# d\n**Installs at:** `{tmp_path}/hooks/missing.sh`\n")
     (tmp_path / "repo/.claude/settings.json.tpl").write_text('{"hooks": [{\n  "command": "x",\n  "type": "command"\n}]}')
-    h = hm.history(projects, log, vault)
-    assert h["sensors"]["drafts"]["value"] == 2 and h["sensors"]["installed"]["value"] == 1
+    s = hm.history(projects, log, vault)["sensors"]
+    assert (s["drafts"]["value"], s["promoted"]["value"], s["hook_commands"]["value"]) == (2, 1, 1)
+    assert s["promoted"]["source"] == "inbox/sensors/* whose **Installs at:** path exists"
+    assert "installed" not in s
 
 
 def test_session_logs_and_harness_sessions(world):

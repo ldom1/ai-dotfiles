@@ -41,6 +41,7 @@ REPO_DIR = Path(__file__).resolve().parents[1]
 RULE_FILES = ("resources/operational/ai-agents/pitfalls.md", "resources/knowledge/patterns")
 HOOK_CONFIGS = (".claude/settings.json.tpl", ".cursor/hooks.json", ".vibe/user-hooks.toml")
 HOOK_COMMAND = re.compile(r'^\s*"?command"?\s*[:=]')
+INSTALLS_AT = re.compile(r"\*\*Installs at:\*\*\s*`([^`\n]+)`")
 SLASH_COMMAND = re.compile(r"<command-name>/([^<\s]+)</command-name>")  # a user-typed /skill: no Skill tool_use
 
 
@@ -311,10 +312,15 @@ def _rules(vault: Path, window: dict) -> dict:
 
 def _sensors(vault: Path) -> dict:
     drafts = [p for p in (vault / "inbox/sensors").glob("*") if p.is_file()] if (vault / "inbox/sensors").is_dir() else []
-    installed = sum(1 for c in HOOK_CONFIGS if (REPO_DIR / c).is_file()
-                    for ln in (REPO_DIR / c).read_text(errors="replace").splitlines() if HOOK_COMMAND.match(ln))
+    promoted = 0
+    for p in drafts:
+        m = INSTALLS_AT.search(p.read_text(errors="replace"))
+        promoted += bool(m and Path(os.path.expanduser(m[1])).exists())
+    hook_commands = sum(1 for c in HOOK_CONFIGS if (REPO_DIR / c).is_file()
+                        for ln in (REPO_DIR / c).read_text(errors="replace").splitlines() if HOOK_COMMAND.match(ln))
     return {"drafts": _leaf(len(drafts), "mesuré", "inbox/sensors/*"),
-            "installed": _leaf(installed, "mesuré", "lines with `command` in " + ", ".join(HOOK_CONFIGS))}
+            "promoted": _leaf(promoted, "mesuré", "inbox/sensors/* whose **Installs at:** path exists"),
+            "hook_commands": _leaf(hook_commands, "mesuré", "lines with `command` in " + ", ".join(HOOK_CONFIGS))}
 
 
 def history(projects_dir: Path, skill_log: Path, vault: Path) -> dict:

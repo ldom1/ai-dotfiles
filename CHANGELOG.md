@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- `harness-metrics`: `sensors.installed` counted `command` lines in hook configs, so it printed 26 next to 26 drafts. The `sensors` block now has `drafts`, `promoted` (drafts whose `**Installs at:**` path exists) and `hook_commands` (the old count, renamed). Key `installed` is removed. Test: `test_sensors_promoted_counts_drafts_whose_target_exists`.
+
 ## [0.16.3] - 2026-11-06
 
 ### Fixed
