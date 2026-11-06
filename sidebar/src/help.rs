@@ -39,6 +39,7 @@ pub const SECTIONS: [Section; 4] = [
     (
         "SESSIONS",
         &[
+            ("T", "new terminal (~)"),
             ("⌃⇧N", "new"),
             ("+ · prefix +", "new project"),
             ("r", "rename"),

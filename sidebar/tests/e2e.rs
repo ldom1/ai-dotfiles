@@ -540,3 +540,39 @@ fn right_click_menu_has_the_global_actions_and_esc_closes_it() {
     e.type_text("\x1b");
     e.term.get_by_text("SESSION main").wait_hidden(Some(5000)).unwrap();
 }
+
+#[test]
+fn right_click_on_an_agent_opens_its_menu_and_go_to_reaches_its_pane() {
+    let e = Env::start();
+    e.tmux(&["new-session", "-d", "-s", "api"]);
+    let pane = agent(&e, "api");
+    e.click("AGENTS");
+    e.right_click("Parse the notices");
+    e.expect("AGENT Parse the notices");
+    e.click("Go to agent");
+    e.wait_tmux(&["list-clients", "-F", "#{client_session} #{pane_id}"], &format!("api {pane}"));
+}
+
+#[test]
+fn right_click_on_an_agent_in_the_session_tree_opens_the_agent_menu_then_its_session_menu() {
+    let e = Env::start();
+    e.tmux(&["new-session", "-d", "-s", "api"]);
+    agent(&e, "api");
+    e.click("SESSIONS");
+    e.right_click("Parse the notices");
+    e.expect("AGENT Parse the notices");
+    e.click("Session menu…");
+    e.expect("SESSION api");
+}
+
+#[test]
+fn plus_terminal_opens_a_new_session_in_home_and_switches_to_it() {
+    let e = Env::start();
+    e.click("SESSIONS");
+    e.click("+ Terminal");
+    e.wait_tmux(&["list-clients", "-F", "#{client_session}"], "main-2");
+    assert_eq!(
+        e.tmux(&["display", "-p", "-t", "=main-2:", "#{pane_current_path}"]),
+        e.home().display().to_string()
+    );
+}
