@@ -7,9 +7,10 @@
 # A fix is a diff that changes tests (added or modified) and modifies or deletes a non-test file.
 # A diff that only adds files is a feature, not a fix: it is skipped (a new module has no pre-fix code).
 #
-# Exit 0: no test changed, tests only, files added only, or the changed tests fail on base.
-# Exit 1: the changed tests pass on base (they cannot detect the fix), or the base run failed on the
-#         environment (rc 126/127, missing module or command): inconclusive.
+# Each changed test file runs alone on base, so a failing test cannot mask a weak one.
+# Exit 0: no test changed, tests only, files added only, or EVERY changed test file fails on base.
+# Exit 1: a changed test file passes on base (it cannot detect the fix; each such file is printed), or
+#         a base run failed on the environment (rc 126/127, missing module or command): inconclusive.
 # Exit 2: bad setup (TEST_CMD unset, unknown base, no worktree).
 #
 # Does NOT catch: fixtures from assumed data, 0-row green steps, a test that fails on base for the wrong
@@ -33,17 +34,25 @@ trap 'git worktree remove --force "$wt" >/dev/null 2>&1; rm -rf "$wt"; git workt
 trap 'exit 130' INT TERM HUP
 git worktree add -q --detach "$wt" "$base" || exit 2
 for t in $tests; do mkdir -p "$wt/$(dirname "$t")" && cp "$t" "$wt/$t"; done
-# shellcheck disable=SC2086  # TEST_CMD and the test paths are meant to word-split
-out=$(cd "$wt" && $TEST_CMD $tests 2>&1); rc=$?
+# One run per test file: a failing test must not mask a weak one in the same call.
+weak=""; env_err=0
+for t in $tests; do
+  # shellcheck disable=SC2086  # TEST_CMD is meant to word-split
+  out=$(cd "$wt" && $TEST_CMD "$t" 2>&1); rc=$?
+  # 126/127: the runner did not start. bash says "command not found", dash says "<cmd>: not found".
+  if [ $rc -eq 126 ] || [ $rc -eq 127 ] ||
+    printf '%s\n' "$out" | grep -qE 'ModuleNotFoundError|Cannot find module|: not found$|No module named'; then
+    env_err=1
+  elif [ $rc -eq 0 ]; then
+    weak="$weak  $t
+"
+  fi
+done
 
-if [ $rc -eq 0 ]; then
-  echo "FAIL: changed tests pass on base $base: they cannot detect the fix" >&2
-  exit 1
+if [ -n "$weak" ]; then
+  printf 'FAIL: changed tests pass on base %s: they cannot detect the fix\n%s' "$base" "$weak" >&2
 fi
-# 126/127: the runner did not start. bash says "command not found", dash says "<cmd>: not found".
-if [ $rc -eq 126 ] || [ $rc -eq 127 ] ||
-  printf '%s\n' "$out" | grep -qE 'ModuleNotFoundError|Cannot find module|not found|No module named'; then
+if [ $env_err -eq 1 ]; then
   echo "INCONCLUSIVE: base run failed on environment, not on the assertion" >&2
-  exit 1
 fi
-exit 0
+[ -z "$weak" ] && [ $env_err -eq 0 ]

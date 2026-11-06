@@ -118,7 +118,9 @@ fi
 # Printed before the pitfalls block, which takes the remaining budget.
 REVIEW_SLUG=$("$LOAD" --slug-only 2>>"$LOG_FILE" | sed -n 's/^slug=//p' | head -1 || true)
 if [[ -n "$REVIEW_SLUG" ]]; then
-  timeout 3 uv run --script "$AI_DOTFILES/scripts/tasks-review.py" summary --project "$REVIEW_SLUG" \
+  # uv: PATH, else ~/.local/bin (Claude Code's PATH can lack that folder); a missing uv stays fail-open
+  uv=$(command -v uv || echo "$HOME/.local/bin/uv")
+  timeout 3 "$uv" run --script "$AI_DOTFILES/scripts/tasks-review.py" summary --project "$REVIEW_SLUG" \
     "${BRAIN_PATH}/inbox/review" 2>>"$LOG_FILE" | head -c 300 || true
 fi
 

@@ -146,6 +146,46 @@ one_worktree() { [ "$(git -C "$repo" worktree list | wc -l)" -eq 1 ]; }
   [[ "$stderr" == *"INCONCLUSIVE"* ]]
 }
 
+@test "two changed tests, one strong and one weak: exit 1 naming the weak file only" {
+  printf 'f() { echo 3; }\n' > "$repo/m.sh"
+  printf '. ./m.sh\n[ "$(f 1)" = 3 ]\n' > "$repo/m_test.sh"
+  printf 'true\n' > "$repo/weak_test.sh"
+  git -C "$repo" add -A
+  git -C "$repo" commit -q -m fix
+  run_fob
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"weak_test.sh"* ]]
+  [[ "$stderr" != *"m_test.sh"* ]]
+}
+
+@test "two changed tests, both fail on base: exit 0" {
+  printf 'f() { echo 3; }\n' > "$repo/m.sh"
+  printf '. ./m.sh\n[ "$(f 1)" = 3 ]\n' > "$repo/m_test.sh"
+  printf '. ./m.sh\n[ "$(f 1)" -gt 2 ]\n' > "$repo/k_test.sh"
+  git -C "$repo" add -A
+  git -C "$repo" commit -q -m fix
+  run_fob
+  [ "$status" -eq 0 ]
+}
+
+@test "two changed tests, one fails on the environment: exit 1, INCONCLUSIVE" {
+  printf 'f() { echo 3; }\n' > "$repo/m.sh"
+  printf '. ./m.sh\n[ "$(f 1)" = 3 ]\n' > "$repo/m_test.sh"
+  printf 'echo "ModuleNotFoundError: No module named foo" >&2; exit 1\n' > "$repo/env_test.sh"
+  git -C "$repo" add -A
+  git -C "$repo" commit -q -m fix
+  run_fob
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"INCONCLUSIVE"* ]]
+}
+
+@test "real failure printing an AssertionError with 'x' not found is not inconclusive: exit 0" {
+  commit_fix 'echo "AssertionError: '"'x'"' not found" >&2; exit 1'
+  run_fob
+  [ "$status" -eq 0 ]
+  [ -z "$stderr" ]
+}
+
 @test "TEST_CMD unset: exit 2 before anything is created" {
   commit_fix '[ "$(f 1)" = 3 ]'
   unset TEST_CMD
