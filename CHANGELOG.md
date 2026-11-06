@@ -5,11 +5,13 @@
 ### Added
 - `.claude/hooks/fails-on-base.sh`: the sensor for rule ^v5 ("a check must fail on the pre-fix code"), drafted on 2026-10-14. It is opt-in: nothing wires it. A repo calls it from `.claude/stop-check` or `git-hooks/pre-push`: `TEST_CMD='pytest -q' fails-on-base.sh [base]`.
   - It lists the test files changed since `base` (default: merge-base with `origin/main`, else `HEAD~1`). It copies them onto a clean detached worktree of `base`, and runs `TEST_CMD` there.
-  - Exit 0: no test changed, tests only, or the tests fail on base. Exit 1: the tests pass on base, or the base run failed only on a missing module or command (INCONCLUSIVE). Exit 2: bad setup.
-  - The worktree is removed on every exit path. A new source file counts as part of the fix (the draft counted modified files only).
+  - A fix is a diff that changes tests and modifies or deletes a non-test file. A diff that only adds files is a feature: it is skipped, because a new module has no pre-fix code (the base run would fail on `ModuleNotFoundError`).
+  - Exit 0: no test changed, tests only, files added only, or the tests fail on base. Exit 1: the tests pass on base, or the base run failed on the environment (INCONCLUSIVE). Exit 2: bad setup.
+  - INCONCLUSIVE covers rc 126 and 127 (the runner did not start) and the messages `ModuleNotFoundError`, `Cannot find module`, `No module named` and `not found`. The script runs under `/bin/sh` (dash), which prints `<cmd>: not found`, not `command not found`.
+  - Non-ASCII test paths are read with `core.quotepath=off`. The worktree is removed (and pruned) on every exit path.
   - Not caught: a test that fails on base for the wrong assertion, assumed fixtures, refactor commits, ad-hoc shell checks. The clean worktree has no venv or `node_modules`.
   - Run on the real fix commit 3b00c49 (base e878c05): exit 0, the new test fails on base with `KeyError: 'promoted'`.
-  - Tests: 13 in `tests/fails-on-base.bats` (POSIX sh runner, no pytest).
+  - Tests: 18 in `tests/fails-on-base.bats` (POSIX sh runner, no pytest).
 - SessionStart prints one review line for the current project, before the pitfalls block: `[review] <slug>: 2 ouverts (1 geste, 1 arbitrage) → TASKS_REVIEW`. It comes from `tasks-review.py summary` (3 s timeout, at most 300 bytes). It prints nothing when the project has no open item, when `inbox/review/` is missing, or when the script fails; the error goes to `brain-load.log`.
 - The step adds about 150 ms to a session start (6 runs: slug 12-44 ms, `uv run --script` 106-149 ms).
 - Tests: three in `test_session_start_budget.py`, and the full-budget test now holds a review line.

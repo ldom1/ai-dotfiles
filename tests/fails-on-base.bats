@@ -77,22 +77,66 @@ one_worktree() { [ "$(git -C "$repo" worktree list | wc -l)" -eq 1 ]; }
   [ "$status" -eq 0 ]
 }
 
-@test "a new source file counts as the fix: weak test exits 1" {
+@test "new files only (new module + its test) is a feature, not a fix: exit 0" {
+  printf 'g() { echo 1; }\n' > "$repo/g.sh"
+  printf '. ./g.sh\n[ "$(g)" = 1 ]\n' > "$repo/g_test.sh"
+  git -C "$repo" add -A
+  git -C "$repo" commit -q -m feat
+  run_fob
+  [ "$status" -eq 0 ]
+  [ -z "$stderr" ]
+}
+
+@test "new files only, test passes on base: still a feature, exit 0" {
   printf 'g() { echo 1; }\n' > "$repo/g.sh"
   printf 'true\n' > "$repo/g_test.sh"
+  git -C "$repo" add -A
+  git -C "$repo" commit -q -m feat
+  run_fob
+  [ "$status" -eq 0 ]
+}
+
+@test "modified source file + new test: the test is checked (weak exits 1)" {
+  printf 'f() { echo 3; }\n' > "$repo/m.sh"
+  printf 'true\n' > "$repo/n_test.sh"
   git -C "$repo" add -A
   git -C "$repo" commit -q -m fix
   run_fob
   [ "$status" -eq 1 ]
 }
 
-@test "a new source file counts as the fix: strong test exits 0" {
-  printf 'g() { echo 1; }\n' > "$repo/g.sh"
-  printf '. ./g.sh\n[ "$(g)" = 1 ]\n' > "$repo/g_test.sh"
+@test "deleted source file + new test counts as a fix (weak exits 1)" {
+  git -C "$repo" rm -q m.sh
+  printf 'true\n' > "$repo/n_test.sh"
   git -C "$repo" add -A
   git -C "$repo" commit -q -m fix
   run_fob
-  [ "$status" -eq 0 ]
+  [ "$status" -eq 1 ]
+}
+
+@test "non-ASCII test path is seen (weak test exits 1)" {
+  printf 'f() { echo 3; }\n' > "$repo/m.sh"
+  printf 'true\n' > "$repo/é_test.sh"
+  git -C "$repo" add -A
+  git -C "$repo" commit -q -m fix
+  run_fob
+  [ "$status" -eq 1 ]
+}
+
+@test "TEST_CMD not found on base (dash: 'not found', rc 127): exit 1, INCONCLUSIVE" {
+  commit_fix '[ "$(f 1)" = 3 ]'
+  TEST_CMD=no-such-cmd-xyz run_fob
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"INCONCLUSIVE"* ]]
+}
+
+@test "TEST_CMD not executable on base (rc 126): exit 1, INCONCLUSIVE" {
+  commit_fix '[ "$(f 1)" = 3 ]'
+  printf '#!/bin/sh\n' > "$BATS_TEST_TMPDIR/noexec.sh"
+  chmod -x "$BATS_TEST_TMPDIR/noexec.sh"
+  TEST_CMD="$BATS_TEST_TMPDIR/noexec.sh" run_fob
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"INCONCLUSIVE"* ]]
 }
 
 @test "base fails on a missing module only: exit 1, INCONCLUSIVE" {
@@ -123,8 +167,8 @@ one_worktree() { [ "$(git -C "$repo" worktree list | wc -l)" -eq 1 ]; }
   [ "$status" -eq 0 ]
   one_worktree
   # tests pass on base: exit 1
-  printf 'h() { :; }\n' > "$repo/h.sh"
-  printf 'true\n' > "$repo/h_test.sh"
+  printf 'f() { echo 4; }\n' > "$repo/m.sh"
+  printf 'true\n' > "$repo/m_test.sh"
   git -C "$repo" add -A
   git -C "$repo" commit -q -m weak
   run_fob HEAD~1
