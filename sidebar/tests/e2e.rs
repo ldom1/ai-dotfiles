@@ -9,6 +9,7 @@
 //! Lancer : cargo test --test e2e
 
 use std::os::unix::fs::symlink;
+use std::cell::Cell;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{Duration, Instant};
@@ -27,6 +28,7 @@ struct Env {
     // Gardé jusqu'à la fin du test : le dossier disparaît avec lui.
     dir: TempDir,
     term: Session,
+    last_click: Cell<Option<Instant>>,
 }
 
 impl Env {
@@ -79,6 +81,7 @@ impl Env {
         let env = Env {
             term: Session::new(dir.path().file_name().unwrap().to_string_lossy()),
             dir,
+            last_click: Cell::new(None),
         };
         let (h, d) = (env.home(), env.dir.path());
         let r = resurrect(&h);
@@ -94,6 +97,9 @@ impl Env {
         ] {
             std::fs::create_dir_all(p).unwrap();
         }
+        // HOME neuf : sans .hushlogin, le MOTD d'Ubuntu (update-motd.sh) s'affiche dans le shell
+        // et ses mots (help.ubuntu.com…) captent les locators de texte.
+        std::fs::write(h.join(".hushlogin"), "").unwrap();
         symlink(repo(), h.join("ai-dotfiles")).unwrap();
         symlink(repo().join("config/tmux.conf"), h.join(".tmux.conf")).unwrap();
         // Une copie, comme une installation : un test peut la remplacer comme le fait cargo build
@@ -166,18 +172,31 @@ impl Env {
         self.mouse_at(x, y, MouseButton::Left);
     }
 
+    /// tmux < 3.6 jette un clic d'un autre bouton moins de 300 ms après le précédent (fenêtre
+    /// du double-clic, server_client_check_mouse) ; tui-test clique en ~80 ms, pas un humain.
+    /// Horodaté après l'envoi : sous charge, tui-test livre le clic en retard.
+    fn pace(&self, click: impl FnOnce()) {
+        if let Some(t) = self.last_click.get() {
+            std::thread::sleep(Duration::from_millis(400).saturating_sub(t.elapsed()));
+        }
+        click();
+        self.last_click.set(Some(Instant::now()));
+    }
+
     fn mouse_at(&self, x: u16, y: u16, button: MouseButton) {
-        self.term
-            .execute(Operation::Mouse {
-                action: MouseAction::Click {
-                    x: Some(x),
-                    y: Some(y),
-                    on_text: None,
-                    options: MouseOptions::new(button),
-                    clicks: 1,
-                },
-            })
-            .unwrap();
+        self.pace(|| {
+            self.term
+                .execute(Operation::Mouse {
+                    action: MouseAction::Click {
+                        x: Some(x),
+                        y: Some(y),
+                        on_text: None,
+                        options: MouseOptions::new(button),
+                        clicks: 1,
+                    },
+                })
+                .unwrap();
+        });
     }
 
     /// Clic droit au début d'un texte visible.
@@ -192,7 +211,7 @@ impl Env {
     /// Clic au milieu d'un texte visible.
     fn click(&self, text: &str) {
         self.expect(text);
-        self.term.get_by_text(text).first().click().unwrap();
+        self.pace(|| self.term.get_by_text(text).first().click().unwrap());
     }
 
     /// Ligne (y) d'un texte visible.
