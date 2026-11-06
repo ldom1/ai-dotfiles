@@ -38,19 +38,20 @@ def load_items(directory: Path) -> list[dict]:
         return items
     for path in sorted(directory.glob("*.md")):
         item: dict = {}
-        match = FRONTMATTER.match(path.read_text(encoding="utf-8"))
-        if not match:
-            item["_error"] = "no frontmatter block"
-        else:
-            try:
+        try:
+            match = FRONTMATTER.match(path.read_text(encoding="utf-8"))
+            if not match:
+                item["_error"] = "no frontmatter block"
+            else:
                 data = yaml.safe_load(match.group(1))
-            except yaml.YAMLError:
-                data = None
-                item["_error"] = "frontmatter is not valid YAML"
-            if isinstance(data, dict):
-                item.update(data)
-            elif "_error" not in item:
-                item["_error"] = "frontmatter is not a mapping"
+                if isinstance(data, dict):
+                    item.update(data)
+                else:
+                    item["_error"] = "frontmatter is not a mapping"
+        except UnicodeDecodeError:
+            item["_error"] = "not UTF-8"
+        except (yaml.YAMLError, ValueError):  # a bad date like 2026-13-45 raises ValueError
+            item["_error"] = "frontmatter is not valid YAML"
         item["_file"] = path.name
         item["_mtime"] = datetime.fromtimestamp(path.stat().st_mtime).date()
         items.append(item)
@@ -78,7 +79,9 @@ def problems(item: dict, vault: Path) -> list[str]:
     project = item.get("project")
     if project not in (None, ""):
         slug = slug_of(item)
-        if slug is None:
+        if isinstance(project, list):
+            out.append('project must be a quoted link: "[[slug]]"')
+        elif slug is None:
             out.append(f"project {project!r} must be \"[[slug]]\", not a path")
         elif not (vault / "projects" / f"{slug}.md").is_file():
             out.append(f"no projects/{slug}.md")
@@ -122,8 +125,9 @@ def summary_line(items: list[dict], slug: str, today: date) -> str:
     return f"[review] {slug}: {', '.join(parts)} → TASKS_REVIEW"
 
 
-def default_dir() -> Path:
-    return Path(os.environ.get("BRAIN_PATH", "")) / "inbox" / "review"
+def default_dir() -> Path | None:
+    brain = os.environ.get("BRAIN_PATH")
+    return Path(brain) / "inbox" / "review" if brain else None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -136,6 +140,9 @@ def main(argv: list[str] | None = None) -> int:
     summary.add_argument("dir", nargs="?", type=Path)
     args = parser.parse_args(argv)
     directory = args.dir or default_dir()
+    if directory is None:
+        print("BRAIN_PATH is not set and no DIR given", file=sys.stderr)
+        return 2
     items = load_items(directory)
     if args.cmd == "check":
         vault = directory.parent.parent

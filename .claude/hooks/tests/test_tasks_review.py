@@ -146,3 +146,36 @@ def test_summary_cli_prints_nothing_for_missing_dir(tmp_path, capsys):
 def test_answer_older_than_7_days_not_counted(vault):
     age(item(vault, "a", status="répondu", answer="x"), 9)
     assert tr.summary_line(tr.load_items(vault / "inbox" / "review"), "dombot", TODAY) == ""
+
+
+def test_impossible_date_fails_that_file_only(vault, capsys):
+    item(vault, "a", created="2026-13-45")
+    item(vault, "b", why_not_agent=None)
+    assert tr.main(["check", rdir(vault)]) == 1
+    out = capsys.readouterr().out
+    assert len([ln for ln in out.splitlines() if ln.startswith("FAIL a.md")]) == 1
+    assert "FAIL b.md: geste needs why_not_agent" in out
+
+
+def test_unquoted_link_says_quote_it(vault):
+    item(vault, "a", project="[[dombot]]")
+    msgs = fails(vault)
+    assert msgs == ['project must be a quoted link: "[[slug]]"']
+
+
+def test_non_utf8_file_fails_that_file_only(vault, capsys):
+    (vault / "inbox" / "review" / "bad.md").write_bytes(b"---\ntype: geste\n---\n\xff\xfe\n")
+    item(vault, "b", why_not_agent=None)
+    assert tr.main(["check", rdir(vault)]) == 1
+    out = capsys.readouterr().out
+    assert "FAIL bad.md: not UTF-8" in out
+    assert "FAIL b.md: geste needs why_not_agent" in out
+
+
+@pytest.mark.parametrize("argv", [["check"], ["summary", "--project", "dombot"]])
+def test_no_dir_and_no_brain_path_exits_2(monkeypatch, capsys, argv):
+    monkeypatch.delenv("BRAIN_PATH", raising=False)
+    assert tr.main(argv) == 2
+    cap = capsys.readouterr()
+    assert cap.out == ""
+    assert "BRAIN_PATH is not set and no DIR given" in cap.err
