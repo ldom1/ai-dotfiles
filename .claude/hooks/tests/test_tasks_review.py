@@ -133,6 +133,32 @@ def test_summary_line(vault):
     assert len(line.encode()) <= 300
 
 
+def test_checked_action_is_closed(vault, capsys):
+    item(vault, "a", done="true")
+    item(vault, "b", done="false")
+    assert tr.main(["check", rdir(vault)]) == 0
+    line = tr.summary_line(tr.load_items(vault / "inbox" / "review"), "dombot", TODAY)
+    assert line == "[review] dombot: 1 ouvert (1 action) → TASKS_REVIEW"
+
+
+def test_checked_arbitrage_without_answer_is_an_answer_for_the_agent(vault, capsys):
+    age(item(vault, "a", type="arbitrage", why_not_agent=None, options="[A, B]", done="true"), 1)
+    assert tr.main(["check", rdir(vault)]) == 0
+    line = tr.summary_line(tr.load_items(vault / "inbox" / "review"), "dombot", TODAY)
+    assert line == "[review] dombot: 1 répondu < 7 j → TASKS_REVIEW"
+
+
+def test_checked_arbitrage_the_agent_closed_is_not_counted(vault):
+    item(vault, "a", type="arbitrage", why_not_agent=None, options="[A, B]", done="true", status="fait")
+    assert tr.summary_line(tr.load_items(vault / "inbox" / "review"), "dombot", TODAY) == ""
+
+
+def test_done_must_be_a_checkbox(vault, capsys):
+    item(vault, "a", done="maybe")
+    assert tr.main(["check", rdir(vault)]) == 1
+    assert "FAIL a.md: done 'maybe' must be true or false" in capsys.readouterr().out
+
+
 def test_summary_empty_for_unknown_project(vault):
     item(vault, "g1")
     assert tr.summary_line(tr.load_items(vault / "inbox" / "review"), "other", TODAY) == ""

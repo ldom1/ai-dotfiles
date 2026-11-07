@@ -41,3 +41,10 @@ def test_capture_review_agent_side_rules():
     assert "only the human sets `répondu`" in skill
     assert "[review] … répondu" in skill  # read-back of the human's answers
     assert "`session:` with `$CLAUDE_SESSION_ID`" in skill
+
+
+def test_capture_reads_ticked_arbitrages():
+    skill = skill_text()
+    assert "the recommended one first" in skill  # a ticked arbitrage with no answer accepts the first option
+    assert "`done: true`" in skill  # read-back covers the checkbox, not only `répondu`
+    assert "never ticks `done`" in skill  # the checkbox is the human's
