@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-11-07
+
 ### Added
 - TASKS_REVIEW: a `done` checkbox for quick validation in the Obsidian views.
   - A ticked `action` is closed. A ticked `arbitrage` with no `answer` accepts the first option, the recommended one.
