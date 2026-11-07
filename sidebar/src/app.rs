@@ -1,7 +1,7 @@
 //! État de la sidebar et touches. Aucun effet de bord ici : chaque touche rend un `Effect`
 //! que `main` exécute (tmux), ce qui garde ce module testable.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::model::Agent;
 use crate::sessions::{Fit, Session, fit, projects_dir, tilde, typed_path};
@@ -317,6 +317,8 @@ pub struct App {
     pub action_sel: usize,
     pub screen: Option<Screen>,
     pub last_save: Option<i64>,
+    /// Sections dont l'état plié diffère du défaut (clés de `fold_key`)
+    pub folds: HashSet<String>,
 }
 
 impl App {
@@ -343,6 +345,7 @@ impl App {
             action_sel: 0,
             screen: None,
             last_save: None,
+            folds: HashSet::new(),
         }
     }
 
@@ -490,10 +493,19 @@ impl App {
                 close(self, e)
             }
             // « + » : nouveau projet, avec le nom déjà tapé
-            (Screen::New { filter, folders, .. }, Key::Char('+')) => {
+            (
+                Screen::New {
+                    filter, folders, ..
+                },
+                Key::Char('+'),
+            ) => {
                 self.screen = Some(Screen::Project {
                     parent: projects_dir(&folders, &self.home),
-                    input: if filter.contains('/') { String::new() } else { filter },
+                    input: if filter.contains('/') {
+                        String::new()
+                    } else {
+                        filter
+                    },
                 });
                 Effect::None
             }
@@ -616,7 +628,12 @@ impl App {
                 .find(|a| &a.pane == pane)
                 .is_some_and(|a| a.updated_at == ans.seen || a.state == "running")
         });
-        if let Some(pane) = keep
+        self.keep_selection(keep);
+    }
+
+    /// Remet la sélection sur ce pane s'il est encore visible.
+    fn keep_selection(&mut self, pane: Option<String>) {
+        if let Some(pane) = pane
             && let Some(i) = self.visible().iter().position(|a| a.pane == pane)
         {
             self.selected = i;
@@ -633,8 +650,30 @@ impl App {
         }
     }
 
-    /// Agents filtrés et triés, dans l'ordre affiché.
+    /// Section pliée : `default` (plié par défaut), inversé par un clic ou la touche espace.
+    pub fn folded(&self, key: &str, default: bool) -> bool {
+        self.folds.contains(key) != default
+    }
+
+    pub fn toggle(&mut self, key: String) {
+        let keep = self.selected_agent().map(|a| a.pane.clone());
+        if !self.folds.remove(&key) {
+            self.folds.insert(key);
+        }
+        self.keep_selection(keep);
+    }
+
+    /// Agents sélectionnables : ceux de `listed` hors des sections d'état pliées.
     pub fn visible(&self) -> Vec<&Agent> {
+        let mut v = self.listed();
+        if self.sort == Sort::Priority {
+            v.retain(|a| !self.folded(&state_key(self.shown_state(a)), false));
+        }
+        v
+    }
+
+    /// Agents filtrés et triés, dans l'ordre affiché (sections pliées comprises).
+    pub fn listed(&self) -> Vec<&Agent> {
         let needle = self.filter.to_lowercase();
         let mut v: Vec<&Agent> = self
             .agents
@@ -699,6 +738,15 @@ impl App {
                 self.screen = Some(Screen::Kill(self.current.clone()));
             }
             Key::Char('Q') => return self.run_action(ActionKind::SaveExit),
+            Key::Char(' ') => {
+                let key = match self.tab {
+                    Tab::Sessions => self.target().map(|s| session_key(&s.name)),
+                    _ => self.selected_agent().map(|a| subs_key(&a.pane)),
+                };
+                if let Some(k) = key {
+                    self.toggle(k);
+                }
+            }
             _ if self.tab == Tab::Sessions => return self.key_sessions(k),
             _ if self.tab == Tab::Actions => return self.key_actions(k),
             Key::Up | Key::Char('k') => self.selected = self.selected.saturating_sub(1),
@@ -873,6 +921,19 @@ impl App {
     }
 }
 
+/// Clés des sections pliables : une session, une section d'état, les sous-agents d'un pane.
+pub fn session_key(name: &str) -> String {
+    format!("session:{name}")
+}
+pub fn state_key(state: &str) -> String {
+    format!("state:{}", rank(state))
+}
+pub fn subs_key(pane: &str) -> String {
+    format!("subs:{pane}")
+}
+/// Plus de sous-agents que ça : liste pliée par défaut (agents lancés en parallèle).
+pub const SUBS_FOLDED_ABOVE: usize = 3;
+
 pub fn rank(state: &str) -> u8 {
     match state {
         "check" => 0,
@@ -914,6 +975,34 @@ mod tests {
             ag("%3", "alpha", "running", 3, &[]),
         ]);
         a
+    }
+
+    #[test]
+    fn folding_a_state_section_hides_its_agents_and_keeps_the_selection() {
+        let mut a = app();
+        a.select(2); // %3, running
+        a.toggle(state_key("check"));
+        let panes: Vec<_> = a.visible().iter().map(|x| x.pane.clone()).collect();
+        assert_eq!(panes, ["%2", "%3"]);
+        assert_eq!(a.selected_agent().unwrap().pane, "%3");
+        assert_eq!(a.listed().len(), 3);
+        a.toggle(state_key("check"));
+        assert_eq!(a.visible().len(), 3);
+    }
+
+    #[test]
+    fn space_folds_the_session_or_the_subagents_under_the_cursor() {
+        let mut a = with_sessions();
+        a.set_tab(Tab::Sessions);
+        let name = a.target().unwrap().name.clone();
+        a.key(Key::Char(' '));
+        assert!(a.folded(&session_key(&name), false));
+        a.set_tab(Tab::Agents);
+        let pane = a.selected_agent().unwrap().pane.clone();
+        a.key(Key::Char(' '));
+        assert!(a.folded(&subs_key(&pane), false));
+        a.key(Key::Char(' '));
+        assert!(!a.folded(&subs_key(&pane), false));
     }
 
     #[test]
@@ -1149,7 +1238,10 @@ mod tests {
     fn new_session_screen_creates_attaches_or_suffixes() {
         let mut a = with_sessions();
         assert_eq!(a.key(Key::Char('N')), Effect::OpenNew);
-        a.open_new(vec!["/w/a/api".into(), "/w/b/api".into(), "/w/web".into()], false);
+        a.open_new(
+            vec!["/w/a/api".into(), "/w/b/api".into(), "/w/web".into()],
+            false,
+        );
         for c in "web".chars() {
             a.key(Key::Char(c));
         }
@@ -1203,7 +1295,10 @@ mod tests {
     fn plus_opens_new_project_with_the_typed_name_next_to_the_projects() {
         let mut a = with_sessions();
         a.home = "/w".into();
-        a.open_new(vec!["/w/lab/a".into(), "/w/lab/b".into(), "/w/x".into()], false);
+        a.open_new(
+            vec!["/w/lab/a".into(), "/w/lab/b".into(), "/w/x".into()],
+            false,
+        );
         for c in "demo".chars() {
             a.key(Key::Char(c));
         }
