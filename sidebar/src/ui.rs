@@ -1,15 +1,18 @@
 //! Rendu de la sidebar. Inspiré de claude-squad : cartes sur deux lignes et plus, fond de
 //! sélection, onglets soulignés en accent, menu de touches « touche desc • … » en pied.
 
+use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph};
-use ratatui::Frame;
 
-use crate::app::{rank, App, Key, Mode, Screen, Sort, Tab, ACTIONS};
-use crate::model::{ago, Agent};
-use crate::sessions::{tilde, Fit};
+use crate::app::{
+    ACTIONS, App, Key, Mode, SUBS_FOLDED_ABOVE, Screen, Sort, Tab, rank, session_key, state_key,
+    subs_key,
+};
+use crate::model::{Agent, ago};
+use crate::sessions::{Fit, tilde};
 use crate::theme::*;
 
 /// Zone cliquable de l'écran.
@@ -28,6 +31,8 @@ pub enum Hit {
     Key(Key),
     /// Dossier de l'écran New session
     Folder(usize),
+    /// Plie ou déplie une section (clé de `app::*_key`)
+    Fold(String),
 }
 
 pub const INDENT: &str = "      ";
@@ -194,6 +199,11 @@ pub fn draw(f: &mut Frame, app: &mut App) -> Vec<(Rect, Hit)> {
     }
     under.push("─".repeat(w.saturating_sub(under.width) as usize), fg(LINE));
     header.push(under);
+    // Toujours visibles hors écran de confirmation, quel que soit le défilement
+    if app.screen.is_none() {
+        header.push(plus_row(w));
+    }
+    let top = header.len() as u16;
     for (y, row) in header.iter().enumerate() {
         place(f, &mut hits, row, area.x, area.y + y as u16, w);
     }
@@ -201,9 +211,9 @@ pub fn draw(f: &mut Frame, app: &mut App) -> Vec<(Rect, Hit)> {
     let footer = footer_row(app, w);
     let body = Rect {
         x: area.x,
-        y: area.y + 3,
+        y: area.y + top,
         width: w,
-        height: area.height.saturating_sub(5),
+        height: area.height.saturating_sub(top + 2),
     };
     place(
         f,
@@ -307,6 +317,28 @@ fn tabs_row(app: &App, w: u16) -> Row {
     r
 }
 
+/// Boutons + Terminal, + New session, + New project (libellés courts si la sidebar est étroite).
+fn plus_row(w: u16) -> Row {
+    let labels = if w >= 41 {
+        ["+ Terminal", "+ New session", "+ New project"]
+    } else {
+        ["+ Term", "+ Session", "+ Project"]
+    };
+    let mut r = Row::new();
+    r.push(" ", Style::new());
+    for (label, k) in labels.into_iter().zip(['T', 'N', '+']) {
+        if r.width() > 1 {
+            r.push("  ", Style::new());
+        }
+        r.hit(label, fg(ACCENT), Hit::Key(Key::Char(k)));
+    }
+    r
+}
+
+fn fold_glyph(folded: bool) -> &'static str {
+    if folded { "▸" } else { "▾" }
+}
+
 fn footer_row(app: &App, w: u16) -> Row {
     let mut r = Row::new();
     if let Some(m) = &app.message {
@@ -389,8 +421,8 @@ pub fn agents_rows(app: &App, w: u16) -> (Vec<Row>, Option<(usize, usize)>) {
                 .done(),
         );
     }
-    let visible = app.visible();
-    if visible.is_empty() {
+    let listed = app.listed();
+    if listed.is_empty() {
         let msg = if app.agents.is_empty() {
             " no agents"
         } else {
@@ -402,25 +434,40 @@ pub fn agents_rows(app: &App, w: u16) -> (Vec<Row>, Option<(usize, usize)>) {
 
     let mut sel = None;
     let mut section = None;
-    for (i, a) in visible.iter().enumerate() {
+    // i : rang dans `visible` (agents des sections dépliées), comme Hit::Agent et la sélection
+    let mut i = 0;
+    for a in listed {
         let state = app.shown_state(a);
-        if app.sort == Sort::Priority && section != Some(rank(state)) {
-            section = Some(rank(state));
-            let n = visible
-                .iter()
-                .filter(|x| rank(app.shown_state(x)) == rank(state))
-                .count();
-            let style = if state == "check" {
-                bold(CHECK)
-            } else {
-                bold(MUTED)
-            };
-            rows.push(
-                Row::new()
-                    .push(format!(" {}", section_title(state)), style)
-                    .push(format!(" {n}"), fg(TREE))
-                    .done(),
-            );
+        if app.sort == Sort::Priority {
+            let key = state_key(state);
+            if section != Some(rank(state)) {
+                section = Some(rank(state));
+                let n = app
+                    .listed()
+                    .iter()
+                    .filter(|x| rank(app.shown_state(x)) == rank(state))
+                    .count();
+                let style = if state == "check" {
+                    bold(CHECK)
+                } else {
+                    bold(MUTED)
+                };
+                let label = format!(
+                    " {} {}",
+                    fold_glyph(app.folded(&key, false)),
+                    section_title(state)
+                );
+                rows.push(
+                    Row::new()
+                        .hit(label, style, Hit::Fold(key.clone()))
+                        .hit(format!(" {n}"), fg(TREE), Hit::Fold(key.clone()))
+                        .done()
+                        .on(Hit::Fold(key.clone())),
+                );
+            }
+            if app.folded(&key, false) {
+                continue;
+            }
         }
         let start = rows.len();
         let selected = i == app.selected;
@@ -429,6 +476,7 @@ pub fn agents_rows(app: &App, w: u16) -> (Vec<Row>, Option<(usize, usize)>) {
             sel = Some((start, rows.len() - 1));
         }
         rows.push(Row::new());
+        i += 1;
     }
     (rows, sel)
 }
@@ -595,8 +643,36 @@ pub fn card(app: &App, a: &Agent, idx: usize, selected: bool, w: u16) -> Vec<Row
         }
     }
 
-    // Sous-agents : arbre ├ / └
+    rows.extend(subagent_rows(app, a, INDENT, bg));
+    rows.into_iter().map(|r| r.on(Hit::Agent(idx))).collect()
+}
+
+/// Sous-agents : ligne pliable « ▾ 3 subagents ⠋1 ✓2 », puis l'arbre ├ / └ si dépliée.
+fn subagent_rows(app: &App, a: &Agent, indent: &str, bg: Option<Color>) -> Vec<Row> {
     let subs: Vec<_> = a.subagents.values().collect();
+    if subs.is_empty() {
+        return vec![];
+    }
+    let key = subs_key(&a.pane);
+    let folded = app.folded(&key, subs.len() > SUBS_FOLDED_ABOVE);
+    let running = subs.iter().filter(|s| s.state == "running").count();
+    let mut r = Row::new().bg(bg);
+    r.push(indent.to_string(), fg(TREE));
+    let plural = if subs.len() == 1 { "" } else { "s" };
+    r.hit(
+        format!("{} {} subagent{plural}", fold_glyph(folded), subs.len()),
+        fg(MUTED),
+        Hit::Fold(key),
+    );
+    for (st, n) in [("running", running), ("done", subs.len() - running)] {
+        if n > 0 {
+            r.push(format!(" {}{n}", glyph(st, app.tick)), fg(state_color(st)));
+        }
+    }
+    let mut rows = vec![r];
+    if folded {
+        return rows;
+    }
     for (i, s) in subs.iter().enumerate() {
         let branch = if i + 1 == subs.len() { "└" } else { "├" };
         let st = if s.state == "running" {
@@ -605,7 +681,7 @@ pub fn card(app: &App, a: &Agent, idx: usize, selected: bool, w: u16) -> Vec<Row
             "done"
         };
         let mut r = Row::new().bg(bg);
-        r.push(format!("{INDENT}{branch} "), fg(TREE))
+        r.push(format!("{indent}{branch} "), fg(TREE))
             .push(glyph(st, app.tick), fg(state_color(st)))
             .push(format!(" {}", s.kind), fg(TEXT));
         if st == "done" {
@@ -613,7 +689,7 @@ pub fn card(app: &App, a: &Agent, idx: usize, selected: bool, w: u16) -> Vec<Row
         }
         rows.push(r);
     }
-    rows.into_iter().map(|r| r.on(Hit::Agent(idx))).collect()
+    rows
 }
 
 /// Retour à la ligne aux espaces seulement : « prosper-2 » ou « --resume » restent entiers.
@@ -636,14 +712,6 @@ fn state_counts(app: &App, agents: &[&Agent], r: &mut Row) {
 pub fn sessions_rows(app: &App, w: u16) -> (Vec<Row>, Option<(usize, usize)>) {
     let mut rows = vec![];
     let mut sel = None;
-    let mut plus = Row::new();
-    plus.hit(" + Terminal", fg(ACCENT), Hit::Key(Key::Char('T')))
-        .push("  ", Style::new())
-        .hit("+ New session", fg(ACCENT), Hit::Key(Key::Char('N')))
-        .push("  ", Style::new())
-        .hit("+ New project", fg(ACCENT), Hit::Key(Key::Char('+')));
-    rows.push(plus);
-    rows.push(Row::new());
     if app.sessions.is_empty() {
         rows.push(Row::new().push(" no sessions", fg(MUTED)).done());
     }
@@ -664,15 +732,30 @@ pub fn sessions_rows(app: &App, w: u16) -> (Vec<Row>, Option<(usize, usize)>) {
             if current { bold(ACCENT) } else { fg(TEXT) },
             Hit::Session(i),
         );
+        let key = session_key(&s.name);
+        let folded = app.folded(&key, false);
         let mut counts = Row::new();
         state_counts(app, &agents, &mut counts);
-        let cw = counts.width();
+        let cw = counts.width() + 2;
         r.push(
             " ".repeat(w.saturating_sub(r.width() + cw) as usize),
             Style::new(),
         );
         state_counts(app, &agents, &mut r);
+        r.hit(
+            format!("{} ", fold_glyph(folded)),
+            fg(ACCENT),
+            Hit::Fold(key),
+        );
         rows.push(r);
+        if folded {
+            rows[start].on = Some(Hit::Session(i));
+            if i == app.session_sel {
+                sel = Some((start, start));
+            }
+            rows.push(Row::new());
+            continue;
+        }
         rows.push(
             Row::new()
                 .bg(bg)
@@ -703,29 +786,8 @@ pub fn sessions_rows(app: &App, w: u16) -> (Vec<Row>, Option<(usize, usize)>) {
             r.push(cut(a.task.as_deref().unwrap_or(""), room), fg(TEXT));
             r.right(format!("{dur} "), fg(MUTED), w);
             rows.push(r);
-            let subs: Vec<_> = a.subagents.values().collect();
-            for (k, sa) in subs.iter().enumerate() {
-                let st = if sa.state == "running" {
-                    "running"
-                } else {
-                    "done"
-                };
-                let mut r = Row::new().bg(bg);
-                r.push(
-                    format!(
-                        "     {}    {} ",
-                        if last { " " } else { "│" },
-                        if k + 1 == subs.len() { "└" } else { "├" }
-                    ),
-                    fg(TREE),
-                );
-                r.push(glyph(st, app.tick), fg(state_color(st)))
-                    .push(format!(" {}", sa.kind), fg(TEXT));
-                if st == "done" {
-                    r.push("  done", fg(MUTED));
-                }
-                rows.push(r);
-            }
+            let indent = format!("     {}    ", if last { " " } else { "│" });
+            rows.extend(subagent_rows(app, a, &indent, bg));
             for r in &mut rows[agent_start..] {
                 r.on = Some(Hit::TreeAgent(i, a.pane.clone()));
             }
@@ -1091,8 +1153,8 @@ mod tests {
     use super::*;
     use crate::model::{Git, Subagent};
     use crate::sessions::Session;
-    use ratatui::backend::TestBackend;
     use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
 
     fn screen(app: &mut App, w: u16, h: u16) -> (String, Vec<(Rect, Hit)>) {
         let mut t = Terminal::new(TestBackend::new(w, h)).unwrap();
@@ -1386,9 +1448,71 @@ mod tests {
         ] {
             assert!(s.contains(want), "missing {want:?}\n{s}");
         }
-        assert!(hits
-            .iter()
-            .any(|(_, h)| *h == Hit::Key(crate::app::Key::Char('d'))));
+        assert!(
+            hits.iter()
+                .any(|(_, h)| *h == Hit::Key(crate::app::Key::Char('d')))
+        );
+    }
+
+    /// Cas réel : 12 sous-agents en parallèle dans une sidebar de 44 × 24.
+    #[test]
+    fn many_subagents_fold_and_the_plus_buttons_stay_on_every_tab() {
+        let mut app = demo();
+        for i in 0..12 {
+            app.agents[1].subagents.insert(
+                format!("p{i:02}"),
+                Subagent {
+                    kind: "general-purpose".into(),
+                    state: if i < 2 { "running" } else { "done" }.into(),
+                },
+            );
+        }
+        app.set_tab(Tab::Sessions);
+        app.session_sel = 3; // dernière session : le corps défile
+        for tab in [Tab::Sessions, Tab::Agents, Tab::Actions] {
+            app.set_tab(tab);
+            let (s, _) = screen(&mut app, 44, 24);
+            assert!(
+                s.contains(" + Terminal  + New session  + New project"),
+                "{tab:?}\n{s}"
+            );
+        }
+        app.set_tab(Tab::Sessions);
+        let (s, hits) = screen(&mut app, 44, 24);
+        println!("{s}");
+        assert!(s.contains("▸ 14 subagents"), "{s}");
+        assert!(!s.contains("general-purpose"), "{s}");
+        let key = subs_key("%2");
+        assert!(hits.iter().any(|(_, h)| *h == Hit::Fold(key.clone())));
+        app.toggle(key);
+        let (s, _) = screen(&mut app, 44, 40);
+        assert!(
+            s.contains("▾ 14 subagents") && s.contains("general-purpose"),
+            "{s}"
+        );
+        // Session pliée : seule sa ligne d'en-tête reste
+        app.toggle(session_key("notion-pilot"));
+        let (s, _) = screen(&mut app, 44, 40);
+        assert!(
+            s.contains("notion-pilot") && !s.contains("~/dev/notion-pilot"),
+            "{s}"
+        );
+    }
+
+    #[test]
+    fn a_folded_state_section_keeps_its_header_and_hides_its_cards() {
+        let mut app = demo();
+        app.toggle(state_key("check"));
+        let (s, hits) = screen(&mut app, 60, 40);
+        assert!(
+            s.contains("▸ TO CHECK 1") && !s.contains("Which parser"),
+            "{s}"
+        );
+        assert!(s.contains("▾ RUNNING 1"), "{s}");
+        assert!(
+            hits.iter()
+                .any(|(_, h)| *h == Hit::Fold(state_key("check")))
+        );
     }
 
     #[test]

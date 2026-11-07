@@ -3,6 +3,17 @@
 ## [Unreleased]
 
 ### Added
+- TASKS_REVIEW: a `done` checkbox for quick validation in the Obsidian views.
+  - A ticked `action` is closed. A ticked `arbitrage` with no `answer` accepts the first option, the recommended one.
+  - `tasks-review.py`: a ticked item is not open; a ticked arbitrage still `ouvert` counts as an answer for the agent. `check` fails a `done` that is not `true` or `false`.
+  - `/capture` (1.3.1) lists the recommended option first, never ticks `done`, and acts on ticked arbitrages (the first option when there is no `answer`), then sets `fait`.
+  - Vault: `done: false` in `_templates/review-item.md`; the views show the checkbox first and hide ticked items.
+  - Tests: four in `test_tasks_review.py`, one in `test_capture_contract.py`.
+- aif-sidebar: sections fold, so many parallel agents no longer push the sidebar off screen.
+  - Fold a session (SESSIONS), a state section (AGENTS) or the subagents of an agent. Click `▾`/`▸`, or press space on the selected session or agent.
+  - A list of more than 3 subagents starts folded, as one row: `▸ 14 subagents ⠋3 ✓11`.
+  - A folded AGENTS section hides its agents from the cursor; `1–9` still jumps to them. The selection stays on the same agent.
+  - The `+ Terminal`, `+ New session` and `+ New project` buttons are pinned under the tabs, on every tab. They also work while the filter is open. Below 41 columns they read `+ Term`, `+ Session`, `+ Project`.
 - `.claude/hooks/fails-on-base.sh`: the sensor for rule ^v5 ("a check must fail on the pre-fix code"), drafted on 2026-10-14. It is opt-in: nothing wires it. A repo calls it from `.claude/stop-check` or `git-hooks/pre-push`: `TEST_CMD='pytest -q' fails-on-base.sh [base]`.
   - It lists the test files changed since `base` (default: merge-base with `origin/main`, else `HEAD~1`). It copies them onto a clean detached worktree of `base`, and runs `TEST_CMD` there.
   - A fix is a diff that changes tests and modifies or deletes a non-test file. A diff that only adds files is a feature: it is skipped, because a new module has no pre-fix code (the base run would fail on `ModuleNotFoundError`).
