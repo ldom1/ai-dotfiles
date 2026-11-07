@@ -27,7 +27,7 @@ use ratatui::crossterm::event::{
 use ratatui::crossterm::execute;
 use ratatui::layout::{Position, Rect};
 
-use app::{App, Effect, Key};
+use app::{App, Effect, Key, Mode};
 use peek::{Peek, PeekEffect};
 use ui::Hit;
 
@@ -241,7 +241,13 @@ fn click(app: &mut App, hit: Option<Hit>) -> Effect {
     match hit {
         Some(Hit::Tab(t)) => app.set_tab(t),
         Some(Hit::Help) => return Effect::Help,
+        // Boutons + Terminal / New session / New project épinglés : agissent aussi pendant un filtre
+        Some(Hit::Key(k @ Key::Char('T' | 'N' | '+'))) if app.screen.is_none() => {
+            app.mode = Mode::Normal;
+            return app.key(k);
+        }
         Some(Hit::Key(k)) => return app.key(k),
+        Some(Hit::Fold(key)) => app.toggle(key),
         Some(Hit::Agent(i)) => {
             app.select(i);
             if let Some(a) = app.selected_agent() {

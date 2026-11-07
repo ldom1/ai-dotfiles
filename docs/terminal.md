@@ -29,6 +29,8 @@ Sessions:
 - `tma -n <name> [dir]` sets the name. Use it for an SSH session (`tma -n vps`).
 - If a session of the same name exists for another folder, `tma` stops and shows both paths. Use `-n`.
 - A session created without a name (plain `tmux`) is renamed after its folder by `config/tmux-name-session.sh` (`after-new-session` hook), with a `-2` suffix when the name is taken.
+- The `+ Terminal`, `+ New session` and `+ New project` buttons stay under the sidebar tabs, on every tab. They do not scroll away.
+- Each sidebar section folds: a session (`▾` at the right of its row), a state section of AGENTS (its title) and the subagents of an agent (`▾ N subagents`). Click the `▾`/`▸` sign, or press space on the selected session or agent. A list of more than 3 subagents starts folded.
 - `+ Terminal` in the sidebar (or `T`) opens a new session in `~` and switches to it. It gets the name of an unnamed session: `main`, or `main-2` when `main` exists.
 - `Ctrl+Shift+N` (or `prefix N`) opens the New session screen in the sidebar. It lists folders from `zoxide`, or else the git repositories under `~` (3 levels). Each folder shows `new`, `attach <session>` (a session is open on it) or `name taken → <name>-2` (the name belongs to another folder: the new session gets a `-2` suffix). A typed path (`~/…`, `/…`, or `lab/x` relative to `~`) that does not exist is created with `git init`.
 - `+` in the sidebar (or `prefix +`, or `+ New project`) opens the New project screen. Type a name: the project goes into the folder that holds the most of your projects (for example `~/lab`). `Create & open` creates the folder, runs `git init` and opens a session in it.

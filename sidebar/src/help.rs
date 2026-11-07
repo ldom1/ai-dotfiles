@@ -23,6 +23,7 @@ pub const SECTIONS: [Section; 4] = [
             ("⇥", "next tab"),
             ("?", "help"),
             ("click", "rows and keys shown"),
+            ("space · ▾", "fold section"),
         ],
     ),
     (
