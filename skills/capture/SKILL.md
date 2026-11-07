@@ -53,10 +53,10 @@ python3 ~/ai-dotfiles/skills/capture/scripts/check_log.py "$BRAIN_PATH/inbox/dai
 Anything that needs the human goes to a review item, not to `**Follow-ups:**`. Write `$BRAIN_PATH/inbox/review/<TODAY>-<slug>-<topic>.md` from `$BRAIN_PATH/_templates/review-item.md`.
 
 - A manual action (`type: action`) states `why_not_agent`. If the agent can do it, do it now instead.
-- A decision (`type: arbitrage`) lists its `options`, at least two.
+- A decision (`type: arbitrage`) lists its `options`, at least two, the recommended one first.
 - Fill `session:` with `$CLAUDE_SESSION_ID` when it is set.
-- An item this session resolved gets `status: fait` or `écarté`. The agent never sets `répondu`: only the human sets `répondu`, with an `answer`. Open items are in `$BRAIN_PATH/inbox/review/`.
-- If SessionStart printed a `[review] … répondu` line, open the `répondu` items of this project in `$BRAIN_PATH/inbox/review/`, act on `answer`, then set `status: fait`.
+- An item this session resolved gets `status: fait` or `écarté`. The agent never sets `répondu` and never ticks `done`: only the human sets `répondu`, with an `answer`, or ticks `done`. Open items are in `$BRAIN_PATH/inbox/review/`.
+- If SessionStart printed a `[review] … répondu` line, open this project's items in `$BRAIN_PATH/inbox/review/` that are `répondu`, or arbitrages still `ouvert` with `done: true`. Act on `answer`; with no `answer`, act on the first option. Then set `status: fait`.
 
 Check the items, then fix every `FAIL` line and run the check again until it prints `OK <n> items`:
 

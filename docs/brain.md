@@ -184,6 +184,7 @@ One place holds the manual steps and the open decisions of all agents on all pro
 - An `action` is a manual step the agent cannot do. It carries `why_not_agent`.
 - An `arbitrage` is a decision. It carries at least two `options`.
 - You write your reply in `answer`, then set `status` to `répondu` (the agent reads `answer`, acts, then sets `fait`), `fait` or `écarté`. The agent closes its own items with `fait` or `écarté`, never `répondu`.
+- Quick validation: tick the `done` checkbox in a view. A ticked `action` is closed. A ticked `arbitrage` with no `answer` accepts the first option, the recommended one: the agent acts on it, then sets `fait`.
 - `TASKS_REVIEW.base` is an Obsidian Bases file with five views: to do, by project, decisions, manual steps, done this week.
 
 `scripts/tasks-review.py` checks the items. It needs PyYAML, which `uv run --script` installs from the PEP 723 header.

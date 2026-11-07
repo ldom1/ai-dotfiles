@@ -12,6 +12,8 @@
 DIR defaults to $BRAIN_PATH/inbox/review. The vault is two levels above DIR.
 An item is one note with YAML frontmatter. The script reads the frontmatter block only.
 It prints names, counts and enum values. It never prints the body of an item.
+`done` is the Obsidian checkbox: a ticked item is closed; a ticked arbitrage still `ouvert` is an
+answer for the agent (no `answer` means the first option, the recommended one).
 """
 import argparse
 import os
@@ -100,14 +102,29 @@ def problems(item: dict, vault: Path) -> list[str]:
             out.append("arbitrage needs 2 options")
     if item.get("status") == "répondu" and not _text(item.get("answer")):
         out.append("répondu needs answer")
+    if "done" in item and not isinstance(item["done"], bool):
+        out.append(f"done {item['done']!r} must be true or false")
     return out
+
+
+def is_open(item: dict) -> bool:
+    """Open: `status: ouvert` and the `done` checkbox not ticked."""
+    return item.get("status") == "ouvert" and item.get("done") is not True
+
+
+def is_answer(item: dict) -> bool:
+    """An answer the agent must act on: `status: répondu`, or a ticked arbitrage still `ouvert`
+    (no `answer` means the first option, the recommended one)."""
+    if item.get("status") == "répondu":
+        return True
+    return item.get("type") == "arbitrage" and item.get("status") == "ouvert" and item.get("done") is True
 
 
 def summary_line(items: list[dict], slug: str, today: date) -> str:
     mine = [i for i in items if "_error" not in i and slug_of(i) == slug]
-    opened = [i for i in mine if i.get("status") == "ouvert"]
+    opened = [i for i in mine if is_open(i)]
     cutoff = today - timedelta(days=ANSWER_DAYS)
-    answered = [i for i in mine if i.get("status") == "répondu" and i["_mtime"] > cutoff]
+    answered = [i for i in mine if is_answer(i) and i["_mtime"] > cutoff]
     parts = []
     if opened:
         actions = sum(i.get("type") == "action" for i in opened)
