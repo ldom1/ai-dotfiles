@@ -15,7 +15,7 @@ setup() {
   printf '. "%s"\n' "$INIT" | tee "$HOME/.bashrc" > "$HOME/.zshrc"
   export PATH="$BATS_TEST_TMPDIR/bin:/usr/bin:/bin"
   # Les tests eux-mêmes tournent parfois sous tmux, VS Code ou Claude Code
-  unset TMUX AIF_NO_TMUX CLAUDECODE TERM_PROGRAM ZDOTDIR
+  unset TMUX AIF_DECK HERDR_ENV CLAUDECODE TERM_PROGRAM ZDOTDIR
   command -v script >/dev/null || skip "script (util-linux) missing"
 }
 
@@ -38,12 +38,28 @@ term() {
   [ -f "$MARK" ]
 }
 
-@test "no tma inside tmux, VS Code / Cursor, Claude Code, or with AIF_NO_TMUX=1" {
+@test "no tma inside tmux, VS Code / Cursor or Claude Code" {
   TMUX=/tmp/x,1,0 term bash
   TERM_PROGRAM=vscode term bash
   CLAUDECODE=1 term bash
-  AIF_NO_TMUX=1 term bash
   [ ! -f "$MARK" ]
+}
+
+@test "AIF_DECK=off: a new terminal does not run tma" {
+  AIF_DECK=off term bash
+  if command -v zsh >/dev/null; then AIF_DECK=off term zsh; fi
+  [ ! -f "$MARK" ]
+}
+
+@test "inside a Herdr pane (HERDR_ENV=1): no tma" {
+  HERDR_ENV=1 term bash
+  if command -v zsh >/dev/null; then HERDR_ENV=1 term zsh; fi
+  [ ! -f "$MARK" ]
+}
+
+@test "AIF_DECK=on still runs tma" {
+  AIF_DECK=on term bash
+  [ -f "$MARK" ]
 }
 
 @test "no tma when the shell runs a command (zsh -lic tma already runs it)" {

@@ -222,7 +222,7 @@ for rc in "${rcs[@]}"; do
     log "$rc already sources config/shell-init.sh"
   else
     printf '\n%s\n' "$init_line" >> "$rc"
-    log "$rc sources config/shell-init.sh: new terminals open tmux (AIF_NO_TMUX=1 turns it off)"
+    log "$rc sources config/shell-init.sh: new terminals open tmux (AIF_DECK=off turns it off)"
   fi
 done
 

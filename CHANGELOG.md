@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- ai-dotdeck switch: `AIF_DECK=off` replaces `AIF_NO_TMUX=1`. A new terminal no longer runs `tma` when `AIF_DECK=off` is set, or inside a Herdr pane (`HERDR_ENV=1`). Export `AIF_DECK=off` in `~/.zshenv`.
+
 ## [0.17.0] - 2026-11-07
 
 ### Added

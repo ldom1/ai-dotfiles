@@ -10,8 +10,8 @@ Terminal init: `install.sh` adds one line to `~/.zshrc` and `~/.bashrc` (or to t
 
 - It puts `~/.local/bin` on `PATH`.
 - A new terminal outside tmux runs `tma`: it opens the session of the current folder (`main` for `~`). After a detach, the shell continues.
-- It does not run `tma` inside tmux, in the VS Code or Cursor terminal, in a shell started by Claude Code, without a tty, or in a shell that runs a command (`zsh -lic tma`).
-- Set `AIF_NO_TMUX=1` to turn it off.
+- It does not run `tma` inside tmux, in a Herdr pane (`HERDR_ENV=1`), in the VS Code or Cursor terminal, in a shell started by Claude Code, without a tty, or in a shell that runs a command (`zsh -lic tma`).
+- Set `AIF_DECK=off` to turn it off (export it in `~/.zshenv`, before the rc file runs). `aif-deck off` also turns off the Windows Terminal keys.
 The sidebar is `aif-sidebar` (Rust + ratatui, `sidebar/`; decision: [`docs/adr/0001-agents-sidebar.md`](adr/0001-agents-sidebar.md)): one pane on the left of each window, with the sessions, the Claude Code agents and the actions.
 
 Platforms:
