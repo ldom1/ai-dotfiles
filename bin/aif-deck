@@ -42,6 +42,15 @@ def write_json(path: Path, data: object, indent: int) -> None:
     os.replace(tmp.name, path)
 
 
+def read_backup(path: Path) -> list[dict]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return [e for e in data if isinstance(e, dict) and isinstance(e.get("binding"), dict) and "index" in e]
+    except (ValueError, TypeError):
+        print(f"aif-deck: cannot parse the backup {path}; ignored", file=sys.stderr)
+        return []
+
+
 def is_tma(command: object) -> bool:
     if not isinstance(command, dict):
         return False
@@ -81,7 +90,11 @@ def main(argv: list[str]) -> int:
         if not present:
             print("already off" if backup.exists() else "no tma keys")
             return 0
-        write_json(backup, [{"index": i, "binding": k} for i, k in present], indent=2)
+        entries = [{"index": i, "binding": k} for i, k in present]
+        if backup.exists():  # an earlier off: keep its keys that are not in the file any more
+            here = {k.get("id") for _, k in present}
+            entries = [e for e in read_backup(backup) if e["binding"].get("id") not in here] + entries
+        write_json(backup, entries, indent=2)
         settings["keybindings"] = [k for k in keys if k.get("id") not in ids]
         write_json(path, settings, indent=4)
         print(f"off: {len(present)} keys removed")
@@ -94,7 +107,7 @@ def main(argv: list[str]) -> int:
             return 0
         print("aif-deck: nothing to restore", file=sys.stderr)
         return 1
-    saved = json.loads(backup.read_text(encoding="utf-8"))
+    saved = read_backup(backup)
     bound = {str(k.get("keys", "")).lower(): k.get("id") for k in keys}
     have = {k.get("id") for k in keys}
     conflicts = [s["binding"] for s in saved
@@ -106,8 +119,13 @@ def main(argv: list[str]) -> int:
                   file=sys.stderr)
         return 3
     for s in sorted(saved, key=lambda s: s["index"]):
-        if s["binding"].get("id") not in have:
-            keys.insert(min(s["index"], len(keys)), s["binding"])
+        b = s["binding"]
+        if b.get("id") not in have:
+            keys.insert(min(s["index"], len(keys)), b)
+        else:
+            now = next(k.get("keys") for k in keys if k.get("id") == b.get("id"))
+            if now != b.get("keys"):
+                print(f"aif-deck: {b.get('id')} kept on {now} (saved: {b.get('keys')})")
     settings["keybindings"] = keys
     write_json(path, settings, indent=4)
     backup.unlink()

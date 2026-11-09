@@ -330,3 +330,35 @@ seq_of() { sed -n "${1}p" "$HERDR_LOG" | grep -o -- '--seq|[0-9]*' | cut -d'|' -
   ev session-start
   [ ! -e "$AIF_STATE_DIR" ] && [ ! -e "$HERDR_LOG" ]
 }
+
+@test "seq: a French numeric locale (comma in EPOCHREALTIME) still gives digits" {
+  locale -a 2>/dev/null | grep -qi '^fr_FR.utf' || skip "fr_FR.UTF-8 locale not generated"
+  herdr_setup
+  LC_ALL=fr_FR.UTF-8 ev session-start
+  reports >/dev/null
+  [[ "$(seq_of 1)" =~ ^[0-9]{16}$ ]]
+}
+
+@test "seq: a counter file with code in it is not evaluated" {
+  herdr_setup
+  mkdir -p "$AIF_STATE_DIR"
+  printf 'a[$(touch %s/pwned)]\n' "$BATS_TEST_TMPDIR" > "$AIF_STATE_DIR/herdr.seq"
+  AIF_NOW_US=4000 ev session-start
+  [ ! -e "$BATS_TEST_TMPDIR/pwned" ]
+  [ "$(cat "$AIF_STATE_DIR/herdr.seq")" = 4000 ]
+}
+
+@test "Herdr started from a tmux pane: HERDR_ENV wins over an inherited TMUX_PANE" {
+  herdr_setup
+  export TMUX_PANE=%42
+  ev session-start; ev user-prompt
+  [ -f "$AIF_STATE_DIR/herdr-w1-p3.json" ] && [ ! -f "$AIF_STATE_DIR/42.json" ]
+  reports | tail -1 | grep -qF -- '--state|working|'
+}
+
+@test "herdr pane: session end releases the pane in Herdr" {
+  herdr_setup
+  ev session-start; ev session-end
+  reports | tail -1 | grep -qF 'pane|release-agent|w1:p3|--source|aif-dotdeck|--agent|claude|--seq|'
+  [ ! -f "$STATE" ]
+}

@@ -86,3 +86,33 @@ def test_changes_emit_only_changed_panes_and_gone():
     cur = {"w1:p1": "blocked", "w1:p3": "idle"}
     out = changes(prev, cur, ts=5.0)
     assert sorted((x.pane, x.state) for x in out) == [("w1:p1", "blocked"), ("w1:p2", "gone"), ("w1:p3", "idle")]
+
+
+def test_non_claude_blocked_is_not_false_blocked():
+    rows = [Row(ts=500, pane="w1:p9", state="blocked", agent="codex")]
+    assert match_waits([w(enter=100, leave=110)], rows + [r(100.5, "blocked"), r(111, "idle")], STEP)["_all"].false_blocked == 0
+
+
+def test_codex_rows_do_not_make_a_claude_wait_seen():
+    rows = [Row(ts=101, pane="w1:p3", state="blocked", agent="codex")]
+    assert match_waits([w(enter=100, leave=110)], rows, STEP)["tool"].missed == 1
+
+
+def test_unknown_rows_are_counted():
+    rows = [r(10, "unknown"), r(20, "idle"), r(30, "unknown")]
+    assert match_waits([], rows, STEP)["_all"].unknown == 2
+
+
+def test_wait_without_monitor_coverage_is_no_data_not_missed():
+    hb = [Row(ts=t, pane="_heartbeat", state="ok", agent="_monitor") for t in (0, 30, 60)]
+    c = match_waits([w(enter=40, leave=50), w(enter=500, leave=510)], hb, STEP, hb_s=30)
+    assert c["tool"].missed == 1 and c["tool"].no_data == 1
+
+
+def test_poll_once_bad_output_keeps_prev_and_returns_an_error():
+    from report import poll_once
+    prev = {"w1:p1": "working"}
+    new_prev, rows, err = poll_once(0, '{"oops": 1}', prev, now=5.0)
+    assert new_prev == prev and rows == [] and err
+    new_prev, rows, err = poll_once(1, "", prev, now=6.0)
+    assert new_prev == prev and rows == [] and err

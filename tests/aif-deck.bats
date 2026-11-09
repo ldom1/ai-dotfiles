@@ -100,3 +100,19 @@ tma_keys() { jq '[.keybindings[] | select(.id | startswith("User.tmux"))] | leng
   rm "$AIF_WT_SETTINGS"
   run -1 "$DECK" status
 }
+
+@test "off after a partial re-bind keeps the other saved keys (merged backup)" {
+  "$DECK" off
+  # Louis rebinds one tma action in the WT Settings UI, then runs off again
+  jq '.keybindings += [{"id": "User.tmuxSplitRight", "keys": "ctrl+alt+o"}]' "$AIF_WT_SETTINGS" > "$BATS_TEST_TMPDIR/s" && mv "$BATS_TEST_TMPDIR/s" "$AIF_WT_SETTINGS"
+  run -0 "$DECK" off
+  [ "$(jq length "$BACKUP")" = 6 ]
+  [ "$(tma_keys)" = 0 ]
+}
+
+@test "on reports a saved key whose action was re-bound to another key" {
+  "$DECK" off
+  jq '.keybindings += [{"id": "User.tmuxSplitRight", "keys": "ctrl+alt+o"}]' "$AIF_WT_SETTINGS" > "$BATS_TEST_TMPDIR/s" && mv "$BATS_TEST_TMPDIR/s" "$AIF_WT_SETTINGS"
+  run -0 "$DECK" on
+  [[ $output == *"User.tmuxSplitRight"*"ctrl+alt+o"* ]]
+}
