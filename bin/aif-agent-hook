@@ -1,15 +1,23 @@
 #!/usr/bin/env bash
 # aif-agent-hook — appelé par les hooks Claude Code. Écrit l'état de l'agent du
-# panneau tmux courant dans $AIF_STATE_DIR/<pane>.json. Ne bloque jamais Claude :
-# sort toujours en 0, ne fait rien hors tmux. Champs d'entrée : https://code.claude.com/docs/en/hooks
+# panneau courant dans $AIF_STATE_DIR/<clé>.json : pane tmux (clé = numéro du pane) ou pane Herdr
+# (HERDR_ENV=1, clé = herdr-<HERDR_PANE_ID, hors [A-Za-z0-9] remplacé par ->). Dans un pane Herdr, il
+# rapporte aussi l'état à Herdr (herdr pane report-agent). Ne bloque jamais Claude : sort toujours
+# en 0, ne fait rien ailleurs. Champs d'entrée : https://code.claude.com/docs/en/hooks
 set -uo pipefail
-[[ -n ${TMUX_PANE:-} ]] || exit 0
+if [[ -n ${TMUX_PANE:-} ]]; then
+  PANE=$TMUX_PANE KEY=${TMUX_PANE#%} HERDR=0
+elif [[ ${HERDR_ENV:-} == 1 && -n ${HERDR_PANE_ID:-} ]]; then
+  PANE=$HERDR_PANE_ID KEY="herdr-${HERDR_PANE_ID//[^A-Za-z0-9]/-}" HERDR=1
+else
+  exit 0
+fi
 command -v jq >/dev/null || exit 0
 
 # Budget : < 100 ms par événement. Un seul appel jq (≈ 18 ms avec jq 1.6), pas de date ni de mktemp.
 STATE_DIR=${AIF_STATE_DIR:-${XDG_RUNTIME_DIR:-/tmp/aif-$UID}/aif/agents}
 [[ -d $STATE_DIR ]] || mkdir -p "$STATE_DIR" 2>/dev/null || exit 0
-FILE="$STATE_DIR/${TMUX_PANE#%}.json"
+FILE="$STATE_DIR/$KEY.json"
 cur=$FILE; [[ -f $cur ]] || cur=/dev/null
 input=$(cat)
 
@@ -67,21 +75,37 @@ JQ='
 
 # Entrée du hook sur stdin, pas en argument : un tool_input de plus de 128 Ko (Write) dépasserait
 # la taille maximale d'un argument.
-out=$(jq -r --slurpfile cur "$cur" --argjson now "$EPOCHSECONDS" --arg pane "$TMUX_PANE" "$JQ" <<<"$input" 2>/dev/null) || exit 0
+out=$(jq -r --slurpfile cur "$cur" --argjson now "$EPOCHSECONDS" --arg pane "$PANE" "$JQ" <<<"$input" 2>/dev/null) || exit 0
 IFS=$'\t' read -r event prev_state new_state sid ask <<<"${out%%$'\n'*}"
 [[ $event == SessionEnd ]] && { rm -f "$FILE"; exit 0; }
 [[ $out == *$'\n'* ]] || exit 0   # événement ignoré
 tmp="$STATE_DIR/.$$.tmp"
 printf '%s\n' "${out#*$'\n'}" >"$tmp" && mv "$tmp" "$FILE" || { rm -f "$tmp"; exit 0; }
 
-# Journal des questions : une ligne « epoch \t session \t enter|leave \t nature » à chaque entrée dans
+# Journal des questions : une ligne « epoch \t session \t enter|leave \t nature \t clé du pane » à chaque entrée dans
 # check et sortie de check. .ask n est jamais effacé : la ligne leave porte la nature de la question
 # qu elle ferme. Ni texte ni option : seulement des identifiants et des énumérations.
 if [[ $new_state != "$prev_state" ]] && [[ $new_state == check || $prev_state == check ]]; then
   CHECK_LOG=${AIF_CHECK_LOG:-$HOME/.claude/logs/aif-check.log}
   [[ -d ${CHECK_LOG%/*} ]] || mkdir -p "${CHECK_LOG%/*}" 2>/dev/null
   kind=enter; [[ $new_state == check ]] || kind=leave
-  { printf '%s\t%s\t%s\t%s\n' "$EPOCHSECONDS" "$sid" "$kind" "$ask" >>"$CHECK_LOG"; } 2>/dev/null
+  { printf '%s\t%s\t%s\t%s\t%s\n' "$EPOCHSECONDS" "$sid" "$kind" "$ask" "$KEY" >>"$CHECK_LOG"; } 2>/dev/null
+fi
+
+# Pane Herdr : rapporter le nouvel état à Herdr, en fond. --seq vient d'un compteur partagé sous flock,
+# max(µs, précédent + 1) : il croît même si l'horloge recule ou si deux hooks tournent en même temps.
+# Puis sortir : le serveur tmux peut tourner à côté, il ne faut jamais le viser hors tmux.
+if (( HERDR )); then
+  if [[ $new_state != "$prev_state" && -x ${HERDR_BIN_PATH:-} ]]; then
+    seq=$(exec 9>>"$STATE_DIR/herdr.seq.lock"; flock -w 1 9 || exit 1
+          prev=$(cat "$STATE_DIR/herdr.seq" 2>/dev/null); now=${AIF_NOW_US:-${EPOCHREALTIME/./}}
+          (( now > ${prev:-0} )) || now=$(( prev + 1 )); echo "$now" >"$STATE_DIR/herdr.seq"; echo "$now") || exit 0
+    case $new_state in running) hs=working ;; check) hs=blocked ;; *) hs=idle ;; esac
+    args=(pane report-agent "$HERDR_PANE_ID" --source aif-dotdeck --agent claude --state "$hs" --seq "$seq")
+    [[ $hs == blocked ]] && args+=(--message "$(jq -r '.question // "" | .[0:200]' "$FILE")")
+    "$HERDR_BIN_PATH" "${args[@]}" </dev/null >/dev/null 2>&1 &
+  fi
+  exit 0
 fi
 
 # Notification système seulement à l'entrée dans un état, et si le panneau n'est pas sous les yeux.

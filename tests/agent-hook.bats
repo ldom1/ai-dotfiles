@@ -226,3 +226,107 @@ notified() { sleep 0.2; [ -f "$NOTIFY_LOG" ] && wc -l < "$NOTIFY_LOG" || echo 0;
   ev session-start; ev stop-question; ev user-prompt
   [ "$(cut -f3,4 "$AIF_CHECK_LOG" | paste -sd,)" = "$(printf 'enter\tprose,leave\tprose')" ]
 }
+
+# --- Herdr pane (no tmux): state file, check log, report to Herdr -------------------------------
+# herdr est un stub qui journalise ses arguments, une ligne par appel (le hook l'appelle en fond).
+herdr_setup() {
+  unset TMUX_PANE
+  export HERDR_ENV=1 HERDR_PANE_ID=w1:p3 HERDR_BIN_PATH="$BATS_TEST_TMPDIR/bin/herdr" HERDR_LOG="$BATS_TEST_TMPDIR/herdr.log"
+  printf '#!/bin/sh\nprintf "%%s|" "$@" >> "$HERDR_LOG"; echo >> "$HERDR_LOG"\n' > "$HERDR_BIN_PATH"
+  chmod +x "$HERDR_BIN_PATH"
+  STATE="$AIF_STATE_DIR/herdr-w1-p3.json"
+}
+# reports : attend les appels en fond, puis rend le journal
+reports() { sleep 0.3; cat "$HERDR_LOG" 2>/dev/null; }
+seq_of() { sed -n "${1}p" "$HERDR_LOG" | grep -o -- '--seq|[0-9]*' | cut -d'|' -f2; }
+
+@test "herdr pane: state written to herdr-w1-p3.json, pane is the Herdr id" {
+  herdr_setup
+  ev session-start
+  [ "$(st .state)" = done ] && [ "$(st .pane)" = w1:p3 ]
+}
+
+@test "herdr pane ids w1:p3 and w12:p3 give distinct valid file names" {
+  herdr_setup
+  ev session-start
+  HERDR_PANE_ID=w12:p3 ev session-start
+  [ -f "$AIF_STATE_DIR/herdr-w1-p3.json" ] && [ -f "$AIF_STATE_DIR/herdr-w12-p3.json" ]
+}
+
+@test "herdr pane: AskUserQuestion reports blocked with the question as message" {
+  herdr_setup
+  ev session-start; ev user-prompt; ev pre-tool-ask
+  reports | tail -1 | grep -qF 'pane|report-agent|w1:p3|--source|aif-dotdeck|--agent|claude|--state|blocked|'
+  reports | tail -1 | grep -qF -- '--message|Which parser for BOAMP notices?|'
+}
+
+@test "herdr pane: prose question at Stop reports blocked" {
+  herdr_setup
+  ev session-start; ev user-prompt; ev stop-question
+  reports | tail -1 | grep -qF -- '--state|blocked|'
+}
+
+@test "herdr pane: UserPromptSubmit reports working; Stop without question reports idle" {
+  herdr_setup
+  ev session-start; ev user-prompt
+  reports | tail -1 | grep -qF -- '--state|working|'
+  ev stop
+  reports | tail -1 | grep -qF -- '--state|idle|'
+}
+
+@test "herdr pane: no report and no tmux notification when the state does not change" {
+  herdr_setup
+  ev session-start; ev user-prompt; ev pre-tool-bash
+  [ "$(reports | wc -l)" -eq 2 ]   # session-start (idle) et user-prompt (working)
+  ev pre-tool-ask
+  [ "$(notified)" -eq 0 ]          # le serveur tmux de Louis tourne encore : jamais le viser hors tmux
+}
+
+@test "check log has the pane key as 5th column (tmux and Herdr)" {
+  ev session-start; ev user-prompt; ev pre-tool-ask
+  [ "$(sed -n 1p "$AIF_CHECK_LOG" | cut -f5)" = 42 ]
+  herdr_setup
+  ev session-start; ev user-prompt; ev pre-tool-ask
+  [ "$(sed -n 2p "$AIF_CHECK_LOG" | cut -f5)" = herdr-w1-p3 ]
+}
+
+@test "seq: clock going back still increases" {
+  herdr_setup
+  AIF_NOW_US=2000 ev session-start
+  AIF_NOW_US=1000 ev user-prompt
+  reports >/dev/null
+  [ "$(seq_of 1)" = 2000 ] && [ "$(seq_of 2)" = 2001 ]
+}
+
+@test "seq: same clock value twice gives prev+1" {
+  herdr_setup
+  AIF_NOW_US=5000 ev session-start
+  AIF_NOW_US=5000 ev user-prompt
+  reports >/dev/null
+  [ "$(seq_of 2)" = 5001 ]
+}
+
+@test "seq survives a new hook process (counter file read back)" {
+  herdr_setup
+  AIF_NOW_US=9000 ev session-start
+  [ "$(cat "$AIF_STATE_DIR/herdr.seq")" = 9000 ]
+  AIF_NOW_US=10 ev user-prompt
+  [ "$(cat "$AIF_STATE_DIR/herdr.seq")" = 9001 ]
+}
+
+@test "seq: 10 parallel hooks give 10 distinct values" {
+  herdr_setup
+  for i in $(seq 1 10); do
+    ( HERDR_PANE_ID=w1:p$i AIF_NOW_US=7000 "$HOOK" < <(sed "s|@CWD@|$BATS_TEST_TMPDIR|" "$FIX/session-start.json") ) &
+  done
+  wait
+  sleep 0.3
+  [ "$(grep -o -- '--seq|[0-9]*' "$HERDR_LOG" | sort -u | wc -l)" -eq 10 ]
+}
+
+@test "no tmux, no herdr (Orca terminal): nothing written, herdr not called, exit 0" {
+  herdr_setup
+  unset HERDR_ENV HERDR_PANE_ID
+  ev session-start
+  [ ! -e "$AIF_STATE_DIR" ] && [ ! -e "$HERDR_LOG" ]
+}
