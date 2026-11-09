@@ -2,6 +2,10 @@
 """Cockpit trial report: join ai-dotdeck waits with the states Herdr showed (plan 2026-11-09, Task 4).
 
 Usage: report.py [--check-log PATH] [--trial-log PATH] [--step SECONDS]
+       report.py monitor [--session NAME] [--trial-log PATH] [--interval 1]
+- monitor polls `herdr agent list` (about 2 ms per call) and appends one row per changed pane; a pane
+  that leaves the list gets state "gone". Herdr events need one subscription per pane_id, so polling
+  is simpler. The list carries no question text: text_shown is noted by hand in the trial grid.
 - Waits come from aif-check.log (epoch, session, enter|leave, ask, pane key). Only Herdr pane keys
   (herdr-...) count; tmux panes and old 4-column lines are skipped.
 - Herdr rows come from cockpit-trial.jsonl, one line per change: {"ts", "pane", "state", "message"}.
@@ -17,6 +21,7 @@ Rules:
 import argparse
 import json
 import re
+import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -102,12 +107,44 @@ def match_waits(waits: list[Wait], rows: list[Row], step_s: float) -> dict[str, 
     return out
 
 
+def rows_from_agent_list(text: str, ts: float) -> list[Row]:
+    agents = json.loads(text)["result"]["agents"]
+    return [Row(ts=ts, pane=a["pane_id"], state=a["agent_status"]) for a in agents]
+
+
+def changes(prev: dict[str, str], cur: dict[str, str], ts: float) -> list[Row]:
+    out = [Row(ts=ts, pane=p, state=s) for p, s in cur.items() if prev.get(p) != s]
+    return out + [Row(ts=ts, pane=p, state="gone") for p in prev if p not in cur]
+
+
+def monitor(session: str | None, trial_log: Path, interval: float) -> None:
+    cmd = ["herdr"] + (["--session", session] if session else []) + ["agent", "list"]
+    prev: dict[str, str] = {}
+    trial_log.parent.mkdir(parents=True, exist_ok=True)
+    while True:
+        now = time.time()
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        if res.returncode == 0:
+            cur = {x.pane: x.state for x in rows_from_agent_list(res.stdout, now)}
+            with trial_log.open("a") as f:
+                for row in changes(prev, cur, now):
+                    f.write(json.dumps(row.__dict__) + "\n")
+            prev = cur
+        time.sleep(interval)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
+    ap.add_argument("mode", nargs="?", choices=["report", "monitor"], default="report")
+    ap.add_argument("--session")
+    ap.add_argument("--interval", type=float, default=1.0)
     ap.add_argument("--check-log", default="~/.claude/logs/aif-check.log")
     ap.add_argument("--trial-log", default="~/.claude/logs/cockpit-trial.jsonl")
     ap.add_argument("--step", type=float, default=1.0)
     a = ap.parse_args()
+    if a.mode == "monitor":
+        monitor(a.session, Path(a.trial_log).expanduser(), a.interval)
+        return
     waits = parse_check_log(Path(a.check_log).expanduser().read_text(), end=time.time())
     rows = [Row(**json.loads(x)) for x in Path(a.trial_log).expanduser().read_text().splitlines() if x.strip()]
     counts = match_waits(waits, rows, a.step)

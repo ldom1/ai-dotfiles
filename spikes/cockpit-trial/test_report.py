@@ -69,3 +69,20 @@ def test_enter_without_leave_closes_at_next_enter_and_tmux_keys_are_skipped():
 def test_open_wait_at_end_of_log_ends_at_end():
     waits = parse_check_log("100\ts1\tenter\ttool\therdr-w1-p3", end=150)
     assert waits[0].leave == 150
+
+
+def test_rows_from_real_agent_list():
+    from pathlib import Path
+    from report import rows_from_agent_list
+    text = (Path(__file__).parent / "fixtures" / "agent-list.json").read_text()
+    rows = rows_from_agent_list(text, ts=10.0)
+    assert {(x.pane, x.state) for x in rows} == {("w1:p1", "working"), ("w1:p2", "blocked")}
+    assert all(x.ts == 10.0 and x.message is None for x in rows)
+
+
+def test_changes_emit_only_changed_panes_and_gone():
+    from report import changes
+    prev = {"w1:p1": "working", "w1:p2": "blocked"}
+    cur = {"w1:p1": "blocked", "w1:p3": "idle"}
+    out = changes(prev, cur, ts=5.0)
+    assert sorted((x.pane, x.state) for x in out) == [("w1:p1", "blocked"), ("w1:p2", "gone"), ("w1:p3", "idle")]
