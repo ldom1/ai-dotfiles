@@ -66,3 +66,11 @@ wait_file() { for _ in $(seq 1 25); do [ -s "$1" ] && return 0; sleep 0.1; done;
   run -0 env AIF_PLATFORM=linux "$P" notify "◉ prosper needs you" "q" prosper
   grep -q 'display-message -d 4000 ◉ prosper needs you — q' "$LOG/tmux"
 }
+
+@test "wt-settings: WSL path of the Windows Terminal settings; exit 1 on linux" {
+  stub cmd.exe 'printf "C:\\\\Users\\\\Louis\\\\AppData\\\\Local\r\n"'
+  stub wslpath 'echo /mnt/c/Users/Louis/AppData/Local'
+  run -0 env AIF_PLATFORM=wsl "$P" wt-settings
+  [ "$output" = /mnt/c/Users/Louis/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json ]
+  run -1 env AIF_PLATFORM=linux "$P" wt-settings
+}

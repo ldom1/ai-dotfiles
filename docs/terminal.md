@@ -99,6 +99,9 @@ Windows Terminal (manual step, `settings.json`):
 - `ctrl+shift+b`: `sendInput` `"\u001b[[tma-b"` (`user-keys[4]`, show / hide the sidebar).
 - `ctrl+shift+k`: `sendInput` `"\u001b[[tma-k"` (`user-keys[5]`, kill session).
 - These keys send text in every Windows Terminal tab, also outside tmux.
+- `aif-deck off` removes these keybindings (the actions stay) and saves them in `~/.config/aif/wt-keys.json`. `aif-deck on` puts them back at their places; `aif-deck status` prints `on` or `off`. Windows Terminal reloads its settings at once. Use it with `AIF_DECK=off` to run another cockpit (Herdr, Orca) without tmux keys typing text into it.
+  - A second `off` changes nothing and keeps the backup. If a saved key is now bound to another action, `on` writes nothing and exits 3.
+  - `aif-platform wt-settings` finds the file through `%LOCALAPPDATA%`; `AIF_WT_SETTINGS` overrides it. A file that does not parse as JSON is never written (exit 2).
 - `"bellStyle": "taskbar"` on each WSL profile.
 
 Ghostty: `config/ghostty/config` (linked by `install.sh`) sends `Ctrl+Shift+O/E/N/X/B/K` as CSI u extended keys instead of the Ghostty actions, and tmux binds `C-S-o`, `C-S-e`, `C-S-x`, `C-S-n`, `C-S-b` and `C-S-k`. Ghostty reads its config at start: after `install.sh`, press `Ctrl+Shift+,` to reload it. Without the reload, `Ctrl+Shift+O/E` open a Ghostty split, which runs a second tmux view with its own sidebar.

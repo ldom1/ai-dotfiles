@@ -1,0 +1,119 @@
+#!/usr/bin/env -S python3 -I
+"""aif-deck — turn the Windows Terminal tma keys off and on (ai-dotdeck switch).
+
+Usage: aif-deck off | on | status
+- Settings file: $AIF_WT_SETTINGS, else `aif-platform wt-settings`.
+- A tma key is a keybinding whose action sends "\\u001b[[tma-…" (sendInput) or opens a tab running tma (newTab).
+- off: saves the tma keybindings (with their positions) to $XDG_CONFIG_HOME/aif/wt-keys.json, then removes
+  them. When no tma key is left, off changes nothing, so a second off never replaces the backup.
+- on: puts the saved keybindings back at their positions, then deletes the backup. A saved key now bound
+  to another action is a conflict: nothing is written and the backup stays.
+- Writes go through a temp file in the same folder and os.replace. Actions are never touched.
+Exit: 0 ok; 1 no settings file or nothing to restore; 2 settings file not parseable; 3 conflict.
+"""
+import json
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+
+def settings_path() -> Path | None:
+    if os.environ.get("AIF_WT_SETTINGS"):
+        return Path(os.environ["AIF_WT_SETTINGS"])
+    try:
+        out = subprocess.run(["aif-platform", "wt-settings"], capture_output=True, text=True, check=True)
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return Path(out.stdout.strip())
+
+
+def backup_path() -> Path:
+    base = os.environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config")
+    return Path(base) / "aif" / "wt-keys.json"
+
+
+def write_json(path: Path, data: object, indent: int) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("w", dir=path.parent, delete=False, encoding="utf-8", suffix=".tmp") as tmp:
+        json.dump(data, tmp, indent=indent, ensure_ascii=False)
+        tmp.write("\n")
+    os.replace(tmp.name, path)
+
+
+def is_tma(command: object) -> bool:
+    if not isinstance(command, dict):
+        return False
+    if command.get("action") == "sendInput":
+        return str(command.get("input", "")).startswith("\u001b[[tma-")
+    return command.get("action") == "newTab" and "tma" in str(command.get("commandline", ""))
+
+
+def tma_ids(settings: dict) -> set[str]:
+    return {a["id"] for a in settings.get("actions", []) if "id" in a and is_tma(a.get("command"))}
+
+
+def main(argv: list[str]) -> int:
+    if len(argv) != 2 or argv[1] not in ("off", "on", "status"):
+        print(__doc__.strip().splitlines()[2], file=sys.stderr)
+        return 1
+    cmd = argv[1]
+    path = settings_path()
+    if path is None or not path.is_file():
+        print("aif-deck: Windows Terminal settings.json not found", file=sys.stderr)
+        return 1
+    try:
+        settings = json.loads(path.read_text(encoding="utf-8"))
+    except (ValueError, UnicodeDecodeError) as exc:
+        print(f"aif-deck: cannot parse {path}: {exc}; nothing written", file=sys.stderr)
+        return 2
+    keys = settings.get("keybindings", [])
+    ids = tma_ids(settings)
+    present = [(i, k) for i, k in enumerate(keys) if k.get("id") in ids]
+    backup = backup_path()
+
+    if cmd == "status":
+        print("on" if present else "off" + (" (backup present)" if backup.exists() else ""))
+        return 0
+
+    if cmd == "off":
+        if not present:
+            print("already off" if backup.exists() else "no tma keys")
+            return 0
+        write_json(backup, [{"index": i, "binding": k} for i, k in present], indent=2)
+        settings["keybindings"] = [k for k in keys if k.get("id") not in ids]
+        write_json(path, settings, indent=4)
+        print(f"off: {len(present)} keys removed")
+        return 0
+
+    # on
+    if not backup.exists():
+        if present:
+            print("already on")
+            return 0
+        print("aif-deck: nothing to restore", file=sys.stderr)
+        return 1
+    saved = json.loads(backup.read_text(encoding="utf-8"))
+    bound = {str(k.get("keys", "")).lower(): k.get("id") for k in keys}
+    have = {k.get("id") for k in keys}
+    conflicts = [s["binding"] for s in saved
+                 if s["binding"].get("id") not in have
+                 and bound.get(str(s["binding"].get("keys", "")).lower(), s["binding"].get("id")) != s["binding"].get("id")]
+    if conflicts:
+        for c in conflicts:
+            print(f"aif-deck: {c.get('keys')} is now bound to {bound[str(c.get('keys')).lower()]}; nothing written",
+                  file=sys.stderr)
+        return 3
+    for s in sorted(saved, key=lambda s: s["index"]):
+        if s["binding"].get("id") not in have:
+            keys.insert(min(s["index"], len(keys)), s["binding"])
+    settings["keybindings"] = keys
+    write_json(path, settings, indent=4)
+    backup.unlink()
+    print("on: keys restored")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
