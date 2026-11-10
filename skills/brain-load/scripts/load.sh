@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # brain-load/load.sh — resolve project slug, locate vault note, print content
-# Usage: load.sh [--list-caps] [--slug-only]
-#   --list-caps   print cap ids (basenames of caps/*.md), then exit 0
-#   --slug-only   print slug, note path, mode, template paths; then exit 0
+# Usage: load.sh [--list-caps] [--slug-only] [--max-bytes N]
+#   --list-caps    print cap ids (basenames of caps/*.md), then exit 0
+#   --slug-only    print slug, note path, mode, template paths; then exit 0
+#   --max-bytes N  print the note cut at the last full line within N bytes,
+#                  then "[brain-load] note truncated: <kept> of <total> B"
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,9 +25,20 @@ cmd_list_caps() {
   exit 0
 }
 
-if [[ "${1:-}" == "--list-caps" ]]; then
-  cmd_list_caps
-fi
+SLUG_ONLY=0
+MAX_BYTES=""
+while (( $# )); do
+  case "$1" in
+    --list-caps) cmd_list_caps ;;
+    --slug-only) SLUG_ONLY=1 ;;
+    --max-bytes)
+      [[ "${2:-}" =~ ^[0-9]+$ ]] || { echo "[brain-load] --max-bytes needs a number of bytes" >&2; exit 64; }
+      MAX_BYTES="$2"
+      shift
+      ;;
+  esac
+  shift
+done
 
 # ── Slug resolution ───────────────────────────────────────────────────────────
 SLUG=""
@@ -78,7 +91,7 @@ else
   NOTE_MODE="legacy_missing"
 fi
 
-if [[ "${1:-}" == "--slug-only" ]]; then
+if (( SLUG_ONLY )); then
   echo "slug=$SLUG"
   echo "note=$NOTE_PATH"
   echo "mode=$NOTE_MODE"
@@ -92,15 +105,22 @@ fi
 if [[ "$NOTE_MODE" == "para" || "$NOTE_MODE" == "legacy" ]]; then
   echo "[brain-load] Loading note: $NOTE_PATH" >&2
   # Snapshot hygiene: history belongs in inbox/daily/implementation/, not here.
-  if grep -qE '^## (Journal|Changelog|Historique)' "$NOTE_PATH" || (( $(wc -w <"$NOTE_PATH") > 600 )); then
-    echo "[brain-load] WARNING: $NOTE_PATH has a journal or is > 600 words — rewrite it as a ≤ 450-word one-pager (idea, objectives, how it works — see instantiate.sh); history goes to session logs."
+  if grep -qE '^## (Journal|Changelog|Historique)' "$NOTE_PATH" || (( $(wc -w <"$NOTE_PATH") > 450 )); then
+    echo "[brain-load] WARNING: $NOTE_PATH has a journal or is > 450 words — rewrite it as a ≤ 450-word one-pager (idea, objectives, how it works — see instantiate.sh); history goes to session logs."
   fi
   CTX="$REPO_ROOT/.claude/memory/CONTEXT.md"
-  if [[ -n "$REPO_ROOT" && -f "$CTX" ]] && (( $(wc -w <"$CTX") > 1200 )); then
-    echo "[brain-load] WARNING: $CTX is > 1200 words — rewrite it in place as a snapshot (capture step 3)."
+  if [[ -n "$REPO_ROOT" && -f "$CTX" ]] && (( $(wc -w <"$CTX") > 300 )); then
+    echo "[brain-load] WARNING: $CTX is > 300 words — rewrite it in place as a snapshot (capture step 3)."
   fi
   echo "--- PROJECT NOTE: $SLUG ---"
-  cat "$NOTE_PATH"
+  if [[ -n "$MAX_BYTES" ]]; then
+    # Bytes, not characters (LC_ALL=C): each kept line counts length+1, the newline awk prints.
+    LC_ALL=C awk -v max="$MAX_BYTES" -v total="$(wc -c <"$NOTE_PATH")" '
+      { n = length($0) + 1; if (used + n > max) { cut = 1; exit } used += n; print }
+      END { if (cut) printf "[brain-load] note truncated: %d of %d B\n", used, total }' "$NOTE_PATH"
+  else
+    cat "$NOTE_PATH"
+  fi
   echo "--- END NOTE ---"
 fi
 

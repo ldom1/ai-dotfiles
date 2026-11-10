@@ -85,9 +85,66 @@ def env_for(tmp_path: Path, pitfalls_text: str, exit_log: str | None, review: st
     return {**uv_env(), "HOME": str(home), "AI_DOTFILES": str(dot)}
 
 
-def run_hook(env: dict, source: str = "startup") -> str:
+def run_hook(env: dict, source: str = "startup", cwd: Path | None = None) -> str:
     return subprocess.run(["bash", str(HOOK)], input=json.dumps({"source": source}), capture_output=True,
-                          text=True, check=True, env=env).stdout
+                          text=True, check=True, env=env, cwd=cwd).stdout
+
+
+def run_real_load(tmp_path: Path, note: bytes) -> str:
+    """Runs the hook with the REAL load.sh on a fixture vault: `projects/proj.md` holds `note`, the cwd is `proj/`."""
+    env = env_for(tmp_path, pitfalls(1000), None)
+    scripts = Path(env["AI_DOTFILES"]) / "skills/brain-load/scripts"
+    (scripts / "load.sh").unlink()
+    for name in ("load.sh", "_brain_env.sh"):
+        (scripts / name).symlink_to(REPO / "skills/brain-load/scripts" / name)
+    (tmp_path / "vault/projects").mkdir()
+    (tmp_path / "vault/projects/proj.md").write_bytes(note)
+    (tmp_path / "proj").mkdir()
+    return run_hook(env, cwd=tmp_path / "proj")
+
+
+def note_text(out: str) -> str:
+    """The injected project note: what sits between the header and the footer, without the truncation marker."""
+    body = out.split("--- PROJECT NOTE: proj ---\n", 1)[1].split("--- END NOTE ---", 1)[0]
+    return "".join(line for line in body.splitlines(keepends=True) if "[brain-load] note truncated" not in line)
+
+
+def test_note_cut_by_bytes_not_lines(tmp_path):
+    note = "".join(f"line {i:03d} ".ljust(39, "x") + "\n" for i in range(1, 101))
+    assert len(note.encode()) == 4000
+    out = run_real_load(tmp_path, note.encode())
+    assert "line 050 " in out and "line 075 " in out
+    assert "line 076 " not in out
+    assert "note truncated: 3000 of 4000 B" in out
+    assert len(note_text(out).encode()) == 3000
+
+
+def test_short_note_passes_unchanged(tmp_path):
+    note = "".join(f"line {i:02d}\n" for i in range(10))
+    out = run_real_load(tmp_path, note.encode())
+    assert note_text(out) == note
+    assert "truncated" not in out
+
+
+def test_cut_never_splits_utf8(tmp_path):
+    out = run_real_load(tmp_path, ("é" * 30 + "\n").encode() * 80)  # 61 B per line: 49 lines fit in 3,000 B
+    lines = note_text(out).splitlines(keepends=True)
+    assert lines == ["é" * 30 + "\n"] * 49
+    assert "note truncated: 2989 of 4880 B" in out
+
+
+def test_empty_note_prints_nothing(tmp_path):
+    out = run_real_load(tmp_path, b"")
+    assert note_text(out) == ""
+    assert "truncated" not in out
+
+
+def test_last_line_without_newline(tmp_path):
+    note = "".join(f"line {i:02d} ".ljust(99, "x") + "\n" for i in range(29)) + "last".ljust(90, "y")
+    assert len(note.encode()) == 2990 and not note.endswith("\n")
+    out = run_real_load(tmp_path, note.encode())
+    assert note_text(out) == note + "\n"
+    assert "truncated" not in out
 
 
 def test_full_budget_case_fits_without_truncation(tmp_path):

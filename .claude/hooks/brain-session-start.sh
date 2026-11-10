@@ -97,9 +97,9 @@ if [[ "${BRAIN_LOAD_SLIM:-0}" == "1" ]]; then
   exit 0
 fi
 
-# Run load.sh; cap context injection at 30 lines; redirect verbose stderr to log
+# Run load.sh; cap the project note at 3,000 B (whole lines); redirect verbose stderr to log
 # Claude Code already @-imports .claude/memory/ via the project CLAUDE.md
-BRAIN_LOAD_SKIP_MEMORY=1 "$LOAD" 2>>"$LOG_FILE" | head -30 || true
+BRAIN_LOAD_SKIP_MEMORY=1 "$LOAD" --max-bytes 3000 2>>"$LOG_FILE" || true
 bash "$AI_DOTFILES/scripts/log-skill-usage.sh" brain-load "claude:sessionStart" 2>/dev/null || true
 
 # Vendored skill pins vs GitHub latest (cached ≤24h, fail-open)

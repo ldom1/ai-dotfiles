@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+- SessionStart injects the project note by bytes, not lines: `load.sh --max-bytes N` cuts the note at the last full line within N bytes (hook: 3,000 B) and prints `[brain-load] note truncated: <kept> of <total> B`. `head -30` cut a real note to 21%. `load.sh` now warns at > 450 words for the note and > 300 words for `CONTEXT.md`. 5 tests run the real `load.sh` on a fixture vault.
+- `brain-load` docs: `instantiate.sh` writes a heredoc and needs no Python or template render.
+
 ## [0.18.0] - 2026-11-10
 
 ### Changed
