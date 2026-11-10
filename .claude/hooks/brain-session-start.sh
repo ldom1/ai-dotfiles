@@ -97,9 +97,21 @@ if [[ "${BRAIN_LOAD_SLIM:-0}" == "1" ]]; then
   exit 0
 fi
 
-# Run load.sh; cap the project note at 3,000 B (whole lines); redirect verbose stderr to log
-# Claude Code already @-imports .claude/memory/ via the project CLAUDE.md
-BRAIN_LOAD_SKIP_MEMORY=1 "$LOAD" --max-bytes 3000 2>>"$LOG_FILE" || true
+# Rule: pitfalls outrank the project note. The note gets up to 3,000 B (whole lines), less when
+# pitfalls.md needs the room: budget - pitfalls - output so far - 900 B for what prints after the
+# note (review line 300, vendored warnings ~400, maintenance nudge, note frame and cut marker).
+# Redirect verbose stderr to log. Claude Code already @-imports .claude/memory/ via the project CLAUDE.md.
+PITFALLS_FILE="${BRAIN_PATH}/resources/operational/ai-agents/pitfalls.md"
+PITFALLS_SIZE=0
+[[ -f "$PITFALLS_FILE" ]] && PITFALLS_SIZE=$(wc -c <"$PITFALLS_FILE")
+NOTE_MAX_BYTES=$(( OUTPUT_MAX_BYTES - PITFALLS_SIZE - $(wc -c <"$OUT_BUF") - 900 ))
+(( NOTE_MAX_BYTES < 3000 )) || NOTE_MAX_BYTES=3000
+(( NOTE_MAX_BYTES > 0 )) || NOTE_MAX_BYTES=0
+if (( NOTE_MAX_BYTES > 0 )); then
+  BRAIN_LOAD_SKIP_MEMORY=1 "$LOAD" --max-bytes "$NOTE_MAX_BYTES" 2>>"$LOG_FILE" || true
+else
+  echo "[brain-load] note skipped: no room left for it after pitfalls"
+fi
 bash "$AI_DOTFILES/scripts/log-skill-usage.sh" brain-load "claude:sessionStart" 2>/dev/null || true
 
 # Vendored skill pins vs GitHub latest (cached ≤24h, fail-open)

@@ -36,6 +36,7 @@ while (( $# )); do
       MAX_BYTES="$2"
       shift
       ;;
+    *) echo "usage: load.sh [--list-caps] [--slug-only] [--max-bytes N]" >&2; exit 64 ;;
   esac
   shift
 done
