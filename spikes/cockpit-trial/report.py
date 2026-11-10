@@ -65,20 +65,30 @@ def pane_key(pane: str) -> str:
     return "herdr-" + re.sub(r"[^A-Za-z0-9]", "-", pane)
 
 
-def parse_check_log(text: str, end: float) -> list[Wait]:
+def parse_check_log(text: str, end: float, prefix: str = "herdr-", since: float = 0.0) -> list[Wait]:
     waits: list[Wait] = []
     open_: dict[str, Wait] = {}
     for line in text.splitlines():
         f = line.split("\t")
-        if len(f) < 5 or not f[0].isdigit() or not f[4].startswith("herdr-"):
+        if len(f) < 5 or not f[0].isdigit() or not f[4].startswith(prefix):
             continue
         ts, kind, ask, key = float(f[0]), f[2], f[3], f[4]
         if key in open_:
             open_.pop(key).leave = ts
-        if kind == "enter":
+        if kind == "enter" and ts >= since:
             open_[key] = Wait(key=key, ask=ask, enter=ts, leave=end)
             waits.append(open_[key])
     return waits
+
+
+def orca_counts(text: str, end: float, since: float = 0.0) -> dict[str, int]:
+    """Waits seen by ai-dotdeck in Orca terminals, per ask type. Orca exposes no agent state to read:
+    tool and permission waits come from the same Claude hooks Orca uses; a prose wait has no hook,
+    so it counts as missed by Orca unless the trial grid records otherwise."""
+    out: dict[str, int] = {}
+    for w in parse_check_log(text, end, prefix="orca-", since=since):
+        out[w.ask] = out.get(w.ask, 0) + 1
+    return out
 
 
 def match_waits(waits: list[Wait], rows: list[Row], step_s: float, hb_s: float | None = None) -> dict[str, Counts]:
@@ -179,15 +189,19 @@ def main() -> None:
     ap.add_argument("--check-log", default="~/.claude/logs/aif-check.log")
     ap.add_argument("--trial-log", default="~/.claude/logs/cockpit-trial.jsonl")
     ap.add_argument("--step", type=float, default=1.0)
+    # Trial start: 2026-11-10 11:05 local, just after the last setup probe (end-to-end test at 11:03).
+    ap.add_argument("--since", type=float, default=1794305100.0)
     a = ap.parse_args()
     if a.mode == "monitor":
         monitor(a.session, Path(a.trial_log).expanduser(), a.interval)
         return
-    waits = parse_check_log(Path(a.check_log).expanduser().read_text(), end=time.time())
+    check_text = Path(a.check_log).expanduser().read_text()
+    waits = parse_check_log(check_text, end=time.time(), since=a.since)
     rows = [Row(**json.loads(x)) for x in Path(a.trial_log).expanduser().read_text().splitlines() if x.strip()]
     counts = match_waits(waits, rows, a.step, hb_s=30.0)
     for ask, c in sorted(counts.items()):
-        print(ask, json.dumps(c.__dict__))
+        print("herdr", ask, json.dumps(c.__dict__))
+    print("orca waits", json.dumps(orca_counts(check_text, end=time.time(), since=a.since)))
 
 
 if __name__ == "__main__":

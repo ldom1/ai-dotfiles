@@ -116,3 +116,20 @@ def test_poll_once_bad_output_keeps_prev_and_returns_an_error():
     assert new_prev == prev and rows == [] and err
     new_prev, rows, err = poll_once(1, "", prev, now=6.0)
     assert new_prev == prev and rows == [] and err
+
+
+def test_orca_waits_are_counted_per_ask_type():
+    from report import orca_counts
+    log = "\n".join([
+        "100\ts1\tenter\ttool\torca-a-b",
+        "110\ts1\tleave\ttool\torca-a-b",
+        "200\ts1\tenter\tprose\torca-a-b",
+        "260\ts1\tleave\tprose\torca-a-b",
+        "300\ts2\tenter\tpermission\therdr-w1-p1",
+    ])
+    assert orca_counts(log, end=1000) == {"tool": 1, "prose": 1}
+
+
+def test_since_drops_waits_before_the_trial_start():
+    log = "100\ts1\tenter\ttool\therdr-w1-p1\n110\ts1\tleave\ttool\therdr-w1-p1\n500\ts1\tenter\ttool\therdr-w1-p1"
+    assert [x.enter for x in parse_check_log(log, end=600, since=200)] == [500]

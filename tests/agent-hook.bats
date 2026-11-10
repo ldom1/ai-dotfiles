@@ -324,11 +324,39 @@ seq_of() { sed -n "${1}p" "$HERDR_LOG" | grep -o -- '--seq|[0-9]*' | cut -d'|' -
   [ "$(grep -o -- '--seq|[0-9]*' "$HERDR_LOG" | sort -u | wc -l)" -eq 10 ]
 }
 
-@test "no tmux, no herdr (Orca terminal): nothing written, herdr not called, exit 0" {
+@test "no tmux, no herdr, no orca: nothing written, herdr not called, exit 0" {
   herdr_setup
-  unset HERDR_ENV HERDR_PANE_ID
+  unset HERDR_ENV HERDR_PANE_ID ORCA_PANE_KEY
   ev session-start
   [ ! -e "$AIF_STATE_DIR" ] && [ ! -e "$HERDR_LOG" ]
+}
+
+# --- Orca terminal (ORCA_PANE_KEY, no tmux, no Herdr): state file and check log only ------------
+orca_setup() {
+  unset TMUX_PANE HERDR_ENV HERDR_PANE_ID
+  export ORCA_PANE_KEY=8984e803-6068:01d9dade-e26c
+  STATE="$AIF_STATE_DIR/orca-8984e803-6068-01d9dade-e26c.json"
+}
+
+@test "orca pane: state written to orca-<pane key>.json, pane is the Orca key" {
+  orca_setup
+  ev session-start; ev user-prompt
+  [ "$(st .state)" = running ] && [ "$(st .pane)" = 8984e803-6068:01d9dade-e26c ]
+}
+
+@test "orca pane: prose question logged with the orca key, no notification, no tmux" {
+  orca_setup
+  ev session-start; ev user-prompt; ev stop-question
+  [ "$(st .state)" = check ]
+  [ "$(cut -f3-5 "$AIF_CHECK_LOG" | tail -1)" = "$(printf 'enter\tprose\torca-8984e803-6068-01d9dade-e26c')" ]
+  [ "$(notified)" -eq 0 ]
+}
+
+@test "Herdr wins over Orca when both are set" {
+  orca_setup
+  herdr_setup
+  ev session-start
+  [ -f "$AIF_STATE_DIR/herdr-w1-p3.json" ]
 }
 
 @test "seq: a French numeric locale (comma in EPOCHREALTIME) still gives digits" {
