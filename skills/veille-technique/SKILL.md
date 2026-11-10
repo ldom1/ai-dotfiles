@@ -89,13 +89,19 @@ Give the URL and ask the user to review. Stop. Apply review comments to the arti
 
 ## 4. Trace — gate
 
-Append one row per component to `$BP/resources/knowledge/veille-technique.md` (create it with the header on first use):
+1. Write one recap note: `$BP/resources/knowledge/veille/<YYYY-MM-DD>-<sujet-slug>.md`, from `$BP/_templates/veille-recap.md`.
+   - Frontmatter: verdict counts, `artifact` URL, `cible` links, `statut`, `revoir` (earliest dated Surveiller).
+   - Body: the artifact's TL;DR bullets as they are, the **Choix** table (component, verdict, smallest change or reason), **Impacts** per target, **À revoir**, **Sources**.
+   - `VEILLE.base` at the vault root lists the notes. Nothing else to update.
+2. Append one row per component to `$BP/resources/knowledge/veille-technique.md` (create it with the header on first use). The last column links the recap note:
 
 ```markdown
-| Date | Composant | Verdict | Cible | Artifact |
+| Date | Composant | Verdict | Cible | Récap |
 |---|---|---|---|---|
-| 2026-10-19 | pstack `why` | Adapter | ai-dotfiles | <url> |
+| 2026-10-19 | pstack `why` | Adapter | ai-dotfiles | [[2026-10-19-pstack-shunt-thermo]] |
 ```
+
+When an Adopter or Adapter ships, in this session or a later one, add the commit to the recap note: one **Impacts** line (change, short hash, PR, date), the hash in `commits`, and `statut: intégré` when nothing is left. This note answers "why did this change?" from a commit.
 
 Ask: "Plan d'intégration pour les composants retenus ?" Stop. **No**, or nothing to integrate: done.
 
@@ -106,7 +112,7 @@ Ask: "Plan d'intégration pour les composants retenus ?" Stop. **No**, or nothin
 ## Done when
 
 - The artifact URL is in chat and the user approved the verdicts.
-- The ledger has one row per component.
+- The recap note exists, and the ledger has one row per component that links it.
 - Either the user declined a plan, or the plan file exists in the vault.
 
 ## Common mistakes

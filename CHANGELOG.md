@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 ### Changed
+- `veille-technique` step 4 writes one recap note per report in the vault, `resources/knowledge/veille/<date>-<sujet>.md`: TL;DR, choices, impacts per target (commits that shipped a verdict), items to review. `VEILLE.base` lists them (all, by target, to integrate, to review). The ledger's last column links the recap note instead of the artifact URL. The six past reports are backfilled.
+- `veille-technique:veille`: a claim about a coding-agent harness is checked against its Harness Lens entry, with the entry's `ref` compared to the installed version.
 - `aif-agent-hook` runs in Orca terminals (`ORCA_PANE_KEY`): it writes `orca-<pane>.json` and the `aif-check.log` lines, so the cockpit trial counts the waits of Orca projects too (prose questions included). No tmux call, no notification. `spikes/cockpit-trial/report.py` prints the Orca waits per ask type and takes `--since` (default: trial start, 2026-11-10 11:05). 3 bats tests, 2 pytest tests.
 
 ### Added

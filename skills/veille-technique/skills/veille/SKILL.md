@@ -11,7 +11,7 @@ Verdicts: **Adopter** (as is) · **Adapter** (take the idea, not the code) · **
 
 ## Baseline source
 
-If an `audit` artifact for the target exists in the ledger (`grep -n 'Audit' "$BP/resources/knowledge/veille-technique.md"`), read it with the Artifact tool (`action: read`) and use its per-component blocks as the baseline. Otherwise use the router's step 1.
+If an `audit` recap for the target exists (`grep -l '^mode: .*audit' "$BP"/resources/knowledge/veille/*.md`), read the artifact named by its `artifact:` field with the Artifact tool (`action: read`) and use its per-component blocks as the baseline. Otherwise use the router's step 1.
 
 ## Analyse each source
 
@@ -34,6 +34,8 @@ Raw text, by host:
 - GitHub: `gh api repos/<owner>/<repo>/contents/<path> --jq .content | base64 -d`.
 - Other pages: `npx -y firecrawl-cli@1.26.10 scrape "<url>" --only-main-content` prints Markdown to stdout. It needs no key and is rate-limited per IP. The page goes to Firecrawl's cloud: never use it for private or employer URLs.
 - If both fail, quote from `WebFetch` and label the quote `paraphrase`.
+
+A claim about a coding-agent harness (prompt, tools, compaction, permissions, hooks): read its [Harness Lens](https://huggingface.co/spaces/harness-hub/harness-lens) entry, `harnesses/<id>/harness.yaml`. Each claim links to source lines at a pinned commit. Compare the entry's `ref` with the installed version; a newer install voids the entry.
 
 ## Common mistakes
 
