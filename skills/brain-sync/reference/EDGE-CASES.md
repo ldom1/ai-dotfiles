@@ -22,4 +22,7 @@ Failure behaviour of `scripts/sync.sh`. Messages are printed to stderr; the hook
 | No remote | Skip push. |
 | Push rejected / offline | Print `push failed … your commit is local`, return 1. Under `set -e` this ends the script, so the QMD reindex is skipped for that session; run `git push` in `$BRAIN_PATH` when back online. |
 | `qmd` missing or `QMD_INDEX_PATH` unset | Reindex skipped silently. |
+| Rebase in progress or detached HEAD in the vault | Print `rebase in progress` / `detached HEAD`, skip commit and push. |
+| Another `qmd embed` holds `qmd-brain.lock` | The detached job logs `qmd embed already running` and exits. The embed is detached and locked, so session end never waits for it. |
+| No `flock` (stock macOS) | Log `no flock: no protection against concurrent qmd writers`, run unlocked. Two session ends can overlap. `brew install util-linux` adds `flock`. |
 | `qmd embed` without GPU | Falls back to CPU (Vulkan build error in the log is expected); slow but completes. |

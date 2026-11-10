@@ -132,6 +132,15 @@ commit_push_repo() {
     return 0
   fi
 
+  if [[ -d "$path/.git/rebase-merge" || -d "$path/.git/rebase-apply" ]]; then
+    _warn "$label" "rebase in progress in $path, not committing."
+    return 0
+  fi
+  if ! git -C "$path" symbolic-ref -q HEAD &>/dev/null; then
+    _warn "$label" "detached HEAD in $path, not committing."
+    return 0
+  fi
+
   if git -C "$path" diff --quiet \
       && git -C "$path" diff --cached --quiet \
       && [[ -z "$(git -C "$path" ls-files --others --exclude-standard)" ]]; then
@@ -216,9 +225,17 @@ cmd_end() {
     # No inherited stdio, or the hook's pipe stays open until qmd ends.
     _info "qmd" "updating brain index and embeddings in the background (log: $LOG)…"
     local detach=(nohup); command -v setsid &>/dev/null && detach=(setsid nohup)
+    # Two writers corrupt the SQLite index: a second session end skips while the first embed holds the lock.
+    local lock="${XDG_CACHE_HOME:-$HOME/.cache}/qmd-brain.lock" guard='exec 9>"$0"; flock -n 9 || { echo "qmd embed already running"; exit 0; }; '
+    mkdir -p "$(dirname "$lock")"
+    if ! command -v flock &>/dev/null; then
+      # Stock macOS has no flock (brew install util-linux): accepted limit, two embeds can overlap.
+      _warn "qmd" "no flock: no protection against concurrent qmd writers"
+      guard=''
+    fi
     INDEX_PATH="$QMD_INDEX_PATH" "${detach[@]}" bash -c \
-      'qmd update --collection brain && qmd embed --collection brain || echo "qmd: update/embed failed"' \
-      >>"$LOG" 2>&1 </dev/null &
+      "${guard}"'qmd update --collection brain && qmd embed --collection brain || echo "qmd: update/embed failed"' \
+      "$lock" >>"$LOG" 2>&1 </dev/null &
   fi
 
   local elapsed=$(( $(date +%s) - _SYNC_START_TS ))
