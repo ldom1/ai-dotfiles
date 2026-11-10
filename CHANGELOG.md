@@ -8,6 +8,8 @@
 
 - `brain-search/search.sh --limit N` now returns N results: qmd 2.5.1 ignores `--limit` (non-strict parser) and reads `-n`, so the script passes `-n N`. The user-facing flag does not change. 1 test with a stub `qmd`.
 
+- `brain-audit:insights` open follow-ups: new `skills/brain-audit/scripts/open-followups.sh` (reads `BRAIN_PATH`, `BRAIN_AUDIT_LOOKBACK_DAYS`, default 30) replaces the inline awk. The awk skipped the `**Follow-ups:**` header line, so an inline item (`**Follow-ups:** wire the guard`) was lost: 19 more items on the real vault over 30 days (407 to 426). 4 tests.
+
 ### Removed
 - `.cursor/mcp.json` is untracked and ignored: `scripts/mcp-sync.sh` writes machine paths into it. After pulling this change, run `scripts/mcp-sync.sh` once to recreate it from `mcp-central-cursor.json.tpl`.
 
