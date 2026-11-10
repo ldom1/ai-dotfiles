@@ -1,0 +1,10 @@
+{
+  "name": "orca-computer-use",
+  "version": "1.4.255",
+  "description": "Drive the GUI of a visible local app window through orca computer. Vendored verbatim from stablyai/orca v1.4.255 (MIT). Needs the Orca app installed.",
+  "author": {
+    "name": "Lovecast Inc.",
+    "github": "stablyai"
+  },
+  "homepage": "https://github.com/stablyai/orca"
+}
