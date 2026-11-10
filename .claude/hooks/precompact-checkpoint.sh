@@ -3,7 +3,8 @@
 # before the context is compacted: trigger, context size, branch, recent and unpushed commits,
 # changed and edited files, running background agents, a recent tool error, the last requests
 # with the assistant text they answer, user decisions, and the last assistant message.
-# /capture folds it into the session log. A session that compacts, then crashes, still
+# /capture folds it into the session log; the file stays and is pushed with the vault, so SECRET
+# redacts known token formats. A session that compacts, then crashes, still
 # leaves a trace. Never writes implementation logs (SessionEnd's missing-log warning stays honest).
 set -uo pipefail
 
@@ -17,8 +18,9 @@ INPUT=$(cat)
 CWD=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1]).get("cwd") or ".")' "$INPUT" 2>/dev/null) || exit 0
 ROOT=$(git -C "$CWD" rev-parse --show-toplevel 2>/dev/null || echo "$CWD")
 
-SLUG=""
-[[ -f "$ROOT/.brain-project" ]] && SLUG=$(head -1 "$ROOT/.brain-project" | tr -d '[:space:]')
+# Slug: .brain-project, then git remote, then dir name (brain-load); a worktree dir name is no slug.
+SLUG=$(cd "$ROOT" 2>/dev/null && BRAIN_ENV_FILE="$ENV_FILE" bash "$AI_DOTFILES/skills/brain-load/scripts/load.sh" --slug-only 2>/dev/null \
+  | sed -n 's/^slug=//p' | head -1)
 [[ -n "$SLUG" ]] || SLUG=$(basename "$ROOT")
 BRANCH=$(git -C "$ROOT" branch --show-current 2>/dev/null || true)
 CHANGES=$(git -C "$ROOT" status --short 2>/dev/null | head -30)
@@ -33,7 +35,8 @@ import json, os, re, sys, time
 
 event, (branch, changes, commits, unpushed, out) = json.loads(sys.argv[1]), sys.argv[2:7]
 path = event.get("transcript_path") or ""
-SECRET = re.compile(r"\b(gh[pousr]_[A-Za-z0-9]{20,}|github_pat_\w{20,}|sk-[\w-]{20,})")
+SECRET = re.compile(r"\b(gh[pousr]_[A-Za-z0-9]{20,}|github_pat_\w{20,}|sk-[\w-]{20,}"
+                    r"|AKIA[0-9A-Z]{16}|st\.[A-Za-z0-9._-]{30,}|tk_[a-z0-9]{29})")
 STATUS = re.compile(r"<task-id>(\w+)</task-id>.*?<status>(\w+)</status>", re.S)
 
 

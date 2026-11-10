@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Fixed
+- PreCompact checkpoint: the folder name comes from `load.sh --slug-only` (`.brain-project`, then remote URL, then dir name), so a worktree such as `agent-ab2f5bcd12e92f128` no longer gets its own `checkpoints/` folder. Redaction adds AWS key ids (`AKIA...`), Infisical service tokens (`st.…`) and ntfy tokens (`tk_…`), because checkpoints are pushed with the vault. `LocalBrain.md` no longer says checkpoints are deleted. 4 tests.
 - `sync.sh end` safety: the detached `qmd update` + `qmd embed` runs under `flock` on `${XDG_CACHE_HOME:-~/.cache}/qmd-brain.lock`, so a second session end logs `qmd embed already running` and skips instead of starting a second writer on the SQLite index. Without `flock` (stock macOS) it logs `no flock` and runs unlocked (`brew install util-linux`). The vault commit and push are skipped with a warning during a rebase or on a detached HEAD. `brain-sync` and `qmd-sync` docs match (SessionEnd runs `harness-metrics` first; `pgrep -af '[q]md.*embed'`). 5 tests.
 - qmd index wiring: `config/brain.env` now exports `INDEX_PATH` (same value as `QMD_INDEX_PATH`), the variable qmd 2.x reads. A bare `qmd status` no longer opens `~/.cache/qmd/index.sqlite`. Add `INDEX_PATH="$QMD_INDEX_PATH"` and `export INDEX_PATH` to your local `config/brain.env` (see `brain.env.example`). `lib-mcp.sh` defaults to `vault-qmd/brain.db` and drops the stale "global mcp.json unconfirmed" message. `brain-search/search.sh` honours `BRAIN_ENV_FILE`. 3 tests.
 
