@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- ADR 0001 records the cockpit decision of 2026-11-10: Orca replaces ai-dotdeck (`tma`, `aif-sidebar`) as the cockpit; Herdr TUI is dropped. Known limit: Orca's agent session history shows no Claude session from WSL, because Windows cannot follow the `~/.claude` symlink over `\\wsl.localhost`.
+
 ## [0.18.0] - 2026-11-10
 
 ### Changed
