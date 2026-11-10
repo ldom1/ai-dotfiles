@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+- `aif-deck off|on|status`: removes and restores the Windows Terminal keys that send `\e[[tma-…` text (and the `tma` tab key), with a backup in `~/.config/aif/wt-keys.json`. A second `off` keeps every saved key, also after a re-bind; a key bound elsewhere in the meantime blocks `on` (exit 3, nothing written); an unparseable file is never written (exit 2). `aif-platform wt-settings` prints the settings path. 11 bats tests on a copy of the live file's shape.
+
+### Changed
+- `aif-agent-hook` runs in Herdr panes: it writes `herdr-<pane>.json` and reports each state change to Herdr (`herdr pane report-agent`, source `aif-dotdeck`, state `working`, `blocked` with the question, or `idle`). `--seq` is a shared counter under `flock` that grows even when the clock goes back. Outside tmux it never calls tmux. At session end it releases the pane. `HERDR_ENV=1` wins over an inherited `TMUX_PANE`; the seq ignores the locale's decimal comma and never evaluates its counter file. `aif-check.log` gets a 5th column: the pane key. 16 new bats tests.
+- ai-dotdeck switch: `AIF_DECK=off` replaces `AIF_NO_TMUX=1`. A new terminal no longer runs `tma` when `AIF_DECK=off` is set, or inside a Herdr pane (`HERDR_ENV=1`). Export `AIF_DECK=off` in `~/.zshenv`.
+
 ## [0.17.0] - 2026-11-07
 
 ### Added

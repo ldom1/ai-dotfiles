@@ -198,7 +198,7 @@ fi
 header "Installing ai-dotfiles CLI"
 
 mkdir -p "$HOME/.local/bin"
-for cli in ai-dotfiles stop-check-trust tma aif-agent-hook aif-statusline aif-agents; do
+for cli in ai-dotfiles stop-check-trust tma aif-agent-hook aif-statusline aif-agents aif-deck; do
   chmod +x "$DOTFILES/bin/$cli"
   ln -sfn "$DOTFILES/bin/$cli" "$HOME/.local/bin/$cli"
   log "$cli → $HOME/.local/bin/$cli (ensure ~/.local/bin is on PATH)"
@@ -222,7 +222,7 @@ for rc in "${rcs[@]}"; do
     log "$rc already sources config/shell-init.sh"
   else
     printf '\n%s\n' "$init_line" >> "$rc"
-    log "$rc sources config/shell-init.sh: new terminals open tmux (AIF_NO_TMUX=1 turns it off)"
+    log "$rc sources config/shell-init.sh: new terminals open tmux (AIF_DECK=off turns it off)"
   fi
 done
 

@@ -4,6 +4,7 @@
 #   aif-platform copy  < texte              → presse-papiers système
 #   aif-platform notify TITRE CORPS [SESSION] [critical|normal]
 #   aif-platform open URL
+#   aif-platform wt-settings                → chemin WSL du settings.json de Windows Terminal (wsl seulement)
 # AIF_PLATFORM=wsl|linux force la plateforme (ex. conteneur Docker sous WSL : le noyau dit « microsoft »).
 set -uo pipefail
 
@@ -67,10 +68,23 @@ cmd_open() {
   fi
 }
 
+# %LOCALAPPDATA% vient de Windows : le nom d'utilisateur Windows peut différer de $USER.
+cmd_wt_settings() {
+  is_wsl || return 1
+  # cmd.exe n'est pas toujours dans le PATH (appendWindowsPath=false) ; lancé depuis /mnt/c, il
+  # n'affiche pas l'avertissement de chemin UNC.
+  local local_app cmd
+  cmd=$(command -v cmd.exe || echo /mnt/c/Windows/System32/cmd.exe)
+  local_app=$(cd /mnt/c 2>/dev/null; "$cmd" /c 'echo %LOCALAPPDATA%' 2>/dev/null | tr -d '\r') || return 1
+  [[ -n $local_app ]] || return 1
+  printf '%s/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json\n' "$(wslpath "$local_app")"
+}
+
 case "${1:-}" in
   name)   cmd_name ;;
   copy)   cmd_copy ;;
   notify) shift; cmd_notify "$@" ;;
   open)   shift; cmd_open "$@" ;;
-  *) echo "usage: aif-platform name|copy|notify|open" >&2; exit 2 ;;
+  wt-settings) cmd_wt_settings ;;
+  *) echo "usage: aif-platform name|copy|notify|open|wt-settings" >&2; exit 2 ;;
 esac
