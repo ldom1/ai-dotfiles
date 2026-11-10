@@ -22,10 +22,11 @@ INDEX_PATH="$QMD_INDEX_PATH" qmd update --collection brain 2>&1
 Report files added / updated / removed from the output. If any changed, embed:
 
 ```bash
-pgrep -af '[q]md.*embed' && echo "embed already running — wait for it"   # two writers corrupt the SQLite index
-INDEX_PATH="$QMD_INDEX_PATH" qmd embed --collection brain 2>&1
+flock -n "${XDG_CACHE_HOME:-$HOME/.cache}/qmd-brain.lock" env INDEX_PATH="$QMD_INDEX_PATH" qmd embed --collection brain || echo "embed already running"
 ```
 
-On CPU, `embed` shows only a spinner for 1–2 minutes. A Bash tool timeout does not kill it: check `pgrep` before assuming it died, and never start a second one. Confirm with `qmd status`: `brain.env` exports `INDEX_PATH`, which qmd reads.
+The lock is the one `sync.sh end` takes: two writers corrupt the SQLite index. macOS without `flock` (`brew install util-linux`) has no protection.
+
+On CPU, `embed` shows only a spinner for 1–2 minutes. A Bash tool timeout does not kill it: check `pgrep` before assuming it died, and never start a second one. Confirm with `INDEX_PATH="$QMD_INDEX_PATH" qmd status`.
 
 If more than 10 files were removed, warn: "Large prune — verify the vault is intact before relying on semantic search."

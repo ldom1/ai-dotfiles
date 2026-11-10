@@ -139,3 +139,12 @@ def test_commit_still_works_on_a_branch(tmp_path):
     before = _commits(vault)
     _end(script, env)
     assert _commits(vault) == before + 1
+
+
+def test_qmd_sync_skill_embed_uses_the_sync_lock():
+    text = (SYNC.parents[3] / "skills/brain-audit/skills/qmd-sync/SKILL.md").read_text()
+    assert ('flock -n "${XDG_CACHE_HOME:-$HOME/.cache}/qmd-brain.lock" env INDEX_PATH="$QMD_INDEX_PATH" '
+            'qmd embed --collection brain || echo "embed already running"') in text
+    assert "pgrep -af '[q]md.*embed' &&" not in text
+    assert "without `flock`" in text
+    assert 'INDEX_PATH="$QMD_INDEX_PATH" qmd status' in text
