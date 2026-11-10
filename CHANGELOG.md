@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- `scripts/wsl-claude-mount.sh` (WSL): replaces the `~/.claude` symlink with a bind mount of `ai-dotfiles/.claude`, with an `/etc/fstab` line for boot. Windows cannot follow a WSL symlink over `\\wsl.localhost`, so Orca's agent session history showed no Claude session. It refuses a non-empty `~/.claude` directory, another fstab entry on `~/.claude`, and a linked worktree; a second run does nothing. `install.sh` keeps a bind-mounted `~/.claude` (it tried to back it up before) and warns on WSL while `~/.claude` is a symlink. 5 pytest tests in a private mount namespace (`unshare -rm`).
+
 ### Changed
 - ADR 0001 records the cockpit decision of 2026-11-10: Orca replaces ai-dotdeck (`tma`, `aif-sidebar`) as the cockpit; Herdr TUI is dropped. Known limit: Orca's agent session history shows no Claude session from WSL, because Windows cannot follow the `~/.claude` symlink over `\\wsl.localhost`.
 
