@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # aif-agent-hook — appelé par les hooks Claude Code. Écrit l'état de l'agent du
 # panneau courant dans $AIF_STATE_DIR/<clé>.json : pane tmux (clé = numéro du pane) ou pane Herdr
-# (HERDR_ENV=1, clé = herdr-<HERDR_PANE_ID, hors [A-Za-z0-9] remplacé par ->). Dans un pane Herdr, il
-# rapporte aussi l'état à Herdr (herdr pane report-agent). Ne bloque jamais Claude : sort toujours
+# (HERDR_ENV=1, clé = herdr-<HERDR_PANE_ID, hors [A-Za-z0-9] remplacé par ->) ou terminal Orca
+# (ORCA_PANE_KEY, clé = orca-<clé, même règle>). Dans un pane Herdr, il rapporte aussi l'état à Herdr
+# (herdr pane report-agent) ; dans Orca, il n'écrit que l'état et le journal (Orca notifie lui-même). Ne bloque jamais Claude : sort toujours
 # en 0, ne fait rien ailleurs. Champs d'entrée : https://code.claude.com/docs/en/hooks
 set -uo pipefail
 # Herdr d'abord : un serveur Herdr lancé depuis tmux peut transmettre TMUX_PANE à ses panes.
@@ -10,6 +11,8 @@ if [[ ${HERDR_ENV:-} == 1 && -n ${HERDR_PANE_ID:-} ]]; then
   PANE=$HERDR_PANE_ID KEY="herdr-${HERDR_PANE_ID//[^A-Za-z0-9]/-}" HERDR=1
 elif [[ -n ${TMUX_PANE:-} ]]; then
   PANE=$TMUX_PANE KEY=${TMUX_PANE#%} HERDR=0
+elif [[ -n ${ORCA_PANE_KEY:-} ]]; then
+  PANE=$ORCA_PANE_KEY KEY="orca-${ORCA_PANE_KEY//[^A-Za-z0-9]/-}" HERDR=0 ORCA=1
 else
   exit 0
 fi
@@ -122,6 +125,9 @@ if (( HERDR )); then
   fi
   exit 0
 fi
+
+# Terminal Orca : rien vers tmux (le serveur tmux peut tourner à côté).
+(( ${ORCA:-0} )) && exit 0
 
 # Notification système seulement à l'entrée dans un état, et si le panneau n'est pas sous les yeux.
 if [[ $new_state != "$prev_state" ]] && { [[ $new_state == check ]] || { [[ $new_state == "done" && ${AIF_NOTIFY_DONE:-0} == 1 ]]; }; }; then

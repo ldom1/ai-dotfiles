@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- `aif-agent-hook` runs in Orca terminals (`ORCA_PANE_KEY`): it writes `orca-<pane>.json` and the `aif-check.log` lines, so the cockpit trial counts the waits of Orca projects too (prose questions included). No tmux call, no notification. `spikes/cockpit-trial/report.py` prints the Orca waits per ask type and takes `--since` (default: trial start, 2026-11-10 11:05). 3 bats tests, 2 pytest tests.
+
 ### Added
 - `aif-deck off|on|status`: removes and restores the Windows Terminal keys that send `\e[[tma-…` text (and the `tma` tab key), with a backup in `~/.config/aif/wt-keys.json`. A second `off` keeps every saved key, also after a re-bind; a key bound elsewhere in the meantime blocks `on` (exit 3, nothing written); an unparseable file is never written (exit 2). `aif-platform wt-settings` prints the settings path. 11 bats tests on a copy of the live file's shape.
 
