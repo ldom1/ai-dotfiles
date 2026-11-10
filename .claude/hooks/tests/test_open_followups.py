@@ -4,6 +4,8 @@ import subprocess
 import time
 from pathlib import Path
 
+import pytest
+
 SCRIPT = Path(__file__).resolve().parents[3] / "skills" / "brain-audit" / "scripts" / "open-followups.sh"
 
 
@@ -31,8 +33,9 @@ def test_inline_followup_listed(tmp_path):
     assert "wire the guard" in out
 
 
-def test_inline_none_skipped(tmp_path):
-    log(tmp_path, "a", "## t\n\n**Follow-ups:** none\n")
+@pytest.mark.parametrize("word", ["none", "None.", "Aucun.", "aucun", "(none)", "(None).", "n/a", "N/A."])
+def test_inline_none_skipped(tmp_path, word):
+    log(tmp_path, "a", f"## t\n\n**Follow-ups:** {word}\n")
     assert run(tmp_path).strip() == ""
 
 

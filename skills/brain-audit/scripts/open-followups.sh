@@ -3,7 +3,8 @@
 # Reads BRAIN_PATH and BRAIN_AUDIT_LOOKBACK_DAYS (default 30).
 # Prints "=== <vault-relative path>" then one item per line.
 # Handles `**Follow-ups:** text` (inline), `**Follow-ups:**` + `- item` lines,
-# and the older `## Follow-ups` heading. Items containing "none" are skipped.
+# and the older `## Follow-ups` heading. List items containing "none" are skipped; an inline item that starts with none, aucun or n/a
+# (any case, optional parentheses and trailing dot) is skipped.
 
 set -euo pipefail
 
@@ -21,7 +22,7 @@ find "$BRAIN_PATH/inbox/daily/implementation" -name '*.md' -newermt "$cutoff" 2>
         /^(## |\*\*)Follow-ups/ {
             on = 1
             sub(/^(## |\*\*)Follow-ups[:*]*[ \t]*/, "")
-            if ($0 != "" && $0 !~ /^[Nn]one/) print "- " $0
+            if ($0 != "" && tolower($0) !~ /^\(?(none|aucun|n\/a)/) print "- " $0
             next
         }
         on && /^(## |\*\*[A-Z])/ { on = 0 }
