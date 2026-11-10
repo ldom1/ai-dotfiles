@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-11-10
+
 ### Changed
 - `veille-technique` step 4 writes one recap note per report in the vault, `resources/knowledge/veille/<date>-<sujet>.md`: TL;DR, choices, impacts per target (commits that shipped a verdict), items to review. `VEILLE.base` lists them (all, by target, to integrate, to review). The ledger's last column links the recap note instead of the artifact URL. The six past reports are backfilled.
 - `veille-technique:veille`: a claim about a coding-agent harness is checked against its Harness Lens entry, with the entry's `ref` compared to the installed version.
