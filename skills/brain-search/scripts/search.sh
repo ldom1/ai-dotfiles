@@ -63,7 +63,7 @@ fi
 # ── Build command ─────────────────────────────────────────────────────────────
 QMD_ARGS=("$MODE" "$QUERY" "-c" "brain")
 if [[ -n "$LIMIT" ]]; then
-  QMD_ARGS+=("--limit" "$LIMIT")
+  QMD_ARGS+=("-n" "$LIMIT")  # qmd ignores --limit (non-strict parser); it reads -n
 fi
 
 _info "brain-search · mode=${MODE} · index=$(basename "$QMD_INDEX_PATH")"

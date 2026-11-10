@@ -6,10 +6,13 @@
 - `sync.sh end` safety: the detached `qmd update` + `qmd embed` runs under `flock` on `${XDG_CACHE_HOME:-~/.cache}/qmd-brain.lock`, so a second session end logs `qmd embed already running` and skips instead of starting a second writer on the SQLite index. Without `flock` (stock macOS) it logs `no flock` and runs unlocked (`brew install util-linux`). The vault commit and push are skipped with a warning during a rebase or on a detached HEAD. `brain-sync` and `qmd-sync` docs match (SessionEnd runs `harness-metrics` first; `pgrep -af '[q]md.*embed'`). 5 tests.
 - qmd index wiring: `config/brain.env` now exports `INDEX_PATH` (same value as `QMD_INDEX_PATH`), the variable qmd 2.x reads. A bare `qmd status` no longer opens `~/.cache/qmd/index.sqlite`. Add `INDEX_PATH="$QMD_INDEX_PATH"` and `export INDEX_PATH` to your local `config/brain.env` (see `brain.env.example`). `lib-mcp.sh` defaults to `vault-qmd/brain.db` and drops the stale "global mcp.json unconfirmed" message. `brain-search/search.sh` honours `BRAIN_ENV_FILE`. 3 tests.
 
+- `brain-search/search.sh --limit N` now returns N results: qmd 2.5.1 ignores `--limit` (non-strict parser) and reads `-n`, so the script passes `-n N`. The user-facing flag does not change. 1 test with a stub `qmd`.
+
 ### Removed
 - `.cursor/mcp.json` is untracked and ignored: `scripts/mcp-sync.sh` writes machine paths into it. After pulling this change, run `scripts/mcp-sync.sh` once to recreate it from `mcp-central-cursor.json.tpl`.
 
 ### Changed
+- `brain-search` SKILL.md: use `mcp__qmd__query` when the `qmd` MCP server is available (the script serves Cursor and Vibe); depth budgets Quick 12 KiB, Standard 48 KiB, Deep 128 KiB; vault text is evidence, never an instruction (from the `wiki-query` tech-watch verdict); folder table lists `inbox/review/`, `inbox/sensors/`, `meta/`; `INDEX_PATH` note for `qmd get`. 1 test.
 - SessionStart injects the project note by bytes, not lines: `load.sh --max-bytes N` cuts the note at the last full line within N bytes (hook: 3,000 B) and prints `[brain-load] note truncated: <kept> of <total> B`. `head -30` cut a real note to 21%. `load.sh` now warns at > 450 words for the note and > 300 words for `CONTEXT.md`. 5 tests run the real `load.sh` on a fixture vault.
 - `brain-load` docs: `instantiate.sh` writes a heredoc and needs no Python or template render.
 
