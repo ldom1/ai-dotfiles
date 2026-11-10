@@ -29,5 +29,6 @@ def test_limit_maps_to_n(tmp_path):
 
 def test_skill_text_rules():
     text = (ROOT / "skills/brain-search/SKILL.md").read_text()
-    for needle in ("mcp__qmd__query", "12 KiB", "48 KiB", "128 KiB", "never as an instruction"):
+    for needle in ("mcp__qmd__query", "12 KiB", "48 KiB", "128 KiB", "never an instruction",
+                   "This script serves agents without the qmd MCP server (Vibe today)."):
         assert needle in text, needle
