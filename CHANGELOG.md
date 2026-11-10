@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+- qmd index wiring: `config/brain.env` now exports `INDEX_PATH` (same value as `QMD_INDEX_PATH`), the variable qmd 2.x reads. A bare `qmd status` no longer opens `~/.cache/qmd/index.sqlite`. Add `INDEX_PATH="$QMD_INDEX_PATH"` and `export INDEX_PATH` to your local `config/brain.env` (see `brain.env.example`). `lib-mcp.sh` defaults to `vault-qmd/brain.db` and drops the stale "global mcp.json unconfirmed" message. `brain-search/search.sh` honours `BRAIN_ENV_FILE`. 3 tests.
+
+### Removed
+- `.cursor/mcp.json` is untracked and ignored: `scripts/mcp-sync.sh` writes machine paths into it. After pulling this change, run `scripts/mcp-sync.sh` once to recreate it from `mcp-central-cursor.json.tpl`.
+
 ### Changed
 - SessionStart injects the project note by bytes, not lines: `load.sh --max-bytes N` cuts the note at the last full line within N bytes (hook: 3,000 B) and prints `[brain-load] note truncated: <kept> of <total> B`. `head -30` cut a real note to 21%. `load.sh` now warns at > 450 words for the note and > 300 words for `CONTEXT.md`. 5 tests run the real `load.sh` on a fixture vault.
 - `brain-load` docs: `instantiate.sh` writes a heredoc and needs no Python or template render.
