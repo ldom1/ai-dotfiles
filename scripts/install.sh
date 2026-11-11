@@ -203,7 +203,7 @@ fi
 header "Installing ai-dotfiles CLI"
 
 mkdir -p "$HOME/.local/bin"
-for cli in ai-dotfiles stop-check-trust tma aif-agent-hook aif-statusline aif-agents aif-deck vibe-brain; do
+for cli in ai-dotfiles stop-check-trust local-ci tma aif-agent-hook aif-statusline aif-agents aif-deck vibe-brain; do
   chmod +x "$DOTFILES/bin/$cli"
   ln -sfn "$DOTFILES/bin/$cli" "$HOME/.local/bin/$cli"
   log "$cli → $HOME/.local/bin/$cli (ensure ~/.local/bin is on PATH)"
@@ -239,6 +239,14 @@ log "platform: $AIF_OS (tmux loads config/tmux-platform-$AIF_OS.conf)"
 if [[ "$AIF_OS" == wsl && -L "$HOME/.claude" ]]; then
   warn_end "$HOME/.claude is a symlink: Windows apps (Orca's agent session history) cannot read it. Close Claude sessions, then run: bash $DOTFILES/scripts/wsl-claude-mount.sh"
 fi
+
+# Orca, the agent cockpit: scripts/orca-install.sh installs it on native Ubuntu (.deb, never when
+# already installed), applies config/orca/settings.json, checks its CLI and skills. Each stdout
+# line is a step to do by hand (the sudo apt line included): repeated in the end warnings.
+header "Orca"
+while IFS= read -r line; do
+  [[ -n $line ]] && warn_end "$line"
+done < <(bash "$DOTFILES/scripts/orca-install.sh")
 need_cmds() {  # need_cmds "<apt packages>" cmd...: warn once with the apt line for missing commands
   local pkgs=$1 missing=(); shift
   for c in "$@"; do command -v "$c" >/dev/null 2>&1 || missing+=("$c"); done
