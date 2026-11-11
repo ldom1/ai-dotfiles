@@ -1,0 +1,47 @@
+{
+  "agentPermissionDefault": "own",
+  "aiVaultSearch": {
+    "enabled": true,
+    "historyDays": null
+  },
+  "claudeCodeThemeSync": true,
+  "defaultTuiAgent": "claude",
+  "nativeChatPermissionMode": "ask",
+  "newWorkspaceSetupOnly": false,
+  "notifications": {
+    "agentNeedsInput": true,
+    "agentTaskComplete": true,
+    "customSoundId": "system",
+    "customSoundPath": null,
+    "customSoundVolume": 100,
+    "enabled": true,
+    "mutedNotificationSourceIds": [],
+    "notifyHiddenWorkspaces": false,
+    "suppressWhenFocused": true,
+    "terminalBell": true
+  },
+  "terminalRightClickToPaste": true,
+  "theme": "dark",
+  "voice": {
+    "dictationLanguage": "auto",
+    "dictationMode": "toggle",
+    "enabled": true,
+    "microphoneDeviceId": null,
+    "microphoneDeviceLabel": null,
+    "modelsDir": "",
+    "openAiApiKeyConfigured": false,
+    "sttModel": "",
+    "terminalConfirmBeforeInsert": false,
+    "unloadModelAfterMinutes": 15,
+    "userModels": []
+  },
+  "worktreeVisibilityDefaults": {
+    "external": "hide",
+    "sourcePreferences": {
+      "builtIn": {
+        "claude": "show",
+        "gsd": "show"
+      }
+    }
+  }
+}
