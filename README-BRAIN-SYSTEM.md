@@ -10,7 +10,7 @@ Your vault evolves automatically through a four-phase maintenance pipeline:
 - **Raw data** (research notes, logs, captures) flows into `/inbox/`
 - **Compilation** transforms raw data into structured wiki articles
 - **Connection detection** finds orphaned notes and suggests semantic links
-- **Synthesis** runs templated Q&A queries to generate insights and actionable summaries
+- **Synthesis** runs the `queries` analyses (knowledge gaps, roadmap) to generate insights and actionable summaries
 - **Human approval** lets you review and integrate all changes
 
 Between sessions, your vault stays lightweight—only when maintenance is triggered does the heavy lifting happen. Maintenance is manual: the SessionStart hook says when `/brain-audit` is due (last run over 7 days ago).
@@ -40,8 +40,8 @@ Full maintenance pipeline (typically 5-15 min):
 - Pulls vault
 - **Phase 1 - Raw Data Compilation**: Processes files in `/raw/` → creates wiki articles in `/inbox/drafts/`
 - **Phase 2 - Connection Detection**: Scans vault structure → finds orphaned notes, suggests links in `/inbox/connections/`
-- **Phase 3 - Templated Q&A**: Runs saved queries from `/meta/queries/` → files results in `/inbox/qa/`
-- **Phase 4 - Digest Generation**: Summarizes all changes → creates `/meta/digest-YYYY-MM-DD-HHmmss.md` → resets 7-day clock in `/meta/last-maintenance.md`
+- **Phase 3 - Queries**: `brain-audit:queries` writes knowledge-gaps and roadmap analyses → `/resources/queries/archive/YYYY-MM-DD-*.md`
+- **Phase 4 - Digest**: `brain-audit:digest` writes `/meta/digest-YYYY-MM-DD.md` and resets the 7-day clock in `/meta/last-maintenance.md` (`digest.sh` does only the clock)
 - All inbox items ready for human review
 - Commits, resets clock, pushes
 
@@ -58,11 +58,10 @@ $BRAIN_PATH/
 ├── inbox/
 │   ├── drafts/              # Compiled raw data → structured articles
 │   ├── connections/         # Suggested semantic links (markdown list format)
-│   └── qa/                  # Query results from templated Q&A
+│   └── sensors/             # Sensor drafts from brain-audit:promote
 ├── meta/
 │   ├── last-maintenance.md  # 7-day clock: timestamp of last maintenance
-│   ├── digest-*.md          # Timestamped summaries of each maintenance run
-│   └── queries/             # Templated Q&A queries (YAML format)
+│   └── digest-*.md          # Summary of each maintenance run
 ├── raw/                     # Unprocessed captures (research, logs, notes)
 ├── drafts/                  # Your draft notes (pre-publish)
 ├── published/               # Approved, merged, finalized knowledge
@@ -88,7 +87,7 @@ $BRAIN_PATH/
    - Approve: add to relevant published notes
    - Reject: delete file
 
-4. **Review Q&A results** (`ls $BRAIN_PATH/inbox/qa/`)
+4. **Review query results** (`ls $BRAIN_PATH/resources/queries/archive/`)
    - Query results ready to integrate
    - Copy relevant sections into published notes
    - Delete after integration or archive if valuable
@@ -164,44 +163,14 @@ Performance Testing - Optimization Strategies.md
 
 ---
 
-## Templated Q&A System
+## Queries
 
-Templated Q&A queries run automatically during maintenance to synthesize knowledge from your vault.
+`brain-audit:queries` runs two analyses during maintenance. Each is a skill step, not a YAML template.
 
-### Creating Query Templates
+- **knowledge-gaps**: surveys `resources/knowledge/` and recent implementation notes. It finds topics with no knowledge file.
+- **roadmap**: aggregates the active project folders and recent implementation logs into one status view.
 
-Store templates as YAML files in `/meta/queries/`:
-
-```yaml
-# $BRAIN_PATH/meta/queries/weekly-project-summary.yaml
-name: "Weekly Project Summary"
-description: "Synthesize this week's progress across all active projects"
-query: |
-  Based on the vault, summarize:
-  1. What work was completed this week?
-  2. What blockers remain?
-  3. What needs follow-up?
-  4. Top 3 priorities for next week?
-output_format: "markdown"
-target_inbox: "qa"
-```
-
-### How They Work
-
-During Phase 3 (Templated Q&A), brain-audit:
-1. Reads each query from `/meta/queries/`
-2. Passes query + vault context to Claude
-3. Writes result to `/inbox/qa/{query-name}-{timestamp}.md`
-4. Your review: copy relevant sections into published notes or integrate into projects
-
-### Built-In Queries
-
-The system provides starter queries:
-
-- `weekly-project-summary.yaml` — Synthesize weekly progress
-- `orphaned-notes.yaml` — Find notes with no incoming links
-- `connection-suggestions.yaml` — Recommend semantic links between notes
-- `knowledge-gaps.yaml` — Identify areas with sparse documentation
+Results go to `resources/queries/archive/YYYY-MM-DD-knowledge-gaps.md` and `YYYY-MM-DD-roadmap.md`. Review them, then copy what matters into project notes. The old YAML templates in `meta/queries/` are archived in the vault (`archive/meta-queries/`).
 
 ---
 
@@ -229,28 +198,17 @@ cat $(ls -t $BRAIN_PATH/meta/digest-*.md | head -1)
 
 ### Manual Phases
 
-Run individual phases without full maintenance:
+Run one subskill without full maintenance. Ask for it by name:
 
-```bash
-# Phase 1: Compile raw data only
-bash ~/ai-dotfiles/skills/brain-audit/scripts/phase-1-compile.sh
-
-# Phase 2: Detect connections only
-bash ~/ai-dotfiles/skills/brain-audit/scripts/phase-2-connect.sh
-
-# Phase 3: Run Q&A queries only
-bash ~/ai-dotfiles/skills/brain-audit/scripts/phase-3-qa.sh
-
-# Phase 4: Generate digest only
-bash ~/ai-dotfiles/skills/brain-audit/scripts/phase-4-digest.sh
-```
+- `brain-audit:compile`, `brain-audit:promote`, `brain-audit:connect`
+- `brain-audit:insights`, `brain-audit:queries`, `brain-audit:qmd-sync`
+- `brain-audit:digest` (writes the digest note and resets the clock)
 
 ### Reset Maintenance Clock
 
 ```bash
-# If you've manually processed inbox and want to reset the 7-day clock:
-echo "$(date -u +'%Y-%m-%d %H:%M:%S UTC')" > $BRAIN_PATH/meta/last-maintenance.md
-cd $BRAIN_PATH && git add meta/last-maintenance.md && git commit -m "chore: reset maintenance clock"
+# Resets meta/last-maintenance.md (the SessionStart hook reads Epoch Seconds). No commit: brain-sync end commits the vault.
+bash ~/ai-dotfiles/skills/brain-audit/scripts/digest.sh
 ```
 
 ---
@@ -263,16 +221,11 @@ $BRAIN_PATH/
 ├── inbox/                           # Staging area for all automated changes
 │   ├── drafts/                      # Compiled raw data → articles
 │   ├── connections/                 # Suggested semantic links
-│   └── qa/                          # Query results
+│   └── sensors/                     # Sensor drafts (brain-audit:promote)
 │
 ├── meta/                            # System metadata
 │   ├── last-maintenance.md          # Timestamp of last maintenance (7-day clock)
-│   ├── digest-YYYY-MM-DD-*.md       # Summary of each maintenance run
-│   └── queries/                     # Templated Q&A queries (YAML)
-│       ├── weekly-project-summary.yaml
-│       ├── orphaned-notes.yaml
-│       ├── connection-suggestions.yaml
-│       └── knowledge-gaps.yaml
+│   └── digest-YYYY-MM-DD.md         # Summary of each maintenance run
 │
 ├── raw/                             # Unprocessed captures
 │   ├── research-*.md
@@ -374,23 +327,14 @@ Or set an environment variable:
 export BRAIN_MAINTENANCE_DAYS=14  # Maintenance every 2 weeks instead
 ```
 
-### Q: Query templates aren't running. How do I debug?
+### Q: The queries analysis did not run. How do I debug?
 
 ```bash
-# Check if templates exist
-ls -la $BRAIN_PATH/meta/queries/
-
-# Run Phase 3 manually with verbose output
-bash ~/ai-dotfiles/skills/brain-audit/scripts/phase-3-qa.sh --verbose
-
-# Check query syntax
-cat $BRAIN_PATH/meta/queries/<query-name>.yaml
+# Results land here
+ls -lt $BRAIN_PATH/resources/queries/archive/ | head
 ```
 
-**Common issues:**
-- Missing YAML file extension (must be `.yaml`)
-- Invalid YAML syntax (use `yamllint` to validate)
-- Query is too broad and takes too long (add time limit: `timeout 60 claude-query ...`)
+Ask for `brain-audit:queries` by name. It reads `resources/knowledge/` and the recent implementation notes.
 
 ---
 
@@ -400,16 +344,14 @@ Get started with the Local Brain System:
 
 - [ ] **Understand the vision** — Read the Overview section above
 - [ ] **Set up vault path** — Verify `$BRAIN_PATH` is set: `echo $BRAIN_PATH`
-- [ ] **Create initial directories** — Run: `mkdir -p $BRAIN_PATH/{inbox/{drafts,connections,qa},meta/queries,raw,published,archive}`
+- [ ] **Create initial directories** — Run: `mkdir -p $BRAIN_PATH/{inbox/{drafts,connections,sensors},resources/queries/archive,raw,published,archive}`
 - [ ] **Initialize git** — `cd $BRAIN_PATH && git init && git add . && git commit -m "init: local brain vault"`
 - [ ] **Add starter raw files** — Put research notes, ideas, or logs into `/raw/`
-- [ ] **Create first query template** — Copy one from the system defaults to `/meta/queries/`
 - [ ] **Run first maintenance** — `/brain-audit` (takes 5-15 min)
-- [ ] **Review inbox** — Check `/inbox/drafts/`, `/inbox/connections/`, `/inbox/qa/`
+- [ ] **Review inbox** — Check `/inbox/drafts/`, `/inbox/connections/`, `/inbox/sensors/`
 - [ ] **Approve changes** — Move approved articles from `/inbox/drafts/` to `/published/`
 - [ ] **Commit & push** — `cd $BRAIN_PATH && git add . && git commit -m "inbox: approve first maintenance" && git push`
 - [ ] **Future sessions** — System will auto-detect when maintenance is needed
-- [ ] **Customize queries** — Create your own templates in `/meta/queries/` based on your workflow
 - [ ] **Refine structure** — Organize `/published/` with subdirectories as your vault grows
 
 ---

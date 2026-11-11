@@ -3,7 +3,7 @@ name: promote
 description: >-
   Counts how often each pitfall rule was hit in recent session logs and drafts
   a sensor (hook, stop check, lint rule or test) for each rule hit in two or
-  more sessions. It also groups `fix`/`Revert` commits of the repos in `config/brain-projects.tsv` into mistake classes, and drafts a sensor only for a class with a proof. Writes drafts to inbox/sensors/ and never installs anything.
+  more sessions. It also groups `fix`/`Revert` commits of the repos in `config/brain-projects.tsv` into mistake classes, and drafts a sensor only for a class with a proof. Step 1c proposes verdicts (helped, hurt, no observed effect, confounded, inconclusive) for harness changes logged by /capture. A last step asks the owner to install or reject each open draft. Writes drafts to inbox/sensors/ and never installs anything.
   Use when: "draft sensors", "turn recurring pitfalls into hooks", "which rules keep recurring", or
   after compile in a full brain-audit.
 user-invocable: true
@@ -78,7 +78,7 @@ Never write `no observed effect` on a thin sample. A before/after contrast shows
 
 Show the proposals to the user. Write only after approval. For each approved row, append ` · verdict: <word> (<numbers>, <today>)` to its line in the session log. Never edit the rest of the row. Skip a rejected row. It stays pending.
 
-If step 1, step 1b and step 1c found nothing, report the counts and stop. If only step 1c found rows, skip step 2.
+If step 1, step 1b and step 1c found nothing, go to step 3 and report the counts, then do step 4. If only step 1c found rows, skip step 2.
 
 ## 2 — Draft
 
@@ -131,6 +131,17 @@ brain-audit:promote complete
   Harness changes: pending N · verdicts written N · malformed N
   Drafts: [[YYYY-MM-DD-<slug>]], …
   Candidates without proof: <class> (<sha>, …)
+  Open drafts (no decision): N
 ```
 
 The user accepts a draft by asking for it as a normal task. After it ships, add `(sensor: <hook name>)` before the rule's id in `pitfalls.md`. A rule with a sensor is a merge candidate when the budget is tight.
+
+## 4 — Open drafts
+
+A draft stays open until the owner decides. The decision is one line in the draft: `**Decision:** installed <hook or file> <YYYY-MM-DD>` or `**Decision:** rejected: <reason> <YYYY-MM-DD>`. List the drafts with no such line:
+
+```bash
+grep -L '^\*\*Decision:\*\* \(installed\|rejected\)' "$BRAIN_PATH"/inbox/sensors/*.md
+```
+
+Ask the owner, one draft at a time: install, reject, or leave open. Show the draft's `**Rule:**` and `**Kind:**` lines. Write the `**Decision:**` line under the `**Proof:**` line, only after the answer. Install means the owner asks for the sensor as a normal task: never install it here. If the owner leaves a draft open, write nothing. If the list is empty, say so.
