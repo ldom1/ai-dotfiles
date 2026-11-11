@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Fixed
+- `brain-audit` plugin 2.3.0: description matches the router `SKILL.md`.
 - `LocalBrain.md`: the checkpoint row says `/capture` folds the checkpoint into the session log, then deletes it (until then it is pushed with the vault). The `raw/` row names the user as writer. New rows for `_templates/` and `resources/knowledge/veille-technique.md`. The vault `raw/index.md` and `inbox/README.md` no longer describe retired folders.
 - `README-BRAIN-SYSTEM.md` points to `LocalBrain.md` for the folder layout instead of two directory trees, drops the `mkdir` checklist line, and describes phases 1 and 2 as compile and connect.
 - `brain-audit:compile` keeps an optional `paths:` field in the pattern-note template (it drives `scripts/link-pattern-rules.sh`), never reformats an existing note, picks a free id letter with a `grep` of the notes, and creates no note for a stack rule that fewer than 2 projects hit. `pitfall-rules.md` lists letters `n` and `l` and the `(sensor: <name>)` suffix. `connect` names the command that lists changed pattern notes. 1 test.

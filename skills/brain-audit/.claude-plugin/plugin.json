@@ -1,7 +1,7 @@
 {
   "name": "brain-audit",
-  "version": "2.2.0",
-  "description": "Vault maintenance pipeline: compile inbox notes, connect via QMD semantic search, generate insights, sync QMD index, produce weekly digest.",
+  "version": "2.3.0",
+  "description": "Vault maintenance pipeline — compile inbox notes, promote recurring pitfalls and harness changes to sensor drafts, run the knowledge-gaps and roadmap queries, connect via QMD semantic search, generate insights, sync QMD index, reset the maintenance clock with a digest.",
   "author": {
     "name": "Louis Giron",
     "github": "ldom1"
