@@ -110,6 +110,8 @@ ai-dotfiles sync --all               # sync all registered projects
 ai-dotfiles mcp-sync                 # (re)apply centrally-managed MCP servers (qmd, code-index, graphify)
 ```
 
+Vault link health: `bash skills/brain-audit/scripts/vault-lint.sh` (step `lint` of `/brain-audit`) lists unresolved links, orphans and missing skill paths through the read-only Obsidian CLI. It needs Obsidian open.
+
 ### Automatic sync (brain-sync)
 
 `brain-sync start` pulls vault → project for all registered paths. `brain-sync end` pushes project → vault before the vault git commit. Strategy: `rsync --update` (newer mtime wins, no merge). If both copies of one file changed since the last sync, the older edit is overwritten; the vault's git history keeps committed versions. Unregistered projects are skipped silently.

@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- `brain-audit:lint`: `skills/brain-audit/scripts/vault-lint.sh` reports unresolved links, orphans (outside `inbox/daily/` and `projects/*/`), the top 10 unresolved targets and `$BRAIN_PATH/` paths cited in skills that do not exist. It uses only the read-only Obsidian CLI commands `unresolved`, `orphans` and `file`. No CLI: `skipped:` and exit 0; CLI failure or garbage output: `error:` and exit 1. It warns when the newest note on disk is newer than the Obsidian index (restart Obsidian). Full run order: `qmd-sync`, `compile`, `lint`, `promote`, `queries`, `connect`, `insights`, `digest`. 8 tests.
+
 ### Fixed
 - `brain-audit` plugin 2.3.0: description matches the router `SKILL.md`.
 - `LocalBrain.md`: the checkpoint row says `/capture` folds the checkpoint into the session log, then deletes it (until then it is pushed with the vault). The `raw/` row names the user as writer. New rows for `_templates/` and `resources/knowledge/veille-technique.md`. The vault `raw/index.md` and `inbox/README.md` no longer describe retired folders.
