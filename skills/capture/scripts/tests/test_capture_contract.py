@@ -77,3 +77,9 @@ def test_compile_writes_patterns_in_one_format():
     assert "## Rules" in compile_text
     assert "Observed in" in compile_text
     assert "never paths" in compile_text
+
+
+def test_compile_keeps_paths_and_never_reformats():
+    compile_text = (REPO / "skills/brain-audit/skills/compile/SKILL.md").read_text(encoding="utf-8")
+    assert "paths:" in compile_text
+    assert "Never reformat" in compile_text

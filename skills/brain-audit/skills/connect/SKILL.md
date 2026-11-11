@@ -19,7 +19,7 @@ command -v qmd || { echo "qmd not installed — run: npm install -g @tobilu/qmd"
 
 ## Link
 
-For each file changed in `resources/knowledge/patterns/` (the notes `compile` wrote or extended):
+For each file changed in `resources/knowledge/patterns/` (the notes `compile` wrote or extended; list them with `git -C "$BRAIN_PATH" status --short resources/knowledge/patterns/`):
 
 ```bash
 INDEX_PATH="$QMD_INDEX_PATH" qmd query "<1–2 sentence pattern summary>" 2>&1

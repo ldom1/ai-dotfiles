@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Fixed
+- `brain-audit:compile` keeps an optional `paths:` field in the pattern-note template (it drives `scripts/link-pattern-rules.sh`), never reformats an existing note, picks a free id letter with a `grep` of the notes, and creates no note for a stack rule that fewer than 2 projects hit. `pitfall-rules.md` lists letters `n` and `l` and the `(sensor: <name>)` suffix. `connect` names the command that lists changed pattern notes. 1 test.
 - `upgrade --all` continues past a failed project: it runs `setup_central_mcp`, prints `upgrade failed for: <names>` on stderr and exits 1. 1 test.
 - `upgrade-project.sh` no longer hides a failed `settings.json` merge: it prints `ERROR: settings.json merge failed for <file>` on stderr and exits non-zero. The merge script reads its paths from `argv` instead of an interpolated string. 1 test.
 - `brain-init-project` step 3 copies `DESIGN.md` and `API.md` from `config/memory-templates/on-demand/` when the interview needs them. Step 4 points to `instantiate.sh` for the one-pager sections instead of repeating them.

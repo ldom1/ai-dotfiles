@@ -32,7 +32,7 @@ Stop and tell the user if `BRAIN_PATH` is missing.
 For each notable mistake, decision or working approach:
 
 - **Cross-project and cross-stack** (would recur in a different project on a different stack) → search `pitfalls.md`; sharpen the rule that already covers it, otherwise add one bullet under the matching `## <Topic>`, as in `reference/pitfall-rules.md`.
-- **Stack-specific** (one tool or platform: Docker/Coolify, Python/Postgres/pandas, Ansible/network, Prometheus) → add it to the `## Rules` list of the matching `resources/knowledge/patterns/*-patterns.md`, not to `pitfalls.md` (step 3).
+- **Stack-specific** (one tool or platform: Docker/Coolify, Python/Postgres/pandas, Ansible/network, Prometheus) → add it to the `## Rules` list of the matching `resources/knowledge/patterns/*-patterns.md`, not to `pitfalls.md` (step 3). With no matching note and fewer than 2 projects, keep it in the session log; do not create a note.
 - **Project-specific** → skip; it belongs in that project's `.claude/memory/CONTEXT.md` Gotchas or DECISIONS.
 - **Ambiguous** → ask before moving on:
 
@@ -44,13 +44,14 @@ For each notable mistake, decision or working approach:
 
 ## 3 — Write pattern notes
 
-A stack-specific rule from step 2 goes to the matching `resources/knowledge/patterns/<topic>-patterns.md`. Append the rule to its `## Rules` list. Never duplicate a rule. Create a new note only when **2+ projects** hit the pattern (Docker, Python, deployment, observability, CI, auth, AI-agent tooling…). Say how many notes you read if you sampled. A new note takes a free letter for its ids: add it to the list in `reference/pitfall-rules.md`. One format:
+A stack-specific rule from step 2 goes to the matching `resources/knowledge/patterns/<topic>-patterns.md`. Append the rule to its `## Rules` list. Never duplicate a rule. Create a new note only when **2+ projects** hit the pattern (Docker, Python, deployment, observability, CI, auth, AI-agent tooling…). Say how many notes you read if you sampled. A new note takes a free letter for its ids. Check the letters in use with `grep -ohE '\^[a-z]+[0-9]+' "$BRAIN_PATH"/resources/knowledge/patterns/*.md | sed 's/[0-9]*$//' | sort -u`, then pick a free one (the list in `reference/pitfall-rules.md` is informative). An existing note keeps its frontmatter and sections. Append to its `## Rules` only. Never reformat it. A new note uses this format:
 
 ```markdown
 ---
 title: <Topic> Patterns
 created: YYYY-MM-DD
 tags: [knowledge, patterns, <topic>]
+paths: ["<glob>"]   # optional
 ---
 
 # <Topic> Patterns
@@ -61,6 +62,8 @@ tags: [knowledge, patterns, <topic>]
 ## Observed in
 - [[<session-log-slug>]] — <one-line context>
 ```
+
+`paths:` (optional globs) drives `scripts/link-pattern-rules.sh`: the note loads as a rule file only with it.
 
 `Observed in` lists `[[slug]]` links, never paths.
 
