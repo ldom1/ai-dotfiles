@@ -89,3 +89,40 @@ def test_upgrade_all_continues_past_failed_project(env):
     assert r.returncode != 0
     assert "repo-a" in r.stderr
     assert (b / "AGENTS.md").exists()
+
+
+def _registry(dot, *repos):
+    rows = "".join(f"{r.name}\t{r}\t2026-01-01T00:00:00Z\n" for r in repos)
+    (dot / "config/brain-projects.tsv").write_text("name\tabs_path\tregistered_at\n" + rows)
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root ignores read-only directories")
+def test_upgrade_all_marks_failed_migration(env):
+    dot, clean, tmp = env
+    a, b = _repo(tmp, "repo-a"), _repo(tmp, "repo-b")
+    (a / ".claude/brain").mkdir(parents=True)
+    _registry(dot, a, b)
+    # Read-only .claude: `mv .claude/brain .claude/memory` cannot rename inside it.
+    (a / ".claude").chmod(0o555)
+    try:
+        r = _run(dot, clean, "upgrade", "--all")
+    finally:
+        (a / ".claude").chmod(0o755)
+    assert r.returncode != 0
+    assert "upgrade failed for: repo-a" in r.stderr
+    assert (b / "AGENTS.md").exists()  # next project still runs
+    assert not (a / "AGENTS.md").exists()  # errexit stopped repo-a at the mv
+    assert not (tmp / "vault/projects/repo-a").exists()
+    assert (a / ".claude/brain").is_dir() and not (a / ".claude/memory").exists()
+
+
+def test_upgrade_all_runs_central_mcp_once(env):
+    dot, clean, tmp = env
+    a, b = _repo(tmp, "repo-a"), _repo(tmp, "repo-b")
+    _registry(dot, a, b)
+    marker = tmp / "mcp-calls"
+    (dot / "scripts/lib-mcp.sh").write_text(f'setup_central_mcp() {{ echo x >> "{marker}"; }}\n')
+    assert _run(dot, clean, "upgrade", "--all").returncode == 0
+    assert marker.read_text().count("x") == 1
+    assert _run(dot, clean, "upgrade", str(a)).returncode == 0
+    assert marker.read_text().count("x") == 2  # single-project path still syncs

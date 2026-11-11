@@ -153,7 +153,8 @@ if [[ "${1:-}" == "--all" ]]; then
   while IFS=$'\t' read -r name abs_path _rest; do
     [[ "$name" == "name" ]] && continue
     [[ -z "$name" ]] && continue
-    upgrade_one "$abs_path" || failed+=("$name")
+    # Child process: `upgrade_one ... || x` would disable errexit inside the function.
+    UPGRADE_NO_MCP=1 bash "${BASH_SOURCE[0]}" "$abs_path" < /dev/null || failed+=("$name")
   done < "$REGISTRY"
 else
   if [[ -z "${1:-}" ]]; then
@@ -165,8 +166,10 @@ fi
 
 # ── Sync centrally-managed MCP servers (qmd, code-index, graphify) ──────────
 # Runs once per invocation (not once per project) since it's a global, not
-# per-project, operation.
-setup_central_mcp
+# per-project, operation. --all children (UPGRADE_NO_MCP=1) skip it; the parent runs it.
+if [[ -z "${UPGRADE_NO_MCP:-}" ]]; then
+  setup_central_mcp
+fi
 
 if [[ ${#failed[@]} -gt 0 ]]; then
   echo "[upgrade-project] upgrade failed for: ${failed[*]}" >&2
