@@ -10,9 +10,9 @@ Manual vault maintenance. Pick the subskill that matches the request; "run brain
 
 | User says | Subskill |
 |-----------|----------|
-| "compile my notes", "promote pitfalls", "review inbox" | `compile` |
+| "compile my notes", "promote pitfalls", "review inbox", "synthesize patterns", "create knowledge files" | `compile` |
 | "draft sensors", "turn recurring pitfalls into hooks", "which rules keep recurring" | `promote` |
-| "find connections", "link my notes", "synthesize patterns" | `connect` |
+| "find connections", "link my notes" | `connect` |
 | "insights", "what patterns", "what blockers" | `insights` |
 | "knowledge gaps", "what to document", "roadmap", "where are my projects" | `queries` |
 | "sync qmd", "reindex vault" | `qmd-sync` |

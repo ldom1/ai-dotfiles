@@ -15,7 +15,7 @@ Close an audit run: stats file, maintenance clock, and a short human summary. Va
 
 ## 1 — Run digest.sh
 
-Use the counts from this run (0 for a step that didn't run): rules added/sharpened by `compile`, knowledge files touched by `connect`, questions answered by `insights`.
+Use the counts from this run (0 for a step that didn't run): rules added/sharpened by `compile`, notes linked by `connect`, questions answered by `insights`.
 
 ```bash
 bash ~/ai-dotfiles/skills/brain-audit/scripts/digest.sh "$COMPILE_COUNT" "$CONNECT_COUNT" "$INSIGHTS_COUNT"
@@ -35,7 +35,7 @@ type: digest
 
 ## What ran
 - compile: N rules added/sharpened in [[pitfalls]]
-- connect: N knowledge files ([[<topic>-patterns]], …)
+- connect: N notes linked ([[<topic>-patterns]], …)
 - insights: N questions → [[YYYY-MM-DD]] (inbox/insights)
 - queries: [[YYYY-MM-DD-knowledge-gaps]], [[YYYY-MM-DD-roadmap]]
 - promote: N candidates → sensor drafts to review: [[YYYY-MM-DD-<slug>]], … (list every file in `inbox/sensors/`; "none" if empty)
