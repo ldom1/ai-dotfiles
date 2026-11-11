@@ -46,17 +46,19 @@ def profile_dir(orca_home: Path) -> Path:
 
 
 def orca_running(proc: Path = Path("/proc")) -> bool:
-    """True when an Orca main process runs: argv0 named orca-ide, no --type= arg, no .js entry
-    (children carry --type=; the daemon and file watcher run a .js entry and do not hold the db)."""
-    for cmdline in proc.glob("[0-9]*/cmdline"):
+    """True when an Orca main process runs. Every Orca process runs the orca-ide executable
+    (/proc/<pid>/exe); Electron rewrites the main title into one string, so argv0 is not reliable.
+    Main = no --type= (Chromium children) and no .js entry (daemon, file watcher: they do not hold
+    the db). Processes of other users are skipped (no access to exe)."""
+    for exe in proc.glob("[0-9]*/exe"):
         try:
-            argv = cmdline.read_bytes().split(b"\0")
+            if Path(exe.readlink()).name != "orca-ide":
+                continue
+            cmdline = (exe.parent / "cmdline").read_bytes().replace(b"\0", b" ").decode(errors="replace")
         except OSError:
             continue
-        args = [a.decode(errors="replace") for a in argv if a]
-        if not args or Path(args[0]).name != "orca-ide":
-            continue
-        if not any(a.startswith("--type=") or a.endswith(".js") for a in args[1:]):
+        words = cmdline.split()
+        if not any(w.startswith("--type=") or w.endswith(".js") for w in words):
             return True
     return False
 

@@ -164,7 +164,8 @@ def test_settings_followup_when_orca_runs(env, tmp_path):
     c.execute("INSERT INTO profile_state_documents VALUES ('settings', '{}', 1, 1, 1, 'x')")
     c.commit()
     c.close()
-    p = subprocess.Popen([str(tmp_path / "orca-ide"), "-c", "sleep 30; :"], executable="/bin/bash")
+    shutil.copy("/bin/bash", tmp_path / "orca-ide")  # executable named orca-ide, Electron-style title
+    p = subprocess.Popen([f"{tmp_path}/orca-ide --no-sandbox", "-c", "sleep 30; :"], executable=str(tmp_path / "orca-ide"))
     try:
         time.sleep(0.3)
         r = run(env, DPKG_INSTALLED="1")

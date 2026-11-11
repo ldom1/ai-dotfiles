@@ -5,6 +5,7 @@ content_hash is the sha256 hex of the payload, updated_at is epoch ms.
 """
 import hashlib
 import json
+import shutil
 import sqlite3
 import subprocess
 import sys
@@ -70,9 +71,14 @@ def run(cmd: str, home: Path, cfg: Path):
                           capture_output=True, text=True, timeout=30)
 
 
-def fake_process(tmp_path: Path, *args: str) -> subprocess.Popen:
-    """A process whose cmdline is `<tmp>/orca-ide <args>` (bash under another argv0)."""
-    return subprocess.Popen([str(tmp_path / "orca-ide"), "-c", "sleep 30; :", *args], executable="/bin/bash")
+def fake_process(tmp_path: Path, *args: str, title: str | None = None) -> subprocess.Popen:
+    """A process whose executable is named orca-ide (a copy of bash) and whose cmdline is
+    `<tmp>/orca-ide -c ... <args>`. title replaces argv0, as Electron rewrites its main process
+    title into one string (`/opt/Orca/orca-ide --no-sandbox`, seen on Orca 1.4.256)."""
+    exe = tmp_path / "orca-ide"
+    if not exe.exists():
+        shutil.copy("/bin/bash", exe)
+    return subprocess.Popen([title or str(exe), "-c", "sleep 30; :", *args], executable=str(exe))
 
 
 def test_apply_merges_keys_and_rehashes(orca):
@@ -157,6 +163,32 @@ def test_apply_refuses_when_orca_runs(orca, tmp_path):
     assert r.returncode == 3
     assert db.read_bytes() == before
     assert not list(db.parent.glob("profile-state.db.bak-*"))
+
+
+def test_apply_refuses_when_electron_rewrote_the_title(orca, tmp_path):
+    home, db, cfg = orca
+    make_db(db, LIVE)
+    before = db.read_bytes()
+    proc = fake_process(tmp_path, title=f"{tmp_path}/orca-ide --no-sandbox")
+    try:
+        time.sleep(0.3)
+        r = run("apply", home, cfg)
+    finally:
+        proc.kill()
+    assert r.returncode == 3
+    assert db.read_bytes() == before
+
+
+def test_apply_ignores_other_programs_named_like_orca(orca, tmp_path):
+    home, db, cfg = orca
+    make_db(db, LIVE)
+    proc = subprocess.Popen([f"{tmp_path}/orca-ide --no-sandbox", "-c", "sleep 30; :"], executable="/bin/bash")
+    try:
+        time.sleep(0.3)
+        r = run("apply", home, cfg)
+    finally:
+        proc.kill()
+    assert r.returncode == 0, r.stderr
 
 
 def test_apply_ignores_daemon_and_children(orca, tmp_path):
