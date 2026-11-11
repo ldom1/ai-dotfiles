@@ -7,7 +7,7 @@
 
 [![The ai-dotfiles session loop in 30 seconds](docs/media/ai-dotfiles-workflow.gif)](docs/media/ai-dotfiles-workflow.mp4)
 
-**The outer harness for AI coding agents.** Model + harness = agent. Claude Code, Cursor and Mistral Vibe are the inner harness. ai-dotfiles is the part you own: rules, hooks, skills, memory and terminal, versioned in one repo and linked into each tool on each machine.
+**The outer harness for AI coding agents.** Model + harness = agent. Claude Code, Cursor and Mistral Vibe are the inner harness. ai-dotfiles is the part you own: rules, hooks, skills, memory and cockpit setup, versioned in one repo and linked into each tool on each machine.
 
 ## The loop
 
@@ -19,16 +19,16 @@ Each session starts with what the last one learned, and ends by writing it back.
         │ SessionStart: brain-sync pull,               │ SessionEnd: brain-sync push
         │ brain-load (project note + pitfalls)         │ (vault commit + push)
         ▼                                              │
-  ai-dotdeck: tmux, one session ──► work with agents ──► /capture
-  per project; sidebar with agents,  (Claude Code,        session log, project snapshot,
-  questions to answer, actions        Cursor, Vibe)       new pitfall rules
+  Orca: one workspace per   ──► work with agents ──► /capture
+  project; agents by state,      (Claude Code,        session log, project snapshot,
+  questions, session history      Cursor, Vibe)       new pitfall rules
         │
         └── weekly /brain-audit: compile notes, link them, turn a pitfall hit twice into a sensor draft
 ```
 
 - **Remember.** The vault is the memory. A hook loads a bounded slice at session start: the project note and the pitfall rules. `/capture` writes the session back. `/brain-search` finds past decisions.
 - **Steer, then check.** Guides (rules, skills) steer the agent before it acts. Sensors (Stop check, hardline tripwire, commit-scope check, local CI before push) check it after. A rule that holds most of the time becomes a sensor.
-- **See every agent: ai-dotdeck.** The session harness of ai-dotfiles. `tma` opens the tmux session of a folder. The sidebar lists the agents by state, shows their questions and sends your answer from a click.
+- **See every agent: Orca.** [Orca](https://github.com/stablyai/orca) is the cockpit: one window lists the agents of every project, their state and their questions. `install.sh` installs and configures it (see [Orca × ai-dotfiles](#orca--ai-dotfiles)).
 - **Reuse, never rebuild.** Established upstream skills are vendored and pinned, and a hook warns when a pin falls behind. Ten skills also install alone, as Claude Code plugins.
 
 ## What is inside
@@ -39,9 +39,27 @@ Each session starts with what the last one learned, and ends by writing it back.
 | Hooks | Session load and save, pitfalls injection, Stop check, destructive-command tripwire, commit scopes. | [brain.md](docs/brain.md#claude-code-hooks) |
 | Local Brain | An Obsidian vault (a git repo) as memory, with QMD semantic search. | [brain.md](docs/brain.md) |
 | Review | One Obsidian base (`TASKS_REVIEW`) lists every manual step and open decision of all agents on all projects. | [brain.md](docs/brain.md#review-the-agents-work) |
-| ai-dotdeck | The agent session harness: tmux config, `tma`, and `aif-sidebar` (Rust). WSL + Windows Terminal, or Linux + Ghostty. | [terminal.md](docs/terminal.md) |
+| Orca | The agent cockpit, installed from its `.deb` on Ubuntu, with versioned settings and the Orca skills. | [Orca × ai-dotfiles](#orca--ai-dotfiles) |
 | Skills | `capture`, `brain-*`, `git-promotion`, `grill-me`, `ponytail`, `graphify` and more. `install.sh` links them into each tool. | [skills.md](docs/skills.md) |
 | Local CI | Your GitHub workflows with `act`, in a clean clone, before push. | [local-ci.md](docs/local-ci.md) |
+
+## Orca × ai-dotfiles
+
+[Orca](https://github.com/stablyai/orca) runs the agents; ai-dotfiles gives them their rules, skills and memory. Each concern has one owner:
+
+| Concern | Owner | How |
+|---|---|---|
+| Orca app and its updates | Orca | Native Ubuntu: `install.sh` downloads the `.deb` of the latest release, checks its sha256 and prints `sudo apt install …`. Never when Orca is already installed. Then Orca updates itself. WSL: install Orca on Windows. |
+| Orca CLI (`orca-ide`) | Orca | The `.deb` links `/usr/bin/orca-ide`; under WSL the Windows app installs it. `install.sh` checks `orca-ide skills get orca-cli`. |
+| Settings (theme, default agent, permissions, notifications, voice…) | ai-dotfiles | `config/orca/settings.json`. `scripts/orca-settings.py seed` before the first launch, `apply` afterwards (Orca closed), `export` to save changes made in Orca. Native Linux only. |
+| Keybindings | Orca | Orca's own export and import. |
+| Agent hooks in `~/.claude/settings.json` and `.cursor/hooks.json` | Orca | Orca writes them and reinstalls them; `install.sh` keeps them. Never commit these files. |
+| Rules, skills, memory | ai-dotfiles | `AGENTS.md`, `skills/` (with the vendored `orca-cli`, `orca-computer-use`, `orchestration`), vault hooks. |
+| Agent `PATH` | ai-dotfiles | Orca starts agents through a login zsh that reads only `~/.zshenv`: `install.sh` sources `config/shell-init.sh` (`~/.local/bin`) from it. |
+| Session history | Orca reads `~/.claude/projects` | WSL: Windows cannot follow the `~/.claude` symlink, so run `scripts/wsl-claude-mount.sh` once (bind mount). Native Linux: the symlink works. |
+| Wait metric (`aif-check.log`) | ai-dotfiles | `aif-agent-hook` logs each question an agent asks in an Orca terminal. |
+
+On a new Ubuntu machine: run `install.sh`, run the `sudo apt install` line it prints, then open Orca. The settings are already there: Orca imports them on its first launch.
 
 ## Quick start
 
@@ -70,7 +88,6 @@ Only want a skill? Add the marketplace in Claude Code, then install a plugin fro
 
 - [Install](docs/install.md): setup, what `install.sh` does, dependencies, repo structure.
 - [Local Brain, hooks and rules](docs/brain.md)
-- [ai-dotdeck: tmux and aif-sidebar](docs/terminal.md)
 - [Skills](docs/skills.md)
 - [Local CI](docs/local-ci.md)
 - [Changelog](CHANGELOG.md), [Wiki](https://github.com/ldom1/ai-dotfiles/wiki), [Contributing](CONTRIBUTING.md)
