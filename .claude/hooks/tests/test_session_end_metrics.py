@@ -24,6 +24,7 @@ def setup(tmp_path: Path, metrics_stub: str | None = None) -> dict:
     exe(dot / "skills/brain-sync/scripts/sync.sh",
         f"echo synced > '{tmp_path}/marker'\nls '{vault}'/meta/harness-sessions/*.jsonl > '{tmp_path}/seen' 2>/dev/null || true")
     exe(dot / "scripts/log-skill-usage.sh", "exit 0")
+    shutil.copy(REPO / "scripts/brain-context-lib.sh", dot / "scripts/brain-context-lib.sh")
     script = dot / "scripts/harness-metrics.py"
     if metrics_stub is None:
         shutil.copy(REPO / "scripts/harness-metrics.py", script)

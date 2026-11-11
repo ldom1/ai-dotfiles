@@ -14,11 +14,17 @@ ENV_FILE="${BRAIN_ENV_FILE:-$AI_DOTFILES/config/brain.env}"
 PITFALLS="${BRAIN_PATH:-}/resources/operational/ai-agents/pitfalls.md"
 
 NOTE_MAX_BYTES=$(brain_note_max_bytes "$BRAIN_CONTEXT_MAX_BYTES" "$PITFALLS" 0)
+# The two lines after the note fit in the 900 B that brain_note_max_bytes keeps free.
+OUT=""
 if (( NOTE_MAX_BYTES > 0 )); then
-  # BRAIN_LOAD_SKIP_MEMORY: the note is capped, the project memory files are not.
-  NOTE="$(BRAIN_LOAD_SKIP_MEMORY=1 bash "$AI_DOTFILES/skills/brain-load/scripts/load.sh" --max-bytes "$NOTE_MAX_BYTES" || true)"
+  # BRAIN_LOAD_SKIP_MEMORY: the note is capped, the project memory files are not: name them instead.
+  rc=0
+  NOTE="$(BRAIN_LOAD_SKIP_MEMORY=1 bash "$AI_DOTFILES/skills/brain-load/scripts/load.sh" --max-bytes "$NOTE_MAX_BYTES")" || rc=$?
+  [[ -z "$NOTE" ]] || OUT+="$NOTE"$'\n'
+  (( rc != 2 )) || OUT+="[brain-load] PROJECT_NOTE_MISSING: no project note for this repo; follow skills/brain-load/SKILL.md."$'\n'
 else
-  NOTE="[brain-load] note skipped: no room left for it after pitfalls"
+  OUT+="[brain-load] note skipped: no room left for it after pitfalls"$'\n'
 fi
-[[ -z "$NOTE" ]] || printf '%s\n' "$NOTE"
-brain_print_pitfalls "$PITFALLS" "$BRAIN_CONTEXT_MAX_BYTES" "$(printf '%s\n' "$NOTE" | wc -c)"
+OUT+="Project memory: read .claude/memory/OBJECTIVES.md and .claude/memory/CONTEXT.md if present."$'\n'
+printf '%s' "$OUT"
+brain_print_pitfalls "$PITFALLS" "$BRAIN_CONTEXT_MAX_BYTES" "$(printf '%s' "$OUT" | wc -c)"

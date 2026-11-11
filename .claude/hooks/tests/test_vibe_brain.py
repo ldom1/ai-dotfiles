@@ -49,11 +49,20 @@ def ctx_file(env: dict) -> Path:
 
 
 def test_runs_start_context_vibe_end_in_order(tmp_path):
-    env = setup(tmp_path)
+    env = setup(tmp_path, vibe=f'cp "$HOME/.vibe/brain-context.md" {tmp_path}/seen')  # what Vibe can read
     r = run(env, "--resume", "x")
     assert r.returncode == 0, r.stderr
     assert log_of(tmp_path) == ["sync start", "context", "vibe --resume x", "BRAIN_PATH=/the/vault", "sync end"]
-    assert "--- AI-AGENTS PITFALLS" in ctx_file(env).read_text()
+    seen = (tmp_path / "seen").read_text().splitlines()
+    assert seen[0] == f"cwd: {os.getcwd()}" and seen[1].startswith("pid: ") and seen[1][5:].isdigit()
+    assert "--- AI-AGENTS PITFALLS" in "\n".join(seen)
+    assert not ctx_file(env).exists()  # removed at exit: it was this launcher's file
+
+
+def test_leaves_the_context_file_of_another_launcher(tmp_path):
+    env = setup(tmp_path, vibe='printf "cwd: /x\\npid: 1\\n" >"$HOME/.vibe/brain-context.md"')
+    assert run(env).returncode == 0
+    assert ctx_file(env).read_text() == "cwd: /x\npid: 1\n"
 
 
 def test_runs_end_once_and_returns_vibes_code_on_failure(tmp_path):
@@ -80,7 +89,8 @@ def test_keeps_no_partial_context(tmp_path):
     assert log_of(tmp_path).count("sync end") == 1
 
 
-def test_term_runs_end_once_and_exits_143(tmp_path):
+@pytest.mark.parametrize("sig, code", [(signal.SIGTERM, 143), (signal.SIGINT, 130), (signal.SIGHUP, 129)])
+def test_signal_runs_end_once_and_exits_128_plus_n(tmp_path, sig, code):
     marker = tmp_path / "started"
     env = setup(tmp_path, vibe=f"touch {marker}\nexec sleep 30")
     p = subprocess.Popen(["bash", str(VIBE_BRAIN)], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -90,8 +100,8 @@ def test_term_runs_end_once_and_exits_143(tmp_path):
         while not marker.exists() and time.monotonic() < deadline:
             time.sleep(0.05)
         assert marker.exists(), "the stub vibe never started"
-        p.send_signal(signal.SIGTERM)
-        assert p.wait(timeout=10) == 143
+        os.killpg(p.pid, sig)  # the whole group, as a terminal does
+        assert p.wait(timeout=10) == code
     finally:
         if p.poll() is None:
             os.killpg(p.pid, signal.SIGKILL)
@@ -156,3 +166,13 @@ def test_prewarm_injects_pitfalls_inline(tmp_path):
     assert "rule 0.0 " in sidecar
     assert "note line 000" in sidecar
     assert "Read that file" not in sidecar
+
+
+def test_brain_context_names_the_project_memory_and_a_missing_note(tmp_path):
+    env = vault(tmp_path, 3000)
+    (tmp_path / "vault/projects/proj.md").unlink()
+    out = subprocess.run(["bash", str(CONTEXT)], env=env, cwd=tmp_path / "proj", capture_output=True, text=True,
+                         check=True).stdout
+    assert "Project memory: read .claude/memory/OBJECTIVES.md and .claude/memory/CONTEXT.md if present." in out
+    assert any("PROJECT_NOTE_MISSING" in line for line in out.splitlines())
+    assert "--- AI-AGENTS PITFALLS" in out and len(out.encode()) <= BUDGET

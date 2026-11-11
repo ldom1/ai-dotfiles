@@ -224,7 +224,7 @@ Prewarm runs `scripts/brain-context.sh`: the project note (up to 3,000 B, less w
 
 ### Mistral Vibe launcher
 
-Vibe has no session-start hook. `bin/vibe-brain` (linked into `~/.local/bin` by `install.sh`) runs `sync.sh start`, writes `~/.vibe/brain-context.md` with `scripts/brain-context.sh`, runs `vibe`, then runs `sync.sh end`. It exports `BRAIN_PATH` to Vibe and exits with Vibe's code (`130` on INT, `143` on TERM). When `sync.sh start` fails, it warns, still runs Vibe and skips `sync.sh end`. Alias it in `~/.zshrc`: `alias vibe=vibe-brain`.
+Vibe has no session-start hook. `bin/vibe-brain` (linked into `~/.local/bin` by `install.sh`) runs `sync.sh start`, writes `~/.vibe/brain-context.md` with `scripts/brain-context.sh`, runs `vibe` in the foreground, then runs `sync.sh end`. The context file starts with `cwd:` and `pid:` lines; the launcher deletes it at exit while it still holds its own pid. It exports `BRAIN_PATH` to Vibe and exits with Vibe's code (`130` on INT, `143` on TERM, `129` on HUP). When `sync.sh start` fails, it warns, still runs Vibe and skips `sync.sh end`. Alias it in `~/.zshrc`: `alias vibe=vibe-brain`.
 
 ### Mistral Vibe hooks
 
@@ -246,6 +246,6 @@ Vibe has no session-start hook. `bin/vibe-brain` (linked into `~/.local/bin` by 
 Differences from Claude Code:
 
 - A `stop-check` deny injects a retry message. Vibe allows 3 retries per hook per turn, then ends the turn.
-- Vibe has no session-start hook. The vault sync and load stay manual (`.vibe/bootstrap.md`).
+- Vibe has no session-start hook. `bin/vibe-brain` runs the vault sync and load (see "Mistral Vibe launcher" above); without it, they stay manual (`.vibe/bootstrap.md`).
 
 The file is not named `.vibe/hooks.toml`. In this trusted repo, Vibe would load it twice and warn about each duplicate hook name.

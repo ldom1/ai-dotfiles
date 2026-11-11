@@ -125,6 +125,7 @@ def fake_dotfiles(tmp_path: Path, live: dict) -> Path:
     d = tmp_path / "dotfiles"
     (d / "scripts").mkdir(parents=True)
     shutil.copy(REPO / "scripts" / "install.sh", d / "scripts" / "install.sh")
+    shutil.copy(REPO / "scripts" / "brain-context-lib.sh", d / "scripts" / "brain-context-lib.sh")
     if MERGE.exists():
         shutil.copy(MERGE, d / "scripts" / "merge-settings.py")
     write(d / ".claude", TEMPLATE, live)

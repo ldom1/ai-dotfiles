@@ -11,10 +11,13 @@ LOG_FILE="$LOG_DIR/brain-load.log"
 
 mkdir -p "$LOG_DIR"
 
+# Budget rules and the 9,500 B limit: scripts/brain-context-lib.sh, shared with scripts/brain-context.sh.
+# shellcheck source=../../scripts/brain-context-lib.sh
+source "$AI_DOTFILES/scripts/brain-context-lib.sh"
+
 # Claude Code swaps hook output over ~10,000 characters for a file path and a
 # 2 KB preview, so none of it reaches the model. Buffer stdout; pitfalls (printed
 # last) get whatever budget the rest leaves.
-OUTPUT_MAX_BYTES=9500
 OUT_BUF=$(mktemp)
 exec 3>&1 >"$OUT_BUF"
 trap 'exec 1>&3; cat "$OUT_BUF"; rm -f "$OUT_BUF"' EXIT
@@ -97,13 +100,10 @@ if [[ "${BRAIN_LOAD_SLIM:-0}" == "1" ]]; then
   exit 0
 fi
 
-# Rule: pitfalls outrank the project note (budget rules: scripts/brain-context-lib.sh, shared with
-# scripts/brain-context.sh). The 900 B reserve covers what prints after the note.
+# Rule: pitfalls outrank the project note. The 900 B reserve covers what prints after the note.
 # Redirect verbose stderr to log. Claude Code already @-imports .claude/memory/ via the project CLAUDE.md.
-# shellcheck source=../../scripts/brain-context-lib.sh
-source "$AI_DOTFILES/scripts/brain-context-lib.sh"
 PITFALLS="${BRAIN_PATH}/resources/operational/ai-agents/pitfalls.md"
-NOTE_MAX_BYTES=$(brain_note_max_bytes "$OUTPUT_MAX_BYTES" "$PITFALLS" "$(wc -c <"$OUT_BUF")")
+NOTE_MAX_BYTES=$(brain_note_max_bytes "$BRAIN_CONTEXT_MAX_BYTES" "$PITFALLS" "$(wc -c <"$OUT_BUF")")
 if (( NOTE_MAX_BYTES > 0 )); then
   BRAIN_LOAD_SKIP_MEMORY=1 "$LOAD" --max-bytes "$NOTE_MAX_BYTES" 2>>"$LOG_FILE" || true
 else
@@ -135,4 +135,4 @@ fi
 
 # pitfalls.md is a distilled rule list (lessons-learned merged into it).
 # Write-time gate: scripts/check-pitfalls-budget.sh. The last-resort cut keeps whole sections only.
-brain_print_pitfalls "$PITFALLS" "$OUTPUT_MAX_BYTES" "$(wc -c <"$OUT_BUF")"
+brain_print_pitfalls "$PITFALLS" "$BRAIN_CONTEXT_MAX_BYTES" "$(wc -c <"$OUT_BUF")"
