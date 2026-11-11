@@ -68,3 +68,36 @@ def test_existing_draft_and_sensor_suffix_are_skipped(tmp_path):
 def test_no_hit_lines_reports_zero_candidates(tmp_path):
     (tmp_path / "inbox/daily/implementation/proj").mkdir(parents=True)
     assert run(tmp_path).strip().endswith("0 candidates")
+
+
+def draft(vault: Path, name: str, pitfall: str, *lines: str) -> None:
+    d = vault / "inbox/sensors"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / f"{name}.md").write_text(f"---\ntype: sensor-draft\npitfall: {pitfall}\n---\n\n# Sensor draft\n\n" + "".join(l + "\n" for l in lines))
+
+
+def test_open_drafts_skip_closed_ones_and_label_the_rest(tmp_path):
+    vault = make_vault(tmp_path)
+    p = vault / "resources/operational/ai-agents/pitfalls.md"
+    p.write_text(p.read_text().replace("Pin the branch. ^g2", "Pin the branch. (sensor: pin-check) ^g2"))
+    draft(vault, "a-open", "^v1", "**Kind:** pytest")
+    draft(vault, "b-shipped", "^v3", "**Kind:** Stop check", "**Status:** shipped (x)")
+    draft(vault, "c-sensor-suffix", "^g2", "**Kind:** pytest")
+    draft(vault, "d-installed", "^v1", "**Decision:** installed hook.sh 2026-11-11")
+    draft(vault, "e-rejected", "^v1", "**Decision:** rejected: noisy 2026-11-11")
+    draft(vault, "f-accepted", "^v1", "**Decision:** accepted 2026-11-11")
+    draft(vault, "g-accepted-then-installed", "^v1", "**Decision:** accepted 2026-11-10", "**Decision:** installed h.sh 2026-11-11")
+    draft(vault, "h-nomech", "^v1", "**Kind:** not mechanizable (judgment)", "**Installs at:** none")
+    draft(vault, "i-class", "retry-class", "**Kind:** pytest")  # repo class: no rule id to look up
+    out = run(vault, "--open-drafts").splitlines()
+    assert out == [
+        "a-open.md\topen",
+        "f-accepted.md\taccepted",
+        "h-nomech.md\treject-only",
+        "i-class.md\topen",
+        "4 open drafts",
+    ]
+
+
+def test_open_drafts_without_a_sensors_folder(tmp_path):
+    assert run(make_vault(tmp_path), "--open-drafts").strip() == "0 open drafts"

@@ -138,10 +138,31 @@ The user accepts a draft by asking for it as a normal task. After it ships, add 
 
 ## 4 — Open drafts
 
-A draft stays open until the owner decides. The decision is one line in the draft: `**Decision:** installed <hook or file> <YYYY-MM-DD>` or `**Decision:** rejected: <reason> <YYYY-MM-DD>`. List the drafts with no such line:
+A draft is closed when any of these is true:
+
+- It has a `**Decision:** installed <hook or file> <YYYY-MM-DD>` or `**Decision:** rejected: <reason> <YYYY-MM-DD>` line.
+- It has a `**Status:** shipped` line.
+- The rule of its `pitfall:` id carries a `(sensor: …)` suffix (the `skip: has sensor` test of step 1).
+
+List the open drafts with the same script:
 
 ```bash
-grep -L '^\*\*Decision:\*\* \(installed\|rejected\)' "$BRAIN_PATH"/inbox/sensors/*.md
+source ~/ai-dotfiles/skills/brain-audit/scripts/_brain_env.sh
+python3 ~/ai-dotfiles/skills/brain-audit/scripts/count-pitfall-hits.py "$BRAIN_PATH" --open-drafts
 ```
 
-Ask the owner, one draft at a time: install, reject, or leave open. Show the draft's `**Rule:**` and `**Kind:**` lines. Write the `**Decision:**` line under the `**Proof:**` line, only after the answer. Install means the owner asks for the sensor as a normal task: never install it here. If the owner leaves a draft open, write nothing. If the list is empty, say so.
+Each line is `<file><TAB><state>`:
+
+- `open`: offer install, reject, or leave open.
+- `accepted`: the owner chose install earlier, and no `installed` line exists. Ask if it shipped. If yes, write the `installed` line. Otherwise leave it open.
+- `reject-only`: the draft is `not mechanizable`. Offer reject or leave open. Never offer install.
+
+Ask the owner one draft at a time, oldest first, at most 5 per run. Say how many remain. Show the draft's `**Rule:**` and `**Kind:**` lines.
+
+Write only after the answer. Append the line after the last header-field line of the draft (the last line that starts with `**`). Some drafts have no `**Proof:**` line.
+
+- Install chosen: write `**Decision:** accepted <YYYY-MM-DD>`. The owner asks for the sensor as a normal task. Never install it here. When the sensor exists, write `**Decision:** installed <hook or file> <YYYY-MM-DD>`.
+- Reject chosen: write `**Decision:** rejected: <reason> <YYYY-MM-DD>`.
+- Left open: write nothing.
+
+If the list is empty, say so.
