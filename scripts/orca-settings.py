@@ -45,14 +45,16 @@ def profile_dir(orca_home: Path) -> Path:
     return orca_home / "profiles" / str(active)
 
 
-def orca_running(proc: Path = Path("/proc")) -> bool:
+def orca_running(proc: Path | None = None) -> bool:
     """True when an Orca main process runs. Every Orca process runs the orca-ide executable
     (/proc/<pid>/exe); Electron rewrites the main title into one string, so argv0 is not reliable.
     Main = no --type= (Chromium children) and no .js entry (daemon, file watcher: they do not hold
-    the db). Processes of other users are skipped (no access to exe)."""
+    the db). Processes of other users are skipped (no access to exe). An apt upgrade while Orca
+    runs leaves exe as `.../orca-ide (deleted)`. ORCA_PROC_DIR replaces /proc (tests)."""
+    proc = proc or Path(os.environ.get("ORCA_PROC_DIR") or "/proc")
     for exe in proc.glob("[0-9]*/exe"):
         try:
-            if Path(exe.readlink()).name != "orca-ide":
+            if Path(str(exe.readlink()).removesuffix(" (deleted)")).name != "orca-ide":
                 continue
             cmdline = (exe.parent / "cmdline").read_bytes().replace(b"\0", b" ").decode(errors="replace")
         except OSError:

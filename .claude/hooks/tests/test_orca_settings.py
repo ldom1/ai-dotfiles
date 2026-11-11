@@ -5,6 +5,7 @@ content_hash is the sha256 hex of the payload, updated_at is epoch ms.
 """
 import hashlib
 import json
+import os
 import shutil
 import sqlite3
 import subprocess
@@ -66,9 +67,27 @@ def orca(tmp_path):
     return home, db, cfg
 
 
-def run(cmd: str, home: Path, cfg: Path):
+def run(cmd: str, home: Path, cfg: Path, proc_dir: Path | None = None, real_proc: bool = False):
+    """ORCA_PROC_DIR for the script: an empty dir by default, so a real Orca on the test machine
+    (always running on the target Ubuntu) never turns apply into exit 3; real_proc=True keeps /proc."""
+    env = dict(os.environ)
+    env.pop("ORCA_PROC_DIR", None)
+    if not real_proc:
+        proc_dir = proc_dir or home.parent / "no-proc"
+        proc_dir.mkdir(parents=True, exist_ok=True)
+        env["ORCA_PROC_DIR"] = str(proc_dir)
     return subprocess.run([sys.executable, str(SCRIPT), cmd, "--config", str(cfg), "--orca-home", str(home)],
-                          capture_output=True, text=True, timeout=30)
+                          capture_output=True, text=True, timeout=30, env=env)
+
+
+def fake_proc(root: Path, *procs: tuple[str, list[str]]) -> Path:
+    """A /proc tree: one <pid>/exe symlink (target text as given) and <pid>/cmdline per process."""
+    for pid, (exe, argv) in enumerate(procs, start=100):
+        d = root / str(pid)
+        d.mkdir(parents=True)
+        (d / "exe").symlink_to(exe)
+        (d / "cmdline").write_bytes(b"\0".join(a.encode() for a in argv) + b"\0")
+    return root
 
 
 def fake_process(tmp_path: Path, *args: str, title: str | None = None) -> subprocess.Popen:
@@ -157,7 +176,7 @@ def test_apply_refuses_when_orca_runs(orca, tmp_path):
     proc = fake_process(tmp_path, "--no-sandbox")
     try:
         time.sleep(0.3)
-        r = run("apply", home, cfg)
+        r = run("apply", home, cfg, real_proc=True)
     finally:
         proc.kill()
     assert r.returncode == 3
@@ -172,7 +191,7 @@ def test_apply_refuses_when_electron_rewrote_the_title(orca, tmp_path):
     proc = fake_process(tmp_path, title=f"{tmp_path}/orca-ide --no-sandbox")
     try:
         time.sleep(0.3)
-        r = run("apply", home, cfg)
+        r = run("apply", home, cfg, real_proc=True)
     finally:
         proc.kill()
     assert r.returncode == 3
@@ -182,29 +201,67 @@ def test_apply_refuses_when_electron_rewrote_the_title(orca, tmp_path):
 def test_apply_ignores_other_programs_named_like_orca(orca, tmp_path):
     home, db, cfg = orca
     make_db(db, LIVE)
-    proc = subprocess.Popen([f"{tmp_path}/orca-ide --no-sandbox", "-c", "sleep 30; :"], executable="/bin/bash")
+    proc = fake_proc(tmp_path / "proc", ("/usr/bin/bash", [f"{tmp_path}/orca-ide --no-sandbox"]))
+    assert run("apply", home, cfg, proc_dir=proc).returncode == 0
+
+def test_apply_reads_processes_from_orca_proc_dir(orca, tmp_path):
+    """ORCA_PROC_DIR isolates the other tests from a real Orca (the target machine always runs one)."""
+    home, db, cfg = orca
+    make_db(db, LIVE)
+    proc = fake_process(tmp_path, "--no-sandbox")
     try:
         time.sleep(0.3)
-        r = run("apply", home, cfg)
+        r = run("apply", home, cfg, proc_dir=tmp_path / "empty-proc")
     finally:
         proc.kill()
     assert r.returncode == 0, r.stderr
 
 
+def test_apply_refuses_when_the_orca_binary_was_replaced(orca, tmp_path):
+    """An apt upgrade while Orca runs: /proc/<pid>/exe reads `.../orca-ide (deleted)`."""
+    home, db, cfg = orca
+    make_db(db, LIVE)
+    before = db.read_bytes()
+    proc = fake_process(tmp_path, "--no-sandbox")
+    try:
+        time.sleep(0.3)
+        (tmp_path / "orca-ide").unlink()
+        r = run("apply", home, cfg, real_proc=True)
+    finally:
+        proc.kill()
+    assert r.returncode == 3
+    assert db.read_bytes() == before
+
+
+def test_versioned_config_has_no_machine_specific_keys():
+    """Deep merge keeps live sub-keys absent from the file: device ids, model paths and lists that
+    differ per machine must not be versioned, or apply resets them on every install.sh run."""
+    cfg = json.loads((REPO / "config" / "orca" / "settings.json").read_text())
+    machine = {"notifications": {"customSoundPath", "mutedNotificationSourceIds"},
+               "voice": {"microphoneDeviceId", "microphoneDeviceLabel", "modelsDir", "openAiApiKeyConfigured",
+                         "sttModel", "userModels"}}
+    for key, subs in machine.items():
+        assert not subs & set(cfg[key]), (key, sorted(subs & set(cfg[key])))
+
+
 def test_apply_ignores_daemon_and_children(orca, tmp_path):
     home, db, cfg = orca
     make_db(db, LIVE)
-    procs = [fake_process(tmp_path, "--max-semi-space-size=4", str(tmp_path / "daemon-entry.js")),
-             fake_process(tmp_path, "--type=zygote")]
-    try:
-        time.sleep(0.3)
-        r = run("apply", home, cfg)
-    finally:
-        for p in procs:
-            p.kill()
+    exe = "/opt/Orca/orca-ide"
+    proc = fake_proc(tmp_path / "proc",
+                     (exe, [exe, "--max-semi-space-size=4", "/opt/Orca/resources/app.asar.unpacked/out/main/daemon-entry.js"]),
+                     (exe, [exe, "/opt/Orca/resources/app.asar.unpacked/out/main/parcel-watcher-process-entry.js"]),
+                     (exe, [f"{exe} --type=zygote --no-sandbox"]))
+    r = run("apply", home, cfg, proc_dir=proc)
     assert r.returncode == 0, r.stderr
     assert row(db)[0]["theme"] == "dark"
 
+
+def test_apply_refuses_on_a_main_process_in_a_fake_proc(orca, tmp_path):
+    home, db, cfg = orca
+    make_db(db, LIVE)
+    proc = fake_proc(tmp_path / "proc", ("/opt/Orca/orca-ide (deleted)", ["/opt/Orca/orca-ide --no-sandbox"]))
+    assert run("apply", home, cfg, proc_dir=proc).returncode == 3
 
 def test_export_roundtrip(orca):
     home, db, cfg = orca

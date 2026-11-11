@@ -71,7 +71,9 @@ def env(tmp_path):
 def run(e, platform="linux", **extra):
     env = {"PATH": f"{e['bin']}:/usr/bin:/bin", "HOME": str(e["home"]), "AIF_PLATFORM": platform,
            "AIF_OS_RELEASE": str(e["osr"]), "ORCA_OPT": str(e["opt"]), "ORCA_DL_DIR": str(e["dl"]),
-           "STUB_DIR": str(e["stub"]), "STUB_LOG": str(e["logs"]), **extra}
+           "STUB_DIR": str(e["stub"]), "STUB_LOG": str(e["logs"]),
+           "ORCA_PROC_DIR": str(e["stub"]),  # no <pid> dirs: a real Orca on this machine is not seen
+           **extra}
     return subprocess.run(["bash", str(e["d"] / "scripts" / "orca-install.sh")], capture_output=True,
                           text=True, env=env, timeout=120)
 
@@ -168,7 +170,7 @@ def test_settings_followup_when_orca_runs(env, tmp_path):
     p = subprocess.Popen([f"{tmp_path}/orca-ide --no-sandbox", "-c", "sleep 30; :"], executable=str(tmp_path / "orca-ide"))
     try:
         time.sleep(0.3)
-        r = run(env, DPKG_INSTALLED="1")
+        r = run(env, DPKG_INSTALLED="1", ORCA_PROC_DIR="/proc")
     finally:
         p.kill()
     assert any("orca-settings.py apply" in line and "close" in line.lower() for line in r.stdout.splitlines())

@@ -12,10 +12,8 @@
     "agentNeedsInput": true,
     "agentTaskComplete": true,
     "customSoundId": "system",
-    "customSoundPath": null,
     "customSoundVolume": 100,
     "enabled": true,
-    "mutedNotificationSourceIds": [],
     "notifyHiddenWorkspaces": false,
     "suppressWhenFocused": true,
     "terminalBell": true
@@ -26,14 +24,8 @@
     "dictationLanguage": "auto",
     "dictationMode": "toggle",
     "enabled": true,
-    "microphoneDeviceId": null,
-    "microphoneDeviceLabel": null,
-    "modelsDir": "",
-    "openAiApiKeyConfigured": false,
-    "sttModel": "",
     "terminalConfirmBeforeInsert": false,
-    "unloadModelAfterMinutes": 15,
-    "userModels": []
+    "unloadModelAfterMinutes": 15
   },
   "worktreeVisibilityDefaults": {
     "external": "hide",
