@@ -107,12 +107,8 @@ ai-dotfiles upgrade <path>           # add missing files, backfill frontmatter a
 ai-dotfiles upgrade --all            # upgrade all registered projects
 ai-dotfiles sync <path>              # manual bidirectional rsync
 ai-dotfiles sync --all               # sync all registered projects
-ai-dotfiles merge-memory <path>      # backfill OKF frontmatter + missing sections only (no file additions)
-ai-dotfiles merge-memory --all       # merge all registered projects
 ai-dotfiles mcp-sync                 # (re)apply centrally-managed MCP servers (qmd, code-index, graphify)
 ```
-
-`merge-memory` is the focused variant of `upgrade`: it runs only the structural backfill step (`merge-memory-md.py`) on existing files, without adding new files or touching MCP settings. Use it when you want to bring an older project's memory files up to the current template structure without triggering a full upgrade.
 
 ### Automatic sync (brain-sync)
 

@@ -66,10 +66,10 @@ upgrade_one() {
         (( added++ )) || true
       elif [[ "$fname" == "settings.json" ]]; then
         # Merge: template provides defaults, existing values win
-        merged="$(python3 -c "
+        merged="$(python3 - "$f" "$dest" <<'PY'
 import json, sys
-t = json.load(open('$f'))
-e = json.load(open('$dest'))
+t = json.load(open(sys.argv[1]))
+e = json.load(open(sys.argv[2]))
 def deep_merge(base, override):
     result = dict(base)
     for k, v in override.items():
@@ -79,7 +79,8 @@ def deep_merge(base, override):
             result[k] = v
     return result
 print(json.dumps(deep_merge(t, e), indent=2))
-" 2>/dev/null)"
+PY
+)" || { echo "[upgrade-project] ERROR: settings.json merge failed for $dest" >&2; return 1; }
         if [[ -n "$merged" ]]; then
           if [[ "$merged" != "$(cat "$dest")" ]]; then
             echo "$merged" > "$dest"
@@ -119,43 +120,7 @@ print(json.dumps(deep_merge(t, e), indent=2))
   local agents_md="$project_path/AGENTS.md"
   local claude_symlink="$project_path/CLAUDE.md"
   if [[ ! -f "$agents_md" && ! -L "$agents_md" ]]; then
-    cat > "$agents_md" << 'EOF'
-# AGENTS.md — Project instructions
-# Location : project root (canonical). CLAUDE.md is a symlink → AGENTS.md.
-# Scope    : all agents (Claude, Mistral, Codex, …). Claude Code loads it via the symlink.
-# Length   : keep under 60 lines — agents read this every session.
-
----
-
-## Description
-<!-- One paragraph: what this project does, tech stack, deployment context. -->
-
-## Key Files
-<!-- 3–5 files an agent must know to orient itself. -->
-
-## Task-Specific Behaviors
-<!-- Commands to always run, files to read before touching a module, hard rules. -->
-
-## Constraints
-<!-- Protected files, dependency policy, hard limits. -->
-
-## Standards
-<!-- Reference shared coding standards. Uncomment the relevant line(s): -->
-<!-- @.claude/standards/python.md -->
-
-## Memory
-<!-- Claude Code loads memory only through these imports (the SessionStart hook skips it).
-     Move a line out of the comment below once that file has real content. -->
-@.claude/memory/OBJECTIVES.md
-@.claude/memory/CONTEXT.md
-<!--
-@.claude/memory/DESIGN.md
-@.claude/memory/ARCHITECTURE.md
-@.claude/memory/DECISIONS.md
-@.claude/memory/ROADMAP.md
-@.claude/memory/API.md
--->
-EOF
+    cp "$TEMPLATE_DIR/AGENTS.md.tpl" "$agents_md"
     echo "[upgrade-project] Created $agents_md"
     (( added++ )) || true
   fi

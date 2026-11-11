@@ -32,7 +32,7 @@ For each file: summarise what you already know, then ask only for the gaps. One 
 
 ## 3 — Write `<project>/.claude/memory/`
 
-Base structure: `~/ai-dotfiles/config/memory-templates/`. Respect each template's `<!-- keep under ~N words -->` budget and set `updated:` to today on every change. These are snapshots rewritten in place — the history lives only in session logs (`inbox/daily/implementation/<slug>/`), so no journal, changelog or dated-entry sections:
+Base structure: `~/ai-dotfiles/config/memory-templates/`. `init` copies every template except `DESIGN.md` and `API.md`. When the interview needs one (see the table in step 2), first copy it from `~/ai-dotfiles/config/memory-templates/on-demand/` to `<project>/.claude/memory/`, if the file is not there yet. Respect each template's `<!-- keep under ~N words -->` budget and set `updated:` to today on every change. These are snapshots rewritten in place — the history lives only in session logs (`inbox/daily/implementation/<slug>/`), so no journal, changelog or dated-entry sections:
 
 - `CONTEXT.md` sections: `Live now`, `In flight`, `Blockers / open questions`, `Gotchas`, `Recent history` (≤ 5 `[[session-log]]` links).
 - `DECISIONS.md`: one line per live decision, `- **<decision>** — <why> (<date>)`; a superseded decision is replaced, not appended to.
@@ -45,15 +45,9 @@ The vault mirror `projects/<slug>/` is kept in sync by `scripts/sync-project.sh`
 
 ## 4 — Write the vault one-pager `projects/<slug>.md`
 
-Always create or refresh it (`init`/`upgrade` create the skeleton via `skills/brain-load/scripts/instantiate.sh` — that skeleton is the canonical shape). It is the project's **clear description**, printed at session start: someone who has never seen the repo should understand what it is, why it exists and what success looks like. ≤ 450 words, rewritten in place.
+Always create or refresh it (`init`/`upgrade` create the skeleton via `skills/brain-load/scripts/instantiate.sh`: that heredoc is the canonical shape, so read it there and do not copy it from here). It is the project's **clear description**, printed at session start: someone who has never seen the repo should understand what it is, why it exists and what success looks like. ≤ 450 words, rewritten in place.
 
-- **frontmatter:** `title`, `created`, `updated`, `tags: [project]`, `caps`, `status` (`draft`/`active`/`paused`/`concluded`), `path`, `repo`, `prod`
-- **`> one sentence`:** what it is and for whom.
-- **Idea:** the problem, the key insight or approach, what makes it different (2–4 sentences).
-- **Objectives:** goal, users, measurable success, non-goals — condensed from `OBJECTIVES.md` / `DESIGN.md`.
-- **How it works:** 3–6 bullets on core workflows and main components; deep architecture stays in `ARCHITECTURE.md`.
-- **Where:** repo, remote, live URLs, deploy target.
-- **Memory:** pointer to `<project>/.claude/memory/` and the session logs; **Links:** `[[spec]]`/`[[sop]]` wikilinks.
+Fill the skeleton's sections from the interview: the one-sentence summary, Idea, Objectives, How it works, Where, Memory and Links. Keep deep architecture in `ARCHITECTURE.md`. Set `status` (`draft`/`active`/`paused`/`concluded`), `repo` and `prod` in the frontmatter.
 
 No current-state or history sections: current state is `CONTEXT.md`, history is the session logs — that is what keeps the note from drifting. `caps`: ask which CAP(s) apply if unknown (`[[developer]]`, `[[Artelys]]`); don't pick one silently.
 
