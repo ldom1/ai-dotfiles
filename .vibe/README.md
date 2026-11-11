@@ -16,6 +16,15 @@ In this repo, every skill under `skills/<name>/` (with `SKILL.md`) is linked fro
 
 To actually **run** the sync/load scripts at the start of work, Vibe still needs the agent to execute bash — see **`bootstrap.md`** in this folder. `scripts/build-agent-rules.sh` writes **`AGENTS.md`** here as `bootstrap.md` + the repo-root `AGENTS.md` (shared rules), and `install.sh` links `~/.vibe/AGENTS.md` to it: Vibe reads that file as user-level instructions in every project (`vibe/core/system_prompt.py`). Do not edit the generated file.
 
+## Vault context: `vibe-brain`
+
+`bin/vibe-brain` is the Vibe counterpart of `scripts/cursor-agent-brain.sh`. It runs `sync.sh start`, writes the project note and the pitfalls to `~/.vibe/brain-context.md` (`scripts/brain-context.sh`, 9,500 B at most), runs `vibe "$@"`, then runs `sync.sh end`. `bootstrap.md` tells the agent to read that file when it is less than 12 h old.
+
+- It exports `BRAIN_PATH` (from `config/brain.env`) to Vibe, so `/capture` finds the vault.
+- If `sync.sh start` fails, it warns, still runs Vibe and does not run `sync.sh end`.
+- It exits with Vibe's code, whatever `sync.sh end` does.
+- Add `alias vibe=vibe-brain` to `~/.zshrc` yourself, as you did for `cursor-agent-brain`. `install.sh` only links the command.
+
 ## Trusted folder
 
 The clone must be **trusted** in Vibe, and you should run Vibe with this directory as the working tree (typically `cd` into the clone, then `vibe`), so project discovery picks up `.vibe/skills/`.

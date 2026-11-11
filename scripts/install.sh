@@ -198,7 +198,7 @@ fi
 header "Installing ai-dotfiles CLI"
 
 mkdir -p "$HOME/.local/bin"
-for cli in ai-dotfiles stop-check-trust tma aif-agent-hook aif-statusline aif-agents aif-deck; do
+for cli in ai-dotfiles stop-check-trust tma aif-agent-hook aif-statusline aif-agents aif-deck vibe-brain; do
   chmod +x "$DOTFILES/bin/$cli"
   ln -sfn "$DOTFILES/bin/$cli" "$HOME/.local/bin/$cli"
   log "$cli → $HOME/.local/bin/$cli (ensure ~/.local/bin is on PATH)"

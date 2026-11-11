@@ -67,7 +67,7 @@ def env_for(tmp_path: Path, pitfalls_text: str, exit_log: str | None, review: st
         f"[[ \"${{1:-}}\" == --slug-only ]] && {{ echo slug=proj; exit 0; }}\ncat <<'EOF'\n{note}\nEOF")
     exe(dot / "scripts/log-skill-usage.sh", "exit 0")
     exe(dot / "scripts/check-vendored-skill-updates.sh", "printf 'w%.0s' {1..374}; echo")
-    for name in ("summarize-sync-log.py", "fit-sections.py", "tasks-review.py"):
+    for name in ("summarize-sync-log.py", "fit-sections.py", "tasks-review.py", "brain-context-lib.sh"):
         (dot / "scripts" / name).symlink_to(REPO / "scripts" / name)
     (dot / "config").mkdir()
     (dot / "config" / "brain.env").write_text(f"BRAIN_PATH={vault}\n")

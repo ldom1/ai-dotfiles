@@ -220,7 +220,11 @@ alias agent='~/ai-dotfiles/scripts/cursor-agent-brain.sh'   # already in ~/.zshr
 agent   # from anywhere
 ```
 
-Prewarm writes a global user rule `~/.cursor/rules/brain-hooks-session-inject.mdc` (alwaysApply) + sidecar. It does **not** touch repo-root `AGENTS.md` (the single source of shared rules). Verify: quote `[brain-hooks] sessionStart OK` without Reading files.
+Prewarm runs `scripts/brain-context.sh`: the project note (up to 3,000 B, less when the pitfalls need the room) and the pitfalls, inline, within 9,500 B. It writes a global user rule `~/.cursor/rules/brain-hooks-session-inject.mdc` (alwaysApply) + sidecar. It does **not** touch repo-root `AGENTS.md` (the single source of shared rules). Verify: quote `[brain-hooks] sessionStart OK` without Reading files.
+
+### Mistral Vibe launcher
+
+Vibe has no session-start hook. `bin/vibe-brain` (linked into `~/.local/bin` by `install.sh`) runs `sync.sh start`, writes `~/.vibe/brain-context.md` with `scripts/brain-context.sh`, runs `vibe`, then runs `sync.sh end`. It exports `BRAIN_PATH` to Vibe and exits with Vibe's code (`130` on INT, `143` on TERM). When `sync.sh start` fails, it warns, still runs Vibe and skips `sync.sh end`. Alias it in `~/.zshrc`: `alias vibe=vibe-brain`.
 
 ### Mistral Vibe hooks
 
