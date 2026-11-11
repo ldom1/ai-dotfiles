@@ -138,15 +138,14 @@ header "Generating settings.json"
 }
 log "settings.json up to date with the template (HOME=$HOME)"
 
-# statusLine: aif-statusline records the model and context of tmux agents, then runs the existing
-# statusLine command (chained, not replaced). merge-settings.py does not own statusLine.
+# statusLine: drop the aif-statusline wrapper of the removed ai-dotdeck (it chained the real
+# command). merge-settings.py does not own statusLine.
 SETTINGS="$DOTFILES/.claude/settings.json"
-if [[ "$(jq -r '.statusLine.command // ""' "$SETTINGS")" != *aif-statusline* ]]; then
+if [[ "$(jq -r '.statusLine.command // ""' "$SETTINGS")" =~ (^|/)aif-statusline( |$) ]]; then
   sl_tmp=$(mktemp "$SETTINGS.XXXXXX")
-  jq --arg w "$HOME/.local/bin/aif-statusline" \
-    '.statusLine = ((.statusLine // {type: "command"}) | .command = ($w + (if .command then " " + .command else "" end)))' \
+  jq '.statusLine.command |= sub("^\\S*aif-statusline ?"; "") | if .statusLine.command == "" then del(.statusLine) else . end' \
     "$SETTINGS" > "$sl_tmp" && cp "$SETTINGS" "$SETTINGS.bak" && mv "$sl_tmp" "$SETTINGS"
-  log "statusLine → aif-statusline, then the previous command"
+  log "statusLine: aif-statusline wrapper removed"
 fi
 
 # ── 3. Bootstrap settings.local.json if missing ───────────────────────────────
@@ -203,31 +202,25 @@ fi
 header "Installing ai-dotfiles CLI"
 
 mkdir -p "$HOME/.local/bin"
-for cli in ai-dotfiles stop-check-trust local-ci tma aif-agent-hook aif-statusline aif-agents aif-deck vibe-brain; do
+for cli in ai-dotfiles stop-check-trust local-ci aif-agent-hook vibe-brain; do
   chmod +x "$DOTFILES/bin/$cli"
   ln -sfn "$DOTFILES/bin/$cli" "$HOME/.local/bin/$cli"
   log "$cli → $HOME/.local/bin/$cli (ensure ~/.local/bin is on PATH)"
 done
 
-# tmux config for agent sessions (launcher: bin/tma)
-[[ -e "$HOME/.tmux.conf" && ! -L "$HOME/.tmux.conf" ]] && mv "$HOME/.tmux.conf" "$HOME/.tmux.conf.bak" && warn "Backed up ~/.tmux.conf → ~/.tmux.conf.bak"
-ln -sfn "$DOTFILES/config/tmux.conf" "$HOME/.tmux.conf"
-log "$HOME/.tmux.conf → $DOTFILES/config/tmux.conf"
-[[ -d "$HOME/.tmux/plugins/tpm" ]] || git clone -q --depth 1 https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
-log "TPM ready: run prefix + I in tmux to install tmux-resurrect and tmux-continuum"
-
-# Terminal init: ~/.zshrc and ~/.bashrc source config/shell-init.sh (PATH, then tma outside tmux).
-# Without either file, create the one of the login shell.
+# Terminal init: ~/.zshenv (non-interactive login zsh: Orca starts agents through it), ~/.zshrc and
+# ~/.bashrc source config/shell-init.sh (PATH). Without either rc file, create the login shell's one.
 init_line="[ -f \"$DOTFILES/config/shell-init.sh\" ] && . \"$DOTFILES/config/shell-init.sh\"  # ai-dotfiles terminal init"
 rcs=()
+{ command -v zsh >/dev/null 2>&1 || [[ -f $HOME/.zshenv ]]; } && rcs+=("$HOME/.zshenv")
 for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do [[ -f $rc ]] && rcs+=("$rc"); done
-(( ${#rcs[@]} )) || rcs=("$HOME/.$(basename "${SHELL:-bash}")rc")
+[[ -f $HOME/.zshrc || -f $HOME/.bashrc ]] || rcs+=("$HOME/.$(basename "${SHELL:-bash}")rc")
 for rc in "${rcs[@]}"; do
   if grep -qF 'config/shell-init.sh' "$rc" 2>/dev/null; then
     log "$rc already sources config/shell-init.sh"
   else
     printf '\n%s\n' "$init_line" >> "$rc"
-    log "$rc sources config/shell-init.sh: new terminals open tmux (AIF_DECK=off turns it off)"
+    log "$rc sources config/shell-init.sh (~/.local/bin on PATH)"
   fi
 done
 
@@ -235,10 +228,17 @@ done
 chmod +x "$DOTFILES/bin/aif-platform"
 ln -sfn "$DOTFILES/bin/aif-platform" "$HOME/.local/bin/aif-platform"
 AIF_OS=$("$DOTFILES/bin/aif-platform" name)
-log "platform: $AIF_OS (tmux loads config/tmux-platform-$AIF_OS.conf)"
+log "platform: $AIF_OS"
 if [[ "$AIF_OS" == wsl && -L "$HOME/.claude" ]]; then
   warn_end "$HOME/.claude is a symlink: Windows apps (Orca's agent session history) cannot read it. Close Claude sessions, then run: bash $DOTFILES/scripts/wsl-claude-mount.sh"
 fi
+
+need_cmds() {  # need_cmds "<apt packages>" cmd...: warn once with the apt line for missing commands
+  local pkgs=$1 missing=(); shift
+  for c in "$@"; do command -v "$c" >/dev/null 2>&1 || missing+=("$c"); done
+  (( ${#missing[@]} == 0 )) || warn_end "missing ${missing[*]}. Run: sudo apt install $pkgs"
+}
+need_cmds "jq curl" jq curl
 
 # Orca, the agent cockpit: scripts/orca-install.sh installs it on native Ubuntu (.deb, never when
 # already installed), applies config/orca/settings.json, checks its CLI and skills. Each stdout
@@ -247,66 +247,6 @@ header "Orca"
 while IFS= read -r line; do
   [[ -n $line ]] && warn_end "$line"
 done < <(bash "$DOTFILES/scripts/orca-install.sh")
-need_cmds() {  # need_cmds "<apt packages>" cmd...: warn once with the apt line for missing commands
-  local pkgs=$1 missing=(); shift
-  for c in "$@"; do command -v "$c" >/dev/null 2>&1 || missing+=("$c"); done
-  (( ${#missing[@]} == 0 )) || warn_end "missing ${missing[*]}. Run: sudo apt install $pkgs"
-}
-if [[ "$AIF_OS" == linux ]]; then
-  need_cmds "wl-clipboard libnotify-bin jq fzf" wl-copy notify-send jq fzf
-  # JetBrainsMono Nerd Font (glyphs of the sidebar and status bar), user fonts folder
-  NF_VERSION=v3.5.1
-  NF_DIR="$HOME/.local/share/fonts/JetBrainsMonoNerdFont"
-  if [[ ! -f "$NF_DIR/.version-$NF_VERSION" ]]; then
-    nf_tmp=$(mktemp)
-    if curl -fsSL -o "$nf_tmp" "https://github.com/ryanoasis/nerd-fonts/releases/download/$NF_VERSION/JetBrainsMono.tar.xz" &&
-       mkdir -p "$NF_DIR" && tar -xJf "$nf_tmp" -C "$NF_DIR"; then
-      touch "$NF_DIR/.version-$NF_VERSION"
-      # fontconfig also finds the folder on its own; fc-cache only makes it immediate
-      command -v fc-cache >/dev/null 2>&1 && fc-cache -f "$NF_DIR" >/dev/null 2>&1 || true
-      log "JetBrainsMono Nerd Font $NF_VERSION → $NF_DIR"
-    else
-      warn_end "JetBrainsMono Nerd Font not installed (download or tar -J failed: is xz-utils installed?)"
-    fi
-    rm -f "$nf_tmp"
-  fi
-  # Ghostty: frees Ctrl+Shift+O/E/N/X/B for tmux
-  if command -v ghostty >/dev/null 2>&1; then
-    GHOSTTY_CONF="$HOME/.config/ghostty/config"
-    mkdir -p "$(dirname "$GHOSTTY_CONF")"
-    [[ -e "$GHOSTTY_CONF" && ! -L "$GHOSTTY_CONF" ]] && mv "$GHOSTTY_CONF" "$GHOSTTY_CONF.bak" && warn "Backed up $GHOSTTY_CONF → $GHOSTTY_CONF.bak"
-    ln -sfn "$DOTFILES/config/ghostty/config" "$GHOSTTY_CONF"
-    log "$GHOSTTY_CONF → $DOTFILES/config/ghostty/config"
-    # Ghostty lit sa config au démarrage : sans rechargement, Ctrl+Shift+O/E restent ses propres splits
-    pgrep -x ghostty >/dev/null && warn "Ghostty is running: press Ctrl+Shift+, (reload config), or Ctrl+Shift+O/E open a Ghostty split instead of a tmux pane"
-  fi
-else
-  need_cmds "jq fzf" jq fzf
-  log "Windows notifications: once, in Windows PowerShell, run: Install-Module BurntToast -Scope CurrentUser"
-fi
-
-# aif-sidebar (Rust + ratatui, sidebar/): built here, linked in ~/.local/bin. Needs Rust >= 1.85
-# (edition 2024). cargo build is incremental: a second run rebuilds nothing.
-SB_BIN="$DOTFILES/sidebar/target/release/aif-sidebar"
-cargo_ok() {
-  local v ma mi
-  v=$(cargo --version 2>/dev/null | awk '{print $2}') || return 1
-  IFS=. read -r ma mi _ <<<"$v"
-  [[ $ma =~ ^[0-9]+$ && $mi =~ ^[0-9]+$ ]] && (( ma > 1 || (ma == 1 && mi >= 85) ))
-}
-if cargo_ok; then
-  if (cd "$DOTFILES/sidebar" && cargo build --release --locked -q); then
-    log "aif-sidebar built ($(cargo --version | awk '{print $2}'))"
-  else
-    warn_end "aif-sidebar build failed. Run: cd $DOTFILES/sidebar && cargo build --release --locked"
-  fi
-else
-  warn_end "aif-sidebar needs Rust >= 1.85. Ubuntu 26.04: sudo apt install cargo. Otherwise: https://rustup.rs"
-fi
-if [[ -x "$SB_BIN" ]]; then
-  ln -sfn "$SB_BIN" "$HOME/.local/bin/aif-sidebar"
-  log "aif-sidebar → $HOME/.local/bin/aif-sidebar"
-fi
 
 # Statusline: pinned user-prefix install; npx resolves the package on every repaint (~1 s).
 CCSTATUSLINE_VERSION=2.2.30

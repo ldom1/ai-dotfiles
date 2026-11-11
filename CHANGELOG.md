@@ -37,6 +37,11 @@
 - `skills/brain-audit/reference/queries/` (read by no skill) and `skills/brain-audit/CLAUDE.md` (repeated the router). The vault copy `meta/queries/` moved to `archive/meta-queries/`.
 - `ai-dotfiles merge-memory` and `scripts/merge-memory.sh`: `upgrade` already does the same backfill (`merge-memory-md.py`), and the script tested the wrong registry header (`slug`, the real one is `name`). The command now prints the usage line. 1 test. `merge-memory-md.py` stays.
 - `.cursor/mcp.json` is untracked and ignored: `scripts/mcp-sync.sh` writes machine paths into it. Order on each machine: before pulling this change, run `git -C ~/ai-dotfiles checkout -- .cursor/mcp.json` (SessionStart pulls on its own, and a modified file conflicts with the deletion). After the pull, run `bash ~/ai-dotfiles/scripts/mcp-sync.sh` once to recreate the file from `mcp-central-cursor.json.tpl`.
+- ai-dotdeck, replaced by Orca as the agent cockpit (ADR 0001):
+  - `tma`, `aif-sidebar` (the `sidebar/` Rust crate), `aif-deck`, `aif-agents`, `aif-statusline`;
+  - the tmux config (`config/tmux*`), the TPM clone, the Ghostty config, the JetBrainsMono Nerd Font download and the Rust build in `install.sh`;
+  - the Herdr bridge in `aif-agent-hook`, `spikes/cockpit-trial/`, `docs/terminal.md`, `docs/tmux-agents-checklist.md`, and 7 bats files.
+  - By hand on each machine: remove `~/.tmux.conf`, `~/.tmux/`, the dangling `~/.local/bin/{tma,aif-sidebar,aif-deck,aif-agents,aif-statusline}` links, the Windows Terminal `tma` keys (`aif-deck off` before you pull), and `AIF_DECK` / `AIF_NO_TMUX` from `~/.zshenv`.
 
 ### Changed
 - `LocalBrain.md` is the one vault map. The table lists the real folders (`inbox/review/`, `inbox/sensors/`, `inbox/insights/`, `inbox/daily/{products,prompts}/`, `resources/knowledge/veille/`, `resources/queries/archive/`, `meta/harness-sessions/`, `raw/`, `archive/`, `TASKS_REVIEW.base`, `VEILLE.base`) and drops `inbox/{connections,qa,drafts}/`. It also states the order of truth, the rule that a skill is written `` `name` `` and never `[[name]]`, and the vault access per tool. `AGENTS.md` points to it. 3 tests in `test_localbrain_map.py` check every mapped path against `$BRAIN_PATH` (skipped when it is unset). The vault notes `Local-Brain.md`, `llm-wiki.md`, `index.md` and `breadcrumbs.md` moved to the vault `archive/`.
@@ -47,6 +52,11 @@
 - SessionStart injects the project note by bytes, not lines: `load.sh --max-bytes N` cuts the note at the last full line within N bytes and prints `[brain-load] note truncated: <kept> of <total> B`. The hook passes up to 3,000 B, less when pitfalls need the room (budget 9,500 B minus `pitfalls.md`, minus the output so far, minus 900 B): pitfalls outrank the note, and at 0 B the hook prints `[brain-load] note skipped: no room left for it after pitfalls`. `load.sh` exits 64 with a usage line on an unknown option. `head -30` cut a real note to 21%. `load.sh` now warns at > 450 words for the note and > 300 words for `CONTEXT.md`. 9 tests run the real `load.sh` on a fixture vault.
 - `brain-load` docs: `instantiate.sh` writes a heredoc and needs no Python or template render.
 - `veille-technique` 0.3.1: `veille` quotes non-GitHub pages with `npx -y defuddle@0.19.6 parse "<url>" --md` (local, no third-party cloud) instead of `firecrawl-cli`. If defuddle fails or prints nothing (for example a page rendered by client-side JavaScript), `veille` falls back to `WebFetch`, labelled `paraphrase`. `npx` still downloads the package from npm on first run.
+- `aif-agent-hook` acts only in Orca terminals (`ORCA_PANE_KEY`): it keeps the state file and the `aif-check.log` lines (same format, read by `harness-metrics.py`); it no longer calls tmux, Herdr or a notification.
+- `config/shell-init.sh` only puts `~/.local/bin` on `PATH` (no `tma` auto-launch). `install.sh` also sources it from `~/.zshenv` when zsh is installed: Orca starts agents through a non-interactive login zsh, which does not read `~/.zshrc`.
+- `bin/aif-platform` keeps only `name` (wsl | linux).
+- statusLine: `ccstatusline` runs directly; `install.sh` removes the `aif-statusline` wrapper from an existing `~/.claude/settings.json`.
+- `tests/container.sh` installs no tmux, Rust or fzf; it checks the `~/.zshenv` line and that a second pass changes nothing (the Orca `.deb` download is cached).
 - ADR 0001 records the cockpit decision of 2026-11-10: Orca replaces ai-dotdeck (`tma`, `aif-sidebar`) as the cockpit; Herdr TUI is dropped. Known limit: Orca's agent session history shows no Claude session from WSL, because Windows cannot follow the `~/.claude` symlink over `\\wsl.localhost`.
 
 ## [0.18.0] - 2026-11-10

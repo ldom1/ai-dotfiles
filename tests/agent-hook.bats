@@ -1,7 +1,8 @@
 #!/usr/bin/env bats
 # bin/aif-agent-hook : rejoue des événements de hooks Claude Code (tests/fixtures/hooks/, formes
-# de https://code.claude.com/docs/en/hooks) et vérifie l'état écrit. tmux et aif-platform sont
-# remplacés par des stubs : aucune notification réelle.
+# de https://code.claude.com/docs/en/hooks) dans un terminal Orca (ORCA_PANE_KEY) et vérifie l'état
+# écrit et le journal aif-check.log. tmux et aif-platform sont des stubs qui journalisent : le hook
+# ne doit jamais les appeler.
 # Lancer : npx --yes bats@1.13.0 tests/
 
 bats_require_minimum_version 1.5.0
@@ -10,19 +11,14 @@ HOOK="$REPO/bin/aif-agent-hook"
 FIX="$BATS_TEST_DIRNAME/fixtures/hooks"
 
 setup() {
-  export AIF_STATE_DIR="$BATS_TEST_TMPDIR/agents" TMUX_PANE=%42 NOTIFY_LOG="$BATS_TEST_TMPDIR/notify.log"
-  export AIF_CHECK_LOG="$BATS_TEST_TMPDIR/check.log"
-  STATE="$AIF_STATE_DIR/42.json"
+  unset TMUX_PANE HERDR_ENV HERDR_PANE_ID
+  export AIF_STATE_DIR="$BATS_TEST_TMPDIR/agents" ORCA_PANE_KEY=8984e803-6068:01d9dade-e26c
+  export AIF_CHECK_LOG="$BATS_TEST_TMPDIR/check.log" CALLS="$BATS_TEST_TMPDIR/calls.log"
+  STATE="$AIF_STATE_DIR/orca-8984e803-6068-01d9dade-e26c.json"
   mkdir -p "$BATS_TEST_TMPDIR/bin"
-  # tmux : pane visible si AIF_TEST_VISIBLE=1, session « proj »
-  cat > "$BATS_TEST_TMPDIR/bin/tmux" <<'SH'
-#!/bin/sh
-case "$*" in
-  *session_attached*) echo "${AIF_TEST_VISIBLE-0}" ;;   # AIF_TEST_VISIBLE= : tmux ne répond rien
-  *session_name*) echo proj ;;
-esac
-SH
-  printf '#!/bin/sh\nprintf "%%s|" "$@" >> "$NOTIFY_LOG"; echo >> "$NOTIFY_LOG"\n' > "$BATS_TEST_TMPDIR/bin/aif-platform"
+  for c in tmux aif-platform herdr; do
+    printf '#!/bin/sh\necho "%s $*" >> "$CALLS"\n' "$c" > "$BATS_TEST_TMPDIR/bin/$c"
+  done
   chmod +x "$BATS_TEST_TMPDIR/bin/"*
   export PATH="$BATS_TEST_TMPDIR/bin:$PATH"
 }
@@ -33,17 +29,37 @@ ev() {
   [ "$status" -eq 0 ] && [ -z "$output" ]
 }
 st() { jq -r "$1" "$STATE"; }
-notified() { sleep 0.2; [ -f "$NOTIFY_LOG" ] && wc -l < "$NOTIFY_LOG" || echo 0; }
 
-@test "outside tmux: nothing written, exit 0" {
-  unset TMUX_PANE
+@test "no Orca pane key: nothing written, exit 0" {
+  unset ORCA_PANE_KEY
   ev session-start
   [ ! -e "$AIF_STATE_DIR" ]
 }
 
+@test "TMUX_PANE alone: nothing written" {
+  unset ORCA_PANE_KEY
+  export TMUX_PANE=%42
+  ev session-start
+  [ ! -e "$AIF_STATE_DIR" ]
+}
+
+@test "HERDR_ENV alone: nothing written" {
+  unset ORCA_PANE_KEY
+  export HERDR_ENV=1 HERDR_PANE_ID=w1:p3
+  ev session-start
+  [ ! -e "$AIF_STATE_DIR" ]
+}
+
+@test "Orca pane: no tmux, notification or Herdr call on any state change" {
+  export TMUX_PANE=%42
+  ev session-start; ev user-prompt; ev pre-tool-ask; ev post-tool; ev stop-question; ev session-end
+  sleep 0.3
+  [ ! -e "$CALLS" ]
+}
+
 @test "start, prompt, tool, stop: done → running → done" {
   ev session-start
-  [ "$(st .state)" = done ] && [ "$(st .tool)" = claude ] && [ "$(st .pane)" = %42 ]
+  [ "$(st .state)" = done ] && [ "$(st .tool)" = claude ] && [ "$(st .pane)" = 8984e803-6068:01d9dade-e26c ]
   [ "$(st .cwd)" = "$BATS_TEST_TMPDIR" ] && [ "$(st .session_id)" = s1 ]
   ev user-prompt
   [ "$(st .state)" = running ] && [ "$(st .task)" = "Parse the BOAMP notice PDFs" ]
@@ -55,55 +71,30 @@ notified() { sleep 0.2; [ -f "$NOTIFY_LOG" ] && wc -l < "$NOTIFY_LOG" || echo 0;
   [ "$(st .updated_at)" -ge "$(st .started_at)" ]
 }
 
-@test "AskUserQuestion: check with question and options, one notification, then running" {
+@test "AskUserQuestion: check with question and options, then running" {
   ev session-start; ev user-prompt; ev pre-tool-ask
   [ "$(st .state)" = check ]
   [ "$(st .question)" = "Which parser for BOAMP notices?" ]
   [ "$(st '.options | join(",")')" = "pdfplumber,PyMuPDF" ]
-  [ "$(notified)" -eq 1 ]
-  grep -qxF 'notify|◉ proj needs you|Which parser for BOAMP notices?|proj|critical|' "$NOTIFY_LOG"
   # Claude Code envoie aussi permission_prompt pour AskUserQuestion : la question reste
   ev notification-permission
   [ "$(st .question)" = "Which parser for BOAMP notices?" ] && [ "$(st '.options | join(",")')" = "pdfplumber,PyMuPDF" ]
-  [ "$(notified)" -eq 1 ]
   ev post-tool
   [ "$(st .state)" = running ] && [ "$(st .question)" = null ]
 }
 
-@test "permission prompt: check with Yes / Always / No, notified once on entry" {
+@test "permission prompt: check with Yes / Always / No" {
   ev session-start; ev user-prompt; ev pre-tool-bash
   ev notification-permission
   [ "$(st .state)" = check ]
   [ "$(st .question)" = "Bash: ls" ]
   [ "$(st '.options | join(",")')" = "Yes,Always,No" ]
   ev notification-permission
-  [ "$(notified)" -eq 1 ]
 }
 
 @test "a failed tool after approval leaves check" {
   ev session-start; ev notification-permission; ev post-tool-failure
   [ "$(st .state)" = running ]
-}
-
-@test "tmux gives no answer (no server, stub, dead pane): no notification" {
-  export AIF_TEST_VISIBLE=
-  ev session-start; ev pre-tool-ask
-  [ "$(st .state)" = check ] && [ "$(notified)" -eq 0 ]
-}
-
-@test "visible pane: no notification" {
-  export AIF_TEST_VISIBLE=1
-  ev session-start; ev pre-tool-ask
-  [ "$(st .state)" = check ] && [ "$(notified)" -eq 0 ]
-}
-
-@test "done notifies only with AIF_NOTIFY_DONE=1" {
-  ev session-start; ev user-prompt; ev stop
-  [ "$(notified)" -eq 0 ]
-  export AIF_NOTIFY_DONE=1
-  ev user-prompt; ev stop
-  [ "$(notified)" -eq 1 ]
-  grep -qxF 'notify|✓ proj finished|Parse the BOAMP notice PDFs|proj|' "$NOTIFY_LOG"
 }
 
 @test "subagents are tracked; a compaction keeps state and subagents" {
@@ -156,28 +147,13 @@ notified() { sleep 0.2; [ -f "$NOTIFY_LOG" ] && wc -l < "$NOTIFY_LOG" || echo 0;
   [ "$best" -lt 100 ]
 }
 
-@test "aif-statusline records model and context, then runs the chained statusLine" {
-  ev session-start
-  in='{"model":{"id":"claude-opus-5-5","display_name":"Opus"},"context_window":{"used_percentage":61.4,"context_window_size":200000}}'
-  run -0 "$REPO/bin/aif-statusline" sh -c 'echo "chained: $(jq -r .model.id)"' <<<"$in"
-  [ "$output" = "chained: claude-opus-5-5" ]
-  [ "$(st .model)" = Opus ] && [ "$(st .ctx)" = 61 ] && [ "$(st .state)" = done ]
-}
-
-@test "aif-statusline without a chained command prints model and context" {
-  run -0 "$REPO/bin/aif-statusline" <<<'{"model":{"display_name":"Opus"},"context_window":{"remaining_percentage":20}}'
-  [ "$output" = "Opus · ctx 80%" ]
-}
-
-@test "Stop with a trailing question: check, prose, one notification" {
+@test "Stop with a trailing question: check, prose" {
   ev session-start; ev user-prompt; ev stop-question
   [ "$(st .state)" = check ]
   [ "$(st .question)" = "Should I squash the branch?" ]
   [ "$(st .ask)" = prose ]
   [ "$(st '.options | length')" -eq 0 ]
   [ "$(st .last_message)" = $'Two options.\nShould I squash the branch?' ]
-  [ "$(notified)" -eq 1 ]
-  grep -qxF 'notify|◉ proj needs you|Should I squash the branch?|proj|critical|' "$NOTIFY_LOG"
 }
 
 @test "Stop ending inside an unclosed fenced block, or on a URL ending in ?: done" {
@@ -187,7 +163,6 @@ notified() { sleep 0.2; [ -f "$NOTIFY_LOG" ] && wc -l < "$NOTIFY_LOG" || echo 0;
   ev user-prompt; ev stop-url-question
   [ "$(st .state)" = done ]
   [ "$(st .question)" = null ]
-  [ "$(notified)" -eq 0 ]
 }
 
 @test "Stop with a closed fenced block then a real question: check" {
@@ -227,166 +202,8 @@ notified() { sleep 0.2; [ -f "$NOTIFY_LOG" ] && wc -l < "$NOTIFY_LOG" || echo 0;
   [ "$(cut -f3,4 "$AIF_CHECK_LOG" | paste -sd,)" = "$(printf 'enter\tprose,leave\tprose')" ]
 }
 
-# --- Herdr pane (no tmux): state file, check log, report to Herdr -------------------------------
-# herdr est un stub qui journalise ses arguments, une ligne par appel (le hook l'appelle en fond).
-herdr_setup() {
-  unset TMUX_PANE
-  export HERDR_ENV=1 HERDR_PANE_ID=w1:p3 HERDR_BIN_PATH="$BATS_TEST_TMPDIR/bin/herdr" HERDR_LOG="$BATS_TEST_TMPDIR/herdr.log"
-  printf '#!/bin/sh\nprintf "%%s|" "$@" >> "$HERDR_LOG"; echo >> "$HERDR_LOG"\n' > "$HERDR_BIN_PATH"
-  chmod +x "$HERDR_BIN_PATH"
-  STATE="$AIF_STATE_DIR/herdr-w1-p3.json"
-}
-# reports : attend les appels en fond, puis rend le journal
-reports() { sleep 0.3; cat "$HERDR_LOG" 2>/dev/null; }
-seq_of() { sed -n "${1}p" "$HERDR_LOG" | grep -o -- '--seq|[0-9]*' | cut -d'|' -f2; }
-
-@test "herdr pane: state written to herdr-w1-p3.json, pane is the Herdr id" {
-  herdr_setup
-  ev session-start
-  [ "$(st .state)" = done ] && [ "$(st .pane)" = w1:p3 ]
-}
-
-@test "herdr pane ids w1:p3 and w12:p3 give distinct valid file names" {
-  herdr_setup
-  ev session-start
-  HERDR_PANE_ID=w12:p3 ev session-start
-  [ -f "$AIF_STATE_DIR/herdr-w1-p3.json" ] && [ -f "$AIF_STATE_DIR/herdr-w12-p3.json" ]
-}
-
-@test "herdr pane: AskUserQuestion reports blocked with the question as message" {
-  herdr_setup
-  ev session-start; ev user-prompt; ev pre-tool-ask
-  reports | tail -1 | grep -qF 'pane|report-agent|w1:p3|--source|aif-dotdeck|--agent|claude|--state|blocked|'
-  reports | tail -1 | grep -qF -- '--message|Which parser for BOAMP notices?|'
-}
-
-@test "herdr pane: prose question at Stop reports blocked" {
-  herdr_setup
-  ev session-start; ev user-prompt; ev stop-question
-  reports | tail -1 | grep -qF -- '--state|blocked|'
-}
-
-@test "herdr pane: UserPromptSubmit reports working; Stop without question reports idle" {
-  herdr_setup
-  ev session-start; ev user-prompt
-  reports | tail -1 | grep -qF -- '--state|working|'
-  ev stop
-  reports | tail -1 | grep -qF -- '--state|idle|'
-}
-
-@test "herdr pane: no report and no tmux notification when the state does not change" {
-  herdr_setup
-  ev session-start; ev user-prompt; ev pre-tool-bash
-  [ "$(reports | wc -l)" -eq 2 ]   # session-start (idle) et user-prompt (working)
-  ev pre-tool-ask
-  [ "$(notified)" -eq 0 ]          # le serveur tmux de Louis tourne encore : jamais le viser hors tmux
-}
-
-@test "check log has the pane key as 5th column (tmux and Herdr)" {
-  ev session-start; ev user-prompt; ev pre-tool-ask
-  [ "$(sed -n 1p "$AIF_CHECK_LOG" | cut -f5)" = 42 ]
-  herdr_setup
-  ev session-start; ev user-prompt; ev pre-tool-ask
-  [ "$(sed -n 2p "$AIF_CHECK_LOG" | cut -f5)" = herdr-w1-p3 ]
-}
-
-@test "seq: clock going back still increases" {
-  herdr_setup
-  AIF_NOW_US=2000 ev session-start
-  AIF_NOW_US=1000 ev user-prompt
-  reports >/dev/null
-  [ "$(seq_of 1)" = 2000 ] && [ "$(seq_of 2)" = 2001 ]
-}
-
-@test "seq: same clock value twice gives prev+1" {
-  herdr_setup
-  AIF_NOW_US=5000 ev session-start
-  AIF_NOW_US=5000 ev user-prompt
-  reports >/dev/null
-  [ "$(seq_of 2)" = 5001 ]
-}
-
-@test "seq survives a new hook process (counter file read back)" {
-  herdr_setup
-  AIF_NOW_US=9000 ev session-start
-  [ "$(cat "$AIF_STATE_DIR/herdr.seq")" = 9000 ]
-  AIF_NOW_US=10 ev user-prompt
-  [ "$(cat "$AIF_STATE_DIR/herdr.seq")" = 9001 ]
-}
-
-@test "seq: 10 parallel hooks give 10 distinct values" {
-  herdr_setup
-  for i in $(seq 1 10); do
-    ( HERDR_PANE_ID=w1:p$i AIF_NOW_US=7000 "$HOOK" < <(sed "s|@CWD@|$BATS_TEST_TMPDIR|" "$FIX/session-start.json") ) &
-  done
-  wait
-  sleep 0.3
-  [ "$(grep -o -- '--seq|[0-9]*' "$HERDR_LOG" | sort -u | wc -l)" -eq 10 ]
-}
-
-@test "no tmux, no herdr, no orca: nothing written, herdr not called, exit 0" {
-  herdr_setup
-  unset HERDR_ENV HERDR_PANE_ID ORCA_PANE_KEY
-  ev session-start
-  [ ! -e "$AIF_STATE_DIR" ] && [ ! -e "$HERDR_LOG" ]
-}
-
-# --- Orca terminal (ORCA_PANE_KEY, no tmux, no Herdr): state file and check log only ------------
-orca_setup() {
-  unset TMUX_PANE HERDR_ENV HERDR_PANE_ID
-  export ORCA_PANE_KEY=8984e803-6068:01d9dade-e26c
-  STATE="$AIF_STATE_DIR/orca-8984e803-6068-01d9dade-e26c.json"
-}
-
-@test "orca pane: state written to orca-<pane key>.json, pane is the Orca key" {
-  orca_setup
-  ev session-start; ev user-prompt
-  [ "$(st .state)" = running ] && [ "$(st .pane)" = 8984e803-6068:01d9dade-e26c ]
-}
-
-@test "orca pane: prose question logged with the orca key, no notification, no tmux" {
-  orca_setup
+@test "check log has the Orca key as 5th column" {
   ev session-start; ev user-prompt; ev stop-question
   [ "$(st .state)" = check ]
   [ "$(cut -f3-5 "$AIF_CHECK_LOG" | tail -1)" = "$(printf 'enter\tprose\torca-8984e803-6068-01d9dade-e26c')" ]
-  [ "$(notified)" -eq 0 ]
-}
-
-@test "Herdr wins over Orca when both are set" {
-  orca_setup
-  herdr_setup
-  ev session-start
-  [ -f "$AIF_STATE_DIR/herdr-w1-p3.json" ]
-}
-
-@test "seq: a French numeric locale (comma in EPOCHREALTIME) still gives digits" {
-  locale -a 2>/dev/null | grep -qi '^fr_FR.utf' || skip "fr_FR.UTF-8 locale not generated"
-  herdr_setup
-  LC_ALL=fr_FR.UTF-8 ev session-start
-  reports >/dev/null
-  [[ "$(seq_of 1)" =~ ^[0-9]{16}$ ]]
-}
-
-@test "seq: a counter file with code in it is not evaluated" {
-  herdr_setup
-  mkdir -p "$AIF_STATE_DIR"
-  printf 'a[$(touch %s/pwned)]\n' "$BATS_TEST_TMPDIR" > "$AIF_STATE_DIR/herdr.seq"
-  AIF_NOW_US=4000 ev session-start
-  [ ! -e "$BATS_TEST_TMPDIR/pwned" ]
-  [ "$(cat "$AIF_STATE_DIR/herdr.seq")" = 4000 ]
-}
-
-@test "Herdr started from a tmux pane: HERDR_ENV wins over an inherited TMUX_PANE" {
-  herdr_setup
-  export TMUX_PANE=%42
-  ev session-start; ev user-prompt
-  [ -f "$AIF_STATE_DIR/herdr-w1-p3.json" ] && [ ! -f "$AIF_STATE_DIR/42.json" ]
-  reports | tail -1 | grep -qF -- '--state|working|'
-}
-
-@test "herdr pane: session end releases the pane in Herdr" {
-  herdr_setup
-  ev session-start; ev session-end
-  reports | tail -1 | grep -qF 'pane|release-agent|w1:p3|--source|aif-dotdeck|--agent|claude|--seq|'
-  [ ! -f "$STATE" ]
 }

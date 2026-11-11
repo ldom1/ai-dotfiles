@@ -1,21 +1,13 @@
 #!/usr/bin/env bash
-# aif-agent-hook — appelé par les hooks Claude Code. Écrit l'état de l'agent du
-# panneau courant dans $AIF_STATE_DIR/<clé>.json : pane tmux (clé = numéro du pane) ou pane Herdr
-# (HERDR_ENV=1, clé = herdr-<HERDR_PANE_ID, hors [A-Za-z0-9] remplacé par ->) ou terminal Orca
-# (ORCA_PANE_KEY, clé = orca-<clé, même règle>). Dans un pane Herdr, il rapporte aussi l'état à Herdr
-# (herdr pane report-agent) ; dans Orca, il n'écrit que l'état et le journal (Orca notifie lui-même). Ne bloque jamais Claude : sort toujours
-# en 0, ne fait rien ailleurs. Champs d'entrée : https://code.claude.com/docs/en/hooks
+# aif-agent-hook — appelé par les hooks Claude Code dans un terminal Orca (ORCA_PANE_KEY ; ailleurs,
+# ne fait rien). Écrit l'état de l'agent dans $AIF_STATE_DIR/orca-<clé>.json (clé : ORCA_PANE_KEY,
+# hors [A-Za-z0-9] remplacé par -) pour suivre ses transitions, et journalise chaque entrée et
+# sortie de l'état « check » (question en attente) dans aif-check.log, lu par
+# scripts/harness-metrics.py. Orca notifie lui-même. Ne bloque jamais Claude : sort toujours en 0.
+# Champs d'entrée : https://code.claude.com/docs/en/hooks
 set -uo pipefail
-# Herdr d'abord : un serveur Herdr lancé depuis tmux peut transmettre TMUX_PANE à ses panes.
-if [[ ${HERDR_ENV:-} == 1 && -n ${HERDR_PANE_ID:-} ]]; then
-  PANE=$HERDR_PANE_ID KEY="herdr-${HERDR_PANE_ID//[^A-Za-z0-9]/-}" HERDR=1
-elif [[ -n ${TMUX_PANE:-} ]]; then
-  PANE=$TMUX_PANE KEY=${TMUX_PANE#%} HERDR=0
-elif [[ -n ${ORCA_PANE_KEY:-} ]]; then
-  PANE=$ORCA_PANE_KEY KEY="orca-${ORCA_PANE_KEY//[^A-Za-z0-9]/-}" HERDR=0 ORCA=1
-else
-  exit 0
-fi
+[[ -n ${ORCA_PANE_KEY:-} ]] || exit 0
+PANE=$ORCA_PANE_KEY KEY="orca-${ORCA_PANE_KEY//[^A-Za-z0-9]/-}"
 command -v jq >/dev/null || exit 0
 
 # Budget : < 100 ms par événement. Un seul appel jq (≈ 18 ms avec jq 1.6), pas de date ni de mktemp.
@@ -81,23 +73,8 @@ JQ='
 # la taille maximale d'un argument.
 out=$(jq -r --slurpfile cur "$cur" --argjson now "$EPOCHSECONDS" --arg pane "$PANE" "$JQ" <<<"$input" 2>/dev/null) || exit 0
 IFS=$'\t' read -r event prev_state new_state sid ask <<<"${out%%$'\n'*}"
-# Compteur --seq partagé sous flock : max(µs, précédent + 1). Il croît même si l'horloge recule
-# ou si deux hooks tournent en même temps. Le fichier n'est lu que s'il ne contient que des chiffres ;
-# l'horloge perd son séparateur décimal, point ou virgule selon la locale.
-next_seq() {
-  ( exec 9>>"$STATE_DIR/herdr.seq.lock"; flock -w 1 9 || exit 1
-    prev=$(cat "$STATE_DIR/herdr.seq" 2>/dev/null); [[ $prev =~ ^[0-9]+$ ]] || prev=0
-    now=${AIF_NOW_US:-${EPOCHREALTIME//[!0-9]/}}; [[ $now =~ ^[0-9]+$ ]] || now=0
-    (( now > prev )) || now=$(( prev + 1 )); echo "$now" >"$STATE_DIR/herdr.seq"; echo "$now" )
-}
-herdr_ok() { (( HERDR )) && [[ -x ${HERDR_BIN_PATH:-} ]]; }
-
 if [[ $event == SessionEnd ]]; then
   rm -f "$FILE"
-  if herdr_ok && seq=$(next_seq); then
-    "$HERDR_BIN_PATH" pane release-agent "$HERDR_PANE_ID" --source aif-dotdeck --agent claude --seq "$seq" \
-      </dev/null >/dev/null 2>&1 &
-  fi
   exit 0
 fi
 [[ $out == *$'\n'* ]] || exit 0   # événement ignoré
@@ -114,38 +91,4 @@ if [[ $new_state != "$prev_state" ]] && [[ $new_state == check || $prev_state ==
   { printf '%s\t%s\t%s\t%s\t%s\n' "$EPOCHSECONDS" "$sid" "$kind" "$ask" "$KEY" >>"$CHECK_LOG"; } 2>/dev/null
 fi
 
-# Pane Herdr : rapporter le nouvel état à Herdr, en fond (--seq : next_seq). Puis sortir : le serveur tmux peut tourner à côté, il ne faut jamais le viser hors tmux.
-if (( HERDR )); then
-  if [[ $new_state != "$prev_state" ]] && herdr_ok; then
-    seq=$(next_seq) || exit 0
-    case $new_state in running) hs=working ;; check) hs=blocked ;; *) hs=idle ;; esac
-    args=(pane report-agent "$HERDR_PANE_ID" --source aif-dotdeck --agent claude --state "$hs" --seq "$seq")
-    [[ $hs == blocked ]] && args+=(--message "$(jq -r '.question // "" | .[0:200]' "$FILE")")
-    "$HERDR_BIN_PATH" "${args[@]}" </dev/null >/dev/null 2>&1 &
-  fi
-  exit 0
-fi
-
-# Terminal Orca : rien vers tmux (le serveur tmux peut tourner à côté).
-(( ${ORCA:-0} )) && exit 0
-
-# Notification système seulement à l'entrée dans un état, et si le panneau n'est pas sous les yeux.
-if [[ $new_state != "$prev_state" ]] && { [[ $new_state == check ]] || { [[ $new_state == "done" && ${AIF_NOTIFY_DONE:-0} == 1 ]]; }; }; then
-  visible=$(tmux display -p -t "$TMUX_PANE" '#{&&:#{session_attached},#{&&:#{window_active},#{pane_active}}}' 2>/dev/null)
-  # Descripteurs fermés : la notification (notify-send --wait) ne doit pas garder ouvert le stdout
-  # du hook, que Claude Code attend.
-  # aif-platform : PATH, sinon ~/.local/bin (PATH de Claude Code sans ce dossier)
-  platform=$(command -v aif-platform || echo "$HOME/.local/bin/aif-platform")
-  # Seulement si tmux répond 0 : sans réponse (pas de serveur, pane mort, tmux factice d'un banc
-  # d'essai), pas de notification. Un benchmark du hook a ainsi envoyé ~100 toasts en 40 s.
-  if [[ $visible == 0 && -x $platform ]]; then
-    sess=$(tmux display -p -t "$TMUX_PANE" '#{session_name}' 2>/dev/null)
-    if [[ $new_state == check ]]; then
-      "$platform" notify "◉ $sess needs you" "$(jq -r '.question // ""' "$FILE")" "$sess" critical </dev/null >/dev/null 2>&1 &
-    else
-      "$platform" notify "✓ $sess finished" "$(jq -r '.task // ""' "$FILE")" "$sess" </dev/null >/dev/null 2>&1 &
-    fi
-  fi
-fi
-tmux refresh-client -S </dev/null >/dev/null 2>&1 &
 exit 0
