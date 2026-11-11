@@ -32,7 +32,7 @@ For each source, fetch the raw file yourself and quote the exact wording of the 
 
 Raw text, by host:
 - GitHub: `gh api repos/<owner>/<repo>/contents/<path> --jq .content | base64 -d`.
-- Other pages: `npx -y defuddle@0.19.6 parse "<url>" --md` prints Markdown to stdout. Defuddle runs locally, so a private or employer URL stays on this machine. `npx` downloads the package from npm on first run. For a page rendered by client-side JavaScript, use `WebFetch` and label the quote `paraphrase`.
+- Other pages: `npx -y defuddle@0.19.6 parse "<url>" --md` prints Markdown to stdout. Defuddle runs locally, so a private or employer URL stays on this machine. `npx` downloads the package from npm on first run. If defuddle fails or prints nothing (for example a page rendered by client-side JavaScript), use `WebFetch` and label the quote `paraphrase`.
 
 A claim about a coding-agent harness (prompt, tools, compaction, permissions, hooks): read its [Harness Lens](https://huggingface.co/spaces/harness-hub/harness-lens) entry, `harnesses/<id>/harness.yaml`. Each claim links to source lines at a pinned commit. Compare the entry's `ref` with the installed version; a newer install voids the entry.
 

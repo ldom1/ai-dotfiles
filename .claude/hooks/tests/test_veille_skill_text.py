@@ -12,3 +12,6 @@ def test_veille_uses_defuddle():
     assert "npx -y defuddle@0.19.6 parse" in text
     assert "--md" in text
     assert "firecrawl" not in text.lower()
+    assert "WebFetch" in text
+    assert "paraphrase" in text
+    assert "If defuddle fails or prints nothing" in text
