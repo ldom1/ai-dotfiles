@@ -190,6 +190,14 @@
         "ci",
         "docs"
       ]
+    },
+    "config-slurm-ansible": {
+      "detect": [
+        "templates/etc/slurm/slurm.conf.j2"
+      ],
+      "scopes": [
+        "slurm.conf"
+      ]
     }
   }
 }
