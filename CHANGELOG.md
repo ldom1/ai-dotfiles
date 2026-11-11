@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 ### Added
-- `brain-audit:lint`: `skills/brain-audit/scripts/vault-lint.sh` reports unresolved links, orphans (outside `inbox/daily/` and `projects/*/`), the top 10 unresolved targets and `$BRAIN_PATH/` paths cited in skills that do not exist. It uses only the read-only Obsidian CLI commands `unresolved`, `orphans` and `file`. No CLI: `skipped:` and exit 0; CLI failure or garbage output: `error:` and exit 1. It warns when the newest note on disk is newer than the Obsidian index (restart Obsidian). Full run order: `qmd-sync`, `compile`, `lint`, `promote`, `queries`, `connect`, `insights`, `digest`. 8 tests.
+- `brain-audit` step `lint` (a script, not a subskill): `skills/brain-audit/scripts/vault-lint.sh` reports unresolved links, orphans (outside `inbox/daily/` and `projects/*/`), the top 10 unresolved targets and `$BRAIN_PATH/` paths cited in skills that do not exist. It uses only the read-only Obsidian CLI commands `unresolved`, `orphans` and `file`. No CLI: `skipped:` and exit 0; CLI failure or garbage output: `error:` and exit 1. It warns when the newest note on disk is newer than the Obsidian index (restart Obsidian). It strips the CR the Windows CLI prints, runs each call under `timeout 60`, and exits 1 when `OBSIDIAN_CLI` points to a file that is not executable. Full run order: `qmd-sync`, `compile`, `lint`, `promote`, `queries`, `connect`, `insights`, `digest`. 16 tests.
 
 ### Fixed
 - `brain-audit` plugin 2.3.0: description matches the router `SKILL.md`.

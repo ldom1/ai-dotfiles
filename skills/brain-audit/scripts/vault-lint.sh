@@ -1,10 +1,11 @@
 #!/bin/bash
-# brain-audit:lint — vault link health through the Obsidian CLI (read-only: `unresolved`, `orphans`, `file`).
+# brain-audit step `lint` (no subskill file) — vault link health through the Obsidian CLI (read-only: `unresolved`, `orphans`, `file`).
 # Reads BRAIN_PATH, OBSIDIAN_CLI (explicit CLI path; no fallback when set), SKILLS_ROOT (default: repo skills/).
 # Prints: unresolved N, orphans N, top 10 unresolved targets, missing skill paths.
 # Exit 0: report printed, or "skipped:" (no CLI binary on this machine).
 # Exit 1: "error:" (the CLI exists but failed, or answered with garbage).
-# The skill-path check needs no CLI and always runs. Needs Obsidian open: the CLI launches it otherwise.
+# The skill-path check needs no CLI and always runs. Scans top-level skills/*/SKILL.md, backticked $BRAIN_PATH/ paths only.
+# Each CLI call runs under `timeout 60` when `timeout` exists; CR from the Windows .com is stripped. Needs Obsidian open: the CLI launches it otherwise.
 
 set -uo pipefail
 
@@ -17,11 +18,17 @@ vault="$(basename "$BRAIN_PATH")"
 skills_root="$(cd "${SKILLS_ROOT:-$script_dir/../..}" && pwd)"
 errf="$(mktemp)"
 trap 'rm -f "$errf"' EXIT
+tcmd=()
+command -v timeout >/dev/null && tcmd=(timeout 60)
 
 find_cli() {
     if [[ -n "${OBSIDIAN_CLI:-}" ]]; then
         tried="$OBSIDIAN_CLI"
-        [[ -x "$OBSIDIAN_CLI" ]] && cli="$OBSIDIAN_CLI"
+        if [[ -x "$OBSIDIAN_CLI" ]]; then
+            cli="$OBSIDIAN_CLI"
+        elif [[ -e "$OBSIDIAN_CLI" ]]; then
+            cli_err="$OBSIDIAN_CLI exists but is not executable"
+        fi
         return
     fi
     tried="obsidian on PATH, /mnt/c/Users/*/AppData/Local/Programs/Obsidian/Obsidian.com"
@@ -33,10 +40,13 @@ find_cli() {
 
 # call <cli args...>: stdout in $out; on failure sets $rc and prints the error.
 call() {
-    out="$("$cli" "vault=$vault" "$@" 2>"$errf")"
+    out="$(${tcmd[@]+"${tcmd[@]}"} "$cli" "vault=$vault" "$@" 2>"$errf")"
     rc=$?
+    out="${out//$'\r'/}"
     if ((rc != 0)); then
-        fail "Obsidian CLI failed (exit $rc): $(head -n 1 "$errf")"
+        local first_err
+        first_err="$(head -n 1 "$errf" | tr -d '\r')"
+        fail "Obsidian CLI failed (exit $rc): ${first_err:-${out%%$'\n'*}}"
     fi
     return "$rc"
 }
@@ -48,15 +58,11 @@ fail() {
 
 stale_warning() {
     local newest rel disk_ms modified
-    newest="$(find "$BRAIN_PATH" \( -name .obsidian -o -name .git \) -prune -o -name '*.md' -printf '%T@ %P\n' | sort -rn | head -n 1)"
+    newest="$(find -H "$BRAIN_PATH" -mindepth 1 -name '.*' -prune -o -type f -name '*.md' -printf '%T@ %P\n' | sort -rn | head -n 1)"
     [[ -n "$newest" ]] || return 0
     rel="${newest#* }"
     disk_ms="$(awk -v t="${newest%% *}" 'BEGIN { printf "%d", t * 1000 }')"
-    modified=""
-    if "$cli" "vault=$vault" file "path=$rel" >"$errf.out" 2>/dev/null; then
-        modified="$(awk '$1 == "modified" { print $2 }' "$errf.out")"
-    fi
-    rm -f "$errf.out"
+    modified="$(${tcmd[@]+"${tcmd[@]}"} "$cli" "vault=$vault" file "path=$rel" 2>/dev/null | tr -d '\r' | awk '$1 == "modified" { print $2 }')"
     if [[ ! "$modified" =~ ^[0-9]+$ ]] || ((disk_ms > modified + 2000)); then
         echo "warning: Obsidian link cache is stale ($rel changed since Obsidian indexed it); restart Obsidian for exact counts"
     fi
@@ -64,15 +70,16 @@ stale_warning() {
 
 lint_cli() {
     local total unresolved_json top n_orphans
-    cli="" tried=""
+    cli="" tried="" cli_err=""
     find_cli
+    [[ -z "$cli_err" ]] || { fail "$cli_err"; return 1; }
     if [[ -z "$cli" ]]; then
         echo "skipped: Obsidian CLI not found ($tried)"
         return 0
     fi
     call unresolved total || return 1
-    total="$(tr -d '[:space:]' <<<"$out")"
-    [[ "$total" =~ ^[0-9]+$ ]] || { fail "Obsidian CLI returned a non-number for 'unresolved total': ${out:0:80}"; return 1; }
+    [[ "$out" =~ ^[[:space:]]*[0-9]+[[:space:]]*$ ]] || { fail "Obsidian CLI returned a non-number for 'unresolved total': ${out:0:80}"; return 1; }
+    total="${out//[[:space:]]/}"
     call unresolved format=json || return 1
     unresolved_json="$out"
     top="$(jq -r 'sort_by(-(.count | tonumber)) | .[:10][]
@@ -92,8 +99,10 @@ missing_skill_paths() {
     base="$(cd "$skills_root/.." && pwd)"
     while IFS=: read -r f line match; do
         p="${match//\`/}"
-        [[ "$p" == *[\<\*\{\}]* ]] && continue
-        [[ -e "$BRAIN_PATH/${p#\$BRAIN_PATH/}" ]] && continue
+        p="${p#\$BRAIN_PATH/}"
+        [[ "$p" == *[\<\*\{\}\$]* ]] && continue
+        [[ -e "$BRAIN_PATH/$p" ]] && continue
+        p="\$BRAIN_PATH/$p"
         missing+="${f#"$base"/}:$line $p"$'\n'
     done < <(grep -H -n -o '`\$BRAIN_PATH/[^`]*`' "$skills_root"/*/SKILL.md 2>/dev/null)
     echo "missing skill paths: $(grep -c . <<<"$missing" || true)"
