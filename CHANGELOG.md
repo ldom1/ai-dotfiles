@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Fixed
+- `README-BRAIN-SYSTEM.md` points to `LocalBrain.md` for the folder layout instead of two directory trees, drops the `mkdir` checklist line, and describes phases 1 and 2 as compile and connect.
 - `brain-audit:compile` keeps an optional `paths:` field in the pattern-note template (it drives `scripts/link-pattern-rules.sh`), never reformats an existing note, picks a free id letter with a `grep` of the notes, and creates no note for a stack rule that fewer than 2 projects hit. `pitfall-rules.md` lists letters `n` and `l` and the `(sensor: <name>)` suffix. `connect` names the command that lists changed pattern notes. 1 test.
 - `upgrade --all` continues past a failed project: it runs `setup_central_mcp`, prints `upgrade failed for: <names>` on stderr and exits 1. 1 test.
 - `upgrade-project.sh` no longer hides a failed `settings.json` merge: it prints `ERROR: settings.json merge failed for <file>` on stderr and exits non-zero. The merge script reads its paths from `argv` instead of an interpolated string. 1 test.

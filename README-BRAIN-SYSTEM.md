@@ -38,8 +38,8 @@ Quick session with project context loaded:
 
 Full maintenance pipeline (typically 5-15 min):
 - Pulls vault
-- **Phase 1 - Raw Data Compilation**: Processes files in `/raw/` → creates wiki articles in `/inbox/drafts/`
-- **Phase 2 - Connection Detection**: Scans vault structure → finds orphaned notes, suggests links in `/inbox/connections/`
+- **Phase 1 - Compile**: `brain-audit:compile` reads recent session notes → writes cross-project rules to `pitfalls.md` and stack rules to `resources/knowledge/patterns/*-patterns.md`
+- **Phase 2 - Connect**: `brain-audit:connect` finds related vault notes via QMD → adds `## Related` links to the pattern notes
 - **Phase 3 - Queries**: `brain-audit:queries` writes knowledge-gaps and roadmap analyses → `/resources/queries/archive/YYYY-MM-DD-*.md`
 - **Phase 4 - Digest**: `brain-audit:digest` writes `/meta/digest-YYYY-MM-DD.md` and resets the 7-day clock in `/meta/last-maintenance.md` (`digest.sh` does only the clock)
 - All inbox items ready for human review
@@ -53,20 +53,7 @@ The inbox is your staging ground for all automated changes. Everything goes here
 
 ### Directory Structure
 
-```
-$BRAIN_PATH/
-├── inbox/
-│   ├── drafts/              # Compiled raw data → structured articles
-│   ├── connections/         # Suggested semantic links (markdown list format)
-│   └── sensors/             # Sensor drafts from brain-audit:promote
-├── meta/
-│   ├── last-maintenance.md  # 7-day clock: timestamp of last maintenance
-│   └── digest-*.md          # Summary of each maintenance run
-├── raw/                     # Unprocessed captures (research, logs, notes)
-├── drafts/                  # Your draft notes (pre-publish)
-├── published/               # Approved, merged, finalized knowledge
-└── archive/                 # Old/superseded material
-```
+The folder layout lives in `LocalBrain.md` in `~/ai-dotfiles`. It is the one vault map.
 
 ### Review Timeline
 
@@ -215,47 +202,7 @@ bash ~/ai-dotfiles/skills/brain-audit/scripts/digest.sh
 
 ## Directory Structure Reference
 
-```
-$BRAIN_PATH/
-│
-├── inbox/                           # Staging area for all automated changes
-│   ├── drafts/                      # Compiled raw data → articles
-│   ├── connections/                 # Suggested semantic links
-│   └── sensors/                     # Sensor drafts (brain-audit:promote)
-│
-├── meta/                            # System metadata
-│   ├── last-maintenance.md          # Timestamp of last maintenance (7-day clock)
-│   └── digest-YYYY-MM-DD.md         # Summary of each maintenance run
-│
-├── raw/                             # Unprocessed captures
-│   ├── research-*.md
-│   ├── experiment-*.log
-│   ├── idea-*.md
-│   └── ...
-│
-├── drafts/                          # Your draft notes (work in progress)
-│   ├── project-notes.md
-│   ├── research-directions.md
-│   └── ...
-│
-├── published/                       # Approved, finalized knowledge
-│   ├── projects/
-│   │   ├── project-alpha.md
-│   │   ├── project-beta.md
-│   │   └── ...
-│   ├── research/
-│   │   ├── topic-1.md
-│   │   ├── topic-2.md
-│   │   └── ...
-│   ├── reference/
-│   ├── people/
-│   └── ...
-│
-└── archive/                         # Old/superseded material
-    ├── old-project-*.md
-    ├── archived-research/
-    └── ...
-```
+The folder layout and the order of truth live in `LocalBrain.md` in `~/ai-dotfiles`. It is the one vault map.
 
 ---
 
@@ -344,7 +291,7 @@ Get started with the Local Brain System:
 
 - [ ] **Understand the vision** — Read the Overview section above
 - [ ] **Set up vault path** — Verify `$BRAIN_PATH` is set: `echo $BRAIN_PATH`
-- [ ] **Create initial directories** — Run: `mkdir -p $BRAIN_PATH/{inbox/{drafts,connections,sensors},resources/queries/archive,raw,published,archive}`
+- [ ] **Check the vault layout** — Read `LocalBrain.md` (the one vault map) in `~/ai-dotfiles`
 - [ ] **Initialize git** — `cd $BRAIN_PATH && git init && git add . && git commit -m "init: local brain vault"`
 - [ ] **Add starter raw files** — Put research notes, ideas, or logs into `/raw/`
 - [ ] **Run first maintenance** — `/brain-audit` (takes 5-15 min)
