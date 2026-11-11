@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- Vendored skills `obsidian-cli` (drive the vault from the Obsidian CLI) and `obsidian-bases` (`.base` files) from `obsidianmd/obsidian-skills` release `1.1.0` (commit `95b7225`), copied byte for byte. The repo moved from `kepano/obsidian-skills` (the old name redirects) and the folders moved to `plugins/obsidian/skills/<name>/`. Both folders carry `.obsidian-skills_version` (`1.1.0`), `LICENSE` and `.claude-plugin/plugin.json`. `config/vendored-skills.json` gets one entry `obsidian-skills` (no `branch`: releases exist). Upstream `main` is bumped to `1.2.0` but not yet tagged, so the drift alert fires once `1.2.0` is released. `install.sh` links every `skills/*` folder, so nothing else changes.
 - `brain-audit` step `lint` (a script, not a subskill): `skills/brain-audit/scripts/vault-lint.sh` reports unresolved links, orphans (outside `inbox/daily/` and `projects/*/`), the top 10 unresolved targets and `$BRAIN_PATH/` paths cited in skills that do not exist. It uses only the read-only Obsidian CLI commands `unresolved`, `orphans` and `file`. No CLI: `skipped:` and exit 0; CLI failure or garbage output: `error:` and exit 1. It warns when the newest note on disk is newer than the Obsidian index (restart Obsidian). It strips the CR the Windows CLI prints, runs each call under `timeout 60`, and exits 1 when `OBSIDIAN_CLI` points to a file that is not executable. Full run order: `qmd-sync`, `compile`, `lint`, `promote`, `queries`, `connect`, `insights`, `digest`. 16 tests.
 
 ### Fixed
