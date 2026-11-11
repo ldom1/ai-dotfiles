@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Fixed
+- `upgrade --all` continues past a failed project: it runs `setup_central_mcp`, prints `upgrade failed for: <names>` on stderr and exits 1. 1 test.
 - `upgrade-project.sh` no longer hides a failed `settings.json` merge: it prints `ERROR: settings.json merge failed for <file>` on stderr and exits non-zero. The merge script reads its paths from `argv` instead of an interpolated string. 1 test.
 - `brain-init-project` step 3 copies `DESIGN.md` and `API.md` from `config/memory-templates/on-demand/` when the interview needs them. Step 4 points to `instantiate.sh` for the one-pager sections instead of repeating them.
 - PreCompact checkpoint: the folder name comes from `load.sh --slug-only` (`.brain-project`, then remote URL, then dir name), so a worktree such as `agent-ab2f5bcd12e92f128` no longer gets its own `checkpoints/` folder. Redaction adds AWS key ids (`AKIA...`), Infisical service tokens (`st.…`) and ntfy tokens (`tk_…`), because checkpoints are pushed with the vault. `LocalBrain.md` no longer says checkpoints are deleted. 5 tests.

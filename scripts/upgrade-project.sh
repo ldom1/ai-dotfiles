@@ -143,6 +143,7 @@ PY
   fi
 }
 
+failed=()
 if [[ "${1:-}" == "--all" ]]; then
   if [[ ! -f "$REGISTRY" ]]; then
     echo "[upgrade-project] No registry at $REGISTRY — nothing to upgrade."
@@ -152,7 +153,7 @@ if [[ "${1:-}" == "--all" ]]; then
   while IFS=$'\t' read -r name abs_path _rest; do
     [[ "$name" == "name" ]] && continue
     [[ -z "$name" ]] && continue
-    upgrade_one "$abs_path"
+    upgrade_one "$abs_path" || failed+=("$name")
   done < "$REGISTRY"
 else
   if [[ -z "${1:-}" ]]; then
@@ -166,3 +167,8 @@ fi
 # Runs once per invocation (not once per project) since it's a global, not
 # per-project, operation.
 setup_central_mcp
+
+if [[ ${#failed[@]} -gt 0 ]]; then
+  echo "[upgrade-project] upgrade failed for: ${failed[*]}" >&2
+  exit 1
+fi

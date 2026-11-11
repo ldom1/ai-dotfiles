@@ -76,3 +76,16 @@ def test_merge_memory_subcommand_removed(env):
     assert r.returncode != 0
     assert "upgrade" in r.stderr
     assert "merge-memory" not in r.stderr
+
+
+def test_upgrade_all_continues_past_failed_project(env):
+    dot, clean, tmp = env
+    a, b = _repo(tmp, "repo-a"), _repo(tmp, "repo-b")
+    for repo in (a, b):  # registers both, in order
+        assert _run(dot, clean, "upgrade", str(repo)).returncode == 0
+    (a / ".claude/memory/settings.json").write_text("{not json")
+    (b / "AGENTS.md").unlink()
+    r = _run(dot, clean, "upgrade", "--all")
+    assert r.returncode != 0
+    assert "repo-a" in r.stderr
+    assert (b / "AGENTS.md").exists()
