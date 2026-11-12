@@ -110,6 +110,8 @@ ai-dotfiles sync --all               # sync all registered projects
 ai-dotfiles mcp-sync                 # (re)apply centrally-managed MCP servers (qmd, code-index, graphify)
 ```
 
+Vault link health: `bash skills/brain-audit/scripts/vault-lint.sh` (step `lint` of `/brain-audit`) lists unresolved links, orphans and missing skill paths through the read-only Obsidian CLI. It needs Obsidian open.
+
 ### Automatic sync (brain-sync)
 
 `brain-sync start` pulls vault → project for all registered paths. `brain-sync end` pushes project → vault before the vault git commit. Strategy: `rsync --update` (newer mtime wins, no merge). If both copies of one file changed since the last sync, the older edit is overwritten; the vault's git history keeps committed versions. Unregistered projects are skipped silently.
@@ -218,7 +220,11 @@ alias agent='~/ai-dotfiles/scripts/cursor-agent-brain.sh'   # already in ~/.zshr
 agent   # from anywhere
 ```
 
-Prewarm writes a global user rule `~/.cursor/rules/brain-hooks-session-inject.mdc` (alwaysApply) + sidecar. It does **not** touch repo-root `AGENTS.md` (the single source of shared rules). Verify: quote `[brain-hooks] sessionStart OK` without Reading files.
+Prewarm runs `scripts/brain-context.sh`: the project note (up to 3,000 B, less when the pitfalls need the room) and the pitfalls, inline, within 9,500 B. It writes a global user rule `~/.cursor/rules/brain-hooks-session-inject.mdc` (alwaysApply) + sidecar. It does **not** touch repo-root `AGENTS.md` (the single source of shared rules). Verify: quote `[brain-hooks] sessionStart OK` without Reading files.
+
+### Mistral Vibe launcher
+
+Vibe has no session-start hook. `bin/vibe-brain` (linked into `~/.local/bin` by `install.sh`) runs `sync.sh start`, writes `~/.vibe/brain-context.md` with `scripts/brain-context.sh`, runs `vibe` in the foreground, then runs `sync.sh end`. The context file starts with `cwd:` and `pid:` lines; the launcher deletes it at exit while it still holds its own pid. It exports `BRAIN_PATH` to Vibe and exits with Vibe's code (`130` on INT, `143` on TERM, `129` on HUP). When `sync.sh start` fails, it warns, still runs Vibe and skips `sync.sh end`. Alias it in `~/.zshrc`: `alias vibe=vibe-brain`.
 
 ### Mistral Vibe hooks
 
@@ -240,6 +246,6 @@ Prewarm writes a global user rule `~/.cursor/rules/brain-hooks-session-inject.md
 Differences from Claude Code:
 
 - A `stop-check` deny injects a retry message. Vibe allows 3 retries per hook per turn, then ends the turn.
-- Vibe has no session-start hook. The vault sync and load stay manual (`.vibe/bootstrap.md`).
+- Vibe has no session-start hook. `bin/vibe-brain` runs the vault sync and load (see "Mistral Vibe launcher" above); without it, they stay manual (`.vibe/bootstrap.md`).
 
 The file is not named `.vibe/hooks.toml`. In this trusted repo, Vibe would load it twice and warn about each duplicate hook name.

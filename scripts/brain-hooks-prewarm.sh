@@ -16,18 +16,13 @@ ENV_FILE="${BRAIN_ENV_FILE:-$AI_DOTFILES/config/brain.env}"
 [[ -f "$ENV_FILE" ]] && source "$ENV_FILE"
 BRAIN_PATH="${BRAIN_PATH:-}"
 
-# load.sh uses cwd for slug — run from caller's cwd (any project)
-LOAD_OUT="$(bash "$AI_DOTFILES/skills/brain-load/scripts/load.sh" 2>>"$LOG_DIR/brain-hooks-session.log" | head -30 || true)"
+# brain-context.sh uses cwd for slug — run from caller's cwd (any project)
+LOAD_OUT="$(bash "$AI_DOTFILES/scripts/brain-context.sh" 2>>"$LOG_DIR/brain-hooks-session.log" || true)"
 
 CANARY="[brain-hooks] sessionStart OK reason=prewarm — Local Brain context injected (CLI)."
 CTX="${CANARY}
 
-${LOAD_OUT}
-
---- PITFALLS BEHAVIOR (CLI) ---
-Canonical: ${BRAIN_PATH:-unset}/resources/operational/ai-agents/pitfalls.md
-Before substantive work: Read that file (or @claude-pitfall); treat matches as hard constraints.
---- END PITFALLS BEHAVIOR ---"
+${LOAD_OUT}"
 
 printf '%s\n' "$CTX" >"$SIDECAR"
 brain_hooks_write_inject_rule "$CTX"

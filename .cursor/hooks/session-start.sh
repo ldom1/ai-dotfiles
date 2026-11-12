@@ -60,7 +60,7 @@ if [[ -f "$started" ]]; then
   exit 0
 fi
 
-LOAD_OUT="$(bash "$AI_DOTFILES/skills/brain-load/scripts/load.sh" 2>>"$LOG_FILE" | head -30 || true)"
+LOAD_OUT="$(bash "$AI_DOTFILES/scripts/brain-context.sh" 2>>"$LOG_FILE" || true)"
 bash "$AI_DOTFILES/scripts/log-skill-usage.sh" brain-load "cursor:sessionStart" 2>/dev/null || true
 
 VENDOR_OUT="$(bash "$AI_DOTFILES/scripts/check-vendored-skill-updates.sh" --inject 2>>"$LOG_FILE" || true)"
@@ -70,12 +70,7 @@ CTX="${CANARY}
 
 ${LOAD_OUT:-}
 ${VENDOR_OUT:+
-}${VENDOR_OUT:-}
-
---- PITFALLS BEHAVIOR (CLI) ---
-Canonical: ${BRAIN_PATH:-unset}/resources/operational/ai-agents/pitfalls.md
-Before substantive work: Read that file; treat matches as hard constraints.
---- END PITFALLS BEHAVIOR ---"
+}${VENDOR_OUT:-}"
 
 printf '%s\n' "$CTX" >"$SIDECAR"
 brain_hooks_write_inject_rule "$CTX"

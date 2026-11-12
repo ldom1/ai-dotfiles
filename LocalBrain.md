@@ -38,5 +38,5 @@ Vault access per tool:
 
 - Claude Code: hooks (SessionStart and SessionEnd).
 - Cursor CLI: `scripts/cursor-agent-brain.sh`.
-- Mistral Vibe: `.vibe/bootstrap.md` (the agent runs `sync.sh start` and `load.sh` itself).
+- Mistral Vibe: `bin/vibe-brain` (sync start, context file, Vibe, sync end). Without it, `.vibe/bootstrap.md` has the agent run `sync.sh start` and `load.sh` itself.
 - Cursor IDE: none. Run `/brain-load` on request.

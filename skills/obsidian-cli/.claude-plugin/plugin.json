@@ -1,0 +1,11 @@
+{
+  "name": "obsidian-cli",
+  "version": "1.1.0",
+  "description": "Drive Obsidian vaults from the Obsidian CLI: read, create, search and manage notes, tasks and properties; reload and debug plugins and themes. Vendored verbatim from obsidianmd/obsidian-skills 1.1.0",
+  "author": {
+    "name": "Steph Ango",
+    "github": "kepano"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/obsidianmd/obsidian-skills"
+}

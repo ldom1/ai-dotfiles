@@ -11,10 +11,13 @@ LOG_FILE="$LOG_DIR/brain-load.log"
 
 mkdir -p "$LOG_DIR"
 
+# Budget rules and the 9,500 B limit: scripts/brain-context-lib.sh, shared with scripts/brain-context.sh.
+# shellcheck source=../../scripts/brain-context-lib.sh
+source "$AI_DOTFILES/scripts/brain-context-lib.sh"
+
 # Claude Code swaps hook output over ~10,000 characters for a file path and a
 # 2 KB preview, so none of it reaches the model. Buffer stdout; pitfalls (printed
 # last) get whatever budget the rest leaves.
-OUTPUT_MAX_BYTES=9500
 OUT_BUF=$(mktemp)
 exec 3>&1 >"$OUT_BUF"
 trap 'exec 1>&3; cat "$OUT_BUF"; rm -f "$OUT_BUF"' EXIT
@@ -97,16 +100,10 @@ if [[ "${BRAIN_LOAD_SLIM:-0}" == "1" ]]; then
   exit 0
 fi
 
-# Rule: pitfalls outrank the project note. The note gets up to 3,000 B (whole lines), less when
-# pitfalls.md needs the room: budget - pitfalls - output so far - 900 B for what prints after the
-# note (review line 300, vendored warnings ~400, maintenance nudge, note frame and cut marker).
+# Rule: pitfalls outrank the project note. The 900 B reserve covers what prints after the note.
 # Redirect verbose stderr to log. Claude Code already @-imports .claude/memory/ via the project CLAUDE.md.
-PITFALLS_FILE="${BRAIN_PATH}/resources/operational/ai-agents/pitfalls.md"
-PITFALLS_SIZE=0
-[[ -f "$PITFALLS_FILE" ]] && PITFALLS_SIZE=$(wc -c <"$PITFALLS_FILE")
-NOTE_MAX_BYTES=$(( OUTPUT_MAX_BYTES - PITFALLS_SIZE - $(wc -c <"$OUT_BUF") - 900 ))
-(( NOTE_MAX_BYTES < 3000 )) || NOTE_MAX_BYTES=3000
-(( NOTE_MAX_BYTES > 0 )) || NOTE_MAX_BYTES=0
+PITFALLS="${BRAIN_PATH}/resources/operational/ai-agents/pitfalls.md"
+NOTE_MAX_BYTES=$(brain_note_max_bytes "$BRAIN_CONTEXT_MAX_BYTES" "$PITFALLS" "$(wc -c <"$OUT_BUF")")
 if (( NOTE_MAX_BYTES > 0 )); then
   BRAIN_LOAD_SKIP_MEMORY=1 "$LOAD" --max-bytes "$NOTE_MAX_BYTES" 2>>"$LOG_FILE" || true
 else
@@ -136,17 +133,6 @@ if [[ -n "$REVIEW_SLUG" ]]; then
     "${BRAIN_PATH}/inbox/review" 2>>"$LOG_FILE" | head -c 300 || true
 fi
 
-# Inject operational constraints from ai-agents knowledge base
-AI_AGENTS_DIR="${BRAIN_PATH}/resources/operational/ai-agents"
-
 # pitfalls.md is a distilled rule list (lessons-learned merged into it).
-PITFALLS="$AI_AGENTS_DIR/pitfalls.md"
-if [[ -f "$PITFALLS" ]]; then
-  PITFALLS_MAX_BYTES=$(( OUTPUT_MAX_BYTES - $(wc -c <"$OUT_BUF") - 200 ))
-  (( PITFALLS_MAX_BYTES > 0 )) || PITFALLS_MAX_BYTES=0
-  echo "--- AI-AGENTS PITFALLS (constraints) ---"
-  # Write-time gate: scripts/check-pitfalls-budget.sh. This is the last-resort cut: whole sections only.
-  python3 "$AI_DOTFILES/scripts/fit-sections.py" "$PITFALLS" "$PITFALLS_MAX_BYTES" \
-    || head -c "$PITFALLS_MAX_BYTES" "$PITFALLS"
-  echo "--- END PITFALLS ---"
-fi
+# Write-time gate: scripts/check-pitfalls-budget.sh. The last-resort cut keeps whole sections only.
+brain_print_pitfalls "$PITFALLS" "$BRAIN_CONTEXT_MAX_BYTES" "$(wc -c <"$OUT_BUF")"

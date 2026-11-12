@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Vibe entry: sync start, write ~/.vibe/brain-context.md, run vibe, sync end. Works from any cwd.
+# Alias (not export) in ~/.zshrc: alias vibe=vibe-brain. Exit code: Vibe's (130 on INT, 143 on TERM).
+set -uo pipefail
+
+AI_DOTFILES="${AI_DOTFILES:-$HOME/ai-dotfiles}"
+SYNC="$AI_DOTFILES/skills/brain-sync/scripts/sync.sh"
+CTX_FILE="$HOME/.vibe/brain-context.md"
+
+ENV_FILE="${BRAIN_ENV_FILE:-$AI_DOTFILES/config/brain.env}"
+# shellcheck source=/dev/null
+[[ -f "$ENV_FILE" ]] && source "$ENV_FILE"
+[[ -z "${BRAIN_PATH:-}" ]] || export BRAIN_PATH  # capture finds the vault through it
+
+started=0
+# The pull failed: no push at the end (it can conflict). Same rule as .vibe/bootstrap.md.
+if bash "$SYNC" start; then
+  started=1
+else
+  echo "[vibe-brain] WARNING: sync.sh start failed; running Vibe on the local vault, no sync end." >&2
+fi
+
+# The file is global, so it names its project (cwd:) and its owner (pid:): .vibe/bootstrap.md reads it only
+# for a matching cwd, and finish() deletes it only while it still holds this pid.
+mkdir -p "${CTX_FILE%/*}"
+tmp="$CTX_FILE.$$.tmp"
+if { printf 'cwd: %s\npid: %s\n' "$PWD" "$$"; bash "$AI_DOTFILES/scripts/brain-context.sh" 2>/dev/null; } >"$tmp" \
+    && mv -f "$tmp" "$CTX_FILE"; then
+  :
+else
+  rm -f "$tmp" "$CTX_FILE"  # a stale context is worse than none
+  echo "[vibe-brain] WARNING: brain-context.sh failed; no ~/.vibe/brain-context.md." >&2
+fi
+
+hup=0
+finish() {  # runs once, on every exit path; keeps Vibe's code
+  local rc=$?
+  trap - EXIT
+  [[ "$(sed -n 2p "$CTX_FILE" 2>/dev/null)" != "pid: $$" ]] || rm -f "$CTX_FILE"
+  if (( started )); then
+    if (( hup )); then  # the terminal is gone: nothing can read stdout
+      bash "$SYNC" end </dev/null >>"$HOME/.vibe/brain-sync-end.log" 2>&1 || :
+    else
+      bash "$SYNC" end || echo "[vibe-brain] WARNING: sync.sh end failed (exit $?)." >&2
+    fi
+  fi
+  exit "$rc"
+}
+trap finish EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'hup=1; exit 129' HUP
+
+# Foreground: Vibe keeps the terminal and its signal handlers (a background child would start with SIGINT
+# ignored). A signal to the group reaches Vibe and the launcher together; bash runs the trap once Vibe has
+# exited. Without the INT trap bash would re-kill itself with SIGINT and the caller would see a signal death.
+vibe "$@"

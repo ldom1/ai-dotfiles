@@ -1,0 +1,11 @@
+{
+  "name": "obsidian-bases",
+  "version": "1.1.0",
+  "description": "Create and edit Obsidian Bases (.base files) with views, filters, formulas and summaries. Vendored verbatim from obsidianmd/obsidian-skills 1.1.0",
+  "author": {
+    "name": "Steph Ango",
+    "github": "kepano"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/obsidianmd/obsidian-skills"
+}

@@ -7,8 +7,6 @@ HOOKS="$ROOT/.cursor/hooks"
 source "$HOOKS/lib-gate.sh"
 # shellcheck source=/dev/null
 source "$HOOKS/lib-session.sh"
-# shellcheck source=/dev/null
-source "$HOOKS/lib-pitfalls-excerpt.sh"
 
 fail=0
 ok() { echo "PASS $1"; }
@@ -46,22 +44,6 @@ export BRAIN_AGENT_HOOKS=0 CURSOR_VERSION=2026.09.02-c22c1a3
 if r="$(brain_hooks_should_run)"; then e=0; else e=$?; fi
 [[ "$e" -eq 1 && "$r" == explicit_disable ]] && ok "gate 0 skips" || bad "gate 0 skips"
 unset BRAIN_AGENT_HOOKS CURSOR_VERSION
-
-# shellcheck source=/dev/null
-source "$ROOT/config/brain.env"
-P="${BRAIN_PATH}/resources/operational/ai-agents/pitfalls.md"
-if [[ -f "$P" ]]; then
-  out="$(brain_hooks_pitfalls_excerpt "$P")"
-  bytes="$(printf '%s' "$out" | wc -c)"
-  [[ "$bytes" -le 12288 ]] && ok "excerpt <= 12288" || bad "excerpt <= 12288 ($bytes)"
-  [[ "$out" == *'RECENT ENTRIES'* ]] && ok "excerpt has recent header" || bad "excerpt has recent header"
-  first="$(grep -m1 '^## ' "$P" || true)"
-  if [[ -n "$first" ]]; then
-    [[ "$out" == *"${first:0:40}"* ]] && ok "excerpt includes newest heading" || bad "excerpt includes newest heading"
-  fi
-else
-  echo "SKIP excerpt (no pitfalls file)"
-fi
 
 dir="$(brain_hooks_marker_dir)"
 mkdir -p "$dir"

@@ -128,10 +128,12 @@ ai-dotfiles/
 ├── prompts/
 ├── bin/
 │   ├── ai-dotfiles                  # CLI: init / upgrade / sync / mcp-sync
-│   └── stop-check-trust             # approve a repo's .claude/stop-check command
+│   ├── stop-check-trust             # approve a repo's .claude/stop-check command
+│   └── vibe-brain                   # Vibe launcher: sync start, brain-context file, vibe, sync end
 └── scripts/
     ├── cursor-agent-brain.sh        # prewarm inject rule + agent (turn-1 reliable)
     ├── brain-hooks-prewarm.sh       # write alwaysApply inject + sidecar
+    ├── brain-context.sh             # note + pitfalls within 9,500 B (Cursor prewarm, vibe-brain)
     ├── install.sh                   # Setup script (symlinks, settings, hooks, CLI)
     ├── init-project.sh              # Initialise a project brain folder
     ├── upgrade-project.sh           # Add missing files, backfill frontmatter + sections
