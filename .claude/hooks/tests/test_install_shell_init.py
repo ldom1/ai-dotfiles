@@ -71,3 +71,40 @@ def test_statusline_without_wrapper_is_untouched(tmp_path):
     s = statusline(tmp_path, before)
     assert s["statusLine"]["command"] == before
     assert not (tmp_path / "dotfiles" / ".claude" / "settings.json.bak").exists()
+
+
+def obsidian_block(tmp_path: Path, aif_os: str, with_exe: bool = True):
+    home, users = tmp_path / "home", tmp_path / "Users"
+    (home / ".local" / "bin").mkdir(parents=True, exist_ok=True)
+    exe = users / "someone" / "AppData" / "Local" / "Programs" / "Obsidian" / "Obsidian.com"
+    if with_exe:
+        exe.parent.mkdir(parents=True)
+        exe.write_text("")
+    r = subprocess.run(["bash", "-c", PRELUDE + block("# Obsidian CLI")], capture_output=True, text=True,
+                       env={"PATH": "/usr/bin:/bin", "HOME": str(home), "AIF_OS": aif_os,
+                            "AIF_WIN_USERS": str(users)})
+    assert r.returncode == 0, r.stderr
+    return home / ".local" / "bin" / "obsidian", exe
+
+
+def test_obsidian_cli_linked_on_wsl(tmp_path):
+    link, exe = obsidian_block(tmp_path, "wsl")
+    assert link.is_symlink() and link.resolve() == exe.resolve()
+
+
+def test_obsidian_cli_not_linked_on_native_linux(tmp_path):
+    link, _ = obsidian_block(tmp_path, "linux")
+    assert not link.exists() and not link.is_symlink()
+
+
+def test_obsidian_cli_absent_on_windows_side(tmp_path):
+    link, _ = obsidian_block(tmp_path, "wsl", with_exe=False)
+    assert not link.is_symlink()
+
+
+def test_obsidian_cli_keeps_a_real_file(tmp_path):
+    home = tmp_path / "home"
+    (home / ".local" / "bin").mkdir(parents=True, exist_ok=True)
+    (home / ".local" / "bin" / "obsidian").write_text("#!/bin/sh\n")
+    link, _ = obsidian_block(tmp_path, "wsl")
+    assert not link.is_symlink() and link.read_text() == "#!/bin/sh\n"

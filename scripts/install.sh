@@ -233,6 +233,14 @@ if [[ "$AIF_OS" == wsl && -L "$HOME/.claude" ]]; then
   warn_end "$HOME/.claude is a symlink: Windows apps (Orca's agent session history) cannot read it. Close Claude sessions, then run: bash $DOTFILES/scripts/wsl-claude-mount.sh"
 fi
 
+# Obsidian CLI (WSL): the obsidian-cli skill calls `obsidian`; on WSL it is the Windows Obsidian.com.
+# Linked into ~/.local/bin; a real file there is kept. Native Linux: Obsidian's own package provides it.
+obsidian_exe=$(compgen -G "${AIF_WIN_USERS:-/mnt/c/Users}/*/AppData/Local/Programs/Obsidian/Obsidian.com" | head -n 1)
+if [[ "$AIF_OS" == wsl && -n "$obsidian_exe" && ( -L "$HOME/.local/bin/obsidian" || ! -e "$HOME/.local/bin/obsidian" ) ]]; then
+  ln -sfn "$obsidian_exe" "$HOME/.local/bin/obsidian"
+  log "obsidian → $obsidian_exe"
+fi
+
 need_cmds() {  # need_cmds "<apt packages>" cmd...: warn once with the apt line for missing commands
   local pkgs=$1 missing=(); shift
   for c in "$@"; do command -v "$c" >/dev/null 2>&1 || missing+=("$c"); done
