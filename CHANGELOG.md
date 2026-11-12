@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-11-12
+
 ### Added
 - `bin/vibe-brain` (linked by `install.sh`; alias `vibe=vibe-brain` is the owner's choice): runs `sync.sh start`, writes `~/.vibe/brain-context.md`, runs `vibe`, then `sync.sh end`, and exits with Vibe's code (`130` on INT, `143` on TERM, `129` on HUP, where `sync.sh end` logs to `~/.vibe/brain-sync-end.log`; Vibe runs in the foreground). `sync.sh start` failure: warning, Vibe runs, no `sync.sh end`. Context failure: warning, no partial file (temp file + `mv`). `sync.sh end` runs once and never replaces Vibe's code. It exports `BRAIN_PATH` to Vibe. The context file starts with `cwd:` and `pid:` lines, and the launcher deletes it at exit only while it holds its own pid. `.vibe/bootstrap.md` reads it only when `cwd:` is the agent's working directory. 8 tests.
 - `scripts/brain-context.sh`: the project note (up to 3,000 B, less when the pitfalls need the room) then the pitfalls, within 9,500 B, then one line naming `.claude/memory/OBJECTIVES.md` and `CONTEXT.md` and, when the note is missing, a `PROJECT_NOTE_MISSING` line. It shares `scripts/brain-context-lib.sh` (cap rule, `fit-sections.py` call) with the Claude Code SessionStart hook, so both use one budget code path. 5 tests (pitfalls 1,000 to 12,000 B, missing note).
