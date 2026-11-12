@@ -243,7 +243,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "__HOME__/.local/bin/aif-statusline __HOME__/.local/bin/ccstatusline --config __HOME__/.claude/ccstatusline-settings.json",
+    "command": "__HOME__/.local/bin/ccstatusline --config __HOME__/.claude/ccstatusline-settings.json",
     "padding": 2,
     "refreshInterval": 10
   },
