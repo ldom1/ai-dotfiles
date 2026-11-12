@@ -80,11 +80,11 @@ lint_cli() {
     call unresolved total || return 1
     [[ "$out" =~ ^[[:space:]]*[0-9]+[[:space:]]*$ ]] || { fail "Obsidian CLI returned a non-number for 'unresolved total': ${out:0:80}"; return 1; }
     total="${out//[[:space:]]/}"
-    call unresolved format=json || return 1
+    call unresolved format=json counts verbose || return 1
     unresolved_json="$out"
     top="$(jq -r 'sort_by(-(.count | tonumber)) | .[:10][]
         | "  \(.link) (\(.count)): \(.sources | if type == "array" then join(", ") else tostring end)"' <<<"$unresolved_json" 2>&1)" \
-        || { fail "Obsidian CLI returned invalid JSON for 'unresolved format=json'"; return 1; }
+        || { fail "Obsidian CLI returned invalid JSON for 'unresolved format=json counts verbose'"; return 1; }
     call orphans || return 1
     n_orphans="$(grep -v -E '^(inbox/daily/|projects/[^/]+/)' <<<"$out" | grep -c . || true)"
 
