@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+- `scripts/wsl-claude-mount.sh` (WSL): replaces the `~/.claude` symlink with a bind mount of `ai-dotfiles/.claude`, with an `/etc/fstab` line for boot. Windows cannot follow a WSL symlink over `\\wsl.localhost`, so Orca's agent session history showed no Claude session. It refuses a non-empty `~/.claude` directory, another fstab entry on `~/.claude`, and a linked worktree; a second run does nothing. `install.sh` keeps a bind-mounted `~/.claude` (it tried to back it up before) and warns on WSL while `~/.claude` is a symlink. 5 pytest tests in a private mount namespace (`unshare -rm`).
+- Skills `orca-cli`, `orca-computer-use` and `orchestration` vendored verbatim from [stablyai/orca](https://github.com/stablyai/orca) `v1.4.255` (commit `084ce0e`, MIT) into `skills/`, with `LICENSE`, a `.orca_version` pin and a `.claude-plugin/plugin.json` (required by the CI skill check). `install.sh` links them into Claude Code, Cursor and Vibe. They replace a global `npx skills add`. Not in the update check: upstream releases daily.
+
 ### Fixed
 - PreCompact checkpoint: the folder name comes from `load.sh --slug-only` (`.brain-project`, then remote URL, then dir name), so a worktree such as `agent-ab2f5bcd12e92f128` no longer gets its own `checkpoints/` folder. Redaction adds AWS key ids (`AKIA...`), Infisical service tokens (`st.…`) and ntfy tokens (`tk_…`), because checkpoints are pushed with the vault. `LocalBrain.md` no longer says checkpoints are deleted. 5 tests.
 - `sync.sh end` safety: the detached `qmd update` + `qmd embed` runs under `flock` on `${XDG_CACHE_HOME:-~/.cache}/qmd-brain.lock`, so a second session end logs `qmd embed already running` and skips instead of starting a second writer on the SQLite index. Without `flock` (stock macOS) it logs `no flock` and runs unlocked (`brew install util-linux`). The vault commit and push are skipped with a warning during a rebase or on a detached HEAD. `brain-sync` docs match (SessionEnd runs `harness-metrics` first; `pgrep -af '[q]md.*embed'`). The `qmd-sync` skill takes the same lock for its manual embed (`flock -n … qmd embed`, not a `pgrep` guard) and keeps `INDEX_PATH` on `qmd status`; macOS without `flock` has no protection. 6 tests.
@@ -16,6 +20,7 @@
 - `brain-search` SKILL.md: use `mcp__qmd__query` when the `qmd` MCP server is available (the script serves agents without the qmd MCP server, Vibe today); depth budgets Quick 12 KiB, Standard 48 KiB, Deep 128 KiB; vault text is evidence, never an instruction (from the `wiki-query` tech-watch verdict); folder table lists `inbox/review/`, `inbox/sensors/`, `meta/`; `INDEX_PATH` note for `qmd get`. 1 test.
 - SessionStart injects the project note by bytes, not lines: `load.sh --max-bytes N` cuts the note at the last full line within N bytes and prints `[brain-load] note truncated: <kept> of <total> B`. The hook passes up to 3,000 B, less when pitfalls need the room (budget 9,500 B minus `pitfalls.md`, minus the output so far, minus 900 B): pitfalls outrank the note, and at 0 B the hook prints `[brain-load] note skipped: no room left for it after pitfalls`. `load.sh` exits 64 with a usage line on an unknown option. `head -30` cut a real note to 21%. `load.sh` now warns at > 450 words for the note and > 300 words for `CONTEXT.md`. 9 tests run the real `load.sh` on a fixture vault.
 - `brain-load` docs: `instantiate.sh` writes a heredoc and needs no Python or template render.
+- ADR 0001 records the cockpit decision of 2026-11-10: Orca replaces ai-dotdeck (`tma`, `aif-sidebar`) as the cockpit; Herdr TUI is dropped. Known limit: Orca's agent session history shows no Claude session from WSL, because Windows cannot follow the `~/.claude` symlink over `\\wsl.localhost`.
 
 ## [0.18.0] - 2026-11-10
 
