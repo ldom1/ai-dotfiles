@@ -1,6 +1,6 @@
 # ADR 0001 — Sidebar sessions / agents tmux
 
-- Statut : **accepté** le 2026-11-05 : option B, sous-option B1 (Rust + ratatui), look and feel inspiré de claude-squad
+- Statut : **accepté** le 2026-11-05 : option B, sous-option B1 (Rust + ratatui), look and feel inspiré de claude-squad ; **remplacé** le 2026-11-10 : Orca devient le cockpit (voir « Suite »)
 - Date : 2026-11-05
 - Contexte : branche `feat/tmux-agents`, spécification « vue sessions / agents tmux » (étapes 3 à 5)
 
@@ -45,3 +45,12 @@ Briques : ratatui 0.30 (interface), crossterm 0.29 par la réexportation de rata
 Pour la techno, je recommande **B2 (Textual)** plutôt que B1. Elle supprime la compilation sur chaque machine (cause du constat 0.3), et ses widgets couvrent la maquette, ce qui donne moins de code à maintenir. B1 reste valable si tu veux un binaire unique sans Python.
 
 Conséquences de B : opensessions est retiré (`config/tmux.conf`, `install.sh`, patch) quand la nouvelle sidebar couvre les sessions ; le constat 0.3 disparaît avec lui.
+
+## Suite (2026-11-10) : Orca devient le cockpit
+
+Un essai a comparé trois cockpits sur des projets réels : Herdr TUI, Orca et ai-dotdeck (tmux, `tma`, `aif-sidebar`). Grille dans le vault : `2026-11-10-cockpit-trial-grid`.
+
+- Décision de Louis : Orca est adopté à 100 %. Herdr TUI et ai-dotdeck ne sont plus le cockpit.
+- Raisons : Orca est une application intégrée (type IDE) ; Herdr reste proche d'un outil maison comme ai-dotdeck. Les deux outils ont passé le critère 4 (`wsl --shutdown`). La décision est prise avant les critères 1, 2 et 5.
+- Limite connue : l'historique des sessions d'agent d'Orca ne montre aucune session Claude de WSL. `~/.claude` est un lien symbolique, et Windows ne suit pas un lien WSL par `\\wsl.localhost`.
+- Migration à faire : retirer le pont Herdr d'`aif-agent-hook` et `spikes/cockpit-trial/`, décider du sort de `tma` et `aif-sidebar`, et corriger l'historique Orca.

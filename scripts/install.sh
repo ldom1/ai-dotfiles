@@ -39,6 +39,11 @@ link() {
   local src="$DOTFILES/$rel"
   local dst="$HOME/$rel"
 
+  # WSL: ~/.claude can be a bind mount of $src (scripts/wsl-claude-mount.sh); keep it.
+  if [[ -d "$dst" && ! -L "$dst" && "$dst" -ef "$src" ]]; then
+    log "$dst is a bind mount of $src"
+    return
+  fi
   if [[ -e "$dst" && ! -L "$dst" ]]; then
     # Preserve sensitive files from existing dir before backing it up
     if [[ "$rel" == ".claude" ]]; then
@@ -231,6 +236,9 @@ chmod +x "$DOTFILES/bin/aif-platform"
 ln -sfn "$DOTFILES/bin/aif-platform" "$HOME/.local/bin/aif-platform"
 AIF_OS=$("$DOTFILES/bin/aif-platform" name)
 log "platform: $AIF_OS (tmux loads config/tmux-platform-$AIF_OS.conf)"
+if [[ "$AIF_OS" == wsl && -L "$HOME/.claude" ]]; then
+  warn_end "$HOME/.claude is a symlink: Windows apps (Orca's agent session history) cannot read it. Close Claude sessions, then run: bash $DOTFILES/scripts/wsl-claude-mount.sh"
+fi
 need_cmds() {  # need_cmds "<apt packages>" cmd...: warn once with the apt line for missing commands
   local pkgs=$1 missing=(); shift
   for c in "$@"; do command -v "$c" >/dev/null 2>&1 || missing+=("$c"); done
