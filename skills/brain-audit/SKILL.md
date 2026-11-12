@@ -1,6 +1,6 @@
 ---
 name: brain-audit
-description: Vault maintenance pipeline — compile inbox notes, connect via QMD semantic search, generate insights, sync QMD index, produce weekly digest.
+description: Vault maintenance pipeline — compile inbox notes, promote recurring pitfalls and harness changes to sensor drafts, run the knowledge-gaps and roadmap queries, connect via QMD semantic search, generate insights, sync QMD index, reset the maintenance clock with a digest.
 user-invocable: true
 ---
 
@@ -10,14 +10,14 @@ Manual vault maintenance. Pick the subskill that matches the request; "run brain
 
 | User says | Subskill |
 |-----------|----------|
-| "compile my notes", "promote pitfalls", "review inbox" | `compile` |
+| "compile my notes", "promote pitfalls", "review inbox", "synthesize patterns", "create knowledge files" | `compile` |
 | "draft sensors", "turn recurring pitfalls into hooks", "which rules keep recurring" | `promote` |
-| "find connections", "link my notes", "synthesize patterns" | `connect` |
+| "find connections", "link my notes" | `connect` |
 | "insights", "what patterns", "what blockers" | `insights` |
 | "knowledge gaps", "what to document", "roadmap", "where are my projects" | `queries` |
 | "sync qmd", "reindex vault" | `qmd-sync` |
 | "weekly digest", "reset audit clock" | `digest` |
 
-**Full run order:** `qmd-sync` → `compile` → `promote` → `queries` → `connect` → `insights` → `digest` (pass the compile/connect/insights counts to `digest`). `compile`, `promote` and `queries` read files directly; `connect` and `insights` need a fresh QMD index.
+**Full run order:** `qmd-sync` → `compile` → `promote` → `queries` → `connect` → `insights` → `digest` (`digest` resets the clock; pass it the counts for the digest note). `compile`, `promote` and `queries` read files directly; `connect` and `insights` need a fresh QMD index.
 
 Each subskill is `skills/<name>/SKILL.md` under this skill's root (`~/ai-dotfiles/skills/brain-audit/`). Claude Code exposes them as `brain-audit:<name>`; Cursor CLI and Mistral Vibe only see this router, so read the file at that path instead — don't report the subskill as missing.

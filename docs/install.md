@@ -127,7 +127,7 @@ ai-dotfiles/
 ├── CONTRIBUTING.md
 ├── prompts/
 ├── bin/
-│   ├── ai-dotfiles                  # CLI: init / upgrade / sync / merge-memory
+│   ├── ai-dotfiles                  # CLI: init / upgrade / sync / mcp-sync
 │   └── stop-check-trust             # approve a repo's .claude/stop-check command
 └── scripts/
     ├── cursor-agent-brain.sh        # prewarm inject rule + agent (turn-1 reliable)
@@ -135,7 +135,6 @@ ai-dotfiles/
     ├── install.sh                   # Setup script (symlinks, settings, hooks, CLI)
     ├── init-project.sh              # Initialise a project brain folder
     ├── upgrade-project.sh           # Add missing files, backfill frontmatter + sections
-    ├── merge-memory.sh              # Backfill OKF frontmatter + missing sections only
     ├── merge-memory-md.py           # Per-file merge: adds frontmatter + ## headers non-destructively
     ├── replay-bash-rules.py         # Replay past Bash calls through hardline-check (prompt count)
     ├── vibe-claude-hook.py          # Run a Claude Code hook as a Vibe hook (protocol adapter)

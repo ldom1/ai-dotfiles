@@ -66,10 +66,10 @@ upgrade_one() {
         (( added++ )) || true
       elif [[ "$fname" == "settings.json" ]]; then
         # Merge: template provides defaults, existing values win
-        merged="$(python3 -c "
+        merged="$(python3 - "$f" "$dest" <<'PY'
 import json, sys
-t = json.load(open('$f'))
-e = json.load(open('$dest'))
+t = json.load(open(sys.argv[1]))
+e = json.load(open(sys.argv[2]))
 def deep_merge(base, override):
     result = dict(base)
     for k, v in override.items():
@@ -79,7 +79,8 @@ def deep_merge(base, override):
             result[k] = v
     return result
 print(json.dumps(deep_merge(t, e), indent=2))
-" 2>/dev/null)"
+PY
+)" || { echo "[upgrade-project] ERROR: settings.json merge failed for $dest" >&2; return 1; }
         if [[ -n "$merged" ]]; then
           if [[ "$merged" != "$(cat "$dest")" ]]; then
             echo "$merged" > "$dest"
@@ -119,43 +120,7 @@ print(json.dumps(deep_merge(t, e), indent=2))
   local agents_md="$project_path/AGENTS.md"
   local claude_symlink="$project_path/CLAUDE.md"
   if [[ ! -f "$agents_md" && ! -L "$agents_md" ]]; then
-    cat > "$agents_md" << 'EOF'
-# AGENTS.md — Project instructions
-# Location : project root (canonical). CLAUDE.md is a symlink → AGENTS.md.
-# Scope    : all agents (Claude, Mistral, Codex, …). Claude Code loads it via the symlink.
-# Length   : keep under 60 lines — agents read this every session.
-
----
-
-## Description
-<!-- One paragraph: what this project does, tech stack, deployment context. -->
-
-## Key Files
-<!-- 3–5 files an agent must know to orient itself. -->
-
-## Task-Specific Behaviors
-<!-- Commands to always run, files to read before touching a module, hard rules. -->
-
-## Constraints
-<!-- Protected files, dependency policy, hard limits. -->
-
-## Standards
-<!-- Reference shared coding standards. Uncomment the relevant line(s): -->
-<!-- @.claude/standards/python.md -->
-
-## Memory
-<!-- Claude Code loads memory only through these imports (the SessionStart hook skips it).
-     Move a line out of the comment below once that file has real content. -->
-@.claude/memory/OBJECTIVES.md
-@.claude/memory/CONTEXT.md
-<!--
-@.claude/memory/DESIGN.md
-@.claude/memory/ARCHITECTURE.md
-@.claude/memory/DECISIONS.md
-@.claude/memory/ROADMAP.md
-@.claude/memory/API.md
--->
-EOF
+    cp "$TEMPLATE_DIR/AGENTS.md.tpl" "$agents_md"
     echo "[upgrade-project] Created $agents_md"
     (( added++ )) || true
   fi
@@ -178,6 +143,7 @@ EOF
   fi
 }
 
+failed=()
 if [[ "${1:-}" == "--all" ]]; then
   if [[ ! -f "$REGISTRY" ]]; then
     echo "[upgrade-project] No registry at $REGISTRY — nothing to upgrade."
@@ -187,7 +153,8 @@ if [[ "${1:-}" == "--all" ]]; then
   while IFS=$'\t' read -r name abs_path _rest; do
     [[ "$name" == "name" ]] && continue
     [[ -z "$name" ]] && continue
-    upgrade_one "$abs_path"
+    # Child process: `upgrade_one ... || x` would disable errexit inside the function.
+    UPGRADE_NO_MCP=1 bash "${BASH_SOURCE[0]}" "$abs_path" < /dev/null || failed+=("$name")
   done < "$REGISTRY"
 else
   if [[ -z "${1:-}" ]]; then
@@ -199,5 +166,12 @@ fi
 
 # ── Sync centrally-managed MCP servers (qmd, code-index, graphify) ──────────
 # Runs once per invocation (not once per project) since it's a global, not
-# per-project, operation.
-setup_central_mcp
+# per-project, operation. --all children (UPGRADE_NO_MCP=1) skip it; the parent runs it.
+if [[ -z "${UPGRADE_NO_MCP:-}" ]]; then
+  setup_central_mcp
+fi
+
+if [[ ${#failed[@]} -gt 0 ]]; then
+  echo "[upgrade-project] upgrade failed for: ${failed[*]}" >&2
+  exit 1
+fi

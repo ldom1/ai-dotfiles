@@ -25,12 +25,12 @@ Rules for every code change, and for a session that creates a project, a compone
 - Prefer the tool's own extension points (plugins, API, config) over a fork; prefer a fork over a rewrite.
 
 ## Local Brain (Obsidian vault)
-`$BRAIN_PATH` comes from `~/ai-dotfiles/config/brain.env`. Paths: `~/ai-dotfiles/LocalBrain.md`.
+`$BRAIN_PATH` comes from `~/ai-dotfiles/config/brain.env`. `~/ai-dotfiles/LocalBrain.md` is the one vault map: paths, order of truth, vault access per tool.
 
 - Pitfalls are constraints. Read `pitfalls.md` if no hook injected it. A correction that would recur elsewhere becomes one rule there (`capture`). Stack rules go to `resources/knowledge/patterns/*-patterns.md`. Project gotchas go to `.claude/memory/CONTEXT.md`.
 - Write specs, plans and session logs in the vault, never in the repo `docs/`. Move a misplaced one and tell the user.
 - History lives only in session logs. Vault `projects/<slug>.md` and repo `.claude/memory/*` are snapshots: rewrite them in place. Never add a journal, changelog or dated section.
-- Vault links are `[[slug]]` (filename only). Never a path.
+- Vault links are `[[slug]]` (filename only). Never a path. A skill is written `` `name` ``, never `[[name]]`.
 - End a substantive session with `/capture`. Run `/brain-audit` only when told it is due.
 
 ## Development

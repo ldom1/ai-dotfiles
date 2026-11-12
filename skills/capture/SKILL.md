@@ -13,7 +13,6 @@ Only Claude Code has a SessionEnd reminder; under Cursor and Mistral Vibe, `/cap
 ## 1. Resolve
 
 ```bash
-grep BRAIN_PATH ~/ai-dotfiles/config/brain.env | cut -d= -f2
 bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh --slug-only   # slug=<project>
 date +%Y-%m-%d
 ```
@@ -83,7 +82,7 @@ Project-specific traps discovered this session go to `CONTEXT.md` → `Gotchas` 
 
 ## 4. Pitfalls & lessons (only if cross-project)
 
-`$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md` is injected into every session, so it holds rules, not incidents. A script enforces its 6,000 B cap: `bash ~/ai-dotfiles/scripts/check-pitfalls-budget.sh`. It covers both kinds: a **pitfall** (mistake to avoid) and a **lesson** (approach that worked, worth repeating). Add one only if it would apply in a *different* project on any stack. A rule tied to one tool or platform goes to the `## Rules` list of the matching `resources/knowledge/patterns/*-patterns.md`; a rule tied to this project is a Gotcha or Decision (step 3).
+`$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md` is injected into every session, so it holds rules, not incidents. It has a 6,000 B cap. It covers both kinds: a **pitfall** (mistake to avoid) and a **lesson** (approach that worked, worth repeating). Add one only if it would apply in a *different* project on any stack. A rule tied to one tool or platform goes to the `## Rules` list of the matching `resources/knowledge/patterns/*-patterns.md`; a rule tied to this project is a Gotcha or Decision (step 3).
 
 - Search the file first. Before writing, pick one verdict and state it to the user:
   - **Absorb into <existing rule>** — a rule already covers it: sharpen that rule. This is the default.
@@ -94,15 +93,8 @@ Project-specific traps discovered this session go to `CONTEXT.md` → `Gotchas` 
   Prefer Absorb: every new bullet competes for the same injected bytes.
 
   A **lesson** needs an observed contrast. The same task failed or cost more without the approach, and passed with it, in this session. A success seen once is confounded. A success that followed several changes at once is also confounded. Keep it in the session log with verdict **Drop**.
-- Add one bullet under the matching `## <Topic>`: imperative rule + the mechanism in a clause, exact command when that is the fix. No dates, no project names, no narrative — the session log keeps the story.
-- End the bullet with its id: the section letter and the next free number, e.g. `^g15`. Letters in `pitfalls.md`: `v` Verification, `d` Diagnosis, `u` Working with the user, `s` Safety and secrets. Letters in pattern notes: `g` git-patterns, `c` claude-code-patterns, `h` shell-patterns, `o` vault-patterns. A rule keeps its id when it moves between files. Never renumber or reuse an id. A merge keeps the lower id and adds the other to `## Retired ids` as `^g7→^g2`.
+- Write the bullet, its id and the budget check as in `~/ai-dotfiles/skills/brain-audit/reference/pitfall-rules.md`. Do not leave step 4 while the budget check fails.
 - For each Absorb or Improve verdict, add `**Pitfall hit:** [[pitfalls#^g6]]` to today's session log (step 2), with the id of the rule hit. For a rule that moved to a pattern note, link that note: `[[git-patterns#^g6]]`. `/brain-audit` counts these lines to find rules worth a sensor.
-- After every edit, run `bash ~/ai-dotfiles/scripts/check-pitfalls-budget.sh`. On exit 1, merge rules (Absorb) or move a stack section to a pattern note, then run it again. Do not leave step 4 while it fails.
-
-  ```markdown
-  - Check `git worktree list | grep "[<branch>]"` before checking out a branch — two worktrees on one branch move it under each other's files. ^g15
-  - Compute forecast tables and gate thresholds with a script from the stated assumptions — hand-typed tables contradict their own rates. ^v12
-  ```
 
 ## 5. Sync and hand off
 
