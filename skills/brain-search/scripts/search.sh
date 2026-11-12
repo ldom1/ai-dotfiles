@@ -10,6 +10,7 @@
 # Environment (auto-loaded from brain.env if not set):
 #   QMD_INDEX_PATH   path to vault SQLite index
 #   BRAIN_PATH       path to vault root
+#   BRAIN_ENV_FILE   env file to load instead of config/brain.env
 set -euo pipefail
 
 # ── Colours ──────────────────────────────────────────────────────────────────
@@ -21,7 +22,7 @@ _err()  { printf "${_RED}✗${_RST}  %s\n" "$*" >&2; exit 1; }
 
 # ── Load brain.env if vars not already exported ───────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ENV_FILE="$SCRIPT_DIR/../../../config/brain.env"
+ENV_FILE="${BRAIN_ENV_FILE:-$SCRIPT_DIR/../../../config/brain.env}"
 if [[ -z "${QMD_INDEX_PATH:-}" && -f "$ENV_FILE" ]]; then
   # shellcheck source=/dev/null
   source "$ENV_FILE"
@@ -62,7 +63,7 @@ fi
 # ── Build command ─────────────────────────────────────────────────────────────
 QMD_ARGS=("$MODE" "$QUERY" "-c" "brain")
 if [[ -n "$LIMIT" ]]; then
-  QMD_ARGS+=("--limit" "$LIMIT")
+  QMD_ARGS+=("-n" "$LIMIT")  # qmd ignores --limit (non-strict parser); it reads -n
 fi
 
 _info "brain-search · mode=${MODE} · index=$(basename "$QMD_INDEX_PATH")"

@@ -5,7 +5,7 @@ Full vault map: `~/ai-dotfiles/LocalBrain.md`. This file covers only what `load.
 ```
 $BRAIN_PATH/                  (git repo, Obsidian vault)
 ├── _templates/
-│   └── project-template.md   ← read by instantiate.sh (Templater placeholders)
+│   └── project-template.md   ← only a mode marker for load.sh; instantiate.sh writes its own heredoc
 ├── projects/
 │   ├── <slug>.md             ← project one-pager, printed at session start
 │   └── <slug>/               ← mirror of <repo>/.claude/memory/ (scripts/sync-project.sh)

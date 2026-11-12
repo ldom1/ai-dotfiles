@@ -38,11 +38,7 @@ INDEX_PATH="$QMD_INDEX_PATH" qmd query "<question>"
 Enumerable questions (3, 5) → scan directly; grep surfaces exact items where semantic search returns look-alikes. Session logs use a `**Follow-ups:**` field (older ones a `## Follow-ups` heading).
 
 ```bash
-CUTOFF=$(date -d '-30 days' +%Y-%m-%d 2>/dev/null || date -v-30d +%Y-%m-%d)
-find "$BRAIN_PATH/inbox/daily/implementation" -name '*.md' -newermt "$CUTOFF" | sort | while read -r f; do
-  items=$(awk '/^(## |\*\*)Follow-ups/{on=1; next} on && /^(## |\*\*[A-Z])/{on=0} on && /^- / && !/[Nn]one/' "$f")
-  [[ -n "$items" ]] && printf '=== %s\n%s\n' "${f#$BRAIN_PATH/}" "$items"
-done
+bash ~/ai-dotfiles/skills/brain-audit/scripts/open-followups.sh   # open follow-ups, last ${BRAIN_AUDIT_LOOKBACK_DAYS:-30} days; inline and list forms
 cat "$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md"          # current cross-project rules
 grep -h '^- \[ \]' "$BRAIN_PATH/inbox/insights/"*.md 2>/dev/null | tail -20   # carry-over action items
 ```

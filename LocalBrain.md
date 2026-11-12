@@ -5,7 +5,7 @@ Obsidian vault, git repo. Path: `$BRAIN_PATH` from `~/ai-dotfiles/config/brain.e
 | Path | Holds | Written by |
 |---|---|---|
 | `inbox/daily/implementation/<project>/YYYY-MM-DD-<topic>.md` | Session logs (the history). Same thread today: append | `/capture` |
-| `inbox/daily/checkpoints/<project>/YYYY-MM-DD.md` | Pre-compaction breadcrumbs; folded into the session log, then deleted | PreCompact hook → `/capture` |
+| `inbox/daily/checkpoints/<project>/YYYY-MM-DD.md` | Pre-compaction breadcrumbs; `/capture` folds them into the session log. The file stays and is pushed with the vault | PreCompact hook → `/capture` |
 | `inbox/daily/specs/<project>/…-design.md` · `inbox/daily/plans/<project>/…-plan.md` | Specs · implementation plans | brainstorming / planning |
 | `inbox/{connections,insights,qa,drafts}/` | Maintenance output | `/brain-audit` |
 | `inbox/sensors/YYYY-MM-DD-<slug>.md` | Sensor drafts for rules hit in ≥ 2 sessions; the user reviews them | `/brain-audit` (`promote`) |

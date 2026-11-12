@@ -5,6 +5,7 @@ from datetime import date
 from pathlib import Path
 
 HOOK = Path(__file__).resolve().parents[1] / "precompact-checkpoint.sh"
+REPO = Path(__file__).resolve().parents[3]
 
 
 def setup(tmp_path: Path):
@@ -31,7 +32,8 @@ def run(env_file: Path, repo: Path, t: Path, tmp_path: Path, trigger: str = "aut
     event = {"session_id": "abcdef123456", "transcript_path": str(t), "cwd": str(repo), "trigger": trigger,
              "hook_event_name": "PreCompact"}
     subprocess.run(["bash", str(HOOK)], input=json.dumps(event), capture_output=True, text=True, check=True,
-                   env={"PATH": "/usr/bin:/bin", "HOME": str(tmp_path), "BRAIN_ENV_FILE": str(env_file)})
+                   env={"PATH": "/usr/bin:/bin", "HOME": str(tmp_path), "BRAIN_ENV_FILE": str(env_file),
+                        "AI_DOTFILES": str(REPO)})
 
 
 def test_writes_checkpoint_with_branch_files_and_prompts(tmp_path):
@@ -108,3 +110,55 @@ def test_resume_context_from_transcript(tmp_path):
     assert "Merge the PR now? → **Merge (Recommended)**" in note
     assert "being continued" not in note
     assert "Pushed. Next: watch CI." in note and "Shell built: ***" in note and "A" * 36 not in note
+
+
+def checkpoint(vault: Path, slug: str) -> str:
+    return (vault / "inbox/daily/checkpoints" / slug / f"{date.today():%Y-%m-%d}.md").read_text()
+
+
+def test_worktree_named_agent_uses_repo_slug(tmp_path):
+    vault, env_file, _, t = setup(tmp_path)
+    clone = tmp_path / "agent-abc123"
+    subprocess.run(["git", "init", "-q", "-b", "main", str(clone)], check=True)
+    subprocess.run(["git", "-C", str(clone), "remote", "add", "origin",
+                    "https://github.com/someone/ai-dotfiles.git"], check=True)
+    run(env_file, clone, t, tmp_path)
+    assert "auto" in checkpoint(vault, "ai-dotfiles")
+    assert not (vault / "inbox/daily/checkpoints/agent-abc123").exists()
+
+
+def test_slug_falls_back_to_dir_name_without_load_sh(tmp_path):
+    vault, env_file, repo, t = setup(tmp_path)
+    (repo / ".brain-project").unlink()
+    event = {"session_id": "s", "transcript_path": str(t), "cwd": str(repo), "trigger": "auto"}
+    subprocess.run(["bash", str(HOOK)], input=json.dumps(event), capture_output=True, text=True, check=True,
+                   env={"PATH": "/usr/bin:/bin", "HOME": str(tmp_path), "BRAIN_ENV_FILE": str(env_file),
+                        "AI_DOTFILES": str(tmp_path / "missing")})
+    assert "auto" in checkpoint(vault, "proj")
+
+
+def redacted(tmp_path, text: str) -> str:
+    vault, env_file, repo, t = setup(tmp_path)
+    line = {"type": "assistant", "message": {"id": "z1", "role": "assistant",
+                                             "content": [{"type": "text", "text": text}]}}
+    with t.open("a") as f:
+        f.write(json.dumps(line) + "\n")
+    run(env_file, repo, t, tmp_path)
+    return checkpoint(vault, "demo")
+
+
+def test_redacts_known_token_formats(tmp_path):
+    raw = ("key AKIA" + "ABCDEFGHIJKLMNOP, then st." + "0123456789abcdef0123456789abcdef.x"
+           " and tk_" + "abcdefghijklmnopqrstuvwxyz012 done")
+    assert "> key ***, then *** and *** done" in redacted(tmp_path, raw)
+
+
+def test_keeps_lookalike_text(tmp_path):
+    raw = ("AKIA akiaabcdefghijklmnop st.louis tk_short 3ccff5338ea700537839b21900aa5358a0402c98 "
+           "skills/obsidian-cli/")
+    assert "> " + raw in redacted(tmp_path, raw)
+
+
+def test_existing_patterns_still_redact(tmp_path):
+    raw = "a " + "gh" + "p_" + "A" * 36 + " b " + "s" + "k-" + "B" * 24 + " c"
+    assert "> a *** b *** c" in redacted(tmp_path, raw)

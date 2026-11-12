@@ -1,10 +1,10 @@
 ---
 name: qmd-sync
 description: >-
-  Runs qmd update --collection brain to sync the QMD index with the current
-  vault state (adds new files, updates changed files, removes deleted files).
-  Reports what changed. Use when: "sync qmd", "update qmd index", "reindex
-  vault", or after adding/deleting vault files.
+  Runs qmd update --collection brain, then qmd embed, to sync the QMD index
+  with the current vault state (adds new files, updates changed files,
+  removes deleted files). Reports what changed. Use when: "sync qmd", "update
+  qmd index", "reindex vault", or after adding/deleting vault files.
 user-invocable: true
 ---
 
@@ -22,9 +22,10 @@ INDEX_PATH="$QMD_INDEX_PATH" qmd update --collection brain 2>&1
 Report files added / updated / removed from the output. If any changed, embed:
 
 ```bash
-pgrep -af 'qmd.*embed' && echo "embed already running — wait for it"   # two writers corrupt the SQLite index
-INDEX_PATH="$QMD_INDEX_PATH" qmd embed --collection brain 2>&1
+flock -n "${XDG_CACHE_HOME:-$HOME/.cache}/qmd-brain.lock" env INDEX_PATH="$QMD_INDEX_PATH" qmd embed --collection brain || echo "embed already running"
 ```
+
+The lock is the one `sync.sh end` takes: two writers corrupt the SQLite index. macOS without `flock` (`brew install util-linux`) has no protection.
 
 On CPU, `embed` shows only a spinner for 1–2 minutes. A Bash tool timeout does not kill it: check `pgrep` before assuming it died, and never start a second one. Confirm with `INDEX_PATH="$QMD_INDEX_PATH" qmd status`.
 

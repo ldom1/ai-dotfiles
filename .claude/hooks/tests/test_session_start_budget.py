@@ -85,9 +85,69 @@ def env_for(tmp_path: Path, pitfalls_text: str, exit_log: str | None, review: st
     return {**uv_env(), "HOME": str(home), "AI_DOTFILES": str(dot)}
 
 
-def run_hook(env: dict, source: str = "startup") -> str:
+def run_hook(env: dict, source: str = "startup", cwd: Path | None = None) -> str:
     return subprocess.run(["bash", str(HOOK)], input=json.dumps({"source": source}), capture_output=True,
-                          text=True, check=True, env=env).stdout
+                          text=True, check=True, env=env, cwd=cwd).stdout
+
+
+def run_real_load(tmp_path: Path, note: bytes | None, pitfalls_text: str | None = None, exit_log: str | None = None,
+                  review: str | None = None) -> str:
+    """Runs the hook with the REAL load.sh on a fixture vault: `projects/proj.md` holds `note` (none: no note file),
+    the cwd is `proj/`."""
+    env = env_for(tmp_path, pitfalls_text or pitfalls(1000), exit_log, review)
+    scripts = Path(env["AI_DOTFILES"]) / "skills/brain-load/scripts"
+    (scripts / "load.sh").unlink()
+    for name in ("load.sh", "_brain_env.sh"):
+        (scripts / name).symlink_to(REPO / "skills/brain-load/scripts" / name)
+    (tmp_path / "vault/projects").mkdir()
+    if note is not None:
+        (tmp_path / "vault/projects/proj.md").write_bytes(note)
+    (tmp_path / "proj").mkdir()
+    return run_hook(env, cwd=tmp_path / "proj")
+
+
+def note_text(out: str) -> str:
+    """The injected project note: what sits between the header and the footer, without the truncation marker."""
+    body = out.split("--- PROJECT NOTE: proj ---\n", 1)[1].split("--- END NOTE ---", 1)[0]
+    return "".join(line for line in body.splitlines(keepends=True) if "[brain-load] note truncated" not in line)
+
+
+def test_note_cut_by_bytes_not_lines(tmp_path):
+    note = "".join(f"line {i:03d} ".ljust(39, "x") + "\n" for i in range(1, 101))
+    assert len(note.encode()) == 4000
+    out = run_real_load(tmp_path, note.encode())
+    assert "line 050 " in out and "line 075 " in out
+    assert "line 076 " not in out
+    assert "note truncated: 3000 of 4000 B" in out
+    assert len(note_text(out).encode()) == 3000
+
+
+def test_short_note_passes_unchanged(tmp_path):
+    note = "".join(f"line {i:02d}\n" for i in range(10))
+    out = run_real_load(tmp_path, note.encode())
+    assert note_text(out) == note
+    assert "truncated" not in out
+
+
+def test_cut_never_splits_utf8(tmp_path):
+    out = run_real_load(tmp_path, ("é" * 30 + "\n").encode() * 80)  # 61 B per line: 49 lines fit in 3,000 B
+    lines = note_text(out).splitlines(keepends=True)
+    assert lines == ["é" * 30 + "\n"] * 49
+    assert "note truncated: 2989 of 4880 B" in out
+
+
+def test_empty_note_prints_nothing(tmp_path):
+    out = run_real_load(tmp_path, b"")
+    assert note_text(out) == ""
+    assert "truncated" not in out
+
+
+def test_last_line_without_newline(tmp_path):
+    note = "".join(f"line {i:02d} ".ljust(99, "x") + "\n" for i in range(29)) + "last".ljust(90, "y")
+    assert len(note.encode()) == 2990 and not note.endswith("\n")
+    out = run_real_load(tmp_path, note.encode())
+    assert note_text(out) == note + "\n"
+    assert "truncated" not in out
 
 
 def test_full_budget_case_fits_without_truncation(tmp_path):
@@ -158,3 +218,46 @@ def test_failing_review_script_adds_no_line_and_logs_stderr(tmp_path):
     out = run_hook(env)
     assert "[review]" not in out and "--- END PITFALLS ---" in out
     assert "boom" in (Path(env["AI_DOTFILES"]) / ".claude/logs/brain-load.log").read_text()
+
+
+def real_size_pitfalls() -> str:
+    """The real vault pitfalls.md is 5,987 B: pad the last section so the fixture matches."""
+    base = pitfalls(6000)
+    return base + "## Pad\n- " + "p" * (5987 - len(base.encode()) - len("## Pad\n- \n")) + "\n"
+
+
+def test_pitfalls_outrank_a_big_project_note(tmp_path):
+    text = real_size_pitfalls()
+    assert len(text.encode()) == 5987
+    note = ("".join(f"line {i:02d} ".ljust(59, "x") + "\n" for i in range(51))).encode()  # 3,060 B: over the 3,000 B cap
+    out = run_real_load(tmp_path, note, text, EXIT_LOG, ITEM)
+    printed = out.split("--- AI-AGENTS PITFALLS (constraints) ---\n", 1)[1].split("--- END PITFALLS ---", 1)[0]
+    assert "[truncated" not in printed
+    assert printed == text  # every section present
+    assert REVIEW_LINE in out
+    assert len(out.encode()) <= BUDGET
+    assert "note truncated" in out  # the note gave way, not the pitfalls
+
+
+def test_note_skipped_when_pitfalls_leave_no_room(tmp_path):
+    out = run_real_load(tmp_path, b"note line\n" * 20, pitfalls(9000), EXIT_LOG)
+    assert "[brain-load] note skipped: no room left for it after pitfalls" in out
+    assert "--- PROJECT NOTE" not in out
+    assert len(out.encode()) <= BUDGET
+
+
+def test_missing_note_exits_2_inside_the_hook(tmp_path):
+    out = run_real_load(tmp_path, None)
+    assert "--- PROJECT NOTE" not in out
+    assert "--- END PITFALLS ---" in out
+
+
+def test_load_rejects_an_unknown_option(tmp_path):
+    (tmp_path / "vault/projects").mkdir(parents=True)
+    (tmp_path / "brain.env").write_text(f"BRAIN_PATH={tmp_path / 'vault'}\n")
+    r = subprocess.run(["bash", str(REPO / "skills/brain-load/scripts/load.sh"), "--max-byte", "3000"],
+                       capture_output=True, text=True, env={**uv_env(), "BRAIN_ENV_FILE": str(tmp_path / "brain.env")},
+                       cwd=tmp_path)
+    assert r.returncode == 64
+    assert "usage:" in r.stderr and "--max-bytes" in r.stderr
+    assert r.stdout == ""

@@ -63,7 +63,7 @@ setup_central_mcp() {
     # shellcheck source=/dev/null
     source "$env_file"
   fi
-  local qmd_index_path="${QMD_INDEX_PATH:-${HOME}/vault-qmd/index.sqlite}"
+  local qmd_index_path="${QMD_INDEX_PATH:-${HOME}/vault-qmd/brain.db}"
 
   local jq_bin
   if ! jq_bin="$(_find_jq)"; then
@@ -84,5 +84,4 @@ setup_central_mcp() {
     echo "[mcp-sync]   INDEX_PATH=\"$qmd_index_path\" qmd collection add \"\$BRAIN_PATH\" --name brain"
     echo "[mcp-sync]   INDEX_PATH=\"$qmd_index_path\" qmd embed --collection brain"
   fi
-  echo "[mcp-sync] Cursor: restart Cursor, open any project, and confirm 'qmd' appears under MCP settings — global mcp.json support is unconfirmed on some versions."
 }

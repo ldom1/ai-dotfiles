@@ -18,7 +18,7 @@ bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh --list-caps  # cap:<id> per
 
 **Slug:** first line of `.brain-project` at the git root → `origin` repo name → directory name.
 
-**Output (exit 0):** `--- PROJECT NOTE ---` block, then — if `.claude/memory/settings.json` exists — `--- PROJECT BRAIN ---` with the files in its `read_on_session_start` (default `OBJECTIVES.md`, `CONTEXT.md`). Take it in as context without announcing it. The Claude Code hook sets `BRAIN_LOAD_SKIP_MEMORY=1` (memory comes from the project `CLAUDE.md` imports) and injects only the first 30 lines, so keep the note short.
+**Output (exit 0):** `--- PROJECT NOTE ---` block, then — if `.claude/memory/settings.json` exists — `--- PROJECT BRAIN ---` with the files in its `read_on_session_start` (default `OBJECTIVES.md`, `CONTEXT.md`). Take it in as context without announcing it. The Claude Code hook sets `BRAIN_LOAD_SKIP_MEMORY=1` (memory comes from the project `CLAUDE.md` imports) and runs `load.sh --max-bytes N` (N up to 3000, less when `pitfalls.md` needs the room; at 0 the note is skipped): the note is cut at the last full line within N bytes and a `[brain-load] note truncated: <kept> of <total> B` line follows. Keep the note short.
 
 ## New project (exit 2, `PROJECT_NOTE_MISSING`)
 
@@ -26,7 +26,7 @@ bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh --list-caps  # cap:<id> per
 
 1. Run `--list-caps` and ask the user which CAP the project belongs to — the CAP is their call, not something to infer.
 2. If that CAP has no `caps/<id>.md`, collect its fields in chat (see `reference/CAP-INTERVIEW.md`) and write it from `reference/templates/cap.md`. Shell `read` prompts don't work in an agent session.
-3. From the project git root: `bash ~/ai-dotfiles/skills/brain-load/scripts/instantiate.sh --cap <id>` — renders `$BRAIN_PATH/_templates/project-template.md` into `projects/<slug>.md` (needs Python 3) and writes `.brain-project`.
+3. From the project git root: `bash ~/ai-dotfiles/skills/brain-load/scripts/instantiate.sh --cap <id>` — writes `projects/<slug>.md` from a built-in template and writes `.brain-project`.
 4. Re-run `load.sh`.
 
 The note is the project's one-pager (≤ 450 words, rewritten in place): one-sentence summary, idea, objectives, how it works, where, memory pointer, links — shape in `scripts/instantiate.sh`. No journal or dated entries — history belongs in `inbox/daily/implementation/<slug>/`. `/brain-init-project` fills it properly.
