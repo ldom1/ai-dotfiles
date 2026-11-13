@@ -158,7 +158,7 @@ Invocations append to `~/.claude/skill-usage.log` (`date skill [source]`):
 
 **Not counted:** alwaysApply `.mdc` rules, SessionStart prompt injection, memory-only follow-through, Vibe (its hooks do not log skill use). Cursor counts are approximate; do not delete skills from Cursor lines alone.
 
-B0 observation artifacts: `spikes/cursor-b0-*` (logger + live sample).
+Why `preToolUse`/`Read` only: one Cursor skill load fires both `preToolUse`/`Read` and `beforeReadFile`, so wiring both counts it twice (B0 observation, 2026-09-08). The logger and the captured payloads are in the vault spec `2026-09-08-skill-usage-telemetry-design`.
 
 ---
 
