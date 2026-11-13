@@ -17,7 +17,9 @@ case "$*" in
     [ -n "$STUB_FAIL" ] && { echo "$STUB_FAIL" >&2; exit 1; }
     [ -n "$STUB_FAIL_STDOUT" ] && { echo "$STUB_FAIL_STDOUT"; exit 1; }
     echo "${STUB_TOTAL:-82}" ;;
-  "unresolved format=json") if [ -n "$STUB_JSON_RAW" ]; then echo "$STUB_JSON_RAW"; else cat "$STUB_UNRESOLVED_JSON"; fi ;;
+  # Real CLI (1.15.0): `count` only with `counts`, `sources` only with `verbose`.
+  "unresolved format=json") jq -c 'map({link})' "$STUB_UNRESOLVED_JSON" ;;
+  "unresolved format=json counts verbose") if [ -n "$STUB_JSON_RAW" ]; then echo "$STUB_JSON_RAW"; else cat "$STUB_UNRESOLVED_JSON"; fi ;;
   "orphans") printf '%s\\n' inbox/daily/2026-01-01.md projects/x/a.md projects/x.md resources/o.md ;;
   file\\ path=*) [ -n "$STUB_MODIFIED" ] && printf 'path       %s\\nmodified   %s\\n' "${2#path=}" "$STUB_MODIFIED" || { echo "File not found" >&2; exit 1; } ;;
   *) echo "unexpected: $*" >&2; exit 2 ;;

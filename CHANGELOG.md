@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+- `brain-audit` 2.3.1: `vault-lint.sh` calls `obsidian unresolved format=json counts verbose`: without these flags the real CLI (1.15.0) prints only `link`, so `jq` failed on `.count` and the `lint` step always exited 1 ("invalid JSON"). The test stub now behaves as the real CLI does.
+
+### Added
+- WSL: `install.sh` links `~/.local/bin/obsidian` to the Windows `Obsidian.com`, so the `obsidian-cli` skill finds `obsidian` on `PATH`. A real file at that path is kept. Native Linux: nothing (Obsidian's package provides the command). 4 pytest tests.
+
 ## [0.19.0] - 2026-11-12
 
 ### Added

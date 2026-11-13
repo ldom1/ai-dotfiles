@@ -110,7 +110,7 @@ ai-dotfiles sync --all               # sync all registered projects
 ai-dotfiles mcp-sync                 # (re)apply centrally-managed MCP servers (qmd, code-index, graphify)
 ```
 
-Vault link health: `bash skills/brain-audit/scripts/vault-lint.sh` (step `lint` of `/brain-audit`) lists unresolved links, orphans and missing skill paths through the read-only Obsidian CLI. It needs Obsidian open.
+Vault link health: `bash skills/brain-audit/scripts/vault-lint.sh` (step `lint` of `/brain-audit`) lists unresolved links, orphans and missing skill paths through the read-only Obsidian CLI. It needs Obsidian open. On WSL, `install.sh` links `~/.local/bin/obsidian` to the Windows `Obsidian.com`.
 
 ### Automatic sync (brain-sync)
 
