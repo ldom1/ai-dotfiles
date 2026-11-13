@@ -97,3 +97,29 @@ def test_native_linux_keeps_the_symlink(env):
     r = in_ns(f"bash {d}/scripts/wsl-claude-mount.sh", home, fstab, platform="linux")
     assert r.returncode == 0 and "Not WSL" in r.stdout
     assert (home / ".claude").is_symlink() and fstab.read_text() == "# fstab\n"
+
+
+def test_relative_skill_links_resolve_through_the_bind_mount(env):
+    d, home, fstab = env
+    (d / "skills" / "demo").mkdir(parents=True)
+    (d / "skills" / "demo" / "SKILL.md").write_text("x")
+    (d / ".claude" / "skills").mkdir()
+    (d / ".claude" / "skills" / "demo").symlink_to("../../skills/demo")
+    (home / ".claude").symlink_to(d / ".claude")
+    mount = d / "scripts" / "wsl-claude-mount.sh"
+    r = in_ns(f"bash {mount} && test -f ~/.claude/skills/demo/SKILL.md"
+              f" && bash {mount} && test -f ~/.claude/skills/demo/SKILL.md", home, fstab)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert (home / "skills").resolve() == d / "skills"
+    assert not (home / "private").exists()  # no private/ in the repo: no link
+
+
+def test_existing_skills_dir_in_home_is_kept_with_a_warning(env):
+    d, home, fstab = env
+    (d / "skills").mkdir()
+    (home / "skills").mkdir()
+    (home / ".claude").symlink_to(d / ".claude")
+    r = in_ns(f"bash {d}/scripts/wsl-claude-mount.sh", home, fstab)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "exists and is not a link" in r.stderr
+    assert not (home / "skills").is_symlink()

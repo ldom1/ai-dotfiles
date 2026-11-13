@@ -25,7 +25,7 @@ On WSL, Windows apps (Orca's agent session history) read `~/.claude/projects` ov
 1. Close every Claude session: `~/.claude` is missing for a moment during the switch.
 2. Run `bash ~/ai-dotfiles/scripts/wsl-claude-mount.sh`. It asks for `sudo`.
 
-The script adds `<repo>/.claude <home>/.claude none bind 0 0` to `/etc/fstab`, so the mount comes back at boot. `install.sh` keeps a bind-mounted `~/.claude`, and warns on WSL while it is still a symlink.
+The script adds `<repo>/.claude <home>/.claude none bind 0 0` to `/etc/fstab`, so the mount comes back at boot. It also links `~/skills` and `~/private` to the repo. The skill links in `.claude/skills` are relative (`../../skills/<name>`), and through the mount they resolve from `$HOME`. A machine mounted before this fix: run the script again. `install.sh` keeps a bind-mounted `~/.claude`, and warns on WSL while it is still a symlink.
 
 ### Orca
 

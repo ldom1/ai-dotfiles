@@ -5,6 +5,9 @@
 ### Removed
 - `spikes/` (`cursor-b0-*`: the B0 logger, two NDJSON captures with machine paths and Cursor ids, and its README). No code read them. Frozen copies, without the ids, are in the vault spec of the skill-usage telemetry. `docs/skills.md` states the B0 conclusion instead of pointing to the files.
 
+### Fixed
+- WSL: with `~/.claude` bind-mounted, every skill link in `~/.claude/skills` was broken. The links are relative (`../../skills/<name>`), and through the mount `../../` is `$HOME`. `scripts/wsl-claude-mount.sh` now links `~/skills` and `~/private` to the repo, also on a re-run when the mount already exists. It keeps a real `~/skills` folder and prints a warning. 2 tests.
+
 ## [0.19.0] - 2026-11-13
 
 ### Added

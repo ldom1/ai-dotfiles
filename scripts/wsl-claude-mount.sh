@@ -20,6 +20,19 @@ if [[ $(git -C "$DOTFILES" rev-parse --absolute-git-dir) != "$(cd "$DOTFILES" &&
   echo "wsl-claude-mount.sh: $DOTFILES is a linked git worktree. Run it from the main checkout." >&2
   exit 2
 fi
+
+# The skill links in .claude/skills are relative (../../skills/<name>, tracked in git). Through the
+# bind mount they resolve from ~/.claude/skills, so ../../ is $HOME: link $HOME/skills and
+# $HOME/private to the repo, or every skill link is broken.
+for name in skills private; do
+  [[ -d "$DOTFILES/$name" ]] || continue
+  if [[ -L "$HOME/$name" || ! -e "$HOME/$name" ]]; then
+    ln -sfn "$DOTFILES/$name" "$HOME/$name"
+  elif ! [[ "$HOME/$name" -ef "$DOTFILES/$name" ]]; then
+    echo "wsl-claude-mount.sh: $HOME/$name exists and is not a link: skill links under ~/.claude stay broken." >&2
+  fi
+done
+
 if mountpoint -q "$DST" && [[ "$DST" -ef "$SRC" ]]; then
   echo "✓ $DST is already a bind mount of $SRC"
   exit 0
