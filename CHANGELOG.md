@@ -2,15 +2,10 @@
 
 ## [Unreleased]
 
-### Fixed
-- `brain-audit` 2.3.1: `vault-lint.sh` calls `obsidian unresolved format=json counts verbose`: without these flags the real CLI (1.15.0) prints only `link`, so `jq` failed on `.count` and the `lint` step always exited 1 ("invalid JSON"). The test stub now behaves as the real CLI does.
+## [0.19.0] - 2026-11-13
 
 ### Added
 - WSL: `install.sh` links `~/.local/bin/obsidian` to the Windows `Obsidian.com`, so the `obsidian-cli` skill finds `obsidian` on `PATH`. A real file at that path is kept. Native Linux: nothing (Obsidian's package provides the command). 4 pytest tests.
-
-## [0.19.0] - 2026-11-12
-
-### Added
 - `bin/vibe-brain` (linked by `install.sh`; alias `vibe=vibe-brain` is the owner's choice): runs `sync.sh start`, writes `~/.vibe/brain-context.md`, runs `vibe`, then `sync.sh end`, and exits with Vibe's code (`130` on INT, `143` on TERM, `129` on HUP, where `sync.sh end` logs to `~/.vibe/brain-sync-end.log`; Vibe runs in the foreground). `sync.sh start` failure: warning, Vibe runs, no `sync.sh end`. Context failure: warning, no partial file (temp file + `mv`). `sync.sh end` runs once and never replaces Vibe's code. It exports `BRAIN_PATH` to Vibe. The context file starts with `cwd:` and `pid:` lines, and the launcher deletes it at exit only while it holds its own pid. `.vibe/bootstrap.md` reads it only when `cwd:` is the agent's working directory. 8 tests.
 - `scripts/brain-context.sh`: the project note (up to 3,000 B, less when the pitfalls need the room) then the pitfalls, within 9,500 B, then one line naming `.claude/memory/OBJECTIVES.md` and `CONTEXT.md` and, when the note is missing, a `PROJECT_NOTE_MISSING` line. It shares `scripts/brain-context-lib.sh` (cap rule, `fit-sections.py` call) with the Claude Code SessionStart hook, so both use one budget code path. 5 tests (pitfalls 1,000 to 12,000 B, missing note).
 - Vendored skills `obsidian-cli` (drive the vault from the Obsidian CLI) and `obsidian-bases` (`.base` files) from `obsidianmd/obsidian-skills` release `1.1.0` (commit `95b7225`), copied byte for byte. The repo moved from `kepano/obsidian-skills` (the old name redirects) and the folders moved to `plugins/obsidian/skills/<name>/`. Both folders carry `.obsidian-skills_version` (`1.1.0`), `LICENSE` and `.claude-plugin/plugin.json`. `config/vendored-skills.json` gets one entry `obsidian-skills` (no `branch`: releases exist). Upstream `main` is bumped to `1.2.0` but not yet tagged, so the drift alert fires once `1.2.0` is released. The `.claude/skills/`, `.cursor/skills/` and `.vibe/skills/` symlinks are committed, as for the other vendored skills.
@@ -26,6 +21,7 @@
 - Skills `orca-cli`, `orca-computer-use` and `orchestration` vendored verbatim from [stablyai/orca](https://github.com/stablyai/orca) `v1.4.255` (commit `084ce0e`, MIT) into `skills/`, with `LICENSE`, a `.orca_version` pin and a `.claude-plugin/plugin.json` (required by the CI skill check). `install.sh` links them into Claude Code, Cursor and Vibe. They replace a global `npx skills add`. Not in the update check: upstream releases daily.
 
 ### Fixed
+- `brain-audit` 2.3.1: `vault-lint.sh` calls `obsidian unresolved format=json counts verbose`: without these flags the real CLI (1.15.0) prints only `link`, so `jq` failed on `.count` and the `lint` step always exited 1 ("invalid JSON"). The test stub now behaves as the real CLI does.
 - Cursor CLI context (`brain-hooks-prewarm.sh`, `.cursor/hooks/session-start.sh`) now carries the pitfalls inline through `brain-context.sh`, not a "Read that file" pointer, and no longer cuts the note with `head -30`. 1 test.
 - `brain-audit` plugin 2.3.0: description matches the router `SKILL.md`.
 - `LocalBrain.md`: the checkpoint row says `/capture` folds the checkpoint into the session log, then deletes it (until then it is pushed with the vault). The `raw/` row names the user as writer. New rows for `_templates/` and `resources/knowledge/veille-technique.md`. The vault `raw/index.md` and `inbox/README.md` no longer describe retired folders.
