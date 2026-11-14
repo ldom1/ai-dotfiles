@@ -235,7 +235,7 @@ fi
 
 # Obsidian CLI (WSL): the obsidian-cli skill calls `obsidian`; on WSL it is the Windows Obsidian.com.
 # Linked into ~/.local/bin; a real file there is kept. Native Linux: Obsidian's own package provides it.
-obsidian_exe=$(compgen -G "${AIF_WIN_USERS:-/mnt/c/Users}/*/AppData/Local/Programs/Obsidian/Obsidian.com" | head -n 1)
+obsidian_exe=$(compgen -G "${AIF_WIN_USERS:-/mnt/c/Users}/*/AppData/Local/Programs/Obsidian/Obsidian.com" | head -n 1 || true)
 if [[ "$AIF_OS" == wsl && -n "$obsidian_exe" && ( -L "$HOME/.local/bin/obsidian" || ! -e "$HOME/.local/bin/obsidian" ) ]]; then
   ln -sfn "$obsidian_exe" "$HOME/.local/bin/obsidian"
   log "obsidian → $obsidian_exe"

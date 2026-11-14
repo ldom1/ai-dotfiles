@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- `install.sh` stopped with exit 1 right after `platform:` when no Windows `Obsidian.com` exists (native Linux, or WSL without Obsidian): under `set -euo pipefail`, `compgen -G` with no match failed the assignment. The Orca step never ran. The Obsidian tests now run the block under `set -euo pipefail`. 1 new test (native Linux, no Windows side).
+
 ## [0.20.0] - 2026-11-13
 
 ### Removed
