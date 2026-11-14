@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- `config/orca/settings.json` versions `agentDefaultArgs` with empty args for `claude`, `cursor` and `mistral-vibe`. Orca's default launches each agent in bypass mode (`--dangerously-skip-permissions`, `--yolo`, `--agent auto-approve`). Agents now keep their own permission prompts. Apply with Orca closed: `python3 scripts/orca-settings.py apply`.
+
 ### Fixed
 - `install.sh` stopped with exit 1 right after `platform:` when no Windows `Obsidian.com` exists (native Linux, or WSL without Obsidian): under `set -euo pipefail`, `compgen -G` with no match failed the assignment. The Orca step never ran. The Obsidian tests now run the block under `set -euo pipefail`. 1 new test (native Linux, no Windows side).
 

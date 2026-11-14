@@ -1,4 +1,9 @@
 {
+  "agentDefaultArgs": {
+    "claude": "",
+    "cursor": "",
+    "mistral-vibe": ""
+  },
   "agentPermissionDefault": "own",
   "aiVaultSearch": {
     "enabled": true,
