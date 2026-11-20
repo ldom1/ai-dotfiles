@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- `.gitignore`: ignore `.infisical.json` (the Infisical CLI project file).
+
 ### Fixed
 - statusLine in a worktree: the tracked `.claude/settings.json` still ran the removed `aif-statusline` wrapper. In a worktree, this file is the project settings and overrides the user `statusLine`, so the status line was empty. The command now runs `ccstatusline` directly, like the live `~/.claude/settings.json` that `install.sh` already fixed.
 
