@@ -48,7 +48,8 @@ def test_every_mapped_path_exists():
 def test_table_names_current_paths():
     paths = table_paths()
     for want in ["TASKS_REVIEW.base", "VEILLE.base", "inbox/review", "inbox/sensors",
-                 "inbox/insights", "inbox/daily/products", "inbox/daily/prompts",
+                 "inbox/insights", "inbox/daily/products", "inbox/daily/prompts", "ontologie/concepts", "ontologie/sujets",
+                 "ontologie/technologies", "ontologie/Technologies.base",
                  "resources/knowledge/veille", "resources/queries/archive",
                  "meta/harness-sessions", "raw", "archive"]:
         assert want in paths, want

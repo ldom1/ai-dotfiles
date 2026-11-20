@@ -27,4 +27,18 @@ INDEX_PATH="$QMD_INDEX_PATH" qmd query "<1–2 sentence pattern summary>" 2>&1
 
 `qmd query` (hybrid, LLM expansion) is more precise than `vsearch` here, but on CPU one query can take several minutes and outlive the Bash timeout: then use `qmd vsearch "…" -n 12` (seconds; its scores run lower, so take ≥ 0.45). Take up to 3 results with score ≥ 0.70 (`query`) that are specs, plans, architecture docs or project notes not already linked, and append them under `## Related` as `[[<slug>]]` (`qmd://brain/a/b/<slug>.md` → `[[<slug>]]`).
 
-Report: notes linked, links added.
+## Ontologie
+
+Check the three levels of `$BRAIN_PATH/ontologie/` (concepts, sujets, technologies):
+
+```bash
+uv run --script ~/ai-dotfiles/scripts/ontologie.py activity
+uv run --script ~/ai-dotfiles/scripts/ontologie.py check
+```
+
+- Fix every `FAIL` line: correct the link or the line of the project note. Never fix a `FAIL` by creating a note.
+- Report every `WARN` line: an element that no project and no ontologie note links.
+- Look for two notes that are one element (a synonym, an English and a French name). Do not merge them yourself: propose the pair in a review item (`type: arbitrage`). After the owner agrees, keep one note, add the other name to its `aliases`, repoint the links and move the other note to `archive/`.
+- Never create a note in `ontologie/` that the owner did not accept, and never write `level`.
+
+Report: notes linked, links added, ontologie `FAIL` and `WARN` counts, pairs proposed.

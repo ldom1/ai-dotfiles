@@ -13,6 +13,8 @@
       "pytest",
       "--with",
       "pyyaml==6.0.2",
+      "--with",
+      "ruamel.yaml==0.19.1",
       "pytest",
       "-q",
       "-p",

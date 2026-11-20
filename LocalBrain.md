@@ -22,12 +22,16 @@ Obsidian vault, git repo. Path: `$BRAIN_PATH` from `~/ai-dotfiles/config/brain.e
 | `resources/knowledge/veille-technique.md` | Veille verdict ledger | `veille-technique` |
 | `_templates/` | Note templates used by `load.sh`, `/capture` and `veille-technique` | user |
 | `resources/queries/archive/` | Knowledge-gap and roadmap reports | `/brain-audit` (`queries`) |
+| `ontologie/{concepts,sujets,technologies}/<slug>.md` | What the owner handles, on three levels that never mix: concepts, sujets (questions to solve), technologies. Links point up; a project note links its elements in a last section `## Ontologie`. `level` is set by the owner only | user (validates), `/capture` and `/brain-audit` (propose, link, `scripts/ontologie.py`) |
+| `ontologie/Concepts.base` · `ontologie/Sujets.base` · `ontologie/Technologies.base` | Obsidian views: one list for each level. `Technologies.base` shows the linked projects and their caps | user |
 | `caps/` | Areas of responsibility | user |
 | `meta/` | Digests, `last-maintenance.md` | `/brain-audit` |
 | `meta/harness-sessions/<YYYY-MM>-<host>.jsonl` | Per-session harness metrics | SessionEnd hook |
 | `archive/` | Retired notes. Move there, never delete | user |
 
 Project memory (architecture, decisions, current state) lives in the repo at `<repo>/.claude/memory/`. `projects/<slug>/` in the vault is a mirror of it (`scripts/sync-project.sh`): edit the repo copy.
+
+The ontologie is not loaded at session start. Read `ontologie/` on demand: to know which technologies the owner handles for a concept, which building block a project already uses, or which sujets clients ask. `scripts/ontologie.py check` verifies its links.
 
 Notes: frontmatter `title`, `created`, `tags`, `status`. Link with `[[slug]]`: filename only, no folder, no `.md`. Backlinks and the graph only see wikilinks.
 

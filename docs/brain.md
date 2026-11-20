@@ -194,6 +194,25 @@ uv run --script scripts/tasks-review.py summary --project <slug> [DIR] # one lin
 
 `DIR` defaults to `$BRAIN_PATH/inbox/review`.
 
+### Ontologie (concepts, sujets, technologies)
+
+The vault folder `ontologie/` is a second axis next to the projects. It shows what the owner handles across projects.
+
+- Three levels that never mix: `concepts/` (a general idea), `sujets/` (a question to solve, asked by the owner, clients or prospects) and `technologies/` (a tool, a product, a provider).
+- One short note for each element. Links point up: a technology to its concepts and sujets, a sujet to its concepts, a concept to a wider concept.
+- A project note links its technologies and sujets in a last section `## Ontologie`. The section is at the end, so the 3,000 B cut of the session-start hook drops it first.
+- Three Obsidian views: `Concepts.base`, `Sujets.base`, `Technologies.base`. `Technologies.base` computes the number of linked projects and their caps from backlinks. The caps show where professional and personal work meet. `Sujets.base` counts the linked projects and technologies. `Concepts.base` counts the linked sujets and technologies.
+- `level` (`maîtrise`, `pratique`, `notion`) is the only statement of mastery. Only the owner sets it.
+- `project_activity` is the month of the latest session log of the linked projects. It is a proxy, not the last use of the element.
+- Nothing is loaded at session start. An agent reads the folder on demand.
+
+```bash
+uv run --script ~/ai-dotfiles/scripts/ontologie.py activity   # write project_activity on technologies and sujets
+uv run --script ~/ai-dotfiles/scripts/ontologie.py check      # FAIL lines (exit 1), WARN lines, or OK <n> elements
+```
+
+`/capture` adds the elements a session used to the project note and proposes new elements in a review item. `/brain-audit` (`connect`) runs both commands and proposes merges. An agent creates an ontologie note only after the owner accepts it, and never writes `level`. The owner's new notes come from the Templater templates `_templates/ontologie-*.md`, which refuse a name that exists in the vault.
+
 ### Shared agent rules (AGENTS.md)
 
 `AGENTS.md` at the repo root is the single source of the rules Claude Code, Cursor and Mistral Vibe share. `.claude/CLAUDE.md` imports it (`@~/ai-dotfiles/AGENTS.md`) and adds Claude-only lines. `scripts/build-agent-rules.sh` (run by `install.sh`) generates `.cursor/rules/agents.mdc` (alwaysApply) and `.vibe/AGENTS.md` (`.vibe/bootstrap.md` + `AGENTS.md`); `install.sh` links `~/.vibe/AGENTS.md` to it, so Vibe gets the rules in every project. CI fails if a generated copy is stale. Edit `AGENTS.md`, never the generated files.

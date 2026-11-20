@@ -80,6 +80,21 @@ Files: `<repo>/.claude/memory/` (fallback `$BRAIN_PATH/projects/<slug>/`). Base 
 
 Project-specific traps discovered this session go to `CONTEXT.md` → `Gotchas` (one line each). Ask the user before reversing a decision, removing an architecture claim, or changing roadmap direction.
 
+### Ontologie (only if the session used an element)
+
+`$BRAIN_PATH/ontologie/` holds what the owner handles on three levels: `concepts/`, `sujets/` (questions to solve) and `technologies/`. A project note links its elements in its last section `## Ontologie`, one line of `[[slug]]` links.
+
+- Add to that line the existing technologies and sujets that this session really used. A mention is not a use.
+- Never create a note in `ontologie/` that the owner did not accept. Never write `level`: only the owner states a level of mastery.
+- New elements go to one review item for the session (`type: arbitrage`): the list of proposed elements, each with its level, its French title, one definition line and its links. The owner accepts, renames or rejects in `answer`.
+- When an answered item accepts elements, create these notes with the header of an existing note of the same level. Then close the item.
+- Then run both commands. Fix each `FAIL` line: correct the link or the line of the project note. Never fix a `FAIL` by creating a note or by writing `level`:
+
+```bash
+uv run --script ~/ai-dotfiles/scripts/ontologie.py activity
+uv run --script ~/ai-dotfiles/scripts/ontologie.py check
+```
+
 ## 4. Pitfalls & lessons (only if cross-project)
 
 `$BRAIN_PATH/resources/operational/ai-agents/pitfalls.md` is injected into every session, so it holds rules, not incidents. It has a 6,000 B cap. It covers both kinds: a **pitfall** (mistake to avoid) and a **lesson** (approach that worked, worth repeating). Add one only if it would apply in a *different* project on any stack. A rule tied to one tool or platform goes to the `## Rules` list of the matching `resources/knowledge/patterns/*-patterns.md`; a rule tied to this project is a Gotcha or Decision (step 3).

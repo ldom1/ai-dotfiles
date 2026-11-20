@@ -261,3 +261,51 @@ def test_load_rejects_an_unknown_option(tmp_path):
     assert r.returncode == 64
     assert "usage:" in r.stderr and "--max-bytes" in r.stderr
     assert r.stdout == ""
+
+
+ONTOLOGIE = "\n## Ontologie\n" + " ".join(f"[[technologie-{i:02d}]]" for i in range(13)) + "\n"  # about 250 B
+
+
+def pitfalls_block(out: str) -> str:
+    return out.split("--- AI-AGENTS PITFALLS (constraints) ---\n", 1)[1].split("--- END PITFALLS ---", 1)[0]
+
+
+def lines_note(size: int) -> str:
+    """A project note of exactly `size` bytes, made of 50 B lines and one last shorter line."""
+    text = "".join(f"line {i:03d} ".ljust(49, "x") + "\n" for i in range(size // 50))
+    return text + "y" * (size - len(text) - 1) + "\n" if len(text) < size else text
+
+
+def with_and_without(tmp_path, size: int) -> tuple[str, str, str]:
+    """Hook output for a note of `size` bytes without, then with, the `## Ontologie` last section."""
+    note, text = lines_note(size), real_size_pitfalls()
+    assert len(note.encode()) == size and 200 <= len(ONTOLOGIE.encode()) <= 300
+    (tmp_path / "a").mkdir(); (tmp_path / "b").mkdir()
+    plain = run_real_load(tmp_path / "a", note.encode(), text, EXIT_LOG, ITEM)
+    linked = run_real_load(tmp_path / "b", (note + ONTOLOGIE).encode(), text, EXIT_LOG, ITEM)
+    for out in (plain, linked):
+        assert pitfalls_block(out) == text  # the pitfalls stay whole
+        assert len(out.encode()) <= BUDGET
+    return note, plain, linked
+
+
+def test_ontologie_section_on_a_note_over_the_cap_injects_the_same_text(tmp_path):
+    _, plain, linked = with_and_without(tmp_path, 3300)
+    assert note_text(linked) == note_text(plain)
+    assert "## Ontologie" not in linked
+
+
+def test_ontologie_section_never_pushes_out_a_line_of_the_note(tmp_path):
+    """With real-size pitfalls the note gets less than 3,000 B. Whatever the note size, the lines that were
+    injected without the section are still injected with it, and the cut keeps whole lines."""
+    for size in (2000, 2300, 2500, 2700, 2950, 3050):
+        (tmp_path / str(size)).mkdir()
+        note, plain, linked = with_and_without(tmp_path / str(size), size)
+        injected = note_text(linked)
+        assert injected.startswith(note_text(plain)), size
+        assert (note + ONTOLOGIE).startswith(injected) and injected.endswith("\n"), size
+
+
+def test_ontologie_section_on_a_short_note_is_injected_whole(tmp_path):
+    note, _, linked = with_and_without(tmp_path, 800)
+    assert note_text(linked) == note + ONTOLOGIE
