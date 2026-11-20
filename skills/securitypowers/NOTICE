@@ -1,0 +1,22 @@
+securitypowers — third-party material
+
+1. Trail of Bits skills (https://github.com/trailofbits/skills), pin in .trailofbits_version.
+   License: Creative Commons Attribution-ShareAlike 4.0 International (LICENSE file in each directory).
+   Vendored: skills/semgrep, skills/sarif-parsing, skills/differential-review, skills/sharp-edges,
+   skills/supply-chain-risk-auditor, references/insecure-defaults/.
+   Changes: agents/, assets/ and plugin packaging removed; content unchanged.
+
+2. claude-code-owasp (https://github.com/agamm/claude-code-owasp), pin in .owasp_version.
+   License: MIT (skills/owasp-security/LICENSE). Vendored: skills/owasp-security. evals/ not vendored.
+
+3. Snyk studio-recipes (https://github.com/snyk/studio-recipes), Apache License 2.0, © Snyk Ltd.
+   The workflow of skills/scan-fix-loop and skills/iac-scan is adapted from the snyk-fix and iac-security
+   skills (command_directives/synchronous_remediation/skills/). No Snyk text or tool is included;
+   the scanners were replaced with open-source tools.
+
+4. OWASP ASVS 5.0.0 (https://github.com/OWASP/ASVS), CC BY-SA 4.0, © OWASP Foundation.
+   references/asvs-5.0.md is generated from the official CSV export by scripts/gen-asvs.py.
+
+Local material (MIT, this repository): SKILL.md (router), references/ except the items above,
+scripts/, skills/security-profile, skills/threat-model, skills/scan-fix-loop, skills/iac-scan,
+skills/host-hardening, skills/exposure-scan, skills/audit-report.

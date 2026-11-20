@@ -2,11 +2,23 @@
 
 ## [Unreleased]
 
+### Added
+- `securitypowers`: a router plugin for security review, built like `marketingpowers`.
+  - `security-profile` runs first. It writes `.agents/security-profile.md` in the target project: assets, expected ports, authorized scan targets, baseline (ANSSI BP-028 or CIS), ASVS level and `external_data_allowed`. `scripts/profile-check.py` (PEP 723, `pyyaml`) prints `ok`, `missing` or `stale: <reason>`: older than 90 days or in the future, no front matter, no sources, a source file changed, missing or unreadable.
+  - Vendored: Trail of Bits `differential-review`, `sharp-edges`, `semgrep`, `sarif-parsing`, `supply-chain-risk-auditor` and the `insecure-defaults` corpus (commit `149d7b21f406`, CC BY-SA 4.0), and agamm `owasp-security` (commit `1ae29cb22518`, MIT). Both pins are in `config/vendored-skills.json`, so the SessionStart check reports upstream changes.
+  - Local sub-skills: `threat-model`, `scan-fix-loop` (Semgrep, osv-scanner, gitleaks; the Snyk `snyk-fix` workflow without a Snyk account), `iac-scan`, `host-hardening` (read-only OpenSCAP and Lynis), `exposure-scan` (nmap and testssl.sh, authorized targets only) and `audit-report`.
+  - `audit-report` ends every run. It writes a French report with a "Comprendre l'audit" section, kept out of git and published as a private artifact in Claude Code. It also writes generic learning notes to `$BRAIN_PATH/resources/knowledge/security/`.
+  - `references/asvs-5.0.md`: all 345 ASVS 5.0.0 requirements, generated from the official CSV by `scripts/gen-asvs.py`. Also an API Security Top 10 summary, the measured OWASP coverage, the full-pass sequence and a checklist to vet third-party skills.
+  - Safety rules: network and host steps only on targets listed with their scope and pinned IPs, after the owner confirms; the SSH alias must resolve to the authorized host; host audits work in a root-only `mktemp` directory; `iac-scan` never runs `ansible-playbook --check`; raw outputs are gitignored before the first write; the report is published as an artifact only when `external_data_allowed: true` or the owner says yes.
+  - 29 pytest tests in `.claude/hooks/tests/test_securitypowers.py`: profile check (13), ASVS generator (2), router table matches the sub-skill folders, licenses and pins, safety text contracts.
+
 ### Changed
+- `config/orca/settings.json` versions `agentDefaultArgs` with empty args for `claude`, `cursor` and `mistral-vibe`. Orca's default launches each agent in bypass mode (`--dangerously-skip-permissions`, `--yolo`, `--agent auto-approve`). Agents now keep their own permission prompts. Apply with Orca closed: `python3 scripts/orca-settings.py apply`.
 - `.gitignore`: ignore `.infisical.json` (the Infisical CLI project file).
 - `config/brain-projects.tsv`: register `homelab-dashboard` (recovered from the stale branch `frontend-skills-followup`).
 
 ### Fixed
+- `install.sh` stopped with exit 1 right after `platform:` when no Windows `Obsidian.com` exists (native Linux, or WSL without Obsidian): under `set -euo pipefail`, `compgen -G` with no match failed the assignment. The Orca step never ran. The Obsidian tests now run the block under `set -euo pipefail`. 1 new test (native Linux, no Windows side).
 - statusLine in a worktree: the tracked `.claude/settings.json` still ran the removed `aif-statusline` wrapper. In a worktree, this file is the project settings and overrides the user `statusLine`, so the status line was empty. The command now runs `ccstatusline` directly, like the live `~/.claude/settings.json` that `install.sh` already fixed.
 
 ## [0.20.0] - 2026-11-13

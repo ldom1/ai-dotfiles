@@ -80,7 +80,9 @@ def obsidian_block(tmp_path: Path, aif_os: str, with_exe: bool = True):
     if with_exe:
         exe.parent.mkdir(parents=True)
         exe.write_text("")
-    r = subprocess.run(["bash", "-c", PRELUDE + block("# Obsidian CLI")], capture_output=True, text=True,
+    # install.sh runs under set -euo pipefail: a glob with no match must not stop it.
+    r = subprocess.run(["bash", "-c", "set -euo pipefail\n" + PRELUDE + block("# Obsidian CLI")],
+                       capture_output=True, text=True,
                        env={"PATH": "/usr/bin:/bin", "HOME": str(home), "AIF_OS": aif_os,
                             "AIF_WIN_USERS": str(users)})
     assert r.returncode == 0, r.stderr
@@ -94,6 +96,11 @@ def test_obsidian_cli_linked_on_wsl(tmp_path):
 
 def test_obsidian_cli_not_linked_on_native_linux(tmp_path):
     link, _ = obsidian_block(tmp_path, "linux")
+    assert not link.exists() and not link.is_symlink()
+
+
+def test_obsidian_cli_no_windows_side_on_native_linux(tmp_path):
+    link, _ = obsidian_block(tmp_path, "linux", with_exe=False)
     assert not link.exists() and not link.is_symlink()
 
 
