@@ -40,7 +40,7 @@ Each session starts with what the last one learned, and ends by writing it back.
 | Local Brain | An Obsidian vault (a git repo) as memory, with QMD semantic search. | [brain.md](docs/brain.md) |
 | Review | One Obsidian base (`TASKS_REVIEW`) lists every manual step and open decision of all agents on all projects. | [brain.md](docs/brain.md#review-the-agents-work) |
 | Orca | The agent cockpit, installed from its `.deb` on Ubuntu, with versioned settings and the Orca skills. | [Orca × ai-dotfiles](#orca--ai-dotfiles) |
-| Skills | `capture`, `brain-*`, `git-promotion`, `grill-me`, `ponytail`, `graphify` and more. `install.sh` links them into each tool. | [skills.md](docs/skills.md) |
+| Skills | `capture`, `brain-*`, `git-promotion`, `grill-me`, `ponytail`, `graphify`, the `marketingpowers` and `securitypowers` routers and more. `install.sh` links them into each tool. | [skills.md](docs/skills.md) |
 | Local CI | Your GitHub workflows with `act`, in a clean clone, before push. | [local-ci.md](docs/local-ci.md) |
 
 ## Orca × ai-dotfiles

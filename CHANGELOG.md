@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+- `securitypowers`: a router plugin for security review, built like `marketingpowers`.
+  - `security-profile` runs first. It writes `.agents/security-profile.md` in the target project: assets, expected ports, authorized scan targets, baseline (ANSSI BP-028 or CIS), ASVS level and `external_data_allowed`. `scripts/profile-check.sh` prints `ok`, `missing` or `stale: <reason>` (older than 90 days, a source file changed or missing, a bad date). 8 pytest tests.
+  - Vendored: Trail of Bits `differential-review`, `sharp-edges`, `semgrep`, `sarif-parsing`, `supply-chain-risk-auditor` and the `insecure-defaults` corpus (commit `149d7b21f406`, CC BY-SA 4.0), and agamm `owasp-security` (commit `1ae29cb22518`, MIT). Both pins are in `config/vendored-skills.json`, so the SessionStart check reports upstream changes.
+  - Local sub-skills: `threat-model`, `scan-fix-loop` (Semgrep, osv-scanner, gitleaks; the Snyk `snyk-fix` workflow without a Snyk account), `iac-scan`, `host-hardening` (read-only OpenSCAP and Lynis), `exposure-scan` (nmap and testssl.sh, authorized targets only) and `audit-report`.
+  - `audit-report` ends every run. It writes a French report with a "Comprendre l'audit" section, kept out of git and published as a private artifact in Claude Code. It also writes generic learning notes to `$BRAIN_PATH/resources/knowledge/security/`.
+  - `references/asvs-5.0.md`: all 345 ASVS 5.0.0 requirements, generated from the official CSV by `scripts/gen-asvs.py`. Also an API Security Top 10 summary, the measured OWASP coverage, the full-pass sequence and a checklist to vet third-party skills.
+  - 20 pytest tests in `.claude/hooks/tests/test_securitypowers.py`: profile check, ASVS generator, router table matches the sub-skill folders, licenses and pins, safety text contracts.
+
 ### Changed
 - `config/orca/settings.json` versions `agentDefaultArgs` with empty args for `claude`, `cursor` and `mistral-vibe`. Orca's default launches each agent in bypass mode (`--dangerously-skip-permissions`, `--yolo`, `--agent auto-approve`). Agents now keep their own permission prompts. Apply with Orca closed: `python3 scripts/orca-settings.py apply`.
 

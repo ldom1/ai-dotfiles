@@ -17,6 +17,7 @@ Obsidian vault, git repo. Path: `$BRAIN_PATH` from `~/ai-dotfiles/config/brain.e
 | `resources/operational/ai-agents/pitfalls.md` | Cross-project rules, injected every session (≤ 6,000 B and one id per rule, enforced at write time by `scripts/check-pitfalls-budget.sh`) | `/capture`, `/brain-audit` |
 | `resources/operational/ai-agents/archive/` | Frozen incident logs (pre-2026-09-29 pitfalls/lessons) | — |
 | `resources/knowledge/{sops,patterns,home-lab,operational}/` | SOPs, infra docs; `patterns/*-patterns.md` `## Rules` hold stack-specific rules (Docker, Python, deployment, observability) | `/brain-audit`, as needed |
+| `resources/knowledge/security/<concept>.md` | Generic security learning notes, one per concept (no host, IP or finding detail) | `securitypowers` `audit-report` |
 | `resources/knowledge/veille/YYYY-MM-DD-<topic>.md` | Tech-watch recap notes | `veille-technique` |
 | `resources/knowledge/veille-technique.md` | Veille verdict ledger | `veille-technique` |
 | `_templates/` | Note templates used by `load.sh`, `/capture` and `veille-technique` | user |

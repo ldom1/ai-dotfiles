@@ -26,6 +26,18 @@
       "name": "obsidian-skills",
       "pin_file": "skills/obsidian-cli/.obsidian-skills_version",
       "github": "obsidianmd/obsidian-skills"
+    },
+    {
+      "name": "trailofbits-skills",
+      "pin_file": "skills/securitypowers/.trailofbits_version",
+      "github": "trailofbits/skills",
+      "branch": "main"
+    },
+    {
+      "name": "claude-code-owasp",
+      "pin_file": "skills/securitypowers/.owasp_version",
+      "github": "agamm/claude-code-owasp",
+      "branch": "main"
     }
   ]
 }
