@@ -1,0 +1,10 @@
+{
+  "name": "yt-dlp",
+  "version": "0.1.0",
+  "description": "Fetch a video, its caption, frames, audio and transcript from a URL (Instagram, YouTube, TikTok) with yt-dlp, ffmpeg and Whisper on sherpa-onnx, so an agent can read the content",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles"
+}
