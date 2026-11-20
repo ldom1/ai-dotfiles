@@ -27,7 +27,7 @@ Two outputs: a **report** (sensitive) and **learning notes** (generic). The owne
 4. **Ce qui n'a pas été vérifié** — skipped steps and why, `notchecked` rules, ASVS counts (`verified` / `failed` / `not applicable` / `not evaluated`), the blind spots of each tool.
 5. **Prochaines actions** — ordered, each with an owner and a file or host.
 
-**Publish.** In Claude Code with the Artifact tool: load the `artifact-design` skill, build an HTML page from the report (same sections; findings as a table with severity colors; "Comprendre l'audit" as readable cards), and publish it **private**. Give the owner the link. In other harnesses, the Markdown file is the deliverable.
+**Publish.** A hosted artifact stores the report outside the machine. Publish it only when the profile says `external_data_allowed: true`, or when the owner says yes for this report. Otherwise the Markdown file is the deliverable. To publish, in Claude Code with the Artifact tool: load the `artifact-design` skill, build an HTML page from the report (same sections; findings as a table with severity colors; "Comprendre l'audit" as readable cards), and publish it **private**. Give the owner the link. In other harnesses, the Markdown file is the deliverable.
 
 ## 2. Learning notes
 

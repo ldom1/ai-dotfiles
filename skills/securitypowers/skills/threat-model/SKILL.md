@@ -9,7 +9,7 @@ Short and concrete. One page beats a framework nobody reads.
 
 ## Preconditions
 
-`bash <plugin>/scripts/profile-check.sh <project>` prints `ok`. The profile gives assets, hosts, ports and entry points.
+`uv run --script ../../scripts/profile-check.py <project>` (path relative to this file) prints `ok`. The profile gives assets, hosts, ports and entry points.
 
 ## Steps
 

@@ -11,7 +11,7 @@ Schema and stale rule: `../../references/profile-template.md` (relative to this 
 
 ## Steps
 
-1. **Check.** Run `bash <plugin>/scripts/profile-check.sh <project>` (`<plugin>` = the `securitypowers` directory). `ok` → stop, unless the owner says a host, target or port changed.
+1. **Check.** Run `uv run --script ../../scripts/profile-check.py <project>` (path relative to this file). `ok` → stop, unless the owner says a host, target or port changed.
 2. **Auto-draft from the repo.** Read only what describes the attack surface:
    - Ansible inventories, `group_vars`, firewall and SSH roles;
    - `docker-compose*.yml`, Dockerfiles, Kubernetes manifests;
@@ -23,7 +23,7 @@ Schema and stale rule: `../../references/profile-template.md` (relative to this 
    - `authorized_targets` — the owner must name them. Never infer a target.
    - `external_data_allowed` — default `false`. Employer code: `false` unless the owner confirms that the internal policy allows it.
    - `baseline` and `asvs_level`.
-5. **Write.** Set `reviewed:` to today. Write the file. Then run `profile-check.sh --hash <project>` and write its output to `sources_sha256`. Re-run the check: expect `ok`.
+5. **Write.** Set `reviewed:` to today. Write the file. Then run `uv run --script ../../scripts/profile-check.py --hash <project>` and write its output to `sources_sha256`. Re-run the check: expect `ok`.
 6. **Commit or not.** The profile has no secrets and is meant to be committed. It names hosts and ports: ask the owner before committing it to a public repo.
 
 ## Red flags

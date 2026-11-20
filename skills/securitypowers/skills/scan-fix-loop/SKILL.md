@@ -9,23 +9,25 @@ The workflow shape comes from Snyk's `snyk-fix` skill (snyk/studio-recipes, Apac
 
 ## Preconditions
 
-1. `bash <plugin>/scripts/profile-check.sh <project>` prints `ok`. Otherwise run `security-profile` first.
+1. `uv run --script ../../scripts/profile-check.py <project>` (path relative to this file) prints `ok`. Otherwise run `security-profile` first.
 2. Read `external_data_allowed` in the profile. These scanners keep source code local in every case. Allowed outbound traffic: package name and version lookups (osv.dev), rule and DB downloads. Telemetry stays off.
 3. Tools: check `command -v semgrep osv-scanner gitleaks`. A missing one runs from its official image (pin the tag you use and print it in the report):
    - `docker run --rm -v "$PWD:/src" ghcr.io/google/osv-scanner:<tag> scan source -r /src`
-   - `docker run --rm -v "$PWD:/src" ghcr.io/gitleaks/gitleaks:<tag> dir /src --redact`
+   - `docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/src:ro" -v "$PWD/<raw>:/out" ghcr.io/gitleaks/gitleaks:<tag> git /src --redact --report-format json --report-path /out/gitleaks-git.json`
+     In a git worktree or a submodule the real `.git` is outside the mount: clone first (`git clone --no-local <project> <scratch>`) and scan the clone. Run as your own user: as root, git refuses the repo ("dubious ownership") and gitleaks scans nothing.
    - Semgrep: the `semgrep` sub-skill handles install and `--metrics=off`.
    Never install with `curl | bash`.
 
 ## Phase 1 — Scan
 
-Write raw outputs to `.agents/security-reports/raw/<date>/` (gitignored by `audit-report`; create the ignore line now if it is missing).
+Write raw outputs to `.agents/security-reports/raw/<date>/`. Before the first write, add `.agents/security-reports/` to the project `.gitignore` if the line is missing: raw outputs map the attack surface.
 
 | Scan | Command | Notes |
 |---|---|---|
-| Code (SAST) | Run the `semgrep` sub-skill (Trail of Bits) in "important only" mode | It shows the ruleset plan and asks before running. Results: SARIF; read with `sarif-parsing`. |
+| Code (SAST) | Run the `semgrep` sub-skill (Trail of Bits) in "important only" mode, with output directory `<raw>/semgrep` | It shows the ruleset plan and asks before running. Without an explicit output directory it writes `./static_analysis_semgrep_N` at the repo root, where git can track it. Results: SARIF; read with `sarif-parsing`. |
 | Dependencies (SCA) | `osv-scanner scan source -r <project> --format json --output <raw>/osv.json` | Exit 1 means vulnerabilities found, not a failure. |
-| Secrets | `gitleaks git <project> --redact --report-format json --report-path <raw>/gitleaks.json` | Use `gitleaks dir` for a non-git folder. **Always `--redact`**: a secret must never enter the conversation. |
+| Secrets, history | `gitleaks git <project> --redact --report-format json --report-path <raw>/gitleaks-git.json` | **Always `--redact`**: a secret must never enter the conversation. Read the `N commits scanned` line: compare N with `git rev-list --count --all`. `0 commits` = the scan did not run. |
+| Secrets, working tree | `gitleaks dir <project> --redact --report-format json --report-path <raw>/gitleaks-dir.json` | Catches untracked files (`.env`, local configs). |
 
 Per-change mode: limit Semgrep to the changed files (`git diff --name-only <base>`), and keep osv-scanner and gitleaks on the whole repo (they are fast).
 
@@ -52,6 +54,7 @@ For `audit-report`: one row per finding with scanner, rule id, file:line, severi
 
 | Thought | Reality |
 |---|---|
+| "gitleaks says no leaks found" | Check the commit count first. In a worktree or as root in a container it reads 0 commits and still says "no leaks found". |
 | "0 findings, the repo is safe" | It means these rules found nothing. Say which rules ran and what they cannot see (business logic, authorization). |
 | "I'll print the secret to check it" | Never. `--redact` and check by rule id and location. |
 | "Bump every dependency to latest" | Bump what fixes a reachable CVE. Mass upgrades hide breaking changes. |

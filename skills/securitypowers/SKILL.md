@@ -9,7 +9,7 @@ Security sub-skills behind one entry point. This router decides **which** run, i
 
 ## The Rule
 
-**`security-profile` runs first.** Run `bash <plugin>/scripts/profile-check.sh <project>` (`<plugin>` is this file's directory). It prints:
+**`security-profile` runs first.** Run `uv run --script <plugin>/scripts/profile-check.py <project>` (`<plugin>` is this file's directory; sub-skills use `../../scripts/`). It prints:
 - `ok` → route.
 - `missing` or `stale: <reason>` → run `security-profile` first. No other sub-skill runs on a missing or stale profile.
 
@@ -21,9 +21,10 @@ The profile (`.agents/security-profile.md` in the target project) holds assets, 
 
 1. **Authorization.** Network and host steps touch only targets listed literally in `authorized_targets`. Nothing else, ever, whatever the user's wording.
 2. **Local first, remote on confirmation.** Steps on the repo run freely. Steps on remote systems (`host-hardening`, `exposure-scan`, Strix) show their exact targets and commands and wait for the owner's yes, even inside a full pass.
-3. **Data.** With `external_data_allowed: false`, no source code, secret or project data leaves the machine: Strix is off. Package lookups and rule or DB downloads are allowed; telemetry is off.
-4. **Fixes are code.** A fix goes into the repo or the IaC repo, reviewed and tested. Never change a host by hand.
-5. **No false confidence.** Never write "secure", "compliant" or "certified". Say what ran, what it found, and what it could not see.
+3. **Data.** With `external_data_allowed: false`, no source code, secret or project data leaves the machine: Strix is off, and the audit report is not published as a hosted artifact unless the owner says yes for that report. Package lookups and rule or DB downloads are allowed; telemetry is off.
+4. **Raw outputs stay local.** Every sub-skill that writes to `.agents/security-reports/` makes sure the project `.gitignore` ignores it first.
+5. **Fixes are code.** A fix goes into the repo or the IaC repo, reviewed and tested. Never change a host by hand.
+6. **No false confidence.** Never write "secure", "compliant" or "certified". Say what ran, what it found, and what it could not see. A tool that read nothing (0 commits, 0 files) did not run: say so.
 
 ## Routing Table
 

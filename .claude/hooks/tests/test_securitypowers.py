@@ -1,5 +1,7 @@
 """securitypowers plugin: profile freshness check, ASVS generator, router and sub-skill contracts."""
 import hashlib
+import os
+import shutil
 import json
 import re
 import subprocess
@@ -7,14 +9,15 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
 PLUGIN = REPO / "skills/securitypowers"
-CHECK = PLUGIN / "scripts/profile-check.sh"
+CHECK = PLUGIN / "scripts/profile-check.py"
+UV = shutil.which("uv") or "uv"
 GEN_ASVS = PLUGIN / "scripts/gen-asvs.py"
 
 
 def _check(project: Path, today: str = "2026-11-20", *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
-        ["bash", str(CHECK), *args, str(project)],
-        capture_output=True, text=True, env={"PATH": "/usr/bin:/bin", "TODAY": today},
+        [UV, "run", "--quiet", "--script", str(CHECK), *args, str(project)],
+        capture_output=True, text=True, env={**os.environ, "TODAY": today},
     )
 
 
@@ -97,6 +100,57 @@ def test_profile_bad_reviewed_date(tmp_path):
     assert (r.returncode, r.stdout.strip()) == (2, "stale: bad reviewed date 'last week'")
 
 
+def test_profile_future_date(tmp_path):
+    p = _project(tmp_path)
+    _profile(p, "2027-01-01", ["inventory.yml"])
+    r = _check(p)
+    assert (r.returncode, r.stdout.strip()) == (2, "stale: reviewed date in the future")
+
+
+def test_profile_empty_sources(tmp_path):
+    p = _project(tmp_path)
+    _profile(p, "2026-11-01", [])
+    r = _check(p)
+    assert (r.returncode, r.stdout.strip()) == (2, "stale: no sources")
+
+
+def test_profile_no_front_matter(tmp_path):
+    (tmp_path / ".agents").mkdir()
+    (tmp_path / ".agents/security-profile.md").write_text("# Security profile\n")
+    r = _check(tmp_path)
+    assert (r.returncode, r.stdout.strip()) == (2, "stale: no front matter")
+
+
+def _write_raw(project: Path, front: str) -> None:
+    (project / ".agents").mkdir(exist_ok=True)
+    (project / ".agents/security-profile.md").write_text(front, newline="")
+
+
+def test_profile_yaml_variants_are_ok(tmp_path):
+    """Blank line and comment inside the list, quoted date, trailing comment, CRLF: all valid YAML."""
+    p = _project(tmp_path)
+    digest = hashlib.sha256((p / "inventory.yml").read_bytes() + (p / "firewall.yml").read_bytes()).hexdigest()
+    front = (
+        "---\r\nreviewed: '2026-11-01'  # owner\r\nsources:\r\n  - inventory.yml\r\n\r\n"
+        "  # firewall\r\n  - firewall.yml\r\n"
+        f"sources_sha256: {digest}\r\n---\r\n# Profile\r\n"
+    )
+    _write_raw(p, front)
+    r = _check(p)
+    assert (r.returncode, r.stdout.strip()) == (0, "ok"), r.stderr
+
+
+def test_profile_unreadable_source(tmp_path):
+    p = _project(tmp_path)
+    _profile(p, "2026-11-01", ["inventory.yml"])
+    (p / "inventory.yml").chmod(0)
+    try:
+        r = _check(p)
+    finally:
+        (p / "inventory.yml").chmod(0o644)
+    assert (r.returncode, r.stdout.strip()) == (2, "stale: cannot read inventory.yml")
+
+
 ASVS_HEADER = "chapter_id,chapter_name,section_id,section_name,req_id,req_description,L\n"
 
 
@@ -143,6 +197,8 @@ def _routing_table_names() -> set[str]:
 def test_router_table_matches_dirs():
     dirs = {p.name for p in SUB.iterdir() if p.is_dir() and p.name != "securitypowers"}
     assert _routing_table_names() == dirs | STRIX
+    for name in STRIX:
+        assert (REPO / "skills" / name / "SKILL.md").is_file(), name
 
 
 def test_router_symlink():
@@ -184,4 +240,38 @@ def test_audit_report_contract():
 
 def test_every_sub_skill_reads_profile():
     for name in ("scan-fix-loop", "iac-scan", "host-hardening", "exposure-scan", "threat-model"):
-        assert "profile-check.sh" in (SUB / name / "SKILL.md").read_text(), name
+        text = (SUB / name / "SKILL.md").read_text()
+        assert "uv run --script ../../scripts/profile-check.py" in text, name
+        assert "<plugin>" not in text, name
+
+
+def test_raw_outputs_ignored_before_write():
+    for name in ("scan-fix-loop", "iac-scan", "host-hardening", "exposure-scan"):
+        assert "add `.agents/security-reports/` to the project `.gitignore`" in (SUB / name / "SKILL.md").read_text(), name
+
+
+def test_iac_scan_never_contacts_hosts():
+    text = (SUB / "iac-scan/SKILL.md").read_text()
+    # The only mention of `--check` is the sentence that forbids it.
+    assert text.replace("--syntax-check", "").count("--check") == 1
+    assert "Never run `ansible-playbook --check`" in text
+
+
+def test_host_hardening_ties_alias_to_target():
+    text = (SUB / "host-hardening/SKILL.md").read_text()
+    assert "ssh -G" in text and "mktemp -d" in text and "/tmp/sp-" not in text
+
+
+def test_exposure_scan_requires_its_scope():
+    text = (SUB / "exposure-scan/SKILL.md").read_text()
+    assert "scope `exposure-scan`" in text
+
+
+def test_audit_report_artifact_respects_data_policy():
+    text = (SUB / "audit-report/SKILL.md").read_text()
+    assert "external_data_allowed: true" in text
+
+
+def test_cis_baselines_are_ssg_ids():
+    text = (PLUGIN / "references/profile-template.md").read_text()
+    assert "cis_l1" not in text and "cis_server_l1" in text

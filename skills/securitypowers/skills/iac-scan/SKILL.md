@@ -9,11 +9,12 @@ Finds insecure configuration **before** it reaches a host. Fixes stay in the IaC
 
 ## Preconditions
 
-1. `bash <plugin>/scripts/profile-check.sh <project>` prints `ok`.
+1. `uv run --script ../../scripts/profile-check.py <project>` (path relative to this file) prints `ok`.
 2. Tools: `command -v trivy kics ansible-lint`. A missing one runs from its official image (pin the tag and print it in the report):
    - `docker run --rm -v "$PWD:/src" aquasec/trivy:<tag> config /src`
-   - `docker run --rm -v "$PWD:/path" checkmarx/kics:<tag> scan -p /path -o /path/.agents/security-reports/raw/kics --disable-full-descriptions`
+   - `docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/path" checkmarx/kics:<tag> scan -p /path -o /path/.agents/security-reports/raw/<date>/kics --report-formats json --disable-full-descriptions`
    - `uvx ansible-lint` (no global install).
+3. Before the first write, add `.agents/security-reports/` to the project `.gitignore` if the line is missing: raw outputs map the attack surface.
 
 ## Scans
 
@@ -41,7 +42,7 @@ Then read `../../references/insecure-defaults/*.md` (Trail of Bits corpus) and s
 
 ## Fix
 
-Propose each fix as a diff in the IaC repo. Re-run the tool that found it. Run the repo's own check (`molecule test`, `ansible-playbook --check`, `docker build`) when one exists. Ask before any commit.
+Propose each fix as a diff in the IaC repo. Re-run the tool that found it. Run the repo's own **local** checks when they exist: `ansible-playbook --syntax-check`, `molecule test` (local VM or container), `docker build`. Never run `ansible-playbook --check` or any command that uses a real inventory: it connects to the hosts, and tasks with `check_mode: false` really run. Hosts are reached only through `host-hardening` and `exposure-scan`, after their target rules. Ask before any commit.
 
 ## Output
 
