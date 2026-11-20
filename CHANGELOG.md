@@ -14,9 +14,12 @@
 
 ### Changed
 - `config/orca/settings.json` versions `agentDefaultArgs` with empty args for `claude`, `cursor` and `mistral-vibe`. Orca's default launches each agent in bypass mode (`--dangerously-skip-permissions`, `--yolo`, `--agent auto-approve`). Agents now keep their own permission prompts. Apply with Orca closed: `python3 scripts/orca-settings.py apply`.
+- `.gitignore`: ignore `.infisical.json` (the Infisical CLI project file).
+- `config/brain-projects.tsv`: register `homelab-dashboard` (recovered from the stale branch `frontend-skills-followup`).
 
 ### Fixed
 - `install.sh` stopped with exit 1 right after `platform:` when no Windows `Obsidian.com` exists (native Linux, or WSL without Obsidian): under `set -euo pipefail`, `compgen -G` with no match failed the assignment. The Orca step never ran. The Obsidian tests now run the block under `set -euo pipefail`. 1 new test (native Linux, no Windows side).
+- statusLine in a worktree: the tracked `.claude/settings.json` still ran the removed `aif-statusline` wrapper. In a worktree, this file is the project settings and overrides the user `statusLine`, so the status line was empty. The command now runs `ccstatusline` directly, like the live `~/.claude/settings.json` that `install.sh` already fixed.
 
 ## [0.20.0] - 2026-11-13
 

@@ -57,6 +57,9 @@
 .cursor/skills-cursor/
 .wiki/
 
+# Infisical CLI project file — never tracked
+.infisical.json
+
 # Local Brain config — machine-specific, do not track
 config/brain.env
 config/graphify.env

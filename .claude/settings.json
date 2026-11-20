@@ -247,7 +247,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "/home/lgiron/.local/bin/aif-statusline /home/lgiron/.local/bin/ccstatusline --config /home/lgiron/.claude/ccstatusline-settings.json",
+    "command": "/home/lgiron/.local/bin/ccstatusline --config /home/lgiron/.claude/ccstatusline-settings.json",
     "padding": 2,
     "refreshInterval": 10
   },
