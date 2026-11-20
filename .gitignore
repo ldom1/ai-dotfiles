@@ -93,3 +93,6 @@ articles/
 .claude/policy-limits.json.stamp.json
 .claude/skills/synced/
 .claude/state/
+
+# securitypowers audit reports (attack-surface detail, never committed)
+.agents/security-reports/

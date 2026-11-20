@@ -1,0 +1,10 @@
+{
+  "name": "securitypowers",
+  "version": "1.0.0",
+  "description": "Security review behind one router: per-project security profile first, then OWASP / Trail of Bits code review, open-source scan-fix loop, IaC scan, read-only host hardening (ANSSI / CIS), external exposure scan, and a teaching audit report. Trigger: /securitypowers",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles"
+}
