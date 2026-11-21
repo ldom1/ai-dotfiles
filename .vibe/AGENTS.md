@@ -60,13 +60,15 @@ Rules for every code change, and for a session that creates a project, a compone
 
 ## Python
 - Use `uv` for all environment and dependency management (replaces pip, venv, poetry, requirements.txt). Commit `uv.lock`. Use `uv add`, `uv run`, `uv sync`.
+- Build every Python project as an installed package from `pyproject.toml`: code in `core/<pkg>/` (never `src/`), `[build-system]` `uv_build` with `[tool.uv.build-backend] module-root = "core"`, `[project.scripts]` for its command, absolute imports (`from <pkg>.config import Settings`). Never run it as loose modules from the repo dir.
 - Validate external data (APIs, files, user input) with `pydantic`.
 - Validate DataFrame schemas with `pandera` when a pipeline has a stable schema.
-- Centralise configuration in one `pydantic-settings` `BaseSettings` class. No `os.environ` reads scattered in the code.
+- Centralise configuration in one `pydantic-settings` `BaseSettings` class in `config.py`: every tunable value (thresholds, paths, timings), env and CLI overrides. No `os.environ` reads or tunable constants scattered in the code. A stdlib-only repo convention does not exempt new code.
+- Log with `loguru`, never the stdlib `logging` module. Configure the sink once in the entry point.
 - Use strict type hints on public functions and modules.
 - Use `pandas` by default. Use `polars` when data does not fit comfortably in memory (rough guide: > 1 GB) or when pandas is too slow. Keep the library already used in the repo.
 - Prefer community-standard libraries (httpx, regex, boto3, etc.) over custom code.
-- Scale the rigour to the code: a throwaway script of 20 lines does not need models, schemas and settings classes.
+- Scale the rigour to the code: a throwaway script of 20 lines does not need models, schemas and settings classes. A service, a CLI or a long-lived tool always gets `config.py` and `loguru`.
 
 ## Docs style (ASD-STE100 inspired)
 - Prose docs: sentences ≤ 20 words (procedures), ≤ 25 (descriptions).
