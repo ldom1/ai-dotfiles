@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- `git-commit` scopes: new project type `homelab-content` (marker `HOMELAB.md`; scopes `core`, `docs`, `cloudreve`, `immich`, `paperless`, `voicestudio`).
 - `securitypowers`: a router plugin for security review, built like `marketingpowers`.
   - `security-profile` runs first. It writes `.agents/security-profile.md` in the target project: assets, expected ports, authorized scan targets, baseline (ANSSI BP-028 or CIS), ASVS level and `external_data_allowed`. `scripts/profile-check.py` (PEP 723, `pyyaml`) prints `ok`, `missing` or `stale: <reason>`: older than 90 days or in the future, no front matter, no sources, a source file changed, missing or unreadable.
   - Vendored: Trail of Bits `differential-review`, `sharp-edges`, `semgrep`, `sarif-parsing`, `supply-chain-risk-auditor` and the `insecure-defaults` corpus (commit `149d7b21f406`, CC BY-SA 4.0), and agamm `owasp-security` (commit `1ae29cb22518`, MIT). Both pins are in `config/vendored-skills.json`, so the SessionStart check reports upstream changes.
@@ -13,6 +14,7 @@
   - 29 pytest tests in `.claude/hooks/tests/test_securitypowers.py`: profile check (13), ASVS generator (2), router table matches the sub-skill folders, licenses and pins, safety text contracts.
 
 ### Changed
+- `AGENTS.md` § Python: log with `loguru` (never stdlib `logging`); config goes in one `pydantic-settings` class in `config.py` with every tunable value; a service, CLI or long-lived tool always gets both, even in a stdlib-only repo. Every Python project is an installed `uv` package (`core/<pkg>/` layout, never `src/`; `uv_build` with `module-root = "core"`; `[project.scripts]`; absolute imports).
 - `config/orca/settings.json` versions `agentDefaultArgs` with empty args for `claude`, `cursor` and `mistral-vibe`. Orca's default launches each agent in bypass mode (`--dangerously-skip-permissions`, `--yolo`, `--agent auto-approve`). Agents now keep their own permission prompts. Apply with Orca closed: `python3 scripts/orca-settings.py apply`.
 - `.gitignore`: ignore `.infisical.json` (the Infisical CLI project file).
 - `config/brain-projects.tsv`: register `homelab-dashboard` (recovered from the stale branch `frontend-skills-followup`).

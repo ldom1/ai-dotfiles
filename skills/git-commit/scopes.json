@@ -1,5 +1,18 @@
 {
   "project_types": {
+    "homelab-content": {
+      "detect": [
+        "HOMELAB.md"
+      ],
+      "scopes": [
+        "core",
+        "docs",
+        "cloudreve",
+        "immich",
+        "paperless",
+        "voicestudio"
+      ]
+    },
     "nextjs": {
       "detect": [
         "next.config.js",
