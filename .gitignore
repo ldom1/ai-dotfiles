@@ -34,6 +34,13 @@
 .claude/feedback/
 .claude/remote-settings.json
 .claude/remote-settings.json.synced-at
+.claude/daemon.lock
+.claude/daemon.status.json
+.claude/*.bak-*
+.claude/hooks/*.bak-*
+.claude/keybindings.json
+.claude/orca-agent-view.json
+.claude/themes/
 
 # Local permissions — machine-specific, do not track
 .claude/settings.local.json
