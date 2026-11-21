@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- `git-commit` scopes: new project type `homelab-content` (marker `HOMELAB.md`; scopes `core`, `docs`, `cloudreve`, `immich`, `paperless`, `voicestudio`).
 - `securitypowers`: a router plugin for security review, built like `marketingpowers`.
   - `security-profile` runs first. It writes `.agents/security-profile.md` in the target project: assets, expected ports, authorized scan targets, baseline (ANSSI BP-028 or CIS), ASVS level and `external_data_allowed`. `scripts/profile-check.py` (PEP 723, `pyyaml`) prints `ok`, `missing` or `stale: <reason>`: older than 90 days or in the future, no front matter, no sources, a source file changed, missing or unreadable.
   - Vendored: Trail of Bits `differential-review`, `sharp-edges`, `semgrep`, `sarif-parsing`, `supply-chain-risk-auditor` and the `insecure-defaults` corpus (commit `149d7b21f406`, CC BY-SA 4.0), and agamm `owasp-security` (commit `1ae29cb22518`, MIT). Both pins are in `config/vendored-skills.json`, so the SessionStart check reports upstream changes.
