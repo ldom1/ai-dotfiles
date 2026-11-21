@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-21
+
 ### Added
 - `git-commit` scopes: new project type `homelab-content` (marker `HOMELAB.md`; scopes `core`, `docs`, `cloudreve`, `immich`, `paperless`, `voicestudio`).
 - `securitypowers`: a router plugin for security review, built like `marketingpowers`.
