@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-21
+
 ### Added
 - `git-commit` scopes: new project type `homelab-content` (marker `HOMELAB.md`; scopes `core`, `docs`, `cloudreve`, `immich`, `paperless`, `voicestudio`).
 - `securitypowers`: a router plugin for security review, built like `marketingpowers`.
@@ -20,6 +22,7 @@
 - `config/brain-projects.tsv`: register `homelab-dashboard` (recovered from the stale branch `frontend-skills-followup`).
 
 ### Fixed
+- `.gitignore`: ignore local runtime files (`.claude/daemon.lock`, `daemon.status.json`, `keybindings.json`, `orca-agent-view.json`, `themes/`, `*.bak-*`) and the HyperFrames skill symlinks in `.cursor/skills/`, so `git-promotion` sees a clean tree.
 - `install.sh` stopped with exit 1 right after `platform:` when no Windows `Obsidian.com` exists (native Linux, or WSL without Obsidian): under `set -euo pipefail`, `compgen -G` with no match failed the assignment. The Orca step never ran. The Obsidian tests now run the block under `set -euo pipefail`. 1 new test (native Linux, no Windows side).
 - statusLine in a worktree: the tracked `.claude/settings.json` still ran the removed `aif-statusline` wrapper. In a worktree, this file is the project settings and overrides the user `statusLine`, so the status line was empty. The command now runs `ccstatusline` directly, like the live `~/.claude/settings.json` that `install.sh` already fixed.
 
