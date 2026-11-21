@@ -189,9 +189,15 @@ def test_cli_check_warns_on_failure(env):
     assert any("cannot reach Orca runtime" in line for line in r.stdout.splitlines())
 
 
-def test_cli_missing_on_wsl_warns(env):
+def test_cli_missing_on_wsl_warns(env, tmp_path):
     (env["bin"] / "orca-ide").unlink()
-    r = run(env, platform="wsl")
+    # Hide a real /usr/bin/orca-ide on this machine (/bin is a link to /usr/bin on Ubuntu).
+    sysbin = tmp_path / "sysbin"
+    sysbin.mkdir()
+    for p in Path("/usr/bin").iterdir():
+        if p.name != "orca-ide":
+            (sysbin / p.name).symlink_to(p)
+    r = run(env, platform="wsl", PATH=f"{env['bin']}:{sysbin}")
     assert any("orca-ide" in line and "Windows" in line for line in r.stdout.splitlines())
 
 
