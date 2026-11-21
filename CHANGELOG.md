@@ -14,6 +14,7 @@
   - 29 pytest tests in `.claude/hooks/tests/test_securitypowers.py`: profile check (13), ASVS generator (2), router table matches the sub-skill folders, licenses and pins, safety text contracts.
 
 ### Changed
+- `AGENTS.md` § Python: log with `loguru` (never stdlib `logging`); config goes in one `pydantic-settings` class in `config.py` with every tunable value; a service, CLI or long-lived tool always gets both, even in a stdlib-only repo.
 - `config/orca/settings.json` versions `agentDefaultArgs` with empty args for `claude`, `cursor` and `mistral-vibe`. Orca's default launches each agent in bypass mode (`--dangerously-skip-permissions`, `--yolo`, `--agent auto-approve`). Agents now keep their own permission prompts. Apply with Orca closed: `python3 scripts/orca-settings.py apply`.
 - `.gitignore`: ignore `.infisical.json` (the Infisical CLI project file).
 - `config/brain-projects.tsv`: register `homelab-dashboard` (recovered from the stale branch `frontend-skills-followup`).
