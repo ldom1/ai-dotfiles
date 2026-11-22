@@ -1,6 +1,6 @@
 {
   "name": "veille-technique",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "AI / agent tech watch (veille) or skills audit (audit) against a target project: per-component verdict artifact in French, vault ledger, optional integration plan.",
   "author": {
     "name": "Louis Giron",
