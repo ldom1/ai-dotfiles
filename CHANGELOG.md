@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+- `brain-sync`: dev-project targets for the notion-pilot capture bot.
+  - `scripts/setup_capture_targets.py` creates the Notion schema once: the targets database `Projets dev`, the capture relation `Cible`, the checkbox `Veille cible faite`, Laboratoire `Projet` → Projects and two rollups. It is idempotent and dry-run by default.
+  - `scripts/sync_dev_projects.py` copies `$BRAIN_PATH/projects/*.md` to the targets database, keyed by filename. It never deletes a row and deactivates an absent project only after a complete scan.
+  - `systemd/sync-dev-projects.{service,timer}`: daily run through `infisical run`.
+
 ## [0.21.0] - 2026-11-21
 
 ### Added
