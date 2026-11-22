@@ -33,11 +33,12 @@ The notion-pilot Telegram bot can offer a dev project as a target after a captur
 | `scripts/setup_capture_targets.py` | One-off, idempotent. Creates the targets database `Projets dev` (`Nom`, `Slug`, `Résumé`, `Actif`), the capture relation `Cible` (reverse `Captures`), the checkbox `Veille cible faite`, the relation Laboratoire `Projet` → Projects (reverse `Idée d'origine`) and two rollups on Projects. Without `--apply` it prints the missing pieces only. |
 | `scripts/sync_dev_projects.py` | Upserts one row per `$BRAIN_PATH/projects/*.md`, keyed by `Slug` (the filename). `Actif` follows `status: active`. It never deletes a row. It unchecks `Actif` for an absent project only after a scan that read every file. It logs and skips a malformed note. `--dry-run` prints the counts only. |
 
+Secrets come from the notion-pilot Infisical project (env `prod`) through a machine identity (Universal Auth, read-only). Put its `CLIENT_ID` and `CLIENT_SECRET` in `~/.config/infisical/sync-dev-projects.env` (mode 600). `scripts/sync-dev-projects.sh` logs in with it and runs the sync; a personal `infisical login` session is not used, because it expires and resets with the password.
+
 Run the sync by hand after you create a project during the day:
 
 ```bash
-cd ~/lab/notion-pilot && infisical run --env=prod --silent -- \
-  ~/ai-dotfiles/skills/brain-sync/scripts/sync_dev_projects.py
+~/ai-dotfiles/skills/brain-sync/scripts/sync-dev-projects.sh            # add --dry-run to preview
 ```
 
 Daily run: link and start the timer once.

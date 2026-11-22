@@ -5,5 +5,6 @@ After=network-online.target
 [Service]
 Type=oneshot
 EnvironmentFile=%h/ai-dotfiles/config/brain.env
-# NOTION_TOKEN and NOTION_TARGETS_DATABASE_ID come from the notion-pilot Infisical project (env prod).
-ExecStart=/usr/bin/env infisical run --domain https://infisical.dombot.tech --projectId 71e743d9-5a88-4125-8703-bd75de5fee23 --env prod --silent -- %h/ai-dotfiles/skills/brain-sync/scripts/sync_dev_projects.py
+# Secrets: notion-pilot Infisical project (env prod), via the machine identity in
+# ~/.config/infisical/sync-dev-projects.env (CLIENT_ID, CLIENT_SECRET, mode 600).
+ExecStart=%h/ai-dotfiles/skills/brain-sync/scripts/sync-dev-projects.sh
