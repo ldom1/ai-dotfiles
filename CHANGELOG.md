@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-11-22
+
 ### Added
 - `brain-sync`: dev-project targets for the notion-pilot capture bot.
   - `scripts/setup_capture_targets.py` creates the Notion schema once: the targets database `Projets dev`, the capture relation `Cible`, the checkbox `Veille cible faite`, Laboratoire `Projet` → Projects and two rollups. It is idempotent and dry-run by default.
