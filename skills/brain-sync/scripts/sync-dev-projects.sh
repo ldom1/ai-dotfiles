@@ -7,7 +7,11 @@ set -euo pipefail
 IDENTITY_FILE=${INFISICAL_IDENTITY_FILE:-$HOME/.config/infisical/sync-dev-projects.env}
 DOMAIN=https://infisical.dombot.tech
 PROJECT_ID=71e743d9-5a88-4125-8703-bd75de5fee23
-set -a; . "$IDENTITY_FILE"; set +a
+# The credentials file lives outside the repo.
+set -a
+# shellcheck source=/dev/null
+. "$IDENTITY_FILE"
+set +a
 INFISICAL_TOKEN=$(infisical login --method=universal-auth --client-id="$CLIENT_ID" \
   --client-secret="$CLIENT_SECRET" --domain "$DOMAIN" --silent --plain)
 unset CLIENT_ID CLIENT_SECRET
