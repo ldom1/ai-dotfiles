@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily sync of vault dev projects to Notion (capture targets)
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+Unit=sync-dev-projects.service
+
+[Install]
+WantedBy=timers.target

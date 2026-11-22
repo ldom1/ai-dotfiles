@@ -1,0 +1,10 @@
+[Unit]
+Description=Copy the vault's dev projects to the Notion targets database (capture targets)
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=%h/ai-dotfiles/config/brain.env
+# Secrets: notion-pilot Infisical project (env prod), via the machine identity in
+# ~/.config/infisical/sync-dev-projects.env (CLIENT_ID, CLIENT_SECRET, mode 600).
+ExecStart=%h/ai-dotfiles/skills/brain-sync/scripts/sync-dev-projects.sh

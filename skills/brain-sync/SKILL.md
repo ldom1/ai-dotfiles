@@ -23,3 +23,29 @@ The SessionEnd hook runs `harness-metrics` first, then `sync.sh end`, then warns
 Failures never block the session: rebase conflict → `git rebase --abort`, stash restored, fix by hand in `$BRAIN_PATH`; push failure → commit stays local, `git push` later. Details: `reference/EDGE-CASES.md`.
 
 **Config** — `BRAIN_PATH` (absolute path to the vault git repo) from the first of: `$BRAIN_ENV_FILE` · `brain.env` beside `sync.sh` · `~/ai-dotfiles/config/brain.env`. `QMD_INDEX_PATH` enables the reindex. Standalone use: copy `brain-sync/`, put `brain.env` (from `reference/brain.env.example`) beside the script.
+
+## Dev-project targets (Notion)
+
+The notion-pilot Telegram bot can offer a dev project as a target after a capture ("à tester pour ai-dotfiles"). It reads the targets from a Notion database. Two scripts here keep that database in line with the vault. They need `NOTION_TOKEN` from the notion-pilot Infisical project (env `prod`).
+
+| Script | Does |
+|---|---|
+| `scripts/setup_capture_targets.py` | One-off, idempotent. Creates the targets database `Projets dev` (`Nom`, `Slug`, `Résumé`, `Actif`), the capture relation `Cible` (reverse `Captures`), the checkbox `Veille cible faite`, the relation Laboratoire `Projet` → Projects (reverse `Idée d'origine`) and two rollups on Projects. Without `--apply` it prints the missing pieces only. |
+| `scripts/sync_dev_projects.py` | Upserts one row per `$BRAIN_PATH/projects/*.md`, keyed by `Slug` (the filename). `Actif` follows `status: active`. It never deletes a row. It unchecks `Actif` for an absent project only after a scan that read every file. It logs and skips a malformed note. `--dry-run` prints the counts only. |
+
+Secrets come from the notion-pilot Infisical project (env `prod`) through a machine identity (Universal Auth, read-only). Put its `CLIENT_ID` and `CLIENT_SECRET` in `~/.config/infisical/sync-dev-projects.env` (mode 600). `scripts/sync-dev-projects.sh` logs in with it and runs the sync; a personal `infisical login` session is not used, because it expires and resets with the password.
+
+Run the sync by hand after you create a project during the day:
+
+```bash
+~/ai-dotfiles/skills/brain-sync/scripts/sync-dev-projects.sh            # add --dry-run to preview
+```
+
+Daily run: link and start the timer once.
+
+```bash
+ln -s ~/ai-dotfiles/skills/brain-sync/systemd/sync-dev-projects.{service,timer} ~/.config/systemd/user/
+systemctl --user daemon-reload && systemctl --user enable --now sync-dev-projects.timer
+```
+
+A renamed note is a new project: the old row is unchecked and keeps its links. `veille-technique` on the new slug does not see captures targeted before the rename.
