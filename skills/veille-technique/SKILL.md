@@ -42,6 +42,16 @@ grep -n '<slug>' "$BP/resources/knowledge/veille-technique.md"   # past verdicts
 
 Then run `brain-search` with the component names: a past verdict or prompt on the same item changes the analysis.
 
+### 1b. Captures ciblées (Notion)
+
+The notion-pilot bot lets the owner mark a Telegram capture "à tester pour <slug>". It writes the relation `Cible` (→ the `Projets dev` targets database). List the open ones for the target project with the Notion MCP `notion-query-data-sources`, SQL mode, on the captures data source `collection://3456c451-9465-8055-b6e9-000b7961d10f`:
+
+- keep rows whose `Cible` contains the target's `Projets dev` row and whose `Veille cible faite` is unchecked;
+- skip rows whose `Status` is not `Analysed`: the Notion agent has not linked them yet, they come back next run;
+- group the rest by linked meta-page (`Tools` or `Data & Tech`): one component per meta-page, whatever the number of captures.
+
+Add these components to the analysis. Never read or write Tools `Statut test`: it is the tool's global status, `Cible` is the per-project intent.
+
 ## 2. Analyse
 
 Follow the subskill. Both produce one block per component in this shape, ≤ 300 words, sourced:
@@ -100,6 +110,10 @@ Give the URL and ask the user to review. Stop. Apply review comments to the arti
 |---|---|---|---|---|
 | 2026-10-19 | pstack `why` | Adapter | ai-dotfiles | [[2026-10-19-pstack-shunt-thermo]] |
 ```
+
+For components that came from step 1b, in this order:
+1. Before you append a row, `grep` the ledger for the same component and target. If the row exists (a retry after a partial failure), do not write it again.
+2. After the row is written, check `Veille cible faite` on every grouped capture (Notion MCP `notion-update-page`). Never check it before the ledger row exists.
 
 When an Adopter or Adapter ships, in this session or a later one, add the commit to the recap note: one **Impacts** line (change, short hash, PR, date), the hash in `commits`, and `statut: intégré` when nothing is left. This note answers "why did this change?" from a commit.
 

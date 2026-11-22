@@ -7,6 +7,7 @@
   - `scripts/setup_capture_targets.py` creates the Notion schema once: the targets database `Projets dev`, the capture relation `Cible`, the checkbox `Veille cible faite`, Laboratoire `Projet` → Projects and two rollups. It is idempotent and dry-run by default.
   - `scripts/sync_dev_projects.py` copies `$BRAIN_PATH/projects/*.md` to the targets database, keyed by filename. It never deletes a row and deactivates an absent project only after a complete scan.
   - `systemd/sync-dev-projects.{service,timer}`: daily run through `infisical run`.
+- `veille-technique`: step 1b lists the Telegram captures targeted at the project (`Cible`, `Veille cible faite` unchecked, `Status` `Analysed`), one component per linked meta-page. Step 4 writes the ledger row first, then checks `Veille cible faite`, and skips a row that already exists.
 
 ## [0.21.0] - 2026-11-21
 
