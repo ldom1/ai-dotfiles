@@ -34,10 +34,12 @@ Check the three levels of `$BRAIN_PATH/ontologie/` (concepts, sujets, technologi
 ```bash
 uv run --script ~/ai-dotfiles/scripts/ontologie.py activity
 uv run --script ~/ai-dotfiles/scripts/ontologie.py check
+uv run --script ~/ai-dotfiles/scripts/ontologie.py mentions
 ```
 
 - Fix every `FAIL` line: correct the link or the line of the project note. Never fix a `FAIL` by creating a note.
 - Report every `WARN` line: an element that no project and no ontologie note links.
+- `mentions` writes the last section `## Dans le vault` of each element again: the projects that use it and the notes that name it. It takes one to four minutes on a vault of 1,700 notes. Never edit that section: write your own text above it. To correct a wrong match, edit the property `match` of the element (a list of regular expressions).
 - Look for two notes that are one element (a synonym, an English and a French name). Do not merge them yourself: propose the pair in a review item (`type: arbitrage`). After the owner agrees, keep one note, add the other name to its `aliases`, repoint the links and move the other note to `archive/`.
 - Never create a note in `ontologie/` that the owner did not accept, and never write `level`.
 

@@ -22,7 +22,7 @@ Obsidian vault, git repo. Path: `$BRAIN_PATH` from `~/ai-dotfiles/config/brain.e
 | `resources/knowledge/veille-technique.md` | Veille verdict ledger | `veille-technique` |
 | `_templates/` | Note templates used by `load.sh`, `/capture` and `veille-technique` | user |
 | `resources/queries/archive/` | Knowledge-gap and roadmap reports | `/brain-audit` (`queries`) |
-| `ontologie/{concepts,sujets,technologies}/<slug>.md` | What the owner handles, on three levels that never mix: concepts, sujets (questions to solve), technologies. Links point up; a project note links its elements in a last section `## Ontologie`. `level` is set by the owner only | user (validates), `/capture` and `/brain-audit` (propose, link, `scripts/ontologie.py`) |
+| `ontologie/{concepts,sujets,technologies}/<slug>.md` | What the owner handles, on three levels that never mix: concepts, sujets (questions to solve), technologies. Links point up; a project note links its elements in a last section `## Ontologie`. `level` is set by the owner only. A last section `## Dans le vault`, written by `scripts/ontologie.py mentions`, lists the projects and notes that name the element | user (validates), `/capture` and `/brain-audit` (propose, link, `scripts/ontologie.py`) |
 | `ontologie/Concepts.base` · `ontologie/Sujets.base` · `ontologie/Technologies.base` | Obsidian views: one list for each level. `Technologies.base` shows the linked projects and their caps | user |
 | `caps/` | Areas of responsibility | user |
 | `meta/` | Digests, `last-maintenance.md` | `/brain-audit` |

@@ -273,6 +273,116 @@ def test_check_reports_a_repeated_dangling_link_once(tmp_path, capsys):
     assert out.count("[[slrum]]") == 1
 
 
+SECTION = "## Dans le vault\n"
+
+
+def vault_section(path: Path) -> str | None:
+    text = path.read_text(encoding="utf-8")
+    return text.split(SECTION, 1)[1] if SECTION in text else None
+
+
+def test_mentions_lists_projects_then_notes_by_group(tmp_path, capsys):
+    v = vault_ok(tmp_path)
+    write(v, "inbox/daily/implementation/hpc/2026-11-18-b.md", "## log\nsbatch on slurm, then Slurm again.\n")
+    write(v, "inbox/daily/implementation/other/2026-06-01-c.md", "The SLURM queue was full.\n")
+    write(v, "inbox/daily/specs/hpc/2026-11-01-hpc-design.md", "Jobs run under Slurm.\n")
+    write(v, "inbox/daily/plans/hpc/2026-11-02-hpc-plan.md", "No scheduler named here.\n")
+    write(v, "resources/knowledge/slurm-notes.md", "slurm accounting\n")
+    code, out = run(capsys, "mentions", str(v))
+    assert (code, out.strip()) == (0, "OK 4 notes, 4 changed")
+    assert vault_section(v / "ontologie/technologies/slurm.md") == (
+        "- Projets (1) : [[hpc]]\n"
+        "- Notes d'implémentation (2) : [[2026-11-18-b]] · [[2026-06-01-c]]\n"
+        "- Specs et plans (1) : [[2026-11-01-hpc-design]]\n"
+        "- Ressources (1) : [[slurm-notes]]\n")
+    assert vault_section(v / "ontologie/technologies/python.md") == "- Projets (1) : [[hpc]]\n"
+
+
+def test_mentions_a_link_to_another_note_is_not_a_mention_but_a_direct_link_is(tmp_path, capsys):
+    v = vault_ok(tmp_path)
+    write(v, "inbox/daily/implementation/x/2026-01-01-rules.md", "See [[slurm-patterns]] and [[python-patterns|Python rules]].\n")
+    write(v, "inbox/daily/implementation/x/2026-01-02-direct.md", "Linked: [[slurm]].\n")
+    run(capsys, "mentions", str(v))
+    assert "- Notes d'implémentation (1) : [[2026-01-02-direct]]\n" in vault_section(v / "ontologie/technologies/slurm.md")
+    assert "Notes" not in vault_section(v / "ontologie/technologies/python.md")
+
+
+def test_mentions_match_property_replaces_the_title_and_aliases(tmp_path, capsys):
+    v = vault_ok(tmp_path)
+    write(v, "ontologie/technologies/vite.md",
+          element("technologie", "Vite", 'concepts: []\nlevel:\nmatch:\n  - "\\\\bVite\\\\b"\n  - "vitejs"\n'))
+    write(v, "inbox/daily/implementation/x/2026-01-01-fr.md", "Il faut aller vite.\n")
+    write(v, "inbox/daily/implementation/x/2026-01-02-build.md", "Vite build is green.\n")
+    write(v, "inbox/daily/implementation/x/2026-01-03-pkg.md", "npm i @vitejs/plugin-react\n")
+    run(capsys, "mentions", str(v))
+    assert vault_section(v / "ontologie/technologies/vite.md") == (
+        "- Notes d'implémentation (2) : [[2026-01-03-pkg]] · [[2026-01-02-build]]\n")
+
+
+def test_mentions_default_match_wants_whole_words(tmp_path, capsys):
+    v = vault_ok(tmp_path)
+    write(v, "inbox/daily/implementation/x/2026-01-01-a.md", "micropython and pythonic are other words.\n")
+    write(v, "inbox/daily/implementation/x/2026-01-02-b.md", "Run `python -m pytest`.\n")
+    run(capsys, "mentions", str(v))
+    assert "- Notes d'implémentation (1) : [[2026-01-02-b]]\n" in vault_section(v / "ontologie/technologies/python.md")
+
+
+def test_mentions_second_run_changes_nothing_and_keeps_the_text_above(tmp_path, capsys):
+    v = vault_ok(tmp_path)
+    note = v / "ontologie/technologies/slurm.md"
+    note.write_text(SLURM + "\nMy own paragraph.\n\n## Dans le vault\n- Projets (9) : [[old]]\n", encoding="utf-8")
+    run(capsys, "mentions", str(v))
+    first = note.read_text(encoding="utf-8")
+    assert first == SLURM + "\nMy own paragraph.\n\n## Dans le vault\n- Projets (1) : [[hpc]]\n"
+    code, out = run(capsys, "mentions", str(v))
+    assert out.strip() == "OK 4 notes, 0 changed" and note.read_text(encoding="utf-8") == first
+
+
+def test_mentions_concept_takes_the_projects_of_its_technologies_and_sujets(tmp_path, capsys):
+    v = vault_ok(tmp_path)
+    project(v, "other", "[[slurm]]")
+    project(v, "third", "[[python]]")  # python has no concept
+    write(v, "inbox/daily/specs/hpc/2026-11-01-hpc-design.md", "The orchestration layer.\n")
+    run(capsys, "mentions", str(v))
+    assert vault_section(v / "ontologie/concepts/orchestration.md") == (
+        "- Projets (2) : [[hpc]] · [[other]]\n- Specs et plans (1) : [[2026-11-01-hpc-design]]\n")
+
+
+def test_mentions_keeps_the_ten_notes_with_most_matches(tmp_path, capsys):
+    v = vault_ok(tmp_path)
+    for i in range(1, 13):
+        write(v, f"inbox/daily/implementation/x/2026-01-{i:02d}-n.md", "slurm " * (3 if i == 2 else 1))
+    run(capsys, "mentions", str(v))
+    line = [l for l in vault_section(v / "ontologie/technologies/slurm.md").splitlines() if l.startswith("- Notes")][0]
+    assert line.startswith("- Notes d'implémentation (12) : [[2026-01-02-n]] · [[2026-01-12-n]] · [[2026-01-11-n]]")
+    assert line.count("[[") == 10 and line.endswith(" · …") and "[[2026-01-01-n]]" not in line
+
+
+def test_mentions_skips_the_archive_and_a_file_name_that_is_not_unique(tmp_path, capsys):
+    v = vault_ok(tmp_path)
+    write(v, "resources/archive/old.md", "slurm\n")
+    write(v, "resources/a/CONTEXT.md", "slurm\n")
+    write(v, "resources/b/CONTEXT.md", "nothing\n")
+    write(v, "resources/c/kept.md", "slurm\n")
+    run(capsys, "mentions", str(v))
+    assert "- Ressources (1) : [[kept]]\n" in vault_section(v / "ontologie/technologies/slurm.md")
+
+
+def test_mentions_removes_the_section_of_an_element_that_nothing_names(tmp_path, capsys):
+    v = vault_ok(tmp_path)
+    lonely = write(v, "ontologie/technologies/rust.md",
+                   element("technologie", "Rust", "concepts: []\nlevel:\n") + "\n## Dans le vault\n- Projets (1) : [[gone]]\n")
+    run(capsys, "mentions", str(v))
+    assert lonely.read_text(encoding="utf-8") == element("technologie", "Rust", "concepts: []\nlevel:\n")
+
+
+def test_check_fails_on_a_match_value_that_is_not_a_regular_expression(tmp_path, capsys):
+    v = vault_ok(tmp_path)
+    write(v, "ontologie/technologies/python.md", element("technologie", "Python", 'concepts: []\nlevel:\nmatch:\n  - "py(thon"\n'))
+    code, out = run(capsys, "check", str(v))
+    assert code == 1 and "FAIL ontologie/technologies/python.md: match value 'py(thon' is not a regular expression" in out
+
+
 REPO = Path(__file__).resolve().parents[3]
 
 
@@ -291,6 +401,7 @@ def test_brain_audit_connect_runs_the_check_and_never_merges_alone():
     text = (REPO / "skills/brain-audit/skills/connect/SKILL.md").read_text(encoding="utf-8")
     section = text.split("## Ontologie", 1)[1]
     assert "ontologie.py check" in section and "ontologie.py activity" in section
+    assert "ontologie.py mentions" in section and "`## Dans le vault`" in section
     assert "Do not merge them yourself" in section and "`archive/`" in section
     assert "never write `level`" in section
     assert "that the owner did not accept" in section and "Never fix a `FAIL` by creating a note" in section

@@ -7,6 +7,7 @@
 
   activity [VAULT]   write `project_activity: YYYY-MM` on each technologie and sujet
   check [VAULT]      print FAIL <file>: <reason> per problem (exit 1), WARN lines, or OK <n> elements (exit 0)
+  mentions [VAULT]   write the last section `## Dans le vault` of each element
 
 VAULT defaults to $BRAIN_PATH.
 
@@ -14,11 +15,18 @@ A project uses an element when the last section `## Ontologie` of its note in `p
 `project_activity` is the month of the latest session log (`inbox/daily/implementation/<project>/YYYY-MM-DD-*.md`)
 among those projects. It is a proxy: the log can be about another element. A project with no log gives no date.
 The script never writes `level`: only the owner states a level of mastery.
+
+`## Dans le vault` lists the projects that use the element, then the notes that name it, by group. A concept takes
+the projects of its technologies and sujets. A note names an element when its text holds the title or an alias as
+a whole word (case ignored), or a link to the element. The property `match` (a list of regular expressions, case
+kept) replaces the title and the aliases. A link to another note is not a mention. Each group shows the ten notes
+with the most matches. The section is derived: the command writes it again on each run; write your own text above it.
 """
 import io
 import os
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 from ruamel.yaml import YAML
@@ -32,6 +40,12 @@ WIKILINK = re.compile(r"\[\[([^\]|#]+)")
 SECTION = re.compile(r"^## Ontologie[ \t]*\n(.*?)(?=^## |\Z)", re.S | re.M)
 LOG_MONTH = re.compile(r"(\d{4}-\d{2})-\d{2}")
 SKIPPED_DIRS = {".git", ".obsidian", ".trash", "archive"}
+ANY_LINK = re.compile(r"\[\[[^\]]*\]\]")
+VAULT_SECTION = re.compile(r"\n*^## Dans le vault[ \t]*\n.*\Z", re.S | re.M)
+GROUPS = (("Notes d'implémentation", ("inbox/daily/implementation",)),
+          ("Specs et plans", ("inbox/daily/specs", "inbox/daily/plans")),
+          ("Ressources", ("resources",)))
+SHOWN = 10
 
 
 def _yaml() -> YAML:
@@ -76,6 +90,28 @@ def project_links(vault: Path) -> dict[str, list[str]]:
     return found
 
 
+def unique_names(vault: Path) -> dict[str, list[Path]]:
+    """Every note of the vault by file name, outside the skipped folders."""
+    names: dict[str, list[Path]] = {}
+    for path in vault.rglob("*.md"):
+        if not SKIPPED_DIRS & set(path.relative_to(vault).parts):
+            names.setdefault(path.stem, []).append(path)
+    return names
+
+
+def as_list(value) -> list[str]:
+    return [item for item in (value if isinstance(value, list) else [value]) if isinstance(item, str) and item]
+
+
+def matchers(stem: str, data: dict) -> list[re.Pattern]:
+    """The expressions that find an element in a text. Raises re.error on a bad `match` value."""
+    custom = as_list(data.get("match"))
+    if custom:
+        return [re.compile(term) for term in custom]
+    terms = as_list(data.get("title")) + as_list(data.get("aliases")) or [stem]
+    return [re.compile(r"(?<!\w)(?:" + "|".join(re.escape(term) for term in terms) + r")(?!\w)", re.I)]
+
+
 def latest_month(vault: Path, project: str) -> str | None:
     """The month of the latest dated session log of a project."""
     months = [m.group(1) for p in (vault / "inbox/daily/implementation" / project).glob("*.md")
@@ -111,12 +147,66 @@ def activity(vault: Path) -> int:
     return 0
 
 
+def mentions(vault: Path) -> int:
+    by_level = elements(vault)
+    notes = {stem: path for level in LEVELS for stem, path in by_level[level].items()}
+    texts = {stem: path.read_text(encoding="utf-8") for stem, path in notes.items()}
+    data = {stem: frontmatter(text) or {} for stem, text in texts.items()}
+    find = {stem: matchers(stem, data[stem]) for stem in notes}
+
+    users: dict[str, set[str]] = {}
+    for project, targets in project_links(vault).items():
+        for target in targets:
+            users.setdefault(target, set()).add(project)
+    for level in ("technologies", "sujets"):  # a concept takes the projects of what is attached to it
+        for stem in by_level[level]:
+            for concept in links(data[stem].get("concepts")):
+                if concept in by_level["concepts"]:
+                    users.setdefault(concept, set()).update(users.get(stem, set()))
+
+    names = unique_names(vault)
+    found: dict[str, dict[str, Counter]] = {stem: {} for stem in notes}
+    for label, folders in GROUPS:
+        for folder in folders:
+            for path in sorted((vault / folder).rglob("*.md")):
+                if SKIPPED_DIRS & set(path.relative_to(vault).parts) or len(names.get(path.stem, [])) != 1:
+                    continue
+                raw = path.read_text(encoding="utf-8", errors="replace")
+                linked = Counter(target.strip() for target in WIKILINK.findall(raw))
+                text = ANY_LINK.sub(" ", raw)
+                for stem in notes:
+                    count = linked[stem] + sum(len(rx.findall(text)) for rx in find[stem])
+                    if count:
+                        found[stem].setdefault(label, Counter())[path.stem] = count
+
+    changed = 0
+    for stem, path in notes.items():
+        lines = []
+        if users.get(stem):
+            projects = sorted(users[stem])
+            lines.append(f"- Projets ({len(projects)}) : " + " · ".join(f"[[{p}]]" for p in projects))
+        for label, _ in GROUPS:
+            counts = found[stem].get(label)
+            if counts:
+                best = sorted(counts, key=lambda name: (counts[name], name), reverse=True)[:SHOWN]
+                more = " · …" if len(counts) > SHOWN else ""
+                lines.append(f"- {label} ({len(counts)}) : " + " · ".join(f"[[{n}]]" for n in best) + more)
+        old = texts[stem]
+        if not lines and not VAULT_SECTION.search(old):
+            continue
+        new = VAULT_SECTION.sub("", old).rstrip("\n") + "\n"
+        if lines:
+            new += "\n## Dans le vault\n" + "\n".join(lines) + "\n"
+        if new != old:
+            path.write_text(new, encoding="utf-8")
+            changed += 1
+    print(f"OK {len(notes)} notes, {changed} changed")
+    return 0
+
+
 def check(vault: Path) -> int:
     by_level = elements(vault)
-    names: dict[str, list[Path]] = {}
-    for path in vault.rglob("*.md"):
-        if not SKIPPED_DIRS & set(path.relative_to(vault).parts):
-            names.setdefault(path.stem, []).append(path)
+    names = unique_names(vault)
     known = {stem for level in LEVELS for stem in by_level[level]}
     linked: set[str] = set()
     fails, warns = [], []
@@ -156,6 +246,11 @@ def check(vault: Path) -> int:
                 for value in asked if isinstance(asked, list) else [asked]:
                     if value not in ASKED_BY:
                         fail(path, f"asked_by value {str(value)!r} is not one of {', '.join(ASKED_BY)}")
+            for term in as_list(data.get("match")):
+                try:
+                    re.compile(term)
+                except re.error:
+                    fail(path, f"match value {term!r} is not a regular expression")
             if data.get("level") is not None and data["level"] not in MASTERY:
                 fail(path, f"level value {str(data['level'])!r} is not one of {', '.join(MASTERY)}")
     for level in LEVELS:
@@ -166,9 +261,12 @@ def check(vault: Path) -> int:
     return 1 if fails else 0
 
 
+COMMANDS = {"activity": activity, "check": check, "mentions": mentions}
+
+
 def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
-    if not args or args[0] not in ("activity", "check") or len(args) > 2:
+    if not args or args[0] not in COMMANDS or len(args) > 2:
         print(__doc__, file=sys.stderr)
         return 2
     root = args[1] if len(args) == 2 else os.environ.get("BRAIN_PATH")
@@ -178,7 +276,7 @@ def main(argv: list[str] | None = None) -> int:
     if not (Path(root) / "ontologie").is_dir():
         print(f"ontologie.py: no ontologie/ folder in {root}", file=sys.stderr)
         return 2
-    return activity(Path(root)) if args[0] == "activity" else check(Path(root))
+    return COMMANDS[args[0]](Path(root))
 
 
 if __name__ == "__main__":

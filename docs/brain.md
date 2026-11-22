@@ -204,14 +204,17 @@ The vault folder `ontologie/` is a second axis next to the projects. It shows wh
 - Three Obsidian views: `Concepts.base`, `Sujets.base`, `Technologies.base`. `Technologies.base` computes the number of linked projects and their caps from backlinks. The caps show where professional and personal work meet. `Sujets.base` counts the linked projects and technologies. `Concepts.base` counts the linked sujets and technologies.
 - `level` (`maîtrise`, `pratique`, `notion`) is the only statement of mastery. Only the owner sets it.
 - `project_activity` is the month of the latest session log of the linked projects. It is a proxy, not the last use of the element.
+- Each element ends with a derived section `## Dans le vault`. It lists the projects that use the element. Then it lists the session logs, the specs and plans, and the resources that name it, ten for each group.
+- A note names an element when it holds the title or an alias as a whole word, or a link to the element. The property `match` (a list of regular expressions) replaces the title and the aliases for an ambiguous name (`Notion`, `Vite`, `act`). A sujet has no name in a text, so its `match` holds the key words of the question.
 - Nothing is loaded at session start. An agent reads the folder on demand.
 
 ```bash
 uv run --script ~/ai-dotfiles/scripts/ontologie.py activity   # write project_activity on technologies and sujets
 uv run --script ~/ai-dotfiles/scripts/ontologie.py check      # FAIL lines (exit 1), WARN lines, or OK <n> elements
+uv run --script ~/ai-dotfiles/scripts/ontologie.py mentions   # write the last section `## Dans le vault` of each element
 ```
 
-`/capture` adds the elements a session used to the project note and proposes new elements in a review item. `/brain-audit` (`connect`) runs both commands and proposes merges. An agent creates an ontologie note only after the owner accepts it, and never writes `level`. The owner's new notes come from the Templater templates `_templates/ontologie-*.md`, which refuse a name that exists in the vault.
+`/capture` adds the elements a session used to the project note and proposes new elements in a review item. `/brain-audit` (`connect`) runs the three commands and proposes merges. An agent creates an ontologie note only after the owner accepts it, and never writes `level`. The owner's new notes come from the Templater templates `_templates/ontologie-*.md`, which refuse a name that exists in the vault.
 
 ### Shared agent rules (AGENTS.md)
 
