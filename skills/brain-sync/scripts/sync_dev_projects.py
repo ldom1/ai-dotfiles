@@ -86,25 +86,29 @@ def _summary(body: str) -> str:
 
 def _parse(text: str) -> tuple[dict[str, Any], str] | None:
     """Front matter and body, or None when the note has no valid front matter."""
-    if not text.startswith("---\n"):
+    lines = text.removeprefix("\ufeff").replace("\r\n", "\n").split("\n")
+    if not lines or lines[0].strip() != "---":
         return None
-    end = text.find("\n---", 4)
-    if end < 0:
+    end = next((i for i, line in enumerate(lines[1:], 1) if line.strip() == "---"), None)
+    if end is None:
         return None
     try:
-        meta = yaml.safe_load(text[4:end])
+        meta = yaml.safe_load("\n".join(lines[1:end]))
     except yaml.YAMLError:
         return None
     if not isinstance(meta, dict) or not isinstance(meta.get("title"), str):
         return None
-    return meta, text[end + 4 :]
+    return meta, "\n".join(lines[end + 1 :])
 
 
 def scan_vault(projects_dir: Path) -> Scan:
     projects: dict[str, VaultProject] = {}
     malformed: list[str] = []
-    complete = True
-    for path in sorted(projects_dir.glob("*.md")):
+    paths = sorted(projects_dir.glob("*.md")) if projects_dir.is_dir() else []
+    complete = bool(paths)  # no note read: never deactivate anything
+    if not paths:
+        logger.warning("no note found in {}: nothing will be deactivated", projects_dir)
+    for path in paths:
         slug = path.stem
         try:
             text = path.read_text(encoding="utf-8")

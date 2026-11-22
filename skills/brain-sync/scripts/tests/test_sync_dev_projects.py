@@ -132,3 +132,21 @@ def test_renamed_note_creates_new_and_deactivates_old() -> None:
 def test_plan_is_idempotent() -> None:
     rows = {"a": row(P_A, "pa"), "b": row(P_B, "pb")}
     assert plan_sync(rows, scan(P_A, P_B)) == []
+
+
+def test_missing_projects_dir_is_an_incomplete_scan(tmp_path: Path) -> None:
+    assert scan_vault(tmp_path / "nope").complete is False
+
+
+def test_empty_projects_dir_is_an_incomplete_scan(tmp_path: Path) -> None:
+    assert scan_vault(tmp_path).complete is False
+
+
+def test_crlf_and_bom_notes_are_read(tmp_path: Path) -> None:
+    (tmp_path / "crlf.md").write_bytes(fm("Crlf", body="> quoted\n").replace("\n", "\r\n").encode())
+    (tmp_path / "bom.md").write_bytes(("﻿" + fm("Bom")).encode())
+    scan = scan_vault(tmp_path)
+    assert scan.malformed == []
+    assert scan.projects["crlf"].summary == "quoted"
+    assert scan.projects["bom"].name == "Bom"
+
