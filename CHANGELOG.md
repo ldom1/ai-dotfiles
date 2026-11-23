@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-## [0.22.0] - 2026-11-22
+## [0.22.0] - 2026-11-23
 
 ### Added
 - `brain-sync`: dev-project targets for the notion-pilot capture bot.
