@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- `git-commit`: project type `ai-dotfiles` in `scopes.json` is renamed `harness`. It also detects coe-harness (`tools/coe_harness.py`). The scopes do not change.
+
 ### Added
 - `git-commit`: project type `django` in `scopes.json`, detected by `manage.py`. Scopes: `core`, `docs`, `config`, `vulnerability`, `trade`, `user`.
 

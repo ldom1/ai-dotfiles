@@ -80,11 +80,12 @@
         "vulnerability"
       ]
     },
-    "ai-dotfiles": {
+    "harness": {
       "detect": [
         "skills/brain-sync",
         ".claude-plugin/marketplace.json",
-        ".ai-dotfiles-private"
+        ".ai-dotfiles-private",
+        "tools/coe_harness.py"
       ],
       "scopes": [
         "skill",
