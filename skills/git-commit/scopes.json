@@ -236,6 +236,19 @@
         "windows",
         "ubuntu"
       ]
+    },
+    "meeting-notes": {
+      "detect": [
+        "bin/push-meetings.sh"
+      ],
+      "scopes": [
+        "core",
+        "push",
+        "server",
+        "tests",
+        "docs",
+        "ci"
+      ]
     }
   }
 }
