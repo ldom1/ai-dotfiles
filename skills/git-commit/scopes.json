@@ -211,6 +211,19 @@
       "scopes": [
         "slurm.conf"
       ]
+    },
+    "django": {
+      "detect": [
+        "manage.py"
+      ],
+      "scopes": [
+        "core",
+        "docs",
+        "config",
+        "vulnerability",
+        "trade",
+        "user"
+      ]
     }
   }
 }

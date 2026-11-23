@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- `git-commit`: project type `django` in `scopes.json`, detected by `manage.py`. Scopes: `core`, `docs`, `config`, `vulnerability`, `trade`, `user`.
+
 ## [0.22.0] - 2026-11-23
 
 ### Added
