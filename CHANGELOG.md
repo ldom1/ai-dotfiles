@@ -41,6 +41,9 @@
 
 ## [0.20.0] - 2026-11-13
 
+### Added
+- `git-commit` scopes: new project type `config-slurm-ansible` (marker `templates/etc/slurm/slurm.conf.j2`; scope `slurm.conf`). This commit (`958d78b`) made the version bump minor.
+
 ### Removed
 - `spikes/` (`cursor-b0-*`: the B0 logger, two NDJSON captures with machine paths and Cursor ids, and its README). No code read them. Frozen copies, without the ids, are in the vault spec of the skill-usage telemetry. `docs/skills.md` states the B0 conclusion instead of pointing to the files.
 
