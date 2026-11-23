@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["ruamel.yaml==0.19.1"]
+# dependencies = ["ruamel.yaml==0.19.1", "loguru==0.7.3", "pydantic-settings==2.7.1"]
 # ///
 """ontologie.py: keep the `ontologie/` folder of the Local Brain consistent.
 
@@ -9,7 +9,7 @@
   check [VAULT]      print FAIL <file>: <reason> per problem (exit 1), WARN lines, or OK <n> elements (exit 0)
   mentions [VAULT]   write the last section `## Dans le vault` of each element
 
-VAULT defaults to $BRAIN_PATH.
+VAULT defaults to $BRAIN_PATH. $ONTOLOGIE_SHOWN sets how many notes a group of `## Dans le vault` shows (10).
 
 A project uses an element when the last section `## Ontologie` of its note in `projects/` links it.
 `project_activity` is the month of the latest session log (`inbox/daily/implementation/<project>/YYYY-MM-DD-*.md`)
@@ -23,12 +23,13 @@ kept) replaces the title and the aliases. A link to another note is not a mentio
 with the most matches. The section is derived: the command writes it again on each run; write your own text above it.
 """
 import io
-import os
 import re
 import sys
 from collections import Counter
 from pathlib import Path
 
+from loguru import logger
+from pydantic_settings import BaseSettings
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
 
@@ -45,7 +46,11 @@ VAULT_SECTION = re.compile(r"\n*^## Dans le vault[ \t]*\n.*\Z", re.S | re.M)
 GROUPS = (("Notes d'implémentation", ("inbox/daily/implementation",)),
           ("Specs et plans", ("inbox/daily/specs", "inbox/daily/plans")),
           ("Ressources", ("resources",)))
-SHOWN = 10
+
+
+class Settings(BaseSettings):
+    brain_path: Path | None = None
+    ontologie_shown: int = 10
 
 
 def _yaml() -> YAML:
@@ -147,7 +152,7 @@ def activity(vault: Path) -> int:
     return 0
 
 
-def mentions(vault: Path) -> int:
+def mentions(vault: Path, shown: int = 10) -> int:
     by_level = elements(vault)
     notes = {stem: path for level in LEVELS for stem, path in by_level[level].items()}
     texts = {stem: path.read_text(encoding="utf-8") for stem, path in notes.items()}
@@ -188,8 +193,8 @@ def mentions(vault: Path) -> int:
         for label, _ in GROUPS:
             counts = found[stem].get(label)
             if counts:
-                best = sorted(counts, key=lambda name: (counts[name], name), reverse=True)[:SHOWN]
-                more = " · …" if len(counts) > SHOWN else ""
+                best = sorted(counts, key=lambda name: (counts[name], name), reverse=True)[:shown]
+                more = " · …" if len(counts) > shown else ""
                 lines.append(f"- {label} ({len(counts)}) : " + " · ".join(f"[[{n}]]" for n in best) + more)
         old = texts[stem]
         if not lines and not VAULT_SECTION.search(old):
@@ -269,14 +274,17 @@ def main(argv: list[str] | None = None) -> int:
     if not args or args[0] not in COMMANDS or len(args) > 2:
         print(__doc__, file=sys.stderr)
         return 2
-    root = args[1] if len(args) == 2 else os.environ.get("BRAIN_PATH")
-    if not root or not Path(root).is_dir():
-        print("ontologie.py: no vault (give VAULT or set BRAIN_PATH)", file=sys.stderr)
+    settings = Settings()
+    root = Path(args[1]) if len(args) == 2 else settings.brain_path
+    if root is None or not root.is_dir():
+        logger.error("no vault (give VAULT or set BRAIN_PATH)")
         return 2
-    if not (Path(root) / "ontologie").is_dir():
-        print(f"ontologie.py: no ontologie/ folder in {root}", file=sys.stderr)
+    if not (root / "ontologie").is_dir():
+        logger.error("no ontologie/ folder in {}", root)
         return 2
-    return COMMANDS[args[0]](Path(root))
+    if args[0] == "mentions":
+        return mentions(root, settings.ontologie_shown)
+    return COMMANDS[args[0]](root)
 
 
 if __name__ == "__main__":

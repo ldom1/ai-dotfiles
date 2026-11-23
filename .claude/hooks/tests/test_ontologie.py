@@ -376,6 +376,22 @@ def test_mentions_removes_the_section_of_an_element_that_nothing_names(tmp_path,
     assert lonely.read_text(encoding="utf-8") == element("technologie", "Rust", "concepts: []\nlevel:\n")
 
 
+def test_mentions_shows_as_many_notes_as_the_setting_says(tmp_path, capsys, monkeypatch):
+    v = vault_ok(tmp_path)
+    for i in range(1, 6):
+        write(v, f"inbox/daily/implementation/x/2026-01-0{i}-n.md", "slurm\n")
+    monkeypatch.setenv("ONTOLOGIE_SHOWN", "3")
+    run(capsys, "mentions", str(v))
+    line = [l for l in vault_section(v / "ontologie/technologies/slurm.md").splitlines() if l.startswith("- Notes")][0]
+    assert line == "- Notes d'implémentation (5) : [[2026-01-05-n]] · [[2026-01-04-n]] · [[2026-01-03-n]] · …"
+
+
+def test_vault_comes_from_brain_path_when_no_argument_is_given(tmp_path, capsys, monkeypatch):
+    v = vault_ok(tmp_path)
+    monkeypatch.setenv("BRAIN_PATH", str(v))
+    assert run(capsys, "check") == (0, "OK 4 elements\n")
+
+
 def test_check_fails_on_a_match_value_that_is_not_a_regular_expression(tmp_path, capsys):
     v = vault_ok(tmp_path)
     write(v, "ontologie/technologies/python.md", element("technologie", "Python", 'concepts: []\nlevel:\nmatch:\n  - "py(thon"\n'))

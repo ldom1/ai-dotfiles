@@ -15,6 +15,12 @@
       "pyyaml==6.0.2",
       "--with",
       "ruamel.yaml==0.19.1",
+      "--with",
+      "loguru==0.7.3",
+      "--with",
+      "pydantic-settings==2.7.1",
+      "--with",
+      "httpx==0.28.1",
       "pytest",
       "-q",
       "-p",
@@ -22,7 +28,8 @@
       "skills/git-promotion/scripts/tests",
       ".claude/hooks/tests",
       "skills/capture/scripts/tests",
-      "skills/python-tests/scripts/tests"
+      "skills/python-tests/scripts/tests",
+      "skills/brain-sync/scripts/tests"
     ]
   ],
   "changelog": "CHANGELOG.md"
