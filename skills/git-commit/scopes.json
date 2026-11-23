@@ -225,6 +225,17 @@
         "trade",
         "user"
       ]
+    },
+    "openwhispr-mirror": {
+      "detect": [
+        ".openwhispr-mirror"
+      ],
+      "scopes": [
+        "core",
+        "docs",
+        "windows",
+        "ubuntu"
+      ]
     }
   }
 }

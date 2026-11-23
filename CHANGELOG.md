@@ -7,6 +7,7 @@
 
 ### Added
 - `git-commit`: project type `django` in `scopes.json`, detected by `manage.py`. Scopes: `core`, `docs`, `config`, `vulnerability`, `trade`, `user`.
+- `git-commit`: project type `openwhispr-mirror` in `scopes.json`, detected by `.openwhispr-mirror`. Scopes: `core`, `docs`, `windows`, `ubuntu`. It covers `ldom1/meeting-transcripts`, the OpenWhispr transcript repo cloned into the vault at `inbox/meetings/`.
 
 ## [0.22.0] - 2026-11-23
 
