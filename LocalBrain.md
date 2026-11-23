@@ -9,6 +9,7 @@ Obsidian vault, git repo. Path: `$BRAIN_PATH` from `~/ai-dotfiles/config/brain.e
 | `inbox/daily/specs/<project>/…-design.md` · `inbox/daily/plans/<project>/…-plan.md` | Specs · implementation plans | brainstorming / planning |
 | `inbox/daily/products/<project>/…` · `inbox/daily/prompts/<project>/…` | Articles and drafts about a product · saved prompts (`_templates/prompt-template.md`) | user |
 | `inbox/review/YYYY-MM-DD-<slug>.md` | Review items: an action to do by hand or a choice to make. The user answers there; `TASKS_REVIEW.base` lists them | agents (`/capture`) |
+| `inbox/meetings/<os>/<folder>/<id>-<slug>[-transcript].md` | Meeting and debate notes: `<os>` is `windows` or `ubuntu`, `<folder>` is `Reunions` or `Debats`. Separate repo `ldom1/meeting-transcripts`, ignored by the vault. Read-only for agents: write summary notes elsewhere, with a link to the transcript | OpenWhispr (mirror) |
 | `inbox/insights/YYYY-MM-DD.md` | Cross-project insight reports | `/brain-audit` (`insights`) |
 | `inbox/sensors/YYYY-MM-DD-<slug>.md` | Sensor drafts for rules hit in ≥ 2 sessions; the user reviews them | `/brain-audit` (`promote`) |
 | `raw/` | Raw source material dropped by the user; one file, one future note | user |

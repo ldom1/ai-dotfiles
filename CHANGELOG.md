@@ -8,6 +8,8 @@
 ### Added
 - `git-commit`: project type `django` in `scopes.json`, detected by `manage.py`. Scopes: `core`, `docs`, `config`, `vulnerability`, `trade`, `user`.
 - `git-commit`: project type `openwhispr-mirror` in `scopes.json`, detected by `.openwhispr-mirror`. Scopes: `core`, `docs`, `windows`, `ubuntu`. It covers `ldom1/meeting-transcripts`, the OpenWhispr transcript repo cloned into the vault at `inbox/meetings/`.
+- `git-commit`: project type `meeting-notes` in `scopes.json`, detected by `bin/push-meetings.sh`. Scopes: `core`, `push`, `server`, `tests`, `docs`, `ci`. It covers `ldom1/meeting-notes`, the deployment code of the OpenWhispr transcripts.
+- `LocalBrain.md`: path row `inbox/meetings/`, the OpenWhispr transcripts. It is a separate repo, ignored by the vault and read-only for agents.
 
 ## [0.22.0] - 2026-11-23
 
