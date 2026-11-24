@@ -2,8 +2,13 @@
 
 ## [Unreleased]
 
+### Changed
+- `LocalBrain.md`, `brain-search`: vault folder `resources/knowledge/home-lab/` renamed `homelab/`.
+
 ### Added
 - `domain-brief` skill: brief on a topic of a vault domain (`resources/knowledge/<domain>/README.md`: registry and map). It checks note freshness against git (`inconnue` when a clone, a fetch or `origin/<branch>` is missing), runs read-only allowlisted `live:` commands with a timestamp, and puts observed-vs-expected mismatches first. Infisical: key names only. Contract test in the promotion gate.
+- `capture`: optional `**Coverage:**` line (`note`, `live/code`, `wrong`, `vault`, `repo` counts) for sessions on a domain; the agent classifies and fixes each wrong domain note. Step 3 gets the fact destination rule: a domain fact goes to `resources/knowledge/<domain>/`, not to the repo `Gotchas`. `check_log.py` validates the line and its place before `Harness changes`.
+- `LocalBrain.md`: row `resources/knowledge/<domain>/`, domain order of truth (live observed first), incoherence rule, fact destination rule.
 - `config/brain.env.example` (and local `brain.env`): `LAB_ROOT` (default `$HOME/lab_perso`), root of the local clones of domain repos.
 
 ## [0.23.0] - 2026-11-24

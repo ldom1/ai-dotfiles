@@ -84,7 +84,7 @@ Each result shows the vault-relative path (`qmd://brain/...`) and a context wind
 | `projects/<slug>.md` · `projects/<slug>/` | Project one-pager (idea, objectives) · mirror of the repo's `.claude/memory/` (decisions, context, roadmap) |
 | `inbox/daily/implementation/` | Session logs — the project history |
 | `inbox/daily/specs/` · `inbox/daily/plans/` | Design docs · implementation plans |
-| `resources/knowledge/` | Patterns, SOPs, home-lab docs |
+| `resources/knowledge/` | Patterns, SOPs, homelab docs |
 | `inbox/insights/` · `resources/queries/archive/` | brain-audit reports |
 | `inbox/review/` | Notes that wait for the owner's review |
 | `inbox/sensors/` | Draft sensors from `brain-audit:promote`. Never installed |
