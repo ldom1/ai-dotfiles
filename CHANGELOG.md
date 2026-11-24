@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-11-24
+
 ### Changed
 - `AGENTS.md` Git: run a gitleaks scan (Docker image `v8.28.0`) before pushing a repo to a new remote, or before pushing logs, configs or data exports.
 - `git-commit`: project type `ai-dotfiles` in `scopes.json` is renamed `harness`. It also detects coe-harness (`tools/coe_harness.py`). The scopes do not change.
