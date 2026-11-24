@@ -47,7 +47,7 @@ The vault mirror `projects/<slug>/` is kept in sync by `scripts/sync-project.sh`
 
 Always create or refresh it (`init`/`upgrade` create the skeleton via `skills/brain-load/scripts/instantiate.sh`: that heredoc is the canonical shape, so read it there and do not copy it from here). It is the project's **clear description**, printed at session start: someone who has never seen the repo should understand what it is, why it exists and what success looks like. ≤ 450 words, rewritten in place.
 
-Fill the skeleton's sections from the interview: the one-sentence summary, Idea, Objectives, How it works, Where, Memory and Links. Keep deep architecture in `ARCHITECTURE.md`. Set `status` (`draft`/`active`/`paused`/`concluded`), `repo` and `prod` in the frontmatter.
+Fill the skeleton's sections from the interview: the one-sentence summary, Idea, Objectives, How it works, Where, Memory and Links. Keep deep architecture in `ARCHITECTURE.md`. Set `status` (`draft`/`active`/`paused`/`concluded`), `repo` and `prod` in the frontmatter. Add `domain: <d>` only when the project runs inside a vault domain (`$BRAIN_PATH/resources/knowledge/<d>/README.md` exists and lists the repo or its app); SessionStart then prints a `/domain-brief` pointer.
 
 No current-state or history sections: current state is `CONTEXT.md`, history is the session logs — that is what keeps the note from drifting. `caps`: ask which CAP(s) apply if unknown (`[[developer]]`, `[[Artelys]]`); don't pick one silently.
 
