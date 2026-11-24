@@ -93,3 +93,11 @@ def test_capture_and_localbrain_share_destination_rule():
         assert "resources/knowledge/<domain>/" in text
         for dest in ("pitfalls.md", "<repo>/.claude/memory/", "Live now"):
             assert dest in text, dest
+
+
+def test_domain_project_keeps_only_state_in_repo():
+    capture = (REPO / "skills/capture/SKILL.md").read_text(encoding="utf-8")
+    localbrain = (REPO / "LocalBrain.md").read_text(encoding="utf-8")
+    for text in (capture, localbrain):
+        assert "one note per app" in text
+        assert "only state and decisions" in text

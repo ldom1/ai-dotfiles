@@ -90,7 +90,7 @@ Where a fact goes, by its reach:
 | One repo | `<repo>/.claude/memory/` (this step) |
 | Now only (what runs, what is in flight) | Session log, `CONTEXT.md` → `Live now` |
 
-A project note with `domain: <d>` sends domain facts to the domain notes, not to its `Gotchas`. Project-specific traps discovered this session go to `CONTEXT.md` → `Gotchas` (one line each). Ask the user before reversing a decision, removing an architecture claim, or changing roadmap direction.
+A project note with `domain: <d>` sends every durable fact to the domain, including a fact about one repo or one app: one note per app in `resources/knowledge/<d>/` (create it from an existing app note). Its repo memory keeps only state and decisions (`Live now`, `In flight`, `Blockers`, `DECISIONS.md`); its `Gotchas` holds one pointer line to the domain notes. Without `domain:`, project-specific traps discovered this session go to `CONTEXT.md` → `Gotchas` (one line each). Ask the user before reversing a decision, removing an architecture claim, or changing roadmap direction.
 
 ### Ontologie (only if the session used an element)
 

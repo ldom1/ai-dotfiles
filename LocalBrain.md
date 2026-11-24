@@ -39,7 +39,7 @@ Notes: frontmatter `title`, `created`, `tags`, `status`. Link with `[[slug]]`: f
 
 A domain (today `homelab`) is a system that several repos describe. A project note joins it with `domain: <d>`. Inside a domain, order of truth, highest first: observed live state (read-only, timestamped), default branch of the registry repos, domain notes and SOPs, `<repo>/.claude/memory/` and session logs. Report any disagreement between two sources first, with both sources, even when this order says which one wins.
 
-Where a fact goes: any project → `pitfalls.md` or `patterns`; several repos of a domain or running it → `resources/knowledge/<domain>/` or a domain SOP; one repo → `<repo>/.claude/memory/`; now only → session log and `CONTEXT.md` `Live now`.
+Where a fact goes: any project → `pitfalls.md` or `patterns`; several repos of a domain or running it → `resources/knowledge/<domain>/` or a domain SOP; one repo → `<repo>/.claude/memory/`, except in a domain: a project with `domain: <d>` puts every durable fact in the domain, one note per app, and its repo memory keeps only state and decisions; now only → session log and `CONTEXT.md` `Live now`.
 
 Order of truth, highest first: live state and git, `<repo>/.claude/memory/`, `projects/<slug>.md`, session log, insights and digests. When two sources differ, trust the higher one.
 
