@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+- `domain-brief` skill: brief on a topic of a vault domain (`resources/knowledge/<domain>/README.md`: registry and map). It checks note freshness against git (`inconnue` when a clone, a fetch or `origin/<branch>` is missing), runs read-only allowlisted `live:` commands with a timestamp, and puts observed-vs-expected mismatches first. Infisical: key names only. Contract test in the promotion gate.
+- `config/brain.env.example` (and local `brain.env`): `LAB_ROOT` (default `$HOME/lab_perso`), root of the local clones of domain repos.
+
 ## [0.23.0] - 2026-11-24
 
 ### Changed
