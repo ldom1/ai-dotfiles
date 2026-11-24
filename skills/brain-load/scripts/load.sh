@@ -124,7 +124,7 @@ if [[ "$NOTE_MODE" == "para" || "$NOTE_MODE" == "legacy" ]]; then
   fi
   echo "--- END NOTE ---"
   # Domain pointer: one line, never the map (SessionStart budget). `domain:` is read from the frontmatter only.
-  DOMAIN="$(awk 'NR == 1 && $0 != "---" { exit } NR > 1 && $0 == "---" { exit } NR > 1 && /^domain:/ { sub(/^domain:[[:space:]]*/, ""); print; exit }' "$NOTE_PATH")"
+  DOMAIN="$(awk '{ sub(/\r$/, "") } NR == 1 && $0 != "---" { exit } NR > 1 && $0 == "---" { exit } NR > 1 && /^domain:/ { sub(/^domain:[[:space:]]*/, ""); gsub(/^["\047]|["\047]?[[:space:]]*$/, ""); print; exit }' "$NOTE_PATH")"
   if [[ -n "$DOMAIN" ]]; then
     echo "[domain] $DOMAIN: /domain-brief <sujet>"
   fi

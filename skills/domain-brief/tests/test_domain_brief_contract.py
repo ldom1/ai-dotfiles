@@ -40,3 +40,29 @@ def test_brief_checks_registry_against_dashboard():
 
 def test_brief_is_read_only():
     assert "Ne modifie aucun fichier" in text()
+
+
+def test_brief_missing_or_unknown_anchor_is_unknown():
+    t = text()
+    assert "cat-file -e" in t and "ancre absente ou inconnue" in t
+
+
+def test_brief_redacts_secrets_from_allowed_commands():
+    t = text()
+    assert "--format" in t and ".Config.Env" in t and "masque" in t
+
+
+def test_brief_allowlist_forbids_chaining():
+    t = text()
+    for token in ["`;`", "`&&`", "`||`", "`$(`", "`--data`", "`--request`", "`-o`"]:
+        assert token in t, token
+
+
+def test_brief_remote_calls_never_prompt():
+    t = text()
+    assert "BatchMode=yes" in t and "sudo -n" in t and "refus d'authentification" in t
+
+
+def test_brief_null_remote_gives_no_clone_command():
+    t = text()
+    assert "pas de remote" in t and 'LAB_ROOT:=$HOME/lab_perso' in t

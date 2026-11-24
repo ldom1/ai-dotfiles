@@ -24,6 +24,7 @@ LINK_RE = re.compile(r"\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]")
 FENCE_RE = re.compile(r"^```.*?^```", re.M | re.S)
 CODE_RE = re.compile(r"`[^`\n]*`")
 # Same row regex as scripts/harness-metrics.py (separate plugins, no shared import): keep both in sync.
+COVERAGE_LABEL_RE = re.compile(r"^\*\*Coverage\b[^*]*:\*\*")
 COVERAGE_RE = re.compile(r"^\*\*Coverage:\*\* note=\d+ live/code=\d+ wrong=\d+ vault=\d+ repo=\d+$")
 ROW_RE = re.compile(r"^- (.+?) · (.+?) · expected: (.+?) · check: (.+?)(?: · (verdict: .+))?$")
 
@@ -83,8 +84,8 @@ def check(path: Path, vault: Path | None = None) -> list[str]:
             fails.append(f"order: '{topic}' has {', '.join(found)}; expected order {', '.join(ORDER)}")
     fails.extend(
         f"coverage: '{line}' is not '**Coverage:** note=<n> live/code=<n> wrong=<n> vault=<n> repo=<n>'"
-        for line in text.splitlines()
-        if line.startswith("**Coverage:**") and not COVERAGE_RE.match(line)
+        for line in FENCE_RE.sub("", text).splitlines()
+        if COVERAGE_LABEL_RE.match(line) and not COVERAGE_RE.match(line)
     )
     fails.extend(bad_harness_rows(text))
     stems = vault_stems(vault) if vault else None

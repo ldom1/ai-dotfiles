@@ -170,3 +170,13 @@ def test_coverage_optional(tmp_path):
 def test_coverage_order(tmp_path):
     fails = check(write(tmp_path, GOOD + METRICS + COVERAGE))
     assert any(f.startswith("order:") for f in fails), fails
+
+
+def test_coverage_in_code_fence_is_ignored(tmp_path):
+    log = GOOD + "\n```\n**Coverage:** <optional; note=<n>>\n```\n"
+    assert check(write(tmp_path, log)) == []
+
+
+def test_coverage_with_qualifier_is_validated(tmp_path):
+    fails = check(write(tmp_path, GOOD + "**Coverage (homelab):** 3 faits\n"))
+    assert any(f.startswith("coverage:") for f in fails), fails
