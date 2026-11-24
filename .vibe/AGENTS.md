@@ -82,6 +82,7 @@ Rules for every code change, and for a session that creates a project, a compone
 ## Git
 - Run the `/git-commit` skill before every `git commit`: it picks the scope from the locked per-project list.
 - Merge PRs with `gh pr merge <PR> --squash --delete-branch` (linear history).
+- Scan for secrets with gitleaks before pushing a repo to a new remote, and before pushing logs, configs or data exports: `docker run --rm -v <repo>:/repo:ro ghcr.io/gitleaks/gitleaks:v8.28.0 git /repo --no-banner --redact`. Push only on `no leaks found`; rotate a leaked secret, then remove it from history.
 - For `rm --cached`, `.gitignore` changes and resets: check nested `.gitignore` files and confirm with a full `git status`. Get it right in one commit; don't chain incremental fix commits.
 
 ## Remote servers
