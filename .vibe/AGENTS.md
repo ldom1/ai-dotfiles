@@ -60,7 +60,7 @@ Rules for every code change, and for a session that creates a project, a compone
 
 ## Python
 - Use `uv` for all environment and dependency management (replaces pip, venv, poetry, requirements.txt). Commit `uv.lock`. Use `uv add`, `uv run`, `uv sync`. (^p23)
-- Build every Python project as an installed package from `pyproject.toml`: code in `core/<pkg>/` (never `src/`), `[build-system]` `uv_build` with `[tool.uv.build-backend] module-root = "core"`, `[project.scripts]` for its command, absolute imports (`from <pkg>.config import Settings`). Never run it as loose modules from the repo dir. (^p24)
+- Build every Python project as an installed package from `pyproject.toml`: code in `core/<pkg>/` (never `src/`), `[build-system]` `hatchling` + `hatch-vcs` with `[tool.hatch.build.targets.wheel] packages = ["core/<pkg>"]`, version from the git tag, `[project.scripts]` for its command, absolute imports (`from <pkg>.config import Settings`). Never run it as loose modules from the repo dir. (^p35)
 - Validate external data (APIs, files, user input) with `pydantic`. (^p25)
 - Validate DataFrame schemas with `pandera` when a pipeline has a stable schema. (^p26)
 - Centralise configuration in one `pydantic-settings` `BaseSettings` class in `config.py`: every tunable value (thresholds, paths, timings), env and CLI overrides. No `os.environ` reads or tunable constants scattered in the code. A stdlib-only repo convention does not exempt new code. (^p27)
