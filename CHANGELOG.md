@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 ### Changed
-- First real Supersede: `^p24` (`uv_build`) moves to vault `python-patterns-superseded.md` with a `detect:` block; `^p35` (`hatchling` + `hatch-vcs`, `core/<pkg>`, version from the git tag) replaces it. `AGENTS.md` `## Python` cites `^p35`; `.cursor` and `.vibe` rules rebuilt. First scan: `scanned 9 repos · skipped 29 (dormant: 3, no-path: 3, not-cloned: 23) · matches 0 · opened 0 · closed 0 · incomplete 1` (prosper: `data/postgres` permission denied).
+- First real Supersede: `^p24` (`uv_build`) moves to vault `python-patterns-superseded.md` with a `detect:` block; `^p35` (`hatchling` + `hatch-vcs`, `core/<pkg>`, version from the git tag) replaces it. `AGENTS.md` `## Python` cites `^p35`; `.cursor` and `.vibe` rules rebuilt. First scan: `scanned 9 repos · skipped 29 (dormant: 3, no-path: 3, not-cloned: 23) · matches 0 · opened 0 · closed 0 · incomplete 0`. `^p35` and the `AGENTS.md` line now name the exact build keys (`requires`, `dynamic = ["version"]`, `[tool.hatch.version] source = "vcs"`, wheel `packages`).
 - `AGENTS.md` `## Python`: each bullet ends with its `python-patterns` rule id (`^p23`..`^p32`); the vault note gets a `### Production baseline` (`^p33`..`^p40`: `uv sync --frozen`, Ruff 120 + mypy, version from the git tag, PEP 440, releases, approvals, credentials, no `uv version`). Contract test `test_agents_python_ids_are_active` (skips without a vault).
 - `LocalBrain.md`, `brain-search`: vault folder `resources/knowledge/home-lab/` renamed `homelab/`; a domain folder holds `index.md` (registry, map, authority order) and `hosts/`, `apps/`, `sops/`. Homelab SOPs moved from `resources/knowledge/sops/` to `homelab/sops/`.
 
