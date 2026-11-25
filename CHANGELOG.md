@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-11-25
+
 ### Changed
 - First real Supersede: `^p24` (`uv_build`) moves to vault `python-patterns-superseded.md` with a `detect:` block; `^p35` (`hatchling` + `hatch-vcs`, `core/<pkg>`, version from the git tag) replaces it. `AGENTS.md` `## Python` cites `^p35`; `.cursor` and `.vibe` rules rebuilt. First scan (after the LAB_ROOT fallback): `scanned 12 repos · skipped 26 (dormant: 8, no-path: 3, not-cloned: 15) · matches 0 · opened 0 · closed 0 · incomplete 0`. `^p35` and the `AGENTS.md` line now name the exact build keys (`requires`, `dynamic = ["version"]`, `[tool.hatch.version] source = "vcs"`, wheel `packages`).
 - `AGENTS.md` `## Python`: each bullet ends with its `python-patterns` rule id (`^p23`..`^p32`); the vault note gets a `### Production baseline` (`^p33`..`^p40`: `uv sync --frozen`, Ruff 120 + mypy, version from the git tag, PEP 440, releases, approvals, credentials, no `uv version`). Contract test `test_agents_python_ids_are_active` (skips without a vault).
