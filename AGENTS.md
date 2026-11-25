@@ -29,6 +29,7 @@ Rules for every code change, and for a session that creates a project, a compone
 
 - Pitfalls are constraints. Read `pitfalls.md` if no hook injected it. A correction that would recur elsewhere becomes one rule there (`capture`). Stack rules go to `resources/knowledge/patterns/*-patterns.md`. Project gotchas go to `.claude/memory/CONTEXT.md`.
 - Write specs, plans and session logs in the vault, never in the repo `docs/`. Move a misplaced one and tell the user.
+- Every spec starts with a `## TL;DR` section, before `## Context`: 5 to 8 bullets the owner reads instead of the whole spec — the problem, the decision, what changes, what is out, the open choice. This also applies to specs written by a plugin skill (superpowers:brainstorming).
 - History lives only in session logs. Vault `projects/<slug>.md` and repo `.claude/memory/*` are snapshots: rewrite them in place. Never add a journal, changelog or dated section.
 - Vault links are `[[slug]]` (filename only). Never a path. A skill is written `` `name` ``, never `[[name]]`.
 - End a substantive session with `/capture`. Run `/brain-audit` only when told it is due.

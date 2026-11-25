@@ -8,6 +8,7 @@
 - `LocalBrain.md`, `brain-search`: vault folder `resources/knowledge/home-lab/` renamed `homelab/`; a domain folder holds `index.md` (registry, map, authority order) and `hosts/`, `apps/`, `sops/`. Homelab SOPs moved from `resources/knowledge/sops/` to `homelab/sops/`.
 
 ### Added
+- `AGENTS.md` Local Brain: every spec starts with a `## TL;DR` section (5 to 8 bullets) before `## Context`, plugin-written specs included.
 - Owner install step: `uv tool install ast-grep-cli` (binary `ast-grep`) for the `drift` step of `brain-audit`.
 - `pattern-drift.py scan`: when a note `path:` does not exist, tries `$LAB_ROOT/<basename(path)>`, then `$LAB_ROOT/<slug>`; a repo still missing prints `WARN not-cloned <slug> <path>` or `WARN no-path <slug>`. `digest` lists these and the `modified <slug>` lines.
 - `capture` Supersede: absolute paths, `check` before `scan`, never edit or commit in the scanned repos. Vault `^p7` aligned with `^p35` (`fallback-version`), `^p38` lists git repository and binary.
