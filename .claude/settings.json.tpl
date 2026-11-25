@@ -107,6 +107,15 @@
         ]
       },
       {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__HOME__/.claude/hooks/spec-tldr-check.py"
+          }
+        ]
+      },
+      {
         "matcher": "Skill",
         "hooks": [
           {
