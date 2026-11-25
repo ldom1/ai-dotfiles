@@ -29,7 +29,9 @@
       ".claude/hooks/tests",
       "skills/capture/scripts/tests",
       "skills/python-tests/scripts/tests",
-      "skills/brain-sync/scripts/tests"
+      "skills/brain-sync/scripts/tests",
+      "skills/domain-brief/tests",
+      "skills/brain-load/scripts/tests"
     ]
   ],
   "changelog": "CHANGELOG.md"

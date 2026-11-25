@@ -83,3 +83,21 @@ def test_compile_keeps_paths_and_never_reformats():
     compile_text = (REPO / "skills/brain-audit/skills/compile/SKILL.md").read_text(encoding="utf-8")
     assert "paths:" in compile_text
     assert "Never reformat" in compile_text
+
+
+def test_capture_and_localbrain_share_destination_rule():
+    root = Path(__file__).parents[4]
+    capture = (root / "skills/capture/SKILL.md").read_text(encoding="utf-8")
+    localbrain = (root / "LocalBrain.md").read_text(encoding="utf-8")
+    for text in (capture, localbrain):
+        assert "resources/knowledge/<domain>/" in text
+        for dest in ("pitfalls.md", "<repo>/.claude/memory/", "Live now"):
+            assert dest in text, dest
+
+
+def test_domain_project_keeps_only_state_in_repo():
+    capture = (REPO / "skills/capture/SKILL.md").read_text(encoding="utf-8")
+    localbrain = (REPO / "LocalBrain.md").read_text(encoding="utf-8")
+    for text in (capture, localbrain):
+        assert "one note per app" in text
+        assert "only state and decisions" in text

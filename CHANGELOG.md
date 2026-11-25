@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Changed
+- `LocalBrain.md`, `brain-search`: vault folder `resources/knowledge/home-lab/` renamed `homelab/`; a domain folder holds `index.md` (registry, map, authority order) and `hosts/`, `apps/`, `sops/`. Homelab SOPs moved from `resources/knowledge/sops/` to `homelab/sops/`.
+
+### Added
+- `domain-brief` skill: brief on a topic of a vault domain (`resources/knowledge/<domain>/README.md`: registry and map). It checks note freshness against git (`inconnue` when a clone, a fetch or `origin/<branch>` is missing), runs read-only allowlisted `live:` commands with a timestamp, and puts observed-vs-expected mismatches first. Infisical: key names only, token never printed. Live commands: one command, no chaining, `docker inspect --format` only, no write flags on `curl`, `ssh -o BatchMode=yes` and `sudo -n`, secret-looking values masked. A missing or unknown anchor commit gives `inconnue`. Contract test in the promotion gate.
+- `capture`: optional `**Coverage:**` line (`note`, `live/code`, `wrong`, `vault`, `repo` counts) for sessions on a domain; the agent classifies and fixes each wrong domain note. Step 3 gets the fact destination rule: a domain fact goes to `resources/knowledge/<domain>/`, not to the repo `Gotchas`. `check_log.py` validates the line (also with a qualifier, never inside a code fence) and its place before `Harness changes`.
+- `brain-load` (`load.sh`): one SessionStart line `[domain] <d>: /domain-brief <sujet>` when the project note frontmatter has `domain: <d>` (CRLF notes and quoted values handled); the map is never injected. `brain-init-project` sets `domain:` for a project inside a vault domain.
+- `capture`, `LocalBrain.md`: a project with `domain: <d>` puts every durable fact in the domain (one note per app); its repo memory keeps only state and decisions.
+- `LocalBrain.md`: row `resources/knowledge/<domain>/`, domain order of truth (live observed first), incoherence rule, fact destination rule.
+- `config/brain.env.example` (and local `brain.env`): `LAB_ROOT` (default `$HOME/lab_perso`), root of the local clones of domain repos.
+
 ## [0.23.0] - 2026-11-24
 
 ### Changed

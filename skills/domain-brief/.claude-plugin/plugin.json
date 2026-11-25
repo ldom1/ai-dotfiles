@@ -1,0 +1,10 @@
+{
+  "name": "domain-brief",
+  "version": "0.1.0",
+  "description": "Brief on a topic of a vault domain: sourced facts, note freshness against git, observed vs expected live state, gaps. Read-only.",
+  "author": {
+    "name": "Louis Giron",
+    "github": "ldom1"
+  },
+  "homepage": "https://github.com/ldom1/ai-dotfiles"
+}

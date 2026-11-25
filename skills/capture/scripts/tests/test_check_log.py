@@ -148,3 +148,35 @@ def test_bad_harness_row_fails(tmp_path):
 def test_harness_row_with_dot_and_verdict_ok(tmp_path):
     text = HARNESS.replace("\n**Metrics:** 1a", "\n- a · b · c · expected: e · f · check: c · verdict: helped (1 vs 2, 2026-01-01)\n**Metrics:** 1a")
     assert check(write(tmp_path, text)) == []
+
+
+COVERAGE = "**Coverage:** note=2 live/code=3 wrong=1 vault=2 repo=1\n"
+METRICS = "**Metrics:** abcd1234 2026-11-24 homelab 10min $? turns=1 ok\n"
+
+
+def test_coverage_line_valid(tmp_path):
+    assert check(write(tmp_path, GOOD + COVERAGE + METRICS)) == []
+
+
+def test_coverage_line_bad_format(tmp_path):
+    fails = check(write(tmp_path, GOOD + "**Coverage:** 3 faits\n"))
+    assert any(f.startswith("coverage:") for f in fails), fails
+
+
+def test_coverage_optional(tmp_path):
+    assert check(write(tmp_path, GOOD + METRICS)) == []
+
+
+def test_coverage_order(tmp_path):
+    fails = check(write(tmp_path, GOOD + METRICS + COVERAGE))
+    assert any(f.startswith("order:") for f in fails), fails
+
+
+def test_coverage_in_code_fence_is_ignored(tmp_path):
+    log = GOOD + "\n```\n**Coverage:** <optional; note=<n>>\n```\n"
+    assert check(write(tmp_path, log)) == []
+
+
+def test_coverage_with_qualifier_is_validated(tmp_path):
+    fails = check(write(tmp_path, GOOD + "**Coverage (homelab):** 3 faits\n"))
+    assert any(f.startswith("coverage:") for f in fails), fails

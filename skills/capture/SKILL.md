@@ -28,6 +28,7 @@ date +%Y-%m-%d
 **Changes:** <bullets: what changed and where; PR/commit ids>
 **Commands/tests:** <only commands worth re-running>
 **Follow-ups:** <the agent's next steps, or "none">
+**Coverage:** <optional; note=<n> live/code=<n> wrong=<n> vault=<n> repo=<n>>
 **Harness changes:** <optional; one row per harness change>
 - <component> · <change> · expected: <effect> · check: <metric or command>
 **Metrics:** <optional; the `harness-metrics.py` line>
@@ -40,6 +41,8 @@ python3 -I ~/ai-dotfiles/scripts/harness-metrics.py session --id "$CLAUDE_SESSIO
 ```
 
 A second `/capture` of the same session replaces the line with the same id prefix. If `$CLAUDE_SESSION_ID` is unset (Cursor, Vibe), skip the label and say so. Lookup-only logs get no label.
+
+Add `**Coverage:**` when the project note has `domain: <d>` and the session asked questions about that domain (a `/domain-brief` gap counts). You classify, never the user. For each question, count where the answer came from: `note` (a note of `resources/knowledge/<domain>/` or a SOP gave it), `live/code` (no note did: the session read the live state or the code), `wrong` (a note gave a stale or wrong answer). For each durable fact the session learned, count where you wrote it: `vault` (a domain note or SOP) or `repo` (`<repo>/.claude/memory/`). Fix each `wrong` note in this capture: correct the fact, set `last_verified` and `commits` to what you read. A session with no domain question has no Coverage line.
 
 If the session edited the harness, add one `**Harness changes:**` row per change. The harness is skills, hooks, `AGENTS.md`, the settings template, `pitfalls.md` and pattern notes. `check:` names a number or a command. A guard's refusals and a skill's calls come from the SessionEnd metrics line. A rule's hits come from the `**Pitfall hit:**` lines of the session logs. Leave the verdict empty: `/brain-audit` fills it.
 
@@ -78,7 +81,16 @@ Files: `<repo>/.claude/memory/` (fallback `$BRAIN_PATH/projects/<slug>/`). Base 
 | `ROADMAP.md` | Move finished items out (they belong in CHANGELOG); add new follow-ups under `Now` / `Next` / `Later` / `Open debt`. An item waiting on an event goes to `Gates`. A dropped item goes to `Rejected` with its reason. Never delete a `Rejected` line without the user. |
 | `ARCHITECTURE.md` | Only durable structure: stack, modules, data flow, invariants. |
 
-Project-specific traps discovered this session go to `CONTEXT.md` → `Gotchas` (one line each). Ask the user before reversing a decision, removing an architecture claim, or changing roadmap direction.
+Where a fact goes, by its reach:
+
+| Fact true for | Goes to |
+|---|---|
+| Any project, any stack | `pitfalls.md` or `patterns/*-patterns.md` (step 4) |
+| Several repos of a domain, or running the domain (hosts, deployment, exposure, secrets, backups) | A note of `resources/knowledge/<domain>/` or a SOP of the domain |
+| One repo | `<repo>/.claude/memory/` (this step) |
+| Now only (what runs, what is in flight) | Session log, `CONTEXT.md` → `Live now` |
+
+A project note with `domain: <d>` sends every durable fact to the domain, including a fact about one repo or one app: one note per app in `resources/knowledge/<d>/apps/` (create it from an existing app note); hosts go to `hosts/`, procedures to `sops/`. Its repo memory keeps only state and decisions (`Live now`, `In flight`, `Blockers`, `DECISIONS.md`); its `Gotchas` holds one pointer line to the domain notes. Without `domain:`, project-specific traps discovered this session go to `CONTEXT.md` → `Gotchas` (one line each). Ask the user before reversing a decision, removing an architecture claim, or changing roadmap direction.
 
 ### Ontologie (only if the session used an element)
 
