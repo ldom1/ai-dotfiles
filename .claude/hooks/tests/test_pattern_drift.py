@@ -2,6 +2,7 @@
 import importlib.util
 import os
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -135,6 +136,8 @@ def repo_of(tmp_path: Path, files: dict[str, str]) -> Path:
     for name, text in files.items():
         (repo / name).parent.mkdir(parents=True, exist_ok=True)
         (repo / name).write_text(text, encoding="utf-8")
+    if not (repo / ".git").exists():
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
     return repo
 
 
@@ -235,6 +238,7 @@ def test_ast_grep_missing_is_incomplete(tmp_path, monkeypatch):
     repo = repo_of(tmp_path, {"config.py": OLD})
     empty = tmp_path / "empty"
     empty.mkdir()
+    (empty / "git").symlink_to(shutil.which("git"))  # git stays, ast-grep goes
     monkeypatch.setenv("PATH", str(empty))
     out = pd.evaluate(repo, fixture_detect())
     assert out.state == "incomplete" and "ast-grep" in out.reason
@@ -255,7 +259,7 @@ def test_invalid_detect_is_incomplete(tmp_path):
 
 @needs_ast_grep
 def test_venv_ignored(tmp_path):
-    repo = repo_of(tmp_path, {".venv/lib/config.py": OLD, "node_modules/x/config.py": OLD, ".git/config.py": OLD,
+    repo = repo_of(tmp_path, {".venv/lib/config.py": OLD, "node_modules/x/config.py": OLD,
                               "app/config.py": NEW})
     assert pd.evaluate(repo, fixture_detect()).state == "absent"
     repo = repo_of(tmp_path / "b", {".venv/lib/config.py": OLD, "app/config.py": OLD})
@@ -280,13 +284,46 @@ def test_toml_without_conditions_is_incomplete(tmp_path):
 
 @pytest.mark.skipif(os.geteuid() == 0, reason="root reads anything")
 def test_unreadable_directory_is_incomplete(tmp_path):
+    # tracked file in a directory that becomes unreadable: a candidate that matches the glob cannot be read
     repo = repo_of(tmp_path, {"locked/config.py": OLD})
+    subprocess.run(["git", "add", "locked/config.py"], cwd=repo, check=True)
     (repo / "locked").chmod(0)
     try:
-        assert pd.evaluate(repo, toml_detect(UV_BUILD)).state == "incomplete"
         assert pd.evaluate(repo, fixture_detect()).state == "incomplete"
     finally:
         (repo / "locked").chmod(0o755)
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads anything")
+def test_untracked_unreadable_directory_is_incomplete(tmp_path):
+    # untracked, not ignored: git cannot list it, so detection cannot be trusted
+    repo = repo_of(tmp_path, {"locked/config.py": OLD, "pyproject.toml": '[tool.foo]\nx = 1\n'})
+    (repo / "locked").chmod(0)
+    try:
+        assert pd.evaluate(repo, toml_detect(UV_BUILD)).state == "incomplete"
+    finally:
+        (repo / "locked").chmod(0o755)
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads anything")
+def test_ignored_unreadable_dir_is_skipped(tmp_path):
+    repo = repo_of(tmp_path, {"data/postgres/x": "1", ".gitignore": "data/\n",
+                              "pyproject.toml": '[build-system]\nbuild-backend = "uv_build"\n'})
+    (repo / "data/postgres").chmod(0)
+    (repo / "data").chmod(0)
+    try:
+        assert pd.evaluate(repo, toml_detect(UV_BUILD)).state == "match"
+        assert pd.evaluate(repo, fixture_detect()).state == "absent"
+    finally:
+        (repo / "data").chmod(0o755)
+        (repo / "data/postgres").chmod(0o755)
+
+
+def test_not_a_git_repo_is_incomplete(tmp_path):
+    plain = tmp_path / "plain"
+    plain.mkdir()
+    (plain / "pyproject.toml").write_text('[build-system]\nbuild-backend = "uv_build"\n')
+    assert pd.evaluate(plain, toml_detect(UV_BUILD)).state == "incomplete"
 
 
 @needs_ast_grep
