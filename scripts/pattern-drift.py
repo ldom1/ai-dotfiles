@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["ruamel.yaml==0.19.1", "loguru==0.7.3", "pydantic-settings==2.7.1"]
+# dependencies = ["ruamel.yaml==0.19.1", "loguru==0.7.3", "pydantic==2.14.4", "pydantic-settings==2.7.1"]
 # ///
 """pattern-drift.py: keep the rule ids of the vault pattern notes consistent.
 
@@ -13,13 +13,23 @@ A rule is a bullet at column 0, outside a code fence, under `## Rules` and its `
 id (`^p4`). A link `[[note#^v5]]` is not an id. `→ ^p9` after the id says a rule of a `-superseded` note moved to
 the active rule `^p9`.
 """
+import json
+import os
 import re
+import shutil
+import subprocess
 import sys
+import tomllib
 from dataclasses import dataclass
+from io import StringIO
 from pathlib import Path
+from typing import Literal
 
 from loguru import logger
+from pydantic import BaseModel, ValidationError
 from pydantic_settings import BaseSettings
+from ruamel.yaml import YAML
+from ruamel.yaml.error import YAMLError
 
 PATTERNS = "resources/knowledge/patterns"
 SUPERSEDED = "-superseded"
@@ -28,6 +38,9 @@ TARGET = re.compile(r"→\s*\^([a-z]\d+)\b")
 LETTER = re.compile(r"`([a-z])` [\w-]+")
 FENCE = re.compile(r"^\s*(```|~~~)")
 H2 = re.compile(r"^## (.*?)\s*$")
+SUPERSEDED_BULLET = re.compile(r"^- ~~(.*)~~ → \^([a-z]\d+) \((\d{4}-\d{2}-\d{2}), (.*)\) \^([a-z]\d+)\s*$")
+IGNORED_DIRS = {".git", ".venv", "node_modules"}
+AST_GREP = "ast-grep"  # never `sg`: /usr/bin/sg is shadow-utils
 
 
 class Settings(BaseSettings):
@@ -53,6 +66,7 @@ def parse_rules(note: Path) -> tuple[list[Rule], list[str]]:
     rules: list[Rule] = []
     superseded = note.stem.endswith(SUPERSEDED)
     in_rules = has_rules = False
+    sections = {"Rules", "Superseded"} if superseded else {"Rules"}
     fence_line = 0
     for number, line in enumerate(note.read_text(encoding="utf-8").splitlines(), 1):
         if FENCE.match(line):
@@ -62,7 +76,7 @@ def parse_rules(note: Path) -> tuple[list[Rule], list[str]]:
             continue
         heading = H2.match(line)
         if heading:
-            in_rules = heading.group(1) == "Rules"
+            in_rules = heading.group(1) in sections
             has_rules = has_rules or in_rules
             continue
         if not (in_rules and line.startswith("- ")):
@@ -77,8 +91,195 @@ def parse_rules(note: Path) -> tuple[list[Rule], list[str]]:
     if fence_line:
         fails.append(f"FAIL {note.name}: unclosed code fence at line {fence_line}")
     if not has_rules:
-        fails.append(f"FAIL {note.name}: no ## Rules")
+        fails.append(f"FAIL {note.name}: no {'## Superseded' if superseded else '## Rules'}")
     return rules, fails
+
+
+class TomlCond(BaseModel):
+    key: str
+    equals: str | None = None
+    absent: bool = False
+
+
+class Detect(BaseModel):
+    lang: Literal["python", "toml"]
+    files: list[str]
+    rule: str | None = None
+    absent_in_repo: str | None = None
+    all: list[TomlCond] | None = None
+
+
+@dataclass
+class Superseded:
+    id: str
+    by: str
+    date: str
+    reason: str
+    detect: Detect | None
+    note: Path
+
+
+@dataclass
+class Outcome:
+    state: Literal["match", "absent", "incomplete"]
+    files: list[str]
+    reason: str = ""
+
+
+def _load_detect(block: list[str]) -> Detect:
+    """The YAML of a `detect:` block (lines indented under the bullet)."""
+    indent = min(len(line) - len(line.lstrip()) for line in block if line.strip())
+    text = "\n".join(line[indent:] for line in block)
+    data = YAML(typ="safe").load(StringIO(text))
+    if not isinstance(data, dict) or "detect" not in data:
+        raise ValueError("expected a `detect:` mapping")
+    return Detect.model_validate(data["detect"])
+
+
+def parse_superseded(note: Path) -> tuple[list[Superseded], list[str]]:
+    """The superseded rules of a `-superseded` note (bullets under `## Superseded`), and FAIL lines."""
+    found: list[Superseded] = []
+    fails: list[str] = []
+    current: tuple[int, re.Match[str]] | None = None
+    block: list[str] = []
+    in_section = False
+    fence = False
+
+    def flush() -> None:
+        if current is None:
+            return
+        number, m = current
+        detect = None
+        if block:
+            try:
+                detect = _load_detect(block)
+            except (YAMLError, ValidationError, ValueError) as exc:
+                fails.append(f"FAIL {note.name}: invalid detect for ^{m.group(5)} at line {number}:"
+                             f" {str(exc).splitlines()[0] if str(exc) else type(exc).__name__}")
+        found.append(Superseded(m.group(5), m.group(2), m.group(3), m.group(4), detect, note))
+
+    for number, line in enumerate(note.read_text(encoding="utf-8").splitlines(), 1):
+        if FENCE.match(line):
+            fence = not fence
+            continue
+        if fence:
+            continue
+        heading = H2.match(line)
+        if heading:
+            flush()
+            current, block = None, []
+            in_section = heading.group(1) == "Superseded"
+            continue
+        if not in_section:
+            continue
+        if line.startswith("- "):
+            flush()
+            current, block = None, []
+            m = SUPERSEDED_BULLET.match(line)
+            if m:
+                current = (number, m)
+            elif ID.search(TARGET.sub("", line)):
+                fails.append(f"FAIL {note.name}: malformed superseded bullet at line {number}")
+        elif current and (line.startswith(" ") or not line.strip()):
+            block.append(line)
+    flush()
+    return found, fails
+
+
+def _expand(repo: Path, patterns: list[str]) -> list[str]:
+    """Files of the repo matching the globs, `.git`, `.venv` and `node_modules` pruned."""
+    regexes = []
+    for pat in patterns:
+        out, i = "", 0
+        while i < len(pat):
+            if pat.startswith("**/", i):
+                out, i = out + "(?:.*/)?", i + 3
+            elif pat.startswith("**", i):
+                out, i = out + ".*", i + 2
+            elif pat[i] == "*":
+                out, i = out + "[^/]*", i + 1
+            elif pat[i] == "?":
+                out, i = out + "[^/]", i + 1
+            else:
+                out, i = out + re.escape(pat[i]), i + 1
+        regexes.append(re.compile(out + r"\Z"))
+    hits = []
+    for root, dirs, names in os.walk(repo):
+        dirs[:] = [d for d in dirs if d not in IGNORED_DIRS]
+        for name in names:
+            rel = (Path(root) / name).relative_to(repo).as_posix()
+            if any(r.match(rel) for r in regexes):
+                hits.append(rel)
+    return sorted(hits)
+
+
+def _ast_grep(repo: Path, args: list[str]) -> list[dict] | None:
+    """Parsed JSON hits of an ast-grep call, or None when it fails."""
+    try:
+        done = subprocess.run([AST_GREP, *args], cwd=repo, capture_output=True, text=True, timeout=300)
+        # `run` exits 1 when nothing matches, with `[]` on stdout: only a code above 1 or no JSON is a failure
+        if done.returncode > 1 or (done.returncode == 1 and not done.stdout.strip()):
+            return None
+        data = json.loads(done.stdout or "[]")
+    except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
+        return None
+    return data if isinstance(data, list) else None
+
+
+def _toml_value(doc: dict, key: str) -> tuple[bool, object]:
+    node: object = doc
+    for part in key.split("."):
+        if not isinstance(node, dict) or part not in node:
+            return False, None
+        node = node[part]
+    return True, node
+
+
+def _evaluate_toml(repo: Path, detect: Detect, files: list[str]) -> Outcome:
+    conds = detect.all or []
+    hits: list[str] = []
+    for rel in files:
+        try:
+            doc = tomllib.loads((repo / rel).read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
+            return Outcome("incomplete", [], f"{rel}: {exc}")
+        ok = True
+        for cond in conds:
+            present, value = _toml_value(doc, cond.key)
+            if cond.absent:
+                ok = ok and not present
+            else:
+                ok = ok and present and (cond.equals is None or value == cond.equals)
+        if ok and conds:
+            hits.append(rel)
+    return Outcome("match" if hits else "absent", hits)
+
+
+def evaluate(repo: Path, detect: Detect) -> Outcome:
+    """Does the old form still exist in the repo? match / absent (verified) / incomplete (could not tell)."""
+    files = _expand(repo, detect.files)
+    if not files:
+        return Outcome("absent", [])
+    if detect.lang == "toml":
+        return _evaluate_toml(repo, detect, files)
+    if not detect.rule:
+        return Outcome("incomplete", [], "python detect without rule")
+    if not shutil.which(AST_GREP):
+        return Outcome("incomplete", [], f"{AST_GREP} not found in PATH")
+    hits = _ast_grep(repo, ["scan", "--inline-rules", detect.rule, "--json=compact", *files])
+    if hits is None:
+        return Outcome("incomplete", [], f"{AST_GREP} scan failed")
+    matched = sorted({h["file"] for h in hits})
+    if not matched:
+        return Outcome("absent", [])
+    if detect.absent_in_repo:
+        guards = [f"--globs=!**/{d}/**" for d in sorted(IGNORED_DIRS)]
+        found = _ast_grep(repo, ["run", "-p", detect.absent_in_repo, "-l", "python", *guards, "--json=compact", "."])
+        if found is None:
+            return Outcome("incomplete", [], f"{AST_GREP} run failed")
+        if found:
+            return Outcome("absent", [], "replacement pattern present in repo")
+    return Outcome("match", matched)
 
 
 def declared_letters(rules_file: Path) -> dict[str, str]:
@@ -96,6 +297,8 @@ def check(vault: Path, rules_file: Path) -> list[str]:
         found, problems = parse_rules(note)
         rules += found
         fails += problems
+        if note.stem.endswith(SUPERSEDED):
+            fails += parse_superseded(note)[1]
     seen: dict[str, Rule] = {}
     for rule in rules:
         if rule.id[0] not in letters:
