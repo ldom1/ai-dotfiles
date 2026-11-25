@@ -126,3 +126,45 @@ def test_digest_lists_migrations():
     text = (REPO / "skills/brain-audit/skills/digest/SKILL.md").read_text(encoding="utf-8")
     for needle in ("opened", "closed", "incomplete", "à vérifier"):
         assert needle in text
+
+
+def _vault() -> Path:
+    import os
+
+    import pytest
+
+    brain = os.environ.get("BRAIN_PATH")
+    if not brain:
+        env = REPO / "config/brain.env"
+        if env.is_file():
+            m = re.search(r"^(?:export\s+)?BRAIN_PATH=[\"']?([^\"'\n]+)", env.read_text(), re.M)
+            brain = m.group(1).replace("$HOME", str(Path.home())) if m else None
+    if not brain or not (Path(brain) / "resources/knowledge/patterns").is_dir():
+        pytest.skip("no vault: BRAIN_PATH unset or without patterns")
+    return Path(brain)
+
+
+def _parse_rules():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("pattern_drift", REPO / "scripts/pattern-drift.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.parse_rules
+
+
+def test_agents_python_ids_are_active():
+    patterns = _vault() / "resources/knowledge/patterns"
+    parse_rules = _parse_rules()
+    active = {r.id for r in parse_rules(patterns / "python-patterns.md")[0]}
+    sup = patterns / "python-patterns-superseded.md"
+    superseded = {r.id for r in parse_rules(sup)[0]} if sup.exists() else set()
+    text = (REPO / "AGENTS.md").read_text(encoding="utf-8")
+    section = re.search(r"^## Python\n(.*?)(?=^## )", text, re.M | re.S).group(1)
+    bullets = [b for b in section.splitlines() if b.startswith("- ")]
+    assert bullets
+    for bullet in bullets:
+        ids = re.findall(r"\(\^(p\d+)\)\s*$", bullet)
+        assert ids, f"no (^pN) at end of: {bullet[:60]}"
+        assert ids[0] in active, f"{ids[0]} not in python-patterns.md"
+        assert ids[0] not in superseded, f"{ids[0]} is superseded"
