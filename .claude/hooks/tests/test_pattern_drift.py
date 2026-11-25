@@ -520,3 +520,20 @@ def test_summary_format(tmp_path, capsys):
     assert SUMMARY.match(pd.scan(vault, lab, 60))
     assert pd.main(["scan", "--vault", str(vault), "--lab-root", str(lab)]) == 0
     assert SUMMARY.match(capsys.readouterr().out.strip().splitlines()[-1])
+
+
+def test_dormant_open_task_listed(tmp_path, capsys):
+    text = f"# R\n\n## Next\n- Migrate: ^p9 → ^p31 (x) in `p` {MARK}\n"
+    vault, lab, repo = world(tmp_path, age=200, roadmap=text)
+    before = road(repo)
+    summary = run_scan(vault, lab)
+    assert "dormant proj ^p9\n" in capsys.readouterr().out
+    assert road(repo) == before
+    assert "skipped 1 (dormant: 1)" in summary
+
+
+def test_dormant_rejected_marker_not_listed(tmp_path, capsys):
+    text = f"# R\n\n## Next\n- a\n\n## Rejected\n- Migrate: ^p9 → ^p31 (x) in `p` {MARK}\n"
+    vault, lab, repo = world(tmp_path, age=200, roadmap=text)
+    run_scan(vault, lab)
+    assert "dormant proj" not in capsys.readouterr().out

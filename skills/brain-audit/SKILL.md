@@ -22,6 +22,6 @@ Manual vault maintenance. Pick the subskill that matches the request; "run brain
 
 **Full run order:** `qmd-sync` → `compile` → `drift` → `lint` → `promote` → `queries` → `connect` → `insights` → `digest` (`digest` resets the clock; pass it the counts for the digest note). `compile`, `promote` and `queries` read files directly; `connect` and `insights` need a fresh QMD index. `lint` runs `scripts/vault-lint.sh` (read-only Obsidian CLI: unresolved links, orphans, missing `$BRAIN_PATH/` paths in skills) and needs Obsidian open: the CLI launches it otherwise. `skipped:` means no CLI on this machine; `error:` (exit 1) means the CLI failed. A `warning: Obsidian link cache is stale` line means restart Obsidian, then run `lint` again for exact counts.
 
-`drift` is a script step: run `uv run --script ~/ai-dotfiles/scripts/pattern-drift.py check` (fix each `FAIL` line first), then `… scan`. Pass the `opened`, `closed`, `incomplete` and `WARN` lines and the summary to `digest`.
+`drift` is a script step: run `uv run --script ~/ai-dotfiles/scripts/pattern-drift.py check` (fix each `FAIL` line first), then `… scan`. Pass the `opened`, `closed`, `incomplete`, `dormant <slug> ^X` and `WARN` lines and the summary to `digest`.
 
 Each subskill except `lint` and `drift` (script steps, no sub-skill file) is `skills/<name>/SKILL.md` under this skill's root (`~/ai-dotfiles/skills/brain-audit/`). Claude Code exposes them as `brain-audit:<name>`; Cursor CLI and Mistral Vibe only see this router, so read the file at that path instead — don't report the subskill as missing.

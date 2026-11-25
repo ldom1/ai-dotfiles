@@ -41,9 +41,9 @@ type: digest
 - promote: N candidates → sensor drafts to review: [[YYYY-MM-DD-<slug>]], … (list every file in `inbox/sensors/`; "none" if empty)
 - drift: <the `scan` summary line>
   - opened: one line per repo (`<slug> ^X`); closed: same
-  - incomplete: one line per pair, `à vérifier: <slug> ^X <reason>`
+  - incomplete: each `incomplete <slug> ^X <reason>` line becomes `à vérifier: <slug> ^X <reason>`
   - `WARN no ROADMAP <slug> ^X`: run `/brain-init-project` there
-  - dormant repo with an open task: `dormant, tâche ouverte: <slug> ^X`
+  - dormant repo with an open task: each `dormant <slug> ^X` line of `scan` becomes `dormant, tâche ouverte: <slug> ^X`
 
 ## Key takeaways
 <2–3 sentences: the findings that need the user's attention>
