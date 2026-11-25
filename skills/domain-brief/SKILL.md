@@ -15,7 +15,7 @@ Spec : `$BRAIN_PATH/inbox/daily/specs/homelab/2026-11-24-harness-domaine-design.
 
 1. Domaine = `--domain <d>` s'il est donné, sinon le champ `domain:` de la note projet courante (`bash ~/ai-dotfiles/skills/brain-load/scripts/load.sh --slug-only` donne `note=`). Sans domaine : dis-le et arrête.
 2. `source ~/ai-dotfiles/config/brain.env; : "${LAB_ROOT:=$HOME/lab_perso}"` : il fixe `BRAIN_PATH` et `LAB_ROOT` (défaut si un vieux `brain.env` ne le définit pas).
-3. Lis `$BRAIN_PATH/resources/knowledge/<d>/README.md` : frontmatter `repos`, `apps`, `secrets` (le registre), sections `Ordre d'autorité` et `Carte`.
+3. Lis `$BRAIN_PATH/resources/knowledge/<d>/index.md` : frontmatter `repos`, `apps`, `secrets` (le registre), sections `Ordre d'autorité` et `Carte`.
 
 ## 1. Choisir les notes
 
@@ -25,7 +25,7 @@ Spec : `$BRAIN_PATH/inbox/daily/specs/homelab/2026-11-24-harness-domaine-design.
 
 ## 2. Fraîcheur contre git
 
-Pour le README du domaine et pour chaque note retenue, pour chaque clé de `source_repos` :
+Pour l'index du domaine et pour chaque note retenue, pour chaque clé de `source_repos` :
 
 1. Trouve l'entrée du registre (`key`) : `path`, `branch`.
 2. `R="$LAB_ROOT/<path>"`. Clone absent → `inconnue (clone absent : gh repo clone <remote> "$R")`. Avec `remote: null` → `inconnue (clone absent, pas de remote)`, sans commande.
@@ -36,7 +36,7 @@ Pour le README du domaine et pour chaque note retenue, pour chaque clé de `sour
 
 Une note à plusieurs repos est périmée si un seul l'est, `inconnue` si un seul l'est et aucun n'est périmé. Ne conclus jamais `à jour` sans comparaison réussie. Une note sans `source_repos` n'a pas de fraîcheur git : donne son `last_verified`.
 
-Domaine `homelab` seulement : le README est ancré sur `homelab-dashboard` `app/config.py`. S'il est périmé, compare les tuiles (`HomelabApp(name=…, url=…)` et `BusinessProduct`) de `origin/<branch>:app/config.py` aux `apps` du registre, et liste les apps exposées absentes du registre.
+Domaine `homelab` seulement : l'index est ancré sur `homelab-dashboard` `app/config.py`. S'il est périmé, compare les tuiles (`HomelabApp(name=…, url=…)` et `BusinessProduct`) de `origin/<branch>:app/config.py` aux `apps` du registre, et liste les apps exposées absentes du registre.
 
 ## 3. État live
 
@@ -61,6 +61,6 @@ Court, dans cet ordre :
 - **(a) Faits** : une ligne par fait, avec sa source (`note`, section).
 - **(b) Fraîcheur** : note, repo, `à jour` / `périmée (<n> commits)` / `inconnue (<cause>)`. Apps exposées absentes du registre.
 - **(c) Live** : commande, date, état observé, état attendu.
-- **(d) Trous** : les questions de la tâche qu'aucune note ne couvre, et les « Trous du registre » du README qui touchent le sujet.
+- **(d) Trous** : les questions de la tâche qu'aucune note ne couvre, et les « Trous du registre » de l'index qui touchent le sujet.
 
 Les trous alimentent l'étape Coverage de `capture` en fin de session : la session trouve les réponses dans le live ou le code, et `capture` range chaque fait à sa destination.

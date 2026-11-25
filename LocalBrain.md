@@ -17,8 +17,8 @@ Obsidian vault, git repo. Path: `$BRAIN_PATH` from `~/ai-dotfiles/config/brain.e
 | `projects/<slug>.md` | Project one-pager: idea, objectives, how it works, where (printed at session start) | `ai-dotfiles init`/`upgrade` (skeleton), `/brain-init-project` |
 | `resources/operational/ai-agents/pitfalls.md` | Cross-project rules, injected every session (≤ 6,000 B and one id per rule, enforced at write time by `scripts/check-pitfalls-budget.sh`) | `/capture`, `/brain-audit` |
 | `resources/operational/ai-agents/archive/` | Frozen incident logs (pre-2026-09-29 pitfalls/lessons) | — |
-| `resources/knowledge/{sops,patterns,homelab,operational}/` | SOPs, infra docs; `patterns/*-patterns.md` `## Rules` hold stack-specific rules (Docker, Python, deployment, observability) | `/brain-audit`, as needed |
-| `resources/knowledge/<domain>/README.md` · `resources/knowledge/<domain>/*.md` | Domain registry (repos, apps, secrets, local paths under `$LAB_ROOT`) and topic map · domain notes anchored on repos (`source_repos`, `commits`, `last_verified`, `live:`). Read by `domain-brief` | user, `/capture` (Coverage) |
+| `resources/knowledge/{sops,patterns,homelab,operational}/` (homelab is a domain, see below) | SOPs, infra docs; `patterns/*-patterns.md` `## Rules` hold stack-specific rules (Docker, Python, deployment, observability) | `/brain-audit`, as needed |
+| `resources/knowledge/<domain>/index.md` · `resources/knowledge/<domain>/{hosts,apps,sops}/` | Domain registry (repos, apps, secrets, local paths under `$LAB_ROOT`), topic map and authority order · domain notes anchored on repos, one per host, per app and per procedure (`source_repos`, `commits`, `last_verified`, `live:`). Read by `domain-brief` | user, `/capture` (Coverage) |
 | `resources/knowledge/security/<concept>.md` | Generic security learning notes, one per concept (no host, IP or finding detail) | `securitypowers` `audit-report` |
 | `resources/knowledge/veille/YYYY-MM-DD-<topic>.md` | Tech-watch recap notes | `veille-technique` |
 | `resources/knowledge/veille-technique.md` | Veille verdict ledger | `veille-technique` |
@@ -39,7 +39,7 @@ Notes: frontmatter `title`, `created`, `tags`, `status`. Link with `[[slug]]`: f
 
 A domain (today `homelab`) is a system that several repos describe. A project note joins it with `domain: <d>`. Inside a domain, order of truth, highest first: observed live state (read-only, timestamped), default branch of the registry repos, domain notes and SOPs, `<repo>/.claude/memory/` and session logs. Report any disagreement between two sources first, with both sources, even when this order says which one wins.
 
-Where a fact goes: any project → `pitfalls.md` or `patterns`; several repos of a domain or running it → `resources/knowledge/<domain>/` or a domain SOP; one repo → `<repo>/.claude/memory/`, except in a domain: a project with `domain: <d>` puts every durable fact in the domain, one note per app, and its repo memory keeps only state and decisions; now only → session log and `CONTEXT.md` `Live now`.
+Where a fact goes: any project → `pitfalls.md` or `patterns`; several repos of a domain or running it → `resources/knowledge/<domain>/` or a domain SOP; one repo → `<repo>/.claude/memory/`, except in a domain: a project with `domain: <d>` puts every durable fact in the domain, one note per app (apps, hosts and procedures each have a subfolder), and its repo memory keeps only state and decisions; now only → session log and `CONTEXT.md` `Live now`.
 
 Order of truth, highest first: live state and git, `<repo>/.claude/memory/`, `projects/<slug>.md`, session log, insights and digests. When two sources differ, trust the higher one.
 

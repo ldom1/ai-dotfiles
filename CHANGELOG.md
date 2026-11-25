@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 ### Changed
-- `LocalBrain.md`, `brain-search`: vault folder `resources/knowledge/home-lab/` renamed `homelab/`.
+- `LocalBrain.md`, `brain-search`: vault folder `resources/knowledge/home-lab/` renamed `homelab/`; a domain folder holds `index.md` (registry, map, authority order) and `hosts/`, `apps/`, `sops/`. Homelab SOPs moved from `resources/knowledge/sops/` to `homelab/sops/`.
 
 ### Added
 - `domain-brief` skill: brief on a topic of a vault domain (`resources/knowledge/<domain>/README.md`: registry and map). It checks note freshness against git (`inconnue` when a clone, a fetch or `origin/<branch>` is missing), runs read-only allowlisted `live:` commands with a timestamp, and puts observed-vs-expected mismatches first. Infisical: key names only, token never printed. Live commands: one command, no chaining, `docker inspect --format` only, no write flags on `curl`, `ssh -o BatchMode=yes` and `sudo -n`, secret-looking values masked. A missing or unknown anchor commit gives `inconnue`. Contract test in the promotion gate.
