@@ -433,6 +433,36 @@ def test_no_path_skipped(tmp_path):
     assert pd.active_repos(vault, lab, 60)[1] == {"no-path": 1}
 
 
+def point_note_at(vault, text):
+    (vault / "projects/proj.md").write_text(f"---\nstatus: active\npath: {text}\n---\n")
+
+
+def test_fallback_by_basename(tmp_path):
+    vault, lab, repo = world(tmp_path)
+    repo.rename(lab / "other")
+    point_note_at(vault, "/gone/lab/other")
+    repos, skipped = pd.active_repos(vault, lab, 60)
+    assert [r.path for r in repos] == [lab / "other"] and not skipped
+
+
+def test_fallback_by_slug(tmp_path):
+    vault, lab, repo = world(tmp_path)
+    point_note_at(vault, "/gone/lab/Proj-Other")
+    repos, skipped = pd.active_repos(vault, lab, 60)
+    assert [r.path for r in repos] == [repo] and not skipped
+
+
+def test_warn_lines_printed(tmp_path, capsys):
+    vault, lab, repo = world(tmp_path)
+    shutil.rmtree(repo)
+    point_note_at(vault, "/gone/lab/proj")
+    (vault / "projects/bare.md").write_text("---\nstatus: active\n---\n")
+    pd.scan(vault, lab, 60)
+    out = capsys.readouterr().out
+    assert "WARN not-cloned proj /gone/lab/proj" in out
+    assert "WARN no-path bare" in out
+
+
 def test_fallback_path_under_lab_root(tmp_path):
     vault, lab, repo = world(tmp_path, path=False)
     assert [r.slug for r in pd.active_repos(vault, lab, 60)[0]] == ["proj"]
