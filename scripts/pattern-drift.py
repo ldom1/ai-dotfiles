@@ -376,7 +376,8 @@ def _recent_log(vault: Path, slug: str, days: int) -> bool:
     return False
 
 
-def active_repos(vault: Path, lab_root: Path, days: int) -> tuple[list[Repo], Counter[str]]:
+def active_repos(vault: Path, lab_root: Path, days: int,
+                 dormant: list[Repo] | None = None) -> tuple[list[Repo], Counter[str]]:
     """Repos of the `status: active` project notes that pass the activity rule, and the skipped ones by reason."""
     repos: list[Repo] = []
     skipped: Counter[str] = Counter()
@@ -414,6 +415,8 @@ def active_repos(vault: Path, lab_root: Path, days: int) -> tuple[list[Repo], Co
             repos.append(Repo(slug, path))
         else:
             skipped["dormant"] += 1
+            if dormant is not None:
+                dormant.append(Repo(slug, path))
     return repos, skipped
 
 
@@ -429,6 +432,20 @@ def _section(lines: list[bytes]) -> list[str]:
             heading = m.group(1)
         out.append(heading)
     return out
+
+
+def _open_markers(roadmap: Path) -> list[str]:
+    """Ids of the `pattern-drift` markers under a `## Next` heading of `roadmap` (empty if unreadable)."""
+    try:
+        lines = roadmap.read_bytes().splitlines(keepends=True)
+    except OSError:
+        return []
+    found = []
+    for raw, heading in zip(lines, _section(lines)):
+        m = re.search(rb"<!-- pattern-drift:\^(\w+) -->", raw)
+        if m and heading == "Next":
+            found.append(m.group(1).decode())
+    return found
 
 
 def apply_task(roadmap: Path, sup: Superseded, outcome: Outcome) -> Literal["opened", "closed", "kept", "none"]:
@@ -475,7 +492,8 @@ def apply_task(roadmap: Path, sup: Superseded, outcome: Outcome) -> Literal["ope
 
 def scan(vault: Path, lab_root: Path, days: int) -> str:
     """Open or close the migration tasks of every active repo; print one line per action, return the summary."""
-    repos, skipped = active_repos(vault, lab_root, days)
+    dormant: list[Repo] = []
+    repos, skipped = active_repos(vault, lab_root, days, dormant)
     sups: list[Superseded] = []
     for note in sorted((vault / PATTERNS).glob(f"*{SUPERSEDED}.md")):
         sups += parse_superseded(note)[0]
@@ -506,6 +524,9 @@ def scan(vault: Path, lab_root: Path, days: int) -> str:
                 print(f"{action} {repo.slug} ^{sup.id}")
                 if repo.slug not in modified:
                     modified.append(repo.slug)
+    for repo in dormant:  # read-only: open tasks of dormant repos are listed for the digest, never closed
+        for line in _open_markers(repo.path / ".claude/memory/ROADMAP.md"):
+            print(f"dormant {repo.slug} ^{line}")
     for slug in modified:
         print(f"modified {slug} (ROADMAP.md, not committed)")
     reasons = ", ".join(f"{k}: {v}" for k, v in sorted(skipped.items()))
