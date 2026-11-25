@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Changed
+- `AGENTS.md` `## Python`: each bullet ends with its `python-patterns` rule id (`^p23`..`^p32`); the vault note gets a `### Production baseline` (`^p33`..`^p40`: `uv sync --frozen`, Ruff 120 + mypy, version from the git tag, PEP 440, releases, approvals, credentials, no `uv version`). Contract test `test_agents_python_ids_are_active` (skips without a vault).
 - `LocalBrain.md`, `brain-search`: vault folder `resources/knowledge/home-lab/` renamed `homelab/`; a domain folder holds `index.md` (registry, map, authority order) and `hosts/`, `apps/`, `sops/`. Homelab SOPs moved from `resources/knowledge/sops/` to `homelab/sops/`.
 
 ### Added
