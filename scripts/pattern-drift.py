@@ -411,8 +411,8 @@ def _recent_log(vault: Path, slug: str, days: int) -> bool:
     return False
 
 
-def active_repos(vault: Path, lab_root: Path, days: int,
-                 dormant: list[Repo] | None = None) -> tuple[list[Repo], Counter[str]]:
+def active_repos(vault: Path, lab_root: Path, days: int, dormant: list[Repo] | None = None,
+                 warns: list[str] | None = None) -> tuple[list[Repo], Counter[str]]:
     """Repos of the `status: active` project notes that pass the activity rule, and the skipped ones by reason."""
     repos: list[Repo] = []
     skipped: Counter[str] = Counter()
@@ -424,12 +424,16 @@ def active_repos(vault: Path, lab_root: Path, days: int,
         slug = note.stem
         if front.get("path"):
             path = Path(front["path"]).expanduser()
-            missing = "not-cloned"
+            if not path.is_dir():  # the note may name a clone path of another machine
+                path = next((c for c in (lab_root / path.name, lab_root / slug) if c.is_dir()), path)
+            missing = f"not-cloned {slug} {front['path']}"
         else:
             path = lab_root / slug
-            missing = "no-path"
+            missing = f"no-path {slug}"
         if not path.is_dir():
-            skipped[missing] += 1
+            skipped[missing.split()[0]] += 1
+            if warns is not None:
+                warns.append(f"WARN {missing}")
             continue
         if not (path / ".git").exists():
             skipped["not-cloned"] += 1
@@ -528,7 +532,10 @@ def apply_task(roadmap: Path, sup: Superseded, outcome: Outcome) -> Literal["ope
 def scan(vault: Path, lab_root: Path, days: int) -> str:
     """Open or close the migration tasks of every active repo; print one line per action, return the summary."""
     dormant: list[Repo] = []
-    repos, skipped = active_repos(vault, lab_root, days, dormant)
+    warns: list[str] = []
+    repos, skipped = active_repos(vault, lab_root, days, dormant, warns)
+    for warn in warns:
+        print(warn)
     sups: list[Superseded] = []
     for note in sorted((vault / PATTERNS).glob(f"*{SUPERSEDED}.md")):
         sups += parse_superseded(note)[0]
