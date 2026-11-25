@@ -43,6 +43,8 @@ type: digest
   - opened: one line per repo (`<slug> ^X`); closed: same
   - incomplete: each `incomplete <slug> ^X <reason>` line becomes `à vérifier: <slug> ^X <reason>`
   - `WARN no ROADMAP <slug> ^X`: run `/brain-init-project` there
+  - `WARN not-cloned <slug> <path>` / `WARN no-path <slug>`: list each skipped repo (clone missing or `path:` unset)
+  - `modified <slug> (ROADMAP.md, not committed)`: list each repo whose ROADMAP has uncommitted changes, for the owner to review and commit
   - dormant repo with an open task: each `dormant <slug> ^X` line of `scan` becomes `dormant, tâche ouverte: <slug> ^X`
 
 ## Key takeaways

@@ -105,7 +105,9 @@ def test_domain_project_keeps_only_state_in_repo():
 
 def test_capture_has_supersede_verdict():
     skill = skill_text()
-    for needle in ("**Supersede", "-superseded.md", "detect:", "pattern-drift.py scan"):
+    for needle in ("**Supersede", "-superseded.md", "detect:", "pattern-drift.py scan", "pattern-drift.py check",
+                   "~/ai-dotfiles/skills/brain-audit/reference/pitfall-rules.md",
+                   "bash ~/ai-dotfiles/scripts/build-agent-rules.sh", "Never edit code or commit in the scanned repos"):
         assert needle in skill
 
 
@@ -124,7 +126,7 @@ def test_brain_audit_runs_drift():
 
 def test_digest_lists_migrations():
     text = (REPO / "skills/brain-audit/skills/digest/SKILL.md").read_text(encoding="utf-8")
-    for needle in ("opened", "closed", "incomplete", "à vérifier"):
+    for needle in ("opened", "closed", "incomplete", "à vérifier", "modified <slug>", "WARN not-cloned"):
         assert needle in text
 
 
