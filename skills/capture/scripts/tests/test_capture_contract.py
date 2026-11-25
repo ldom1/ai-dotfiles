@@ -101,3 +101,28 @@ def test_domain_project_keeps_only_state_in_repo():
     for text in (capture, localbrain):
         assert "one note per app" in text
         assert "only state and decisions" in text
+
+
+def test_capture_has_supersede_verdict():
+    skill = skill_text()
+    for needle in ("**Supersede", "-superseded.md", "detect:", "pattern-drift.py scan"):
+        assert needle in skill
+
+
+def test_capture_keeps_drift_markers():
+    step3 = skill_text().split("## 3.")[1].split("## 4.")[0]
+    assert "<!-- pattern-drift:" in step3
+    assert "never remove" in step3
+
+
+def test_brain_audit_runs_drift():
+    text = (REPO / "skills/brain-audit/SKILL.md").read_text(encoding="utf-8")
+    assert "`compile` → `drift`" in text
+    assert "pattern-drift.py check" in text
+    assert "remplace ^" in text
+
+
+def test_digest_lists_migrations():
+    text = (REPO / "skills/brain-audit/skills/digest/SKILL.md").read_text(encoding="utf-8")
+    for needle in ("opened", "closed", "incomplete", "à vérifier"):
+        assert needle in text

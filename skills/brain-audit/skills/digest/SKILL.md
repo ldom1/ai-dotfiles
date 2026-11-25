@@ -39,6 +39,11 @@ type: digest
 - insights: N questions → [[YYYY-MM-DD]] (inbox/insights)
 - queries: [[YYYY-MM-DD-knowledge-gaps]], [[YYYY-MM-DD-roadmap]]
 - promote: N candidates → sensor drafts to review: [[YYYY-MM-DD-<slug>]], … (list every file in `inbox/sensors/`; "none" if empty)
+- drift: <the `scan` summary line>
+  - opened: one line per repo (`<slug> ^X`); closed: same
+  - incomplete: one line per pair, `à vérifier: <slug> ^X <reason>`
+  - `WARN no ROADMAP <slug> ^X`: run `/brain-init-project` there
+  - dormant repo with an open task: `dormant, tâche ouverte: <slug> ^X`
 
 ## Key takeaways
 <2–3 sentences: the findings that need the user's attention>
