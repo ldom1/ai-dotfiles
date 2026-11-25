@@ -1,5 +1,6 @@
 """pattern-drift.py check: rule ids of the vault pattern notes."""
 import importlib.util
+import os
 import shutil
 from pathlib import Path
 
@@ -247,8 +248,9 @@ def test_invalid_detect_is_incomplete(tmp_path):
     assert len(fails) == 2 and all(f.startswith("FAIL") and "invalid detect" in f for f in fails)
     assert [(s.id, s.detect) for s in found] == [("p1", None), ("p3", None)]
     assert pd.check(vault, rules) == fails
-    # a scan treats a rule with a broken detect as incomplete (never a crash): detect is None
-    assert all(s.detect is None for s in found)
+    assert all(s.detect_error for s in found)
+    ok, _ = pd.parse_superseded(FIXTURES / "python-patterns-superseded.md")
+    assert ok[0].detect_error is None
 
 
 @needs_ast_grep
@@ -258,3 +260,49 @@ def test_venv_ignored(tmp_path):
     assert pd.evaluate(repo, fixture_detect()).state == "absent"
     repo = repo_of(tmp_path / "b", {".venv/lib/config.py": OLD, "app/config.py": OLD})
     assert pd.evaluate(repo, fixture_detect()).files == ["app/config.py"]
+
+
+def test_toml_detect_without_conditions_rejected(tmp_path):
+    body = ("# T\n\n## Superseded\n- ~~a~~ → ^p2 (2026-11-25, why) ^p1\n  detect:\n    lang: toml\n"
+            "    files: [pyproject.toml]\n")
+    vault, _ = setup(tmp_path, {"python-patterns-superseded.md": body})
+    found, fails = pd.parse_superseded(vault / "resources/knowledge/patterns/python-patterns-superseded.md")
+    assert len(fails) == 1 and "at least one condition" in fails[0]
+    assert found[0].detect is None and found[0].detect_error
+
+
+def test_toml_without_conditions_is_incomplete(tmp_path):
+    repo = repo_of(tmp_path, {"pyproject.toml": "[project]\n"})
+    bare = pd.Detect.model_construct(lang="toml", files=["pyproject.toml"], all=None)
+    assert pd.evaluate(repo, bare).state == "incomplete"
+    assert pd.evaluate(repo, pd.Detect.model_construct(lang="toml", files=["pyproject.toml"], all=[])).state == "incomplete"
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads anything")
+def test_unreadable_directory_is_incomplete(tmp_path):
+    repo = repo_of(tmp_path, {"locked/config.py": OLD})
+    (repo / "locked").chmod(0)
+    try:
+        assert pd.evaluate(repo, toml_detect(UV_BUILD)).state == "incomplete"
+        assert pd.evaluate(repo, fixture_detect()).state == "incomplete"
+    finally:
+        (repo / "locked").chmod(0o755)
+
+
+@needs_ast_grep
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads anything")
+def test_unreadable_python_file_is_incomplete(tmp_path):
+    repo = repo_of(tmp_path, {"config.py": OLD})
+    (repo / "config.py").chmod(0)
+    try:
+        out = pd.evaluate(repo, fixture_detect())
+    finally:
+        (repo / "config.py").chmod(0o644)
+    assert out.state == "incomplete" and "config.py" in out.reason
+
+
+@needs_ast_grep
+def test_unexpected_json_is_incomplete(tmp_path, monkeypatch):
+    repo = repo_of(tmp_path, {"config.py": OLD})
+    monkeypatch.setattr(pd, "_ast_grep", lambda *_: [{"nofile": 1}])
+    assert pd.evaluate(repo, fixture_detect()).state == "incomplete"

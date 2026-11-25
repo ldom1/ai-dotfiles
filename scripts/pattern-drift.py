@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Literal
 
 from loguru import logger
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, model_validator
 from pydantic_settings import BaseSettings
 from ruamel.yaml import YAML
 from ruamel.yaml.error import YAMLError
@@ -108,6 +108,12 @@ class Detect(BaseModel):
     absent_in_repo: str | None = None
     all: list[TomlCond] | None = None
 
+    @model_validator(mode="after")
+    def _toml_needs_conditions(self) -> "Detect":
+        if self.lang == "toml" and not self.all:
+            raise ValueError("a toml detect needs at least one condition in `all`")
+        return self
+
 
 @dataclass
 class Superseded:
@@ -117,6 +123,7 @@ class Superseded:
     reason: str
     detect: Detect | None
     note: Path
+    detect_error: str | None = None  # set when a detect block exists but is invalid (detect is then None)
 
 
 @dataclass
@@ -149,14 +156,14 @@ def parse_superseded(note: Path) -> tuple[list[Superseded], list[str]]:
         if current is None:
             return
         number, m = current
-        detect = None
+        detect = error = None
         if block:
             try:
                 detect = _load_detect(block)
             except (YAMLError, ValidationError, ValueError) as exc:
-                fails.append(f"FAIL {note.name}: invalid detect for ^{m.group(5)} at line {number}:"
-                             f" {str(exc).splitlines()[0] if str(exc) else type(exc).__name__}")
-        found.append(Superseded(m.group(5), m.group(2), m.group(3), m.group(4), detect, note))
+                error = " ".join(str(exc).split()) or type(exc).__name__
+                fails.append(f"FAIL {note.name}: invalid detect for ^{m.group(5)} at line {number}: {error}")
+        found.append(Superseded(m.group(5), m.group(2), m.group(3), m.group(4), detect, note, error))
 
     for number, line in enumerate(note.read_text(encoding="utf-8").splitlines(), 1):
         if FENCE.match(line):
@@ -186,8 +193,8 @@ def parse_superseded(note: Path) -> tuple[list[Superseded], list[str]]:
     return found, fails
 
 
-def _expand(repo: Path, patterns: list[str]) -> list[str]:
-    """Files of the repo matching the globs, `.git`, `.venv` and `node_modules` pruned."""
+def _expand(repo: Path, patterns: list[str]) -> tuple[list[str], list[str]]:
+    """Files of the repo matching the globs (`.git`, `.venv`, `node_modules` pruned) and the walk errors."""
     regexes = []
     for pat in patterns:
         out, i = "", 0
@@ -203,14 +210,15 @@ def _expand(repo: Path, patterns: list[str]) -> list[str]:
             else:
                 out, i = out + re.escape(pat[i]), i + 1
         regexes.append(re.compile(out + r"\Z"))
-    hits = []
-    for root, dirs, names in os.walk(repo):
+    hits: list[str] = []
+    errors: list[str] = []
+    for root, dirs, names in os.walk(repo, onerror=lambda exc: errors.append(f"{exc.filename}: {exc.strerror}")):
         dirs[:] = [d for d in dirs if d not in IGNORED_DIRS]
         for name in names:
             rel = (Path(root) / name).relative_to(repo).as_posix()
             if any(r.match(rel) for r in regexes):
                 hits.append(rel)
-    return sorted(hits)
+    return sorted(hits), errors
 
 
 def _ast_grep(repo: Path, args: list[str]) -> list[dict] | None:
@@ -250,26 +258,39 @@ def _evaluate_toml(repo: Path, detect: Detect, files: list[str]) -> Outcome:
                 ok = ok and not present
             else:
                 ok = ok and present and (cond.equals is None or value == cond.equals)
-        if ok and conds:
+        if ok:
             hits.append(rel)
     return Outcome("match" if hits else "absent", hits)
 
 
 def evaluate(repo: Path, detect: Detect) -> Outcome:
     """Does the old form still exist in the repo? match / absent (verified) / incomplete (could not tell)."""
-    files = _expand(repo, detect.files)
+    files, walk_errors = _expand(repo, detect.files)
+    if walk_errors:
+        return Outcome("incomplete", [], f"unreadable: {walk_errors[0]}")
     if not files:
         return Outcome("absent", [])
     if detect.lang == "toml":
+        if not detect.all:
+            return Outcome("incomplete", [], "toml detect without conditions")
         return _evaluate_toml(repo, detect, files)
     if not detect.rule:
         return Outcome("incomplete", [], "python detect without rule")
     if not shutil.which(AST_GREP):
         return Outcome("incomplete", [], f"{AST_GREP} not found in PATH")
+    for rel in files:  # ast-grep exits 0 on an unreadable explicit file
+        try:
+            with open(repo / rel, "rb") as handle:
+                handle.read(1)
+        except OSError as exc:
+            return Outcome("incomplete", [], f"{rel}: {exc.strerror}")
     hits = _ast_grep(repo, ["scan", "--inline-rules", detect.rule, "--json=compact", *files])
     if hits is None:
         return Outcome("incomplete", [], f"{AST_GREP} scan failed")
-    matched = sorted({h["file"] for h in hits})
+    try:
+        matched = sorted({h["file"] for h in hits})
+    except (KeyError, TypeError):
+        return Outcome("incomplete", [], f"{AST_GREP} scan gave unexpected JSON")
     if not matched:
         return Outcome("absent", [])
     if detect.absent_in_repo:
