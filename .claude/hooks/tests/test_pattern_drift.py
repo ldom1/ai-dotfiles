@@ -306,3 +306,217 @@ def test_unexpected_json_is_incomplete(tmp_path, monkeypatch):
     repo = repo_of(tmp_path, {"config.py": OLD})
     monkeypatch.setattr(pd, "_ast_grep", lambda *_: [{"nofile": 1}])
     assert pd.evaluate(repo, fixture_detect()).state == "incomplete"
+
+
+# ---- scan ----
+
+import re
+import subprocess
+from datetime import date, timedelta
+
+SUMMARY = re.compile(r"^scanned \d+ repos · skipped \d+( \((dormant|no-path|not-cloned|git-error): \d+"
+                     r"(, (dormant|no-path|not-cloned|git-error): \d+)*\))? · matches \d+ · opened \d+"
+                     r" · closed \d+ · incomplete \d+$")
+SUP = ("# T\n\n## Superseded\n- ~~old~~ → ^p31 (2026-11-25, uv_build replaces hatchling) ^p9\n"
+       "  detect:\n    lang: toml\n    files: [pyproject.toml]\n    all:\n"
+       "      - {key: build-system.build-backend, equals: hatchling}\n")
+OLD_TOML = '[build-system]\nbuild-backend = "hatchling"\n'
+NEW_TOML = '[build-system]\nbuild-backend = "uv_build"\n'
+MARK = "<!-- pattern-drift:^p9 -->"
+
+
+def git(repo: Path, *args: str, when: str = "") -> None:
+    env = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t",
+           "GIT_COMMITTER_EMAIL": "t@t"}
+    if when:
+        env["GIT_COMMITTER_DATE"] = env["GIT_AUTHOR_DATE"] = when
+    subprocess.run(["git", *args], cwd=repo, env=env, check=True, capture_output=True)
+
+
+def world(tmp_path: Path, status: str = "active", age: int = 1, toml: str = OLD_TOML,
+          roadmap: str | bytes | None = "# R\n\n## Next\n- a\n\n## Later\n- b\n", path: bool = True):
+    """Vault with one project `proj` (repo under lab/proj) and the toml superseded note."""
+    vault, _ = setup(tmp_path, {"python-patterns.md": note("- n ^p31\n"), "python-patterns-superseded.md": SUP})
+    lab = tmp_path / "lab"
+    repo = lab / "proj"
+    repo.mkdir(parents=True)
+    (repo / "pyproject.toml").write_text(toml)
+    git(repo, "init", "-q")
+    git(repo, "add", ".")
+    when = (date.today() - timedelta(days=age)).isoformat() + "T12:00:00"
+    git(repo, "commit", "-qm", "c", when=when)
+    if roadmap is not None:
+        (repo / ".claude/memory").mkdir(parents=True)
+        data = roadmap if isinstance(roadmap, bytes) else roadmap.encode()
+        (repo / ".claude/memory/ROADMAP.md").write_bytes(data)
+    (vault / "projects").mkdir()
+    front = f"---\nstatus: {status}\n" + (f"path: {repo}\n" if path else "") + "---\n"
+    (vault / "projects/proj.md").write_text(front)
+    return vault, lab, repo
+
+
+def road(repo: Path) -> bytes:
+    return (repo / ".claude/memory/ROADMAP.md").read_bytes()
+
+
+def run_scan(vault, lab, capsys=None):
+    return pd.scan(vault, lab, 60)
+
+
+def test_active_by_commit(tmp_path):
+    vault, lab, repo = world(tmp_path)
+    repos, skipped = pd.active_repos(vault, lab, 60)
+    assert [r.slug for r in repos] == ["proj"] and not skipped
+
+
+def test_active_by_session_log(tmp_path):
+    vault, lab, repo = world(tmp_path, age=200)
+    assert pd.active_repos(vault, lab, 60)[0] == []
+    logs = vault / "inbox/daily/implementation/proj"
+    logs.mkdir(parents=True)
+    (logs / f"{date.today() - timedelta(days=3)}-x.md").write_text("x")
+    assert [r.slug for r in pd.active_repos(vault, lab, 60)[0]] == ["proj"]
+
+
+def test_dormant_skipped(tmp_path):
+    vault, lab, repo = world(tmp_path, age=200)
+    repos, skipped = pd.active_repos(vault, lab, 60)
+    assert repos == [] and skipped == {"dormant": 1}
+
+
+def test_not_cloned_skipped(tmp_path):
+    vault, lab, repo = world(tmp_path)
+    shutil.rmtree(repo)
+    assert pd.active_repos(vault, lab, 60)[1] == {"not-cloned": 1}
+
+
+def test_no_path_skipped(tmp_path):
+    vault, lab, repo = world(tmp_path, path=False)
+    shutil.rmtree(repo)
+    assert pd.active_repos(vault, lab, 60)[1] == {"no-path": 1}
+
+
+def test_fallback_path_under_lab_root(tmp_path):
+    vault, lab, repo = world(tmp_path, path=False)
+    assert [r.slug for r in pd.active_repos(vault, lab, 60)[0]] == ["proj"]
+
+
+def test_inactive_note_not_counted(tmp_path):
+    vault, lab, repo = world(tmp_path, status="archived", age=200)
+    assert pd.active_repos(vault, lab, 60) == ([], {})
+
+
+def test_open_then_no_duplicate(tmp_path):
+    vault, lab, repo = world(tmp_path)
+    assert "opened 1" in pd.scan(vault, lab, 60)
+    assert "opened 0" in pd.scan(vault, lab, 60)
+    text = road(repo).decode()
+    assert text.count(MARK) == 1
+    assert text.index("- Migrate: ^p9 → ^p31 (uv_build replaces hatchling) in `pyproject.toml` " + MARK) \
+        < text.index("## Later")
+    assert text.index("- a\n") < text.index("- Migrate")
+
+
+def test_closed_on_verified_absent(tmp_path):
+    vault, lab, repo = world(tmp_path)
+    pd.scan(vault, lab, 60)
+    (repo / "pyproject.toml").write_text(NEW_TOML)
+    summary = pd.scan(vault, lab, 60)
+    assert "closed 1" in summary and MARK not in road(repo).decode()
+    assert road(repo).decode() == "# R\n\n## Next\n- a\n\n## Later\n- b\n"
+
+
+def test_kept_when_incomplete(tmp_path, capsys):
+    vault, lab, repo = world(tmp_path)
+    pd.scan(vault, lab, 60)
+    (repo / "pyproject.toml").write_text("not = [toml")
+    before = road(repo)
+    summary = pd.scan(vault, lab, 60)
+    assert "incomplete 1" in summary and road(repo) == before
+    assert "incomplete proj ^p9 pyproject.toml" in capsys.readouterr().out
+
+
+def test_invalid_detect_counted_incomplete(tmp_path):
+    vault, lab, repo = world(tmp_path)
+    note_ = vault / "resources/knowledge/patterns/python-patterns-superseded.md"
+    note_.write_text(note_.read_text().replace("lang: toml", "lang: cobol"))
+    assert "incomplete 1" in pd.scan(vault, lab, 60) and MARK not in road(repo).decode()
+
+
+def test_rejected_never_touched(tmp_path):
+    text = f"# R\n\n## Next\n- a\n\n## Rejected\n- Migrate: ^p9 → ^p31 (x) in `p` {MARK}\n"
+    vault, lab, repo = world(tmp_path, roadmap=text)
+    assert "opened 0" in pd.scan(vault, lab, 60) and road(repo).decode() == text
+    (repo / "pyproject.toml").write_text(NEW_TOML)
+    assert "closed 0" in pd.scan(vault, lab, 60) and road(repo).decode() == text
+
+
+def test_marker_elsewhere_never_touched(tmp_path):
+    text = f"# R\n\n## Next\n- a\n\n## Later\n- Migrate: ^p9 {MARK}\n"
+    vault, lab, repo = world(tmp_path, roadmap=text)
+    assert "opened 0" in pd.scan(vault, lab, 60) and road(repo).decode() == text
+    (repo / "pyproject.toml").write_text(NEW_TOML)
+    assert "closed 0" in pd.scan(vault, lab, 60) and road(repo).decode() == text
+
+
+def test_matched_files_change_line_unchanged(tmp_path):
+    vault, lab, repo = world(tmp_path)
+    pd.scan(vault, lab, 60)
+    before = road(repo)
+    (repo / "sub").mkdir()
+    (repo / "sub/pyproject.toml").write_text(OLD_TOML)
+    sup = pd.parse_superseded(vault / "resources/knowledge/patterns/python-patterns-superseded.md")[0][0]
+    sup.detect.files = ["**/pyproject.toml"]
+    out = pd.evaluate(repo, sup.detect)
+    assert len(out.files) == 2 and pd.apply_task(repo / ".claude/memory/ROADMAP.md", sup, out) == "kept"
+    assert road(repo) == before
+
+
+def test_no_roadmap_warns(tmp_path, capsys):
+    vault, lab, repo = world(tmp_path, roadmap=None)
+    summary = pd.scan(vault, lab, 60)
+    assert "WARN no ROADMAP proj ^p9" in capsys.readouterr().out
+    assert "opened 0" in summary and not (repo / ".claude").exists()
+
+
+def test_next_section_added_when_missing(tmp_path):
+    vault, lab, repo = world(tmp_path, roadmap="# R\n\n## Later\n- b")
+    pd.scan(vault, lab, 60)
+    text = road(repo).decode()
+    assert text.startswith("# R\n\n## Later\n- b\n") and "\n## Next\n- Migrate: ^p9" in text
+
+
+def test_dormant_open_task_kept(tmp_path):
+    line = f"- Migrate: ^p9 → ^p31 (x) in `pyproject.toml` {MARK}\n"
+    text = f"# R\n\n## Next\n{line}"
+    vault, lab, repo = world(tmp_path, age=200, roadmap=text, toml=NEW_TOML)
+    summary = pd.scan(vault, lab, 60)
+    assert "scanned 0" in summary and "dormant: 1" in summary and road(repo).decode() == text
+
+
+def test_crlf_roadmap_kept(tmp_path):
+    vault, lab, repo = world(tmp_path, roadmap=b"# R\r\n\r\n## Next\r\n- a\r\n\r\n## Later\r\n- b\r\n")
+    pd.scan(vault, lab, 60)
+    data = road(repo)
+    assert data.count(b"\n") == data.count(b"\r\n") and MARK.encode() in data
+    (repo / "pyproject.toml").write_text(NEW_TOML)
+    pd.scan(vault, lab, 60)
+    assert road(repo) == b"# R\r\n\r\n## Next\r\n- a\r\n\r\n## Later\r\n- b\r\n"
+
+
+def test_same_path_scanned_once(tmp_path):
+    vault, lab, repo = world(tmp_path)
+    (vault / "projects/twin.md").write_text(f"---\nstatus: active\npath: {repo}\n---\n")
+    summary = pd.scan(vault, lab, 60)
+    assert "scanned 1 repos" in summary and "opened 1" in summary and road(repo).decode().count(MARK) == 1
+
+
+def test_summary_format(tmp_path, capsys):
+    vault, lab, repo = world(tmp_path)
+    assert SUMMARY.match(pd.scan(vault, lab, 60))
+    (repo / "pyproject.toml").write_text("not = [toml")
+    assert SUMMARY.match(pd.scan(vault, lab, 60))
+    shutil.rmtree(repo)
+    assert SUMMARY.match(pd.scan(vault, lab, 60))
+    assert pd.main(["scan", "--vault", str(vault), "--lab-root", str(lab)]) == 0
+    assert SUMMARY.match(capsys.readouterr().out.strip().splitlines()[-1])

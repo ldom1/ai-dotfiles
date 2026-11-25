@@ -6,6 +6,7 @@
 """pattern-drift.py: keep the rule ids of the vault pattern notes consistent.
 
   check [--vault V] [--rules R]   print FAIL <file>: <reason> per problem (exit 1), or OK <n> rules (exit 0)
+  scan [--vault V] [--lab-root L] open or close a migration task in the ROADMAP.md of each active repo, print a summary
 
 V defaults to $BRAIN_PATH. R defaults to skills/brain-audit/reference/pitfall-rules.md (the declared letters).
 
@@ -20,7 +21,9 @@ import shutil
 import subprocess
 import sys
 import tomllib
+from collections import Counter
 from dataclasses import dataclass
+from datetime import date, timedelta
 from io import StringIO
 from pathlib import Path
 from typing import Literal
@@ -336,18 +339,196 @@ def check(vault: Path, rules_file: Path) -> list[str]:
     return list(dict.fromkeys(fails))
 
 
+@dataclass
+class Repo:
+    slug: str
+    path: Path
+
+
+FRONT = re.compile(r"^(status|path):\s*(.*?)\s*$")
+LOG_DATE = re.compile(r"^(\d{4}-\d{2}-\d{2})-")
+
+
+def _front(note: Path) -> dict[str, str]:
+    """`status:` and `path:` of the frontmatter of a project note."""
+    out: dict[str, str] = {}
+    lines = note.read_text(encoding="utf-8").splitlines()
+    if lines and lines[0].strip() == "---":
+        for line in lines[1:]:
+            if line.strip() == "---":
+                break
+            m = FRONT.match(line)
+            if m:
+                out[m.group(1)] = m.group(2).strip("\"'")
+    return out
+
+
+def _recent_log(vault: Path, slug: str, days: int) -> bool:
+    limit = date.today() - timedelta(days=days)
+    for log in (vault / "inbox/daily/implementation" / slug).glob("*.md"):
+        m = LOG_DATE.match(log.name)
+        if m:
+            try:
+                if date.fromisoformat(m.group(1)) >= limit:
+                    return True
+            except ValueError:
+                continue
+    return False
+
+
+def active_repos(vault: Path, lab_root: Path, days: int) -> tuple[list[Repo], Counter[str]]:
+    """Repos of the `status: active` project notes that pass the activity rule, and the skipped ones by reason."""
+    repos: list[Repo] = []
+    skipped: Counter[str] = Counter()
+    seen: set[Path] = set()
+    for note in sorted((vault / "projects").glob("*.md")):
+        front = _front(note)
+        if front.get("status") != "active":
+            continue
+        slug = note.stem
+        if front.get("path"):
+            path = Path(front["path"]).expanduser()
+            missing = "not-cloned"
+        else:
+            path = lab_root / slug
+            missing = "no-path"
+        if not path.is_dir():
+            skipped[missing] += 1
+            continue
+        if not (path / ".git").exists():
+            skipped["not-cloned"] += 1
+            continue
+        key = path.resolve()
+        if key in seen:
+            continue
+        seen.add(key)
+        try:
+            done = subprocess.run(["git", "log", "-1", "--all", "--format=%H", f"--since={days}.days"], cwd=path,
+                                  capture_output=True, text=True, timeout=60)
+        except (OSError, subprocess.SubprocessError):
+            skipped["git-error"] += 1
+            continue
+        if done.returncode != 0:
+            skipped["git-error"] += 1
+        elif done.stdout.strip() or _recent_log(vault, slug, days):
+            repos.append(Repo(slug, path))
+        else:
+            skipped["dormant"] += 1
+    return repos, skipped
+
+
+MARKER = "<!-- pattern-drift:^{} -->"
+
+
+def _section(lines: list[bytes]) -> list[str]:
+    """The `## ` heading each line sits under ('' before the first)."""
+    heading, out = "", []
+    for raw in lines:
+        m = H2.match(raw.decode("utf-8", "replace").rstrip("\r\n"))
+        if m:
+            heading = m.group(1)
+        out.append(heading)
+    return out
+
+
+def apply_task(roadmap: Path, sup: Superseded, outcome: Outcome) -> Literal["opened", "closed", "kept", "none"]:
+    """Open (match) or close (verified absent) the migration line of `sup` in `roadmap`; never rewrites another line."""
+    data = roadmap.read_bytes()
+    lines = data.splitlines(keepends=True)
+    marker = MARKER.format(sup.id).encode()
+    marked = [i for i, raw in enumerate(lines) if marker in raw]
+    sections = _section(lines)
+    if outcome.state == "incomplete":
+        return "kept" if marked else "none"
+    if outcome.state == "absent":
+        under_next = [i for i in marked if sections[i] == "Next"]
+        if not under_next:
+            return "kept" if marked else "none"
+        for i in reversed(under_next):
+            del lines[i]
+        roadmap.write_bytes(b"".join(lines))
+        return "closed"
+    if marked:
+        return "kept"
+    eol = b"\r\n" if b"\r\n" in data else b"\n"
+    reason = sup.reason if len(sup.reason) <= 80 else sup.reason[:79].rstrip() + "…"
+    files = ", ".join(f"`{f}`" for f in outcome.files)
+    task = f"- Migrate: ^{sup.id} → ^{sup.by} ({reason}) in {files} {MARKER.format(sup.id)}".encode() + eol
+    start = next((i for i, raw in enumerate(lines) if H2.match(raw.decode("utf-8", "replace").rstrip("\r\n"))
+                  and sections[i] == "Next"), None)
+    if start is None:
+        if lines and not lines[-1].endswith((b"\n", b"\r")):
+            lines[-1] += eol
+        lines += [eol, b"## Next" + eol, task] if lines else [b"## Next" + eol, task]
+    else:
+        end = start + 1
+        while end < len(lines) and sections[end] == "Next":
+            end += 1
+        while end - 1 > start and not lines[end - 1].strip():
+            end -= 1
+        if not lines[end - 1].endswith((b"\n", b"\r")):
+            lines[end - 1] += eol
+        lines.insert(end, task)
+    roadmap.write_bytes(b"".join(lines))
+    return "opened"
+
+
+def scan(vault: Path, lab_root: Path, days: int) -> str:
+    """Open or close the migration tasks of every active repo; print one line per action, return the summary."""
+    repos, skipped = active_repos(vault, lab_root, days)
+    sups: list[Superseded] = []
+    for note in sorted((vault / PATTERNS).glob(f"*{SUPERSEDED}.md")):
+        sups += parse_superseded(note)[0]
+    matches = opened = closed = incomplete = 0
+    modified: list[str] = []
+    for repo in repos:
+        roadmap = repo.path / ".claude/memory/ROADMAP.md"
+        for sup in sups:
+            if sup.detect_error:
+                outcome = Outcome("incomplete", [], f"invalid detect: {sup.detect_error}")
+            elif sup.detect is None:
+                continue
+            else:
+                outcome = evaluate(repo.path, sup.detect)
+            if outcome.state == "incomplete":
+                incomplete += 1
+                print(f"incomplete {repo.slug} ^{sup.id} {outcome.reason}")
+                continue
+            matches += outcome.state == "match"
+            if not roadmap.is_file():
+                if outcome.state == "match":
+                    print(f"WARN no ROADMAP {repo.slug} ^{sup.id}")
+                continue
+            action = apply_task(roadmap, sup, outcome)
+            if action in ("opened", "closed"):
+                opened += action == "opened"
+                closed += action == "closed"
+                print(f"{action} {repo.slug} ^{sup.id}")
+                if repo.slug not in modified:
+                    modified.append(repo.slug)
+    for slug in modified:
+        print(f"modified {slug} (ROADMAP.md, not committed)")
+    reasons = ", ".join(f"{k}: {v}" for k, v in sorted(skipped.items()))
+    skip = f"skipped {sum(skipped.values())}" + (f" ({reasons})" if reasons else "")
+    return (f"scanned {len(repos)} repos · {skip} · matches {matches} · opened {opened} · closed {closed}"
+            f" · incomplete {incomplete}")
+
+
 def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
-    if not args or args[0] != "check":
+    if not args or args[0] not in ("check", "scan"):
         print(__doc__, file=sys.stderr)
         return 2
     settings = Settings()
-    vault, rules_file = settings.brain_path, settings.rules_file
+    vault, rules_file, lab_root = settings.brain_path, settings.rules_file, settings.lab_root
+    flags = ("--vault", "--rules") if args[0] == "check" else ("--vault", "--lab-root")
     rest = args[1:]
     while rest:
-        if rest[0] in ("--vault", "--rules") and len(rest) >= 2:
+        if rest[0] in flags and len(rest) >= 2:
             if rest[0] == "--vault":
                 vault = Path(rest[1])
+            elif rest[0] == "--lab-root":
+                lab_root = Path(rest[1])
             else:
                 rules_file = Path(rest[1])
             rest = rest[2:]
@@ -357,6 +538,9 @@ def main(argv: list[str] | None = None) -> int:
     if vault is None or not (vault / PATTERNS).is_dir():
         logger.error("no vault with {} (give --vault or set BRAIN_PATH)", PATTERNS)
         return 2
+    if args[0] == "scan":
+        print(scan(vault, lab_root, settings.active_days))
+        return 0
     if not rules_file.is_file():
         logger.error("no rules file {}", rules_file)
         return 2
