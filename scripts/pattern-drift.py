@@ -196,32 +196,64 @@ def parse_superseded(note: Path) -> tuple[list[Superseded], list[str]]:
     return found, fails
 
 
-def _expand(repo: Path, patterns: list[str]) -> tuple[list[str], list[str]]:
-    """Files of the repo matching the globs (`.git`, `.venv`, `node_modules` pruned) and the walk errors."""
-    regexes = []
-    for pat in patterns:
-        out, i = "", 0
-        while i < len(pat):
-            if pat.startswith("**/", i):
-                out, i = out + "(?:.*/)?", i + 3
-            elif pat.startswith("**", i):
-                out, i = out + ".*", i + 2
-            elif pat[i] == "*":
-                out, i = out + "[^/]*", i + 1
-            elif pat[i] == "?":
-                out, i = out + "[^/]", i + 1
-            else:
-                out, i = out + re.escape(pat[i]), i + 1
-        regexes.append(re.compile(out + r"\Z"))
-    hits: list[str] = []
-    errors: list[str] = []
-    for root, dirs, names in os.walk(repo, onerror=lambda exc: errors.append(f"{exc.filename}: {exc.strerror}")):
-        dirs[:] = [d for d in dirs if d not in IGNORED_DIRS]
-        for name in names:
-            rel = (Path(root) / name).relative_to(repo).as_posix()
-            if any(r.match(rel) for r in regexes):
-                hits.append(rel)
-    return sorted(hits), errors
+def _glob_regex(pattern: str) -> re.Pattern[str]:
+    out, i = "", 0
+    while i < len(pattern):
+        if pattern.startswith("**/", i):
+            out, i = out + "(?:.*/)?", i + 3
+        elif pattern.startswith("**", i):
+            out, i = out + ".*", i + 2
+        elif pattern[i] == "*":
+            out, i = out + "[^/]*", i + 1
+        elif pattern[i] == "?":
+            out, i = out + "[^/]", i + 1
+        else:
+            out, i = out + re.escape(pattern[i]), i + 1
+    return re.compile(out + r"\Z")
+
+
+def _deleted(path: Path) -> bool:
+    """A tracked file removed from the work tree. An unreadable parent is not a deletion."""
+    try:
+        os.lstat(path)
+    except FileNotFoundError:
+        return True
+    except OSError:
+        return False
+    return False
+
+
+def _candidates(repo: Path) -> tuple[list[str], str]:
+    """Repo-relative files git knows (tracked, or untracked and not ignored), minus `.git`, `.venv`, `node_modules`.
+
+    Ignored directories (a root-owned Docker data dir, say) are never visited. Second item: error, or "".
+    """
+    try:
+        done = subprocess.run(["git", "-C", str(repo), "ls-files", "-z", "-co", "--exclude-standard"],
+                              capture_output=True, timeout=120)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return [], f"git ls-files failed: {exc}"
+    if done.returncode != 0 or done.stderr.strip():  # git only warns (exit 0) on a directory it cannot open
+        return [], f"git ls-files failed: {done.stderr.decode(errors='replace').strip()}"
+    names = [n for n in done.stdout.decode("utf-8", errors="surrogateescape").split("\0") if n]
+    return sorted(n for n in names if not IGNORED_DIRS.intersection(n.split("/")) and not _deleted(repo / n)), ""
+
+
+def _expand(candidates: list[str], patterns: list[str]) -> list[str]:
+    """The candidates matching one of the globs."""
+    regexes = [_glob_regex(p) for p in patterns]
+    return [c for c in candidates if any(r.match(c) for r in regexes)]
+
+
+def _unreadable(repo: Path, files: list[str]) -> str:
+    """First file that cannot be read, as `file: reason`, or ""."""
+    for rel in files:
+        try:
+            with open(repo / rel, "rb") as handle:
+                handle.read(1)
+        except OSError as exc:
+            return f"{rel}: {exc.strerror}"
+    return ""
 
 
 def _ast_grep(repo: Path, args: list[str]) -> list[dict] | None:
@@ -268,11 +300,15 @@ def _evaluate_toml(repo: Path, detect: Detect, files: list[str]) -> Outcome:
 
 def evaluate(repo: Path, detect: Detect) -> Outcome:
     """Does the old form still exist in the repo? match / absent (verified) / incomplete (could not tell)."""
-    files, walk_errors = _expand(repo, detect.files)
-    if walk_errors:
-        return Outcome("incomplete", [], f"unreadable: {walk_errors[0]}")
+    candidates, error = _candidates(repo)
+    if error:
+        return Outcome("incomplete", [], error)
+    files = _expand(candidates, detect.files)
     if not files:
         return Outcome("absent", [])
+    bad = _unreadable(repo, files)  # ast-grep exits 0 on an unreadable explicit file
+    if bad:
+        return Outcome("incomplete", [], f"unreadable: {bad}")
     if detect.lang == "toml":
         if not detect.all:
             return Outcome("incomplete", [], "toml detect without conditions")
@@ -281,12 +317,6 @@ def evaluate(repo: Path, detect: Detect) -> Outcome:
         return Outcome("incomplete", [], "python detect without rule")
     if not shutil.which(AST_GREP):
         return Outcome("incomplete", [], f"{AST_GREP} not found in PATH")
-    for rel in files:  # ast-grep exits 0 on an unreadable explicit file
-        try:
-            with open(repo / rel, "rb") as handle:
-                handle.read(1)
-        except OSError as exc:
-            return Outcome("incomplete", [], f"{rel}: {exc.strerror}")
     hits = _ast_grep(repo, ["scan", "--inline-rules", detect.rule, "--json=compact", *files])
     if hits is None:
         return Outcome("incomplete", [], f"{AST_GREP} scan failed")
@@ -297,12 +327,17 @@ def evaluate(repo: Path, detect: Detect) -> Outcome:
     if not matched:
         return Outcome("absent", [])
     if detect.absent_in_repo:
-        guards = [f"--globs=!**/{d}/**" for d in sorted(IGNORED_DIRS)]
-        found = _ast_grep(repo, ["run", "-p", detect.absent_in_repo, "-l", "python", *guards, "--json=compact", "."])
-        if found is None:
-            return Outcome("incomplete", [], f"{AST_GREP} run failed")
-        if found:
-            return Outcome("absent", [], "replacement pattern present in repo")
+        sources = [c for c in candidates if c.endswith(".py")]
+        bad = _unreadable(repo, sources)
+        if bad:
+            return Outcome("incomplete", [], f"unreadable: {bad}")
+        for start in range(0, len(sources), 200):
+            found = _ast_grep(repo, ["run", "-p", detect.absent_in_repo, "-l", "python", "--json=compact",
+                                     *sources[start:start + 200]])
+            if found is None:
+                return Outcome("incomplete", [], f"{AST_GREP} run failed")
+            if found:
+                return Outcome("absent", [], "replacement pattern present in repo")
     return Outcome("match", matched)
 
 
