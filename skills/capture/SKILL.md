@@ -78,7 +78,7 @@ Files: `<repo>/.claude/memory/` (fallback `$BRAIN_PATH/projects/<slug>/`). Base 
 |---|---|
 | `CONTEXT.md` | Snapshot — **rewrite in place**: `Live now`, `In flight`, `Blockers / open questions`, `Gotchas`, `Recent history` (≤ 5 `[[session-log]]` links). Drop what is no longer true; never prepend dated banners. |
 | `DECISIONS.md` | One line per live decision: `- **<decision>** — <why> (<date>)`. Replace a superseded line instead of adding a contradicting one. |
-| `ROADMAP.md` | Move finished items out (they belong in CHANGELOG); add new follow-ups under `Now` / `Next` / `Later` / `Open debt`. An item waiting on an event goes to `Gates`. A dropped item goes to `Rejected` with its reason. Never delete a `Rejected` line without the user. |
+| `ROADMAP.md` | Keep every line with `<!-- pattern-drift:` (a migration task from `pattern-drift.py scan`): never remove or reword one, or the scan recreates it. Move finished items out (they belong in CHANGELOG); add new follow-ups under `Now` / `Next` / `Later` / `Open debt`. An item waiting on an event goes to `Gates`. A dropped item goes to `Rejected` with its reason. Never delete a `Rejected` line without the user. |
 | `ARCHITECTURE.md` | Only durable structure: stack, modules, data flow, invariants. |
 
 Where a fact goes, by its reach:
@@ -114,6 +114,7 @@ uv run --script ~/ai-dotfiles/scripts/ontologie.py check
 - Search the file first. Before writing, pick one verdict and state it to the user:
   - **Absorb into <existing rule>** — a rule already covers it: sharpen that rule. This is the default.
   - **Improve** — the existing rule is wrong or too vague: rewrite it.
+  - **Supersede** — the old way became wrong and existing code lags. Improve sharpens a rule that is still true; Supersede replaces a rule that is no longer true. Give the new rule a new id. Move the old rule to the `<name>-superseded.md` note with date, reason, replacing id and a `detect:` block when a reliable pattern exists (format in `~/ai-dotfiles/skills/brain-audit/reference/pitfall-rules.md`). Then run `uv run --script ~/ai-dotfiles/scripts/pattern-drift.py check` and fix each `FAIL`. Then run `uv run --script ~/ai-dotfiles/scripts/pattern-drift.py scan` and tell the user its summary line. Never edit code or commit in the scanned repos: the task waits for the owner. If `AGENTS.md` cites the replaced rule, rewrite that line in the same change and run `bash ~/ai-dotfiles/scripts/build-agent-rules.sh`.
   - **Save** — nothing covers it: add one bullet.
   - **Drop** — one-off, or project-specific (step 3).
 

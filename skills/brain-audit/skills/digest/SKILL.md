@@ -39,6 +39,13 @@ type: digest
 - insights: N questions → [[YYYY-MM-DD]] (inbox/insights)
 - queries: [[YYYY-MM-DD-knowledge-gaps]], [[YYYY-MM-DD-roadmap]]
 - promote: N candidates → sensor drafts to review: [[YYYY-MM-DD-<slug>]], … (list every file in `inbox/sensors/`; "none" if empty)
+- drift: <the `scan` summary line>
+  - opened: one line per repo (`<slug> ^X`); closed: same
+  - incomplete: each `incomplete <slug> ^X <reason>` line becomes `à vérifier: <slug> ^X <reason>`
+  - `WARN no ROADMAP <slug> ^X`: run `/brain-init-project` there
+  - `WARN not-cloned <slug> <path>` / `WARN no-path <slug>`: list each skipped repo (clone missing or `path:` unset)
+  - `modified <slug> (ROADMAP.md, not committed)`: list each repo whose ROADMAP has uncommitted changes, for the owner to review and commit
+  - dormant repo with an open task: each `dormant <slug> ^X` line of `scan` becomes `dormant, tâche ouverte: <slug> ^X`
 
 ## Key takeaways
 <2–3 sentences: the findings that need the user's attention>
