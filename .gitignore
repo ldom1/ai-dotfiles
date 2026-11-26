@@ -34,6 +34,7 @@
 .claude/feedback/
 .claude/remote-settings.json
 .claude/remote-settings.json.synced-at
+.claude/*.signature*.json
 .claude/daemon.lock
 .claude/daemon.status.json
 .claude/*.bak-*

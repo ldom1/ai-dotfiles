@@ -213,6 +213,20 @@
         "slurm.conf"
       ]
     },
+    "config-ondemand-ansible": {
+      "detect": [
+        "templates/etc/ood/config/ondemand.d/ondemand.yml.j2"
+      ],
+      "scopes": [
+        "core",
+        "theme",
+        "jupyter",
+        "dashboard",
+        "dex",
+        "docs",
+        "ci"
+      ]
+    },
     "django": {
       "detect": [
         "manage.py"

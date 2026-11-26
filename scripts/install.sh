@@ -248,6 +248,16 @@ need_cmds() {  # need_cmds "<apt packages>" cmd...: warn once with the apt line 
 }
 need_cmds "jq curl" jq curl
 
+# ast-grep: the brain-audit drift step (scripts/pattern-drift.py) runs the `ast-grep` binary.
+AST_GREP_VERSION=0.51.3
+if command -v uv >/dev/null 2>&1; then
+  uv tool install -q "ast-grep-cli==$AST_GREP_VERSION" >/dev/null 2>&1 \
+    && log "ast-grep-cli@$AST_GREP_VERSION → $(command -v ast-grep || echo "$HOME/.local/bin/ast-grep")" \
+    || warn_end "ast-grep install failed. Run: uv tool install ast-grep-cli==$AST_GREP_VERSION"
+else
+  warn_end "uv not found: install uv, then run: uv tool install ast-grep-cli==$AST_GREP_VERSION"
+fi
+
 # Orca, the agent cockpit: scripts/orca-install.sh installs it on native Ubuntu (.deb, never when
 # already installed), applies config/orca/settings.json, checks its CLI and skills. Each stdout
 # line is a step to do by hand (the sudo apt line included): repeated in the end warnings.
