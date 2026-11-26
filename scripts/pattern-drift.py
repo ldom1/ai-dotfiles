@@ -358,10 +358,16 @@ def check(vault: Path, rules_file: Path) -> list[str]:
         fails += problems
         if note.stem.endswith(SUPERSEDED):
             fails += parse_superseded(note)[1]
+    stems = [n.stem for n in (vault / PATTERNS).glob("*.md") if not n.stem.endswith(SUPERSEDED)]
+    owners = {letter: next((s for s in stems if s == name or s.startswith(name + "-")), None)
+              for letter, name in letters.items()}  # no owner: a `pitfalls.md` letter, kept when a rule moves out
     seen: dict[str, Rule] = {}
     for rule in rules:
         if rule.id[0] not in letters:
             fails.append(f"FAIL {rule.note.name}: letter {rule.id[0]} not in {rules_file.name}")
+        owner, base = owners.get(rule.id[0]), rule.note.stem.removesuffix(SUPERSEDED)
+        if owner and owner != base:
+            fails.append(f"FAIL {rule.note.name}: ^{rule.id} uses letter {rule.id[0]} of {owner}")
         if rule.id in seen:
             fails.append(f"FAIL {rule.note.name}: duplicate id {rule.id} at line {rule.line}"
                          f" (also {seen[rule.id].note.name}:{seen[rule.id].line})")
@@ -380,12 +386,13 @@ class Repo:
     path: Path
 
 
-FRONT = re.compile(r"^(status|path):\s*(.*?)\s*$")
+FRONT = re.compile(r"^(status|path|repo):\s*(.*?)\s*$")
+REMOTE = re.compile(r"^(?:[a-z+]+://)?(?:[^@/]+@)?([^/:]+)[:/](.+?)(?:\.git)?/*$")
 LOG_DATE = re.compile(r"^(\d{4}-\d{2}-\d{2})-")
 
 
 def _front(note: Path) -> dict[str, str]:
-    """`status:` and `path:` of the frontmatter of a project note."""
+    """`status:`, `path:` and `repo:` of the frontmatter of a project note."""
     out: dict[str, str] = {}
     lines = note.read_text(encoding="utf-8").splitlines()
     if lines and lines[0].strip() == "---":
@@ -396,6 +403,17 @@ def _front(note: Path) -> dict[str, str]:
             if m:
                 out[m.group(1)] = m.group(2).strip("\"'")
     return out
+
+
+def _same_remote(path: Path, url: str) -> bool:
+    """True when the `origin` remote of `path` names the same host/owner/repo as `url` (scheme, `.git`, case ignored)."""
+    try:
+        done = subprocess.run(["git", "remote", "get-url", "origin"], cwd=path, capture_output=True, text=True,
+                              timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    a, b = REMOTE.match(done.stdout.strip().lower()), REMOTE.match(url.strip().lower())
+    return done.returncode == 0 and bool(a and b) and a.groups() == b.groups()
 
 
 def _recent_log(vault: Path, slug: str, days: int) -> bool:
@@ -418,14 +436,23 @@ def active_repos(vault: Path, lab_root: Path, days: int, dormant: list[Repo] | N
     skipped: Counter[str] = Counter()
     seen: set[Path] = set()
     for note in sorted((vault / "projects").glob("*.md")):
-        front = _front(note)
+        slug = note.stem
+        try:
+            front = _front(note)
+        except (OSError, UnicodeDecodeError):
+            skipped["unreadable"] += 1
+            if warns is not None:
+                warns.append(f"WARN unreadable {slug}")
+            continue
         if front.get("status") != "active":
             continue
-        slug = note.stem
         if front.get("path"):
             path = Path(front["path"]).expanduser()
             if not path.is_dir():  # the note may name a clone path of another machine
-                path = next((c for c in (lab_root / path.name, lab_root / slug) if c.is_dir()), path)
+                found = next((c for c in (lab_root / path.name, lab_root / slug) if c.is_dir()), None)
+                # a folder with the same name may be another repo: when the note has `repo:`, `origin` must match it
+                if found and (not front.get("repo") or _same_remote(found, front["repo"])):
+                    path = found
             missing = f"not-cloned {slug} {front['path']}"
         else:
             path = lab_root / slug
@@ -538,7 +565,10 @@ def scan(vault: Path, lab_root: Path, days: int) -> str:
         print(warn)
     sups: list[Superseded] = []
     for note in sorted((vault / PATTERNS).glob(f"*{SUPERSEDED}.md")):
-        sups += parse_superseded(note)[0]
+        try:
+            sups += parse_superseded(note)[0]
+        except (OSError, UnicodeDecodeError):
+            print(f"WARN unreadable {note.name}")
     matches = opened = closed = incomplete = 0
     modified: list[str] = []
     for repo in repos:
@@ -559,7 +589,12 @@ def scan(vault: Path, lab_root: Path, days: int) -> str:
                 if outcome.state == "match":
                     print(f"WARN no ROADMAP {repo.slug} ^{sup.id}")
                 continue
-            action = apply_task(roadmap, sup, outcome)
+            try:
+                action = apply_task(roadmap, sup, outcome)
+            except OSError as exc:
+                print(f"WARN unwritable {repo.slug} ROADMAP.md: {exc.strerror}")
+                skipped["unwritable"] += 1
+                break
             if action in ("opened", "closed"):
                 opened += action == "opened"
                 closed += action == "closed"

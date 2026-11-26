@@ -351,8 +351,8 @@ import re
 import subprocess
 from datetime import date, timedelta
 
-SUMMARY = re.compile(r"^scanned \d+ repos · skipped \d+( \((dormant|no-path|not-cloned|git-error): \d+"
-                     r"(, (dormant|no-path|not-cloned|git-error): \d+)*\))? · matches \d+ · opened \d+"
+SUMMARY = re.compile(r"^scanned \d+ repos · skipped \d+( \((dormant|no-path|not-cloned|git-error|unreadable|unwritable): \d+"
+                     r"(, (dormant|no-path|not-cloned|git-error|unreadable|unwritable): \d+)*\))? · matches \d+ · opened \d+"
                      r" · closed \d+ · incomplete \d+$")
 SUP = ("# T\n\n## Superseded\n- ~~old~~ → ^p31 (2026-11-25, uv_build replaces hatchling) ^p9\n"
        "  detect:\n    lang: toml\n    files: [pyproject.toml]\n    all:\n"
@@ -604,3 +604,64 @@ def test_dormant_rejected_marker_not_listed(tmp_path, capsys):
     vault, lab, repo = world(tmp_path, age=200, roadmap=text)
     run_scan(vault, lab)
     assert "dormant proj" not in capsys.readouterr().out
+
+
+# ---- follow-up: letter owner, fallback remote, unreadable inputs ----
+
+def test_rule_with_another_notes_letter_fails(tmp_path):
+    fails = run(tmp_path, {"git-patterns.md": note("- a ^g1\n"), "storage-patterns.md": note("- b ^g2\n")})
+    assert fails == ["FAIL storage-patterns.md: ^g2 uses letter g of git-patterns"]
+
+
+def test_pitfalls_letter_allowed_in_pattern_note(tmp_path):
+    vault, rules = setup(tmp_path, {"git-patterns.md": note("- a ^g1\n- moved from pitfalls ^v12\n"),
+                                    "python-patterns-superseded.md": "# T\n\n## Superseded\n- ~~a~~ → ^g1 (2026-11-25, w) ^p1\n"})
+    rules.write_text("Letters in `pitfalls.md`: `v` Verification. " + RULES_DOC, encoding="utf-8")
+    assert pd.check(vault, rules) == []
+
+
+def note_with_repo(vault: Path, path: str, repo_url: str) -> None:
+    (vault / "projects/proj.md").write_text(f"---\nstatus: active\npath: {path}\nrepo: {repo_url}\n---\n")
+
+
+def test_fallback_rejects_other_remote(tmp_path, capsys):
+    vault, lab, repo = world(tmp_path)
+    git(repo, "remote", "add", "origin", "https://github.com/o/other.git")
+    note_with_repo(vault, "/gone/lab/proj", "https://github.com/o/proj")
+    repos, skipped = pd.active_repos(vault, lab, 60)
+    assert repos == [] and skipped == {"not-cloned": 1}
+
+
+def test_fallback_accepts_same_remote_other_form(tmp_path):
+    vault, lab, repo = world(tmp_path)
+    git(repo, "remote", "add", "origin", "git@github.com:O/Proj.git")
+    note_with_repo(vault, "/gone/lab/proj", "https://github.com/o/proj")
+    assert [r.path for r in pd.active_repos(vault, lab, 60)[0]] == [repo]
+
+
+def test_non_utf8_project_note_skipped(tmp_path, capsys):
+    vault, lab, repo = world(tmp_path)
+    (vault / "projects/bad.md").write_bytes(b"---\nstatus: active\npath: \xff\xfe\n---\n")
+    summary = pd.scan(vault, lab, 60)
+    assert "WARN unreadable bad" in capsys.readouterr().out
+    assert "scanned 1 repos" in summary and "unreadable: 1" in summary and "opened 1" in summary
+
+
+def test_non_utf8_superseded_note_skipped(tmp_path, capsys):
+    vault, lab, repo = world(tmp_path)
+    (vault / "resources/knowledge/patterns/zed-patterns-superseded.md").write_bytes(b"# T\n\xff\n")
+    summary = pd.scan(vault, lab, 60)
+    assert "WARN unreadable zed-patterns-superseded.md" in capsys.readouterr().out
+    assert "opened 1" in summary
+
+
+def test_readonly_roadmap_skipped(tmp_path, capsys):
+    vault, lab, repo = world(tmp_path)
+    roadmap = repo / ".claude/memory/ROADMAP.md"
+    roadmap.chmod(0o444)
+    try:
+        summary = pd.scan(vault, lab, 60)
+    finally:
+        roadmap.chmod(0o644)
+    assert "WARN unwritable proj" in capsys.readouterr().out
+    assert "unwritable: 1" in summary and "opened 0" in summary and MARK not in road(repo).decode()
