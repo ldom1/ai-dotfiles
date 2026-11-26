@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changed
+- `pattern-drift.py check`: fails on a rule whose id letter belongs to another pattern note (`FAIL <note>: ^g2 uses letter g of git-patterns`). Letters of `pitfalls.md` (`v`, `d`, `u`, `s`) stay allowed in pattern notes. `pitfall-rules.md`: a rule moved between pattern notes takes the new letter and retires the old id.
+- `pattern-drift.py scan`: the `$LAB_ROOT` fallback accepts a folder only if its `origin` remote matches the note's `repo:` (scheme, `.git` and case ignored); a note without `repo:` keeps the old behaviour.
+- `pattern-drift.py scan`: a non-UTF-8 project note or `-superseded` note, or an unwritable `ROADMAP.md`, no longer aborts the scan. It prints `WARN unreadable <name>` or `WARN unwritable <slug>` and counts `unreadable` or `unwritable` under `skipped`.
+
 ## [0.24.0] - 2026-11-25
 
 ### Changed
