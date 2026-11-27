@@ -28,6 +28,7 @@ date +%Y-%m-%d
 **Changes:** <bullets: what changed and where; PR/commit ids>
 **Commands/tests:** <only commands worth re-running>
 **Follow-ups:** <the agent's next steps, or "none">
+**Ontologie:** <the elements added to the project note and the ones proposed, or "none (checked: <elements reviewed>)">
 **Coverage:** <optional; note=<n> live/code=<n> wrong=<n> vault=<n> repo=<n>>
 **Harness changes:** <optional; one row per harness change>
 - <component> · <change> · expected: <effect> · check: <metric or command>
@@ -92,7 +93,9 @@ Where a fact goes, by its reach:
 
 A project note with `domain: <d>` sends every durable fact to the domain, including a fact about one repo or one app: one note per app in `resources/knowledge/<d>/apps/` (create it from an existing app note); hosts go to `hosts/`, procedures to `sops/`. Its repo memory keeps only state and decisions (`Live now`, `In flight`, `Blockers`, `DECISIONS.md`); its `Gotchas` holds one pointer line to the domain notes. Without `domain:`, project-specific traps discovered this session go to `CONTEXT.md` → `Gotchas` (one line each). Ask the user before reversing a decision, removing an architecture claim, or changing roadmap direction.
 
-### Ontologie (only if the session used an element)
+### Ontologie (every capture, never skipped)
+
+Run this step at every capture, also when you think nothing applies: list the technologies and sujets the session used, compare with the `## Ontologie` line of the project note, then write the result in the `**Ontologie:**` line of the log. `check_log.py` fails when that line is missing or empty.
 
 `$BRAIN_PATH/ontologie/` holds what the owner handles on three levels: `concepts/`, `sujets/` (questions to solve) and `technologies/`. A project note links its elements in its last section `## Ontologie`, one line of `[[slug]]` links.
 

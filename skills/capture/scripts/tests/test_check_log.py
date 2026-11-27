@@ -12,6 +12,7 @@ GOOD = """## Fix the merge guard
 - `.claude/hooks/merge-guard.sh`: pass data-only commands (#50). See [[git-patterns#^g7]].
 **Commands/tests:** `pytest .claude/hooks/tests`
 **Follow-ups:** none
+**Ontologie:** none (checked: python, pytest)
 **Pitfall hit:** [[pitfalls#^v5]]
 """
 
@@ -75,7 +76,7 @@ def test_second_block_is_checked(tmp_path):
 def test_real_variants_pass(tmp_path):
     text = GOOD + (
         "\n## Same thread, later\n\n**Changes (notion-pilot `develop`):** x\n"
-        "**Follow-ups:** none\n**Pitfall hit:** [[pitfalls#^s1]]\n"
+        "**Follow-ups:** none\n**Ontologie:** none (checked: notion)\n**Pitfall hit:** [[pitfalls#^s1]]\n"
     )
     assert check(write(tmp_path, text, name="2026-10-14-guide-v1.4.0.md")) == []
 
@@ -118,6 +119,7 @@ HARNESS = """## Add a merge guard
 **Goal:** stop bad merges.
 **Changes:** hook added.
 **Follow-ups:** none
+**Ontologie:** none (checked: bash)
 **Harness changes:**
 - `.claude/hooks/merge-guard.sh` · block data-only merges · expected: fewer refusals · check: merge-guard refusals
 - `skills/capture/SKILL.md` · add metrics label · expected: Metrics line in logs · check: grep '**Metrics:**' inbox/daily
@@ -142,7 +144,7 @@ def test_lookup_only_still_ok(tmp_path):
 def test_bad_harness_row_fails(tmp_path):
     text = HARNESS.replace("\n**Metrics:** 1a", "\n- component · change · check: c\n**Metrics:** 1a")
     fails = check(write(tmp_path, text))
-    assert fails == ["harness row: Add a merge guard: line 9"]
+    assert fails == ["harness row: Add a merge guard: line 10"]
 
 
 def test_harness_row_with_dot_and_verdict_ok(tmp_path):
@@ -180,3 +182,22 @@ def test_coverage_in_code_fence_is_ignored(tmp_path):
 def test_coverage_with_qualifier_is_validated(tmp_path):
     fails = check(write(tmp_path, GOOD + "**Coverage (homelab):** 3 faits\n"))
     assert any(f.startswith("coverage:") for f in fails), fails
+
+
+def test_capture_requires_the_ontologie_line(tmp_path):
+    # Capture step 3 "Ontologie" must leave a trace: the elements added or proposed, or none with the list checked.
+    fails = check(write(tmp_path, GOOD.replace("**Ontologie:** none (checked: python, pytest)\n", "")))
+    assert "section: 'Ontologie' appears 0 times in 'Fix the merge guard'" in fails
+
+
+def test_capture_rejects_an_empty_ontologie_line(tmp_path):
+    fails = check(write(tmp_path, GOOD.replace("**Ontologie:** none (checked: python, pytest)", "**Ontologie:**")))
+    assert "ontologie: empty in 'Fix the merge guard'; list the elements or write none (checked: ...)" in fails
+
+
+def test_ontologie_comes_after_follow_ups(tmp_path):
+    text = GOOD.replace("**Ontologie:** none (checked: python, pytest)\n", "").replace(
+        "**Goal:**", "**Ontologie:** [[pytest]]\n**Goal:**"
+    )
+    fails = check(write(tmp_path, text))
+    assert any(f.startswith("order: 'Fix the merge guard'") for f in fails)

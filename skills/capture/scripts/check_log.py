@@ -14,8 +14,9 @@ import sys
 from pathlib import Path
 
 LOOKUP_ONLY = "Lookup/Q&A only. No files modified."
-ORDER = ["Goal", "Changes", "Commands/tests", "Follow-ups", "Coverage", "Harness changes", "Metrics"]
-REQUIRED = {"Changes", "Follow-ups"}
+ORDER = ["Goal", "Changes", "Commands/tests", "Follow-ups", "Ontologie", "Coverage", "Harness changes", "Metrics"]
+# Ontologie: the capture step "Ontologie" is never skipped; the line names the elements, or none with the list checked.
+REQUIRED = {"Changes", "Follow-ups", "Ontologie"}
 REPEATABLE = {"Pitfall hit"}
 NAME_RE = re.compile(r"^\d{4}-\d{2}-\d{2}-[a-z0-9.]+(?:-[a-z0-9.]+)*\.md$")
 LABEL_RE = re.compile(r"^\*\*([^*]+?):\*\*")
@@ -80,6 +81,8 @@ def check(path: Path, vault: Path | None = None) -> list[str]:
             count = found.count(label)
             if count > 1 or (count == 0 and label in REQUIRED):
                 fails.append(f"section: '{label}' appears {count} times in '{topic}'")
+        if any(re.fullmatch(r"\*\*Ontologie:\*\*\s*", line) for line in block.splitlines()):
+            fails.append(f"ontologie: empty in '{topic}'; list the elements or write none (checked: ...)")
         if found != sorted(found, key=ORDER.index):
             fails.append(f"order: '{topic}' has {', '.join(found)}; expected order {', '.join(ORDER)}")
     fails.extend(
