@@ -94,3 +94,14 @@ def test_session_start_exports_id(tmp_path):
                        capture_output=True, text=True, env=env)
     assert r.returncode == 0
     assert "export CLAUDE_SESSION_ID=abc\n" in env_out.read_text()
+
+
+def test_session_start_exports_lab_root(tmp_path):
+    env = setup(tmp_path)
+    exe(Path(env["AI_DOTFILES"]) / "skills/brain-load/scripts/load.sh", "exit 0")
+    env_out = tmp_path / "claude-env"
+    env |= {"CLAUDE_ENV_FILE": str(env_out), "BRAIN_LOAD_SLIM": "1", "LAB_ROOT": "/x/lab"}
+    r = subprocess.run(["bash", str(START)], input='{"session_id":"abc","source":"startup"}',
+                       capture_output=True, text=True, env=env)
+    assert r.returncode == 0
+    assert "export LAB_ROOT=/x/lab\n" in env_out.read_text()

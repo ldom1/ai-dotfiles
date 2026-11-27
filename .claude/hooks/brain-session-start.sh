@@ -69,6 +69,10 @@ fi
 if [[ -n "${CLAUDE_ENV_FILE:-}" && -n "${BRAIN_PATH:-}" ]]; then
   printf 'export BRAIN_PATH=%q\n' "$BRAIN_PATH" >> "$CLAUDE_ENV_FILE"
 fi
+# pattern-drift.py reads LAB_ROOT from the environment (default ~/lab_perso).
+if [[ -n "${CLAUDE_ENV_FILE:-}" && -n "${LAB_ROOT:-}" ]]; then
+  printf 'export LAB_ROOT=%q\n' "$LAB_ROOT" >> "$CLAUDE_ENV_FILE"
+fi
 # Lets /capture find this session's transcript (harness-metrics.py session --id).
 if [[ -n "${CLAUDE_ENV_FILE:-}" && -n "$SID" ]]; then
   printf 'export CLAUDE_SESSION_ID=%q\n' "$SID" >> "$CLAUDE_ENV_FILE"
