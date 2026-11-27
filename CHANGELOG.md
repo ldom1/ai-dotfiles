@@ -4,7 +4,7 @@
 
 ### Changed
 - `capture`: the Ontologie step runs at every capture. The session log needs a non-empty `**Ontologie:**` line after `**Follow-ups:**` (elements added and proposed, or `none (checked: ...)`); `check_log.py` fails without it.
-- SessionStart hook: exports `LAB_ROOT` from `config/brain.env` into the Claude Code session, next to `BRAIN_PATH`. Before, `pattern-drift.py scan` run from Claude never saw it and fell back to `~/lab_perso`.
+- SessionStart hook: exports `LAB_ROOT` from `config/brain.env` into the Claude Code session, next to `BRAIN_PATH`. Before, `pattern-drift.py scan` run from Claude never saw it and fell back to `~/lab_perso`. `config/brain-projects.tsv`: `politics`, `notion-pilot` and `prosper` point at `~/lab/` (their `~/lab_perso/` paths no longer exist, so `sync-project.sh` skipped them).
 - `install.sh` installs `ast-grep-cli==0.51.3` with `uv tool install` (binary `ast-grep`, used by `pattern-drift.py`); without `uv` it prints the command to run.
 - `.gitignore`: ignores the Claude Code `.claude/*.signature*.json` files.
 - `git-commit` `scopes.json`: new project type `config-ondemand-ansible` (Open OnDemand Ansible config).
